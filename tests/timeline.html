@@ -1,0 +1,66 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Timeline test</title>
+<link rel="stylesheet" href="../css/timeline.css" />
+<link rel="stylesheet" href="../fonts/fontawesome.css" />
+</head>
+<body>
+<div data-dojo-type="artnum/timeline" id="tl"></div>
+
+<script>
+dojoConfig = {
+	requestProvider: "dojo/request/xhr",
+	parseOnLoad: true,
+	isDebug: true,
+	packages: [
+		{ name: "dstore", location: "//cdn.rawgit.com/SitePen/dstore/v1.1.2"},
+		{ name: "artnum", location: "/location/widgets/"}
+	]
+}
+</script>
+<script src="/location/js/dllist.js"></script>
+<script src="/location/js/array.js"></script>
+<script src="/location/js/date.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.1/dojo/dojo.js" data-dojo-config="locale: 'fr-ch', async: true, parseOnLoad: true, isDebug: true"></script>
+<script>
+
+require([
+
+	"artnum/timeline",
+	"artnum/entry",
+	"dojo/request/xhr",
+	"dijit/registry",
+	"dstore/Rest",
+
+	"dojo/domReady!"
+], function (timeline, entry, djXhr, dtRegistry, dsRest) {
+
+
+var stReservation = dsRest({target: "/location/store/Reservation"});
+
+djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "json", method: "GET"}).then(function ( response ) { 
+	var tl = dtRegistry.byId('tl');
+	response.forEach( function ( machine ) {
+		var e = new entry({name: machine.description, parent: tl, isParent: true, target: machine.description,
+			stores : { reservation: stReservation }
+		});
+		tl.addEntry(e);
+		if(machine.airaltref) {
+			machine.airaltref[0].split(',').forEach( function (altref ) {
+				var e = new entry({name: altref, parent: tl, isParent: false, target: altref,
+					stores : { reservation: stReservation }
+				});
+				tl.addEntry(e);
+			});
+		}
+	});
+	tl.update();
+}, function (err) { console.log(err); });
+
+//	let x = new timeline();	
+	
+});
+</script>
+</body>
+</html>

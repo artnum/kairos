@@ -1,0 +1,125 @@
+ @import url('https://fonts.googleapis.com/css?family=Pragati+Narrow');
+
+.timeline {
+	font-family: 'Pragati Narrow', sans-serif;	
+}
+
+.timeline .header .tools {
+	width: 138px;	
+}
+
+.timeline .header div {
+	display: inline-block;	
+	overflow: hidden;
+}
+
+.timeline .header .weekNumber {
+	text-align: center;
+	background-color: white;
+}
+
+.timeline .header .odd {
+	background-color: #003f3f;	
+	color: white;
+}
+
+.timeline .line {
+	border-bottom: 2px solid black;
+}
+.timeline .fixed {
+	position: fixed;
+	z-index: 5;	
+}
+.timeline .line span {
+	overflow: hidden;
+	text-align: center;
+	width: 40px;
+	font-size: 16px;
+	display: inline-block;
+}
+
+.timeline .left {
+	margin-left: 120px;	
+}
+
+.timeline .weekend {
+	background-color: #008d8d !important;
+}
+
+.timeline .day {
+	background-color: white;
+	border-left: 1px solid #ddd;	
+	border-right: 1px solid #ddd;	
+}
+
+.timeline .handle {
+  cursor: pointer;
+	display: inline-block;
+	width: 18px;
+	text-align: center;
+}
+.timeline .line {
+	display: inline-block;
+}
+.timeline .odd {
+	background-color: #eee;	
+}
+.hidden {
+	display: none !important;
+}
+.invisible {
+	visibility: hidden !important;
+}
+.entry {
+  height: 2.8em;
+  min-height: 2.8em;
+}
+.entry .control {
+	cursor: pointer;
+	width: 110px;
+}
+
+.entry .error {
+	color: red;	
+}
+
+.entry .control, .entry .data {
+	display: inline-block;
+}
+.entry .control {
+  float: left;
+}
+
+.entry .reservation{
+	display: inline-block;
+}
+.entry .details {
+  font-size: 1em;
+}
+
+.entry .tools {
+  height: 0.8em;
+  font-size: 0.6em;
+}
+
+.reservation .reserved {
+  background-color: #8B0025;
+  color: white;
+}
+.reservation .prereserved {
+  background-color: #5B8E00;
+  color: white;
+}
+
+.reservation {
+  border: 1px solid white;
+  overflow: hidden;
+}
+
+.entry .details {
+  background-color: #ddd;
+	padding: 0 3px 0 3px;
+}
+.entry .details, .entry .tools {
+  display: block;
+}

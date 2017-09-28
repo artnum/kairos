@@ -1,0 +1,13 @@
+AddDefaultCharset utf-8
+RewriteEngine On
+RewriteBase /location/store/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ store.php/$1 [L]
+
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, PUT, POST, DELETE"
+Header set Access-Control-Allow-Headers "x-requested-with"
+
+SetEnv JSTORE_PDO_STRING "sqlite:location.sqlite"
