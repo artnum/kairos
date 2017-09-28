@@ -13,16 +13,21 @@
 	overflow: hidden;
 }
 
-.timeline .header .weekNumber {
+.weekNumber, .monthName {
 	text-align: center;
+}
+.weekNumber.even, .monthName.even {
 	background-color: white;
 }
 
-.timeline .header .odd {
-	background-color: #003f3f;	
+.weekNumber.odd {
+	background-color: #005c5c;
 	color: white;
 }
-
+.monthName.odd {
+	background-color: #008d8d;	
+	color: white;
+}
 .timeline .line {
 	border-bottom: 2px solid black;
 }
@@ -42,11 +47,12 @@
 	margin-left: 120px;	
 }
 
-.timeline .weekend {
-	background-color: #008d8d !important;
+.day.weekend {
+	background-color: #003f3f;	
+	color: white;
 }
 
-.timeline .day {
+.day {
 	background-color: white;
 	border-left: 1px solid #ddd;	
 	border-right: 1px solid #ddd;	
@@ -61,9 +67,7 @@
 .timeline .line {
 	display: inline-block;
 }
-.timeline .odd {
-	background-color: #eee;	
-}
+
 .hidden {
 	display: none !important;
 }
@@ -101,7 +105,9 @@
   height: 0.8em;
   font-size: 0.6em;
 }
-
+.reservationContainer {
+	padding-top: 88px;	
+}
 .reservation .reserved {
   background-color: #8B0025;
   color: white;

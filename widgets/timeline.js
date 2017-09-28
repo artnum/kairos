@@ -18,7 +18,8 @@ define([
 	"dojo/dom-attr",
 	"dojo/dom-class",
 	"dojo/dom-style",
-	"dojo/dom-geometry"
+	"dojo/dom-geometry",
+	"dojo/throttle"
 
 
 ], function(
@@ -40,7 +41,8 @@ define([
 	djDomAttr,
 	djDomClass,
 	djDomStyle,
-	djDomGeo
+	djDomGeo,
+	djThrottle
 
 ) {
 	
@@ -54,6 +56,8 @@ return djDeclare("artnum.timeline", [
 	templateString: _template,
 	zoomCss: null,
 	lines: null,
+	moveQueue: null,
+	throttle: 80,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -62,6 +66,9 @@ return djDeclare("artnum.timeline", [
 		this.entries = new ExtArray();
 		this.lines = null;
 		this.todayOffset = -1;
+		this.months = new Array();
+		this.moveQueue = new Array();
+		this.throttle = 250;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -69,11 +76,13 @@ return djDeclare("artnum.timeline", [
 	},
 
 	zoomIn: function () {
-		if(this.blockSize > 16) {
+		if(this.blockSize > 14) {
 			this.blockSize = Math.ceil(this.blockSize / 1.3333);
 			var css = '.timeline .line span { width: '+ (this.blockSize-2) +'px !important;} ';
 			if(this.blockSize < 30) {
 				css += '.timeline .day { font-size: 0.8em !important }';	
+			} else if(this.get('blockSize') < 14) {
+				css += '.timeline .day { font-size: 0.6em !important }';	
 			}
 			this.zoomCss.innerHTML = css;
 			this.update();
@@ -102,29 +111,69 @@ return djDeclare("artnum.timeline", [
 		var dayStamp = djDateStamp.toISOString(newDay, {selector: "date"});
 		var c = "day";
 		if(newDay.getDay() == 0 || newDay.getDay() == 6) { c = "day weekend"}
-		var txtDate = newDay.getDate() + "." + (newDay.getMonth() + 1);
-		if(this.blockSize < 30) {
-			txtDate = newDay.getDate();
-		}
+		txtDate = newDay.getDate();
 		var domDay = djDomConstruct.toDom('<span data-artnum-day="' + dayStamp + '" class="'+ c +'">' +txtDate + '</span>');
 		this.own(domDay);
 		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line };
 	},
 
-	resize: function ( event ) {
-		this.update();
+	moves: function (event) {
+		this.moveQueue.push(event);
+		if(this.moveQueue.length == 1) { return true; }
+		if(! (this.moveQueue.length % 32)) {
+			return true;
+		}	
+		return false;
 	},
 
-	createWeekNumber: function (number, days) {
+	resize: function ( event ) {
+		djThrottle(djLang.hitch(this, this.update), this.throttle / 3)();
+	},
+
+	createMonthName: function (month, year, days, frag) {
+		var n = djDomConstruct.toDom('<div class="monthName"></div>');
+		djDomStyle.set(n, { "width": (days * this.get('blockSize')) + "px" });
+		switch(month+1) {
+			case 1: n.innerHTML = 'Janvier&nbsp;' + year; break;	
+			case 2: n.innerHTML = 'Février&nbsp;' + year; break;	
+			case 3: n.innerHTML = 'Mars&nbsp;' + year; break;	
+			case 4: n.innerHTML = 'Avril&nbsp;' + year; break;	
+			case 5: n.innerHTML = 'Mai&nbsp;' + year; break;	
+			case 6: n.innerHTML = 'Juin&nbsp;' + year; break;	
+			case 7: n.innerHTML = 'Juillet&nbsp;' + year; break;	
+			case 8: n.innerHTML = 'Août&nbsp;' + year; break;	
+			case 9: n.innerHTML = 'Septembre&nbsp;' + year; break;	
+			case 10: n.innerHTML = 'Octobre&nbsp;' + year; break;	
+			case 11: n.innerHTML = 'Novembre&nbsp;' + year; break;	
+			case 12: n.innerHTML = 'Décembre&nbsp;' + year; break;	
+		}
+		if(month % 2) { 
+			djDomClass.add(n, "even");
+		} else {
+			djDomClass.add(n, "odd");
+		}	
+		djDomConstruct.place(n, frag);
+		this.months.push(n);
+	},
+	destroyMonthName: function() {
+		for(var x = this.months.pop(); x; x = this.months.pop()) {
+			x.parentNode.removeChild(x);
+		}
+	},
+
+	createWeekNumber: function (number, days, frag) {
 		var n = djDomConstruct.toDom('<div class="weekNumber"></div>');
 		djDomStyle.set(n, { "width": (days * this.get('blockSize')) + "px" });
-		n.innerHTML = 'Semaine' + number;
+		n.innerHTML = 'Semaine ' + number;
+		if(days * this.get('blockSize') < 80) {
+			n.innerHTML = number;
+		}
 		if(number % 2) { 
 			djDomClass.add(n, "even");
 		} else {
 			djDomClass.add(n, "odd");
 		}
-		djDomConstruct.place(n, this.header);
+		djDomConstruct.place(n, frag);
 		this.weekNumber.push(n);
 	},
 	destroyWeekNumber: function() {
@@ -141,31 +190,34 @@ return djDeclare("artnum.timeline", [
     djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
     djOn(window, "resize", djLang.hitch(this, this.resize));
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
-		djOn(this.domEntries.domNode, "scroll", djLang.hitch(this, this.eScroll));
    },
-
-	eScroll: function(event) {
-		console.log(event);	
-	},
 
 	eWheel: function(event) {
 		if(event.deltaX < 0) {
-			this.moveLeft();		
+			djThrottle(djLang.hitch(this, this.moveLeft), this.throttle)();
 		} else if(event.deltaX > 0) { 
-			this.moveRight();
+			djThrottle(djLang.hitch(this, this.moveRight), this.throttle)();
 		}
-		console.log(event);
 	},
 
   eKeyEvent: function (event) {
-		console.log(event);
-    switch(event.key) {
-      case 'ArrowLeft': this.moveLeft(); break;
-      case 'ArrowRight': this.moveRight(); break;
-			case 'ArrowUp': event.preventDefault(); this.zoomOut(); break;
-			case 'ArrowDown': event.preventDefault(); this.zoomIn(); break;
+		switch(event.key) {
+			case 'ArrowLeft': 
+				djThrottle(djLang.hitch(this, this.moveLeft), this.throttle)(); 
+				break;
+			case 'ArrowRight': 
+				djThrottle(djLang.hitch(this, this.moveRight), this.throttle)(); 
+				break;
+			case 'ArrowUp': 
+				event.preventDefault(); 
+				djThrottle(djLang.hitch(this, this.zoomOut), this.throttle)();
+				break;
+			case 'ArrowDown':
+				event.preventDefault(); 
+				djThrottle(djLang.hitch(this, this.zoomIn), this.throttle)();
+				break;
 
-    }    
+		}
   },
 	getDateRange: function () {
 		var b = djDateStamp.fromISOString(djDomAttr.get(this.line.firstChild, "data-artnum-day"));
@@ -175,7 +227,7 @@ return djDeclare("artnum.timeline", [
 	},
 
 	moveRight: function () {
-		this.center = djDate.add(this.center, "day", -5);
+		this.center = djDate.add(this.center, "day", Math.floor(this.days.width() / 7));
 		this.update();
 	},
 
@@ -188,97 +240,123 @@ return djDeclare("artnum.timeline", [
 	},
 
 	moveLeft: function () {
-		this.center = djDate.add(this.center, "day", 5);
+		this.center = djDate.add(this.center, "day", -Math.floor(this.days.width() / 7));
 		this.update();
 	},
 
 	drawTimeline: function() {
+		var def = new djDeferred();
 		window.requestAnimationFrame(djLang.hitch(this, function () {
 			var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
 			var avWidth = box.w - this.get('offset') - this.get('blockSize');
-			var currentWeek = 0, dayCount = 0;
+			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
 			this.todayOffset = -1;
 
 			this.destroyWeekNumber();
+			this.destroyMonthName();
 			for(var x = this.days.pop(); x!=null; x = this.days.pop()) {
 				if(x.domNode.parentNode) {
 					x.domNode.parentNode.removeChild(x.domNode);
 				}
 			}
 
+			var docFrag = document.createDocumentFragment();
+			var hFrag = document.createDocumentFragment();
+			var shFrag = document.createDocumentFragment();
+
 			for(var day = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2)), i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
 
 				if(djDate.compare(day, new Date(), "date") == 0) {
 					this.todayOffset = i;	
-					console.log(this.todayOffset);
 				}
 
 				if(currentWeek != day.getWeek()) {
 					if(currentWeek == 0) {
 						currentWeek = day.getWeek();	
 					} else {
-						this.createWeekNumber(currentWeek, dayCount);
+						this.createWeekNumber(currentWeek, dayCount, hFrag);
 						dayCount = 0;
 						currentWeek = day.getWeek();
 					}
 				}
+				if(currentMonth != day.getMonth()) {
+					if(currentMonth == -1) {
+						currentMonth = day.getMonth();
+						if(currentMonth % 2) { months.push(i); }
+						currentYear = day.getFullYear();
+					}	else {
+						this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
+						dayMonthCount = 0;	
+						currentMonth = day.getMonth();
+						if(currentMonth % 2) { months.push(i); }
+						currentYear = day.getFullYear();
+					}
+				}
 				var d = this.makeDay(day);
 				this.days.add(d , this.isBefore);	
-				djDomConstruct.place(d.domNode, this.line, "last");
+				djDomConstruct.place(d.domNode, docFrag, "last");
 				day = djDate.add(day, "day", 1);
-				dayCount++;
+				dayCount++; dayMonthCount++;
 			}
 			if(dayCount > 0) {
-				this.createWeekNumber(currentWeek, dayCount);
+				this.createWeekNumber(currentWeek, dayCount, hFrag);
 			}
-			djDomStyle.set(this.domEntries.domNode, { "padding-top": "60px"})	
+			if(dayMonthCount > 0) {
+				this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
+			}
+			this.line.appendChild(docFrag);
+			this.header.appendChild(hFrag);
+			this.supHeader.appendChild(shFrag);
+
+			this.drawCanvas(months, weeks);
+			def.resolve();
 		}));
-				
+		return def;
 	},
 
-	drawCanvas: function() {
-		window.requestAnimationFrame(djLang.hitch(this, function() {
-			var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
-			var posX = 138;
-			if(this.lines) {
-				this.lines.parentNode.removeChild(this.lines);	
-			}
-			this.lines = document.createElement('canvas');
-			djDomStyle.set(this.lines, { "top": box.t + "px", "left": box.l + "px", "position": "absolute", "z-index": "-1", "background-color" : "transparent"});
-			djDomAttr.set(this.lines, "height",  box.h);
-			djDomAttr.set(this.lines, "width", box.w);
-			document.body.appendChild(this.lines)
-			var ctx = this.lines.getContext("2d");
-			ctx.lineWidth = 1.5;
-			ctx.lineCap = "round";
-			ctx.globalAlpha = 0.2;
-			for(var i = 0; i <= this.days.width(); i++) {
-				if(this.todayOffset != - 1 && this.todayOffset == i) {
-					ctx.fillStyle="#EC0000";
-					ctx.beginPath();
-					ctx.moveTo(posX, box.t);
-					ctx.lineTo(posX, box.h);
-					ctx.lineTo(posX-this.get('blockSize'), box.h);
-					ctx.lineTo(posX-this.get('blockSize'), box.t);
-					ctx.lineTo(posX, box.t);
-					ctx.fill();
-				} 
+	drawCanvas: function(months, weeks) {
+		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
+		var posX = 138;
+		if(this.lines) {
+			this.lines.parentNode.removeChild(this.lines);	
+		}
+		this.lines = document.createElement('canvas');
+		djDomStyle.set(this.lines, { "top": box.t + "px", "left": box.l + "px", "position": "absolute", "z-index": "-1", "background-color" : "transparent"});
+		djDomAttr.set(this.lines, "height",  box.h);
+		djDomAttr.set(this.lines, "width", box.w);
+		document.body.appendChild(this.lines)
+		var ctx = this.lines.getContext("2d");
+		ctx.lineWidth = 1.5;
+		ctx.lineCap = "round";
+		ctx.globalAlpha = 0.2;
+		for(var i = 0; i <= this.days.width(); i++) {
+			if(this.todayOffset != - 1 && this.todayOffset == i) {
+				ctx.fillStyle="#EC0000";
 				ctx.beginPath();
-				ctx.strokeStyle="black";	
 				ctx.moveTo(posX, box.t);
 				ctx.lineTo(posX, box.h);
-				ctx.stroke();
-				ctx.closePath();
-				posX += this.get('blockSize');	
-			}
-		}));
+				ctx.lineTo(posX-this.get('blockSize'), box.h);
+				ctx.lineTo(posX-this.get('blockSize'), box.t);
+				ctx.lineTo(posX, box.t);
+				ctx.fill();
+			} 
+			ctx.beginPath();
+			ctx.strokeStyle="black";	
+			ctx.moveTo(posX, box.t);
+			ctx.lineTo(posX, box.h);
+			ctx.stroke();
+			ctx.closePath();
+			posX += this.get('blockSize');	
+		}
 	},
 
 	update: function () {
 		var def = new djDeferred();
-		this.drawTimeline();
-		this.drawCanvas();
-		this.emit("update", this.getDateRange());
+		this.drawTimeline().then(djLang.hitch(this, function() {
+			this.moveQueue.pop();
+			if(this.moveQueue.length <= 0) {	this.emit("update", this.getDateRange()); }
+			def.resolve();
+		}));
 		return def;
 	}
 
