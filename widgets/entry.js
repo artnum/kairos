@@ -84,30 +84,34 @@ return djDeclare("artnum.entry", [
 	},
 	eMouseMove: function(event) {
 		if(this.newReservation) {
-			if(djDate.compare(this.newReservation.get('end'), this.dayFromX(event.clientX))<0) {
-				this.newReservation.set('end', this.dayFromX(event.clientX));
-				this.newReservation.resize();		
-			} else if(djDate.compare(this.newReservation.get('end'), this.dayFromX(event.clientX))>0) {
-				this.newReservation.set('begin', this.dayFromX(event.clientX));
-				this.newReservation.resize();		
+			if(djDate.compare(this.dayFromX(event.clientX), this.newReservation.start) < 0) {
+				this.newReservation.o.set('begin', this.dayFromX(event.clientX));
+				this.newReservation.o.set('end', this.newReservation.start);
 			} else {
-				this.newReservation.set('begin', this.dayFromX(event.clientX));
-				this.newReservation.set('end', this.dayFromX(event.clientX + this.get('blockSize')));
-				this.newReservation.resize();		
+				this.newReservation.o.set('end', this.dayFromX(event.clientX));
+				this.newReservation.o.set('begin', this.newReservation.start);
 			}
+			this.newReservation.o.resize();		
 		}
 	},
 
 	eClick: function(event) {
 		if( ! this.newReservation) {
-			this.newReservation = new reservation({ begin: this.dayFromX(event.clientX), end: djDate.add(this.dayFromX(event.clientX), "day", 1), myParent: this, IDent: null, status: "2" });
-			djOn.once(this.newReservation.domNode, "click", djLang.hitch(this, this.eClick));
+			this.newReservation = {start :  this.dayFromX(event.clientX) };
+			this.newReservation.o = new reservation({ begin: this.newReservation.start, end: this.newReservation.start, myParent: this, IDent: null, status: "2" });
+			djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
 			this.own(this.newReservation);
-			djDomConstruct.place(this.newReservation.domNode, this.data);
+			djDomClass.add(this.newReservation.o.domNode, "selected");
+			this.data.appendChild(this.newReservation.o.domNode);
 		} else {
-			this.newReservation.set('end', this.dayFromX(event.clientX));
-			this.newReservation.resize();		
-			this.addChild(this.newReservation);
+			if(djDate.compare(this.dayFromX(event.clientX), this.newReservation.start) < 0) {
+				this.newReservation.o.set('begin', this.dayFromX(event.clientX));
+			} else {
+				this.newReservation.o.set('end', this.dayFromX(event.clientX));
+			}
+			this.newReservation.o.resize();		
+			djDomClass.remove(this.newReservation.o.domNode, "selected");
+			this.addChild(this.newReservation.o);
 			this.newReservation = null;
 		}
 	},

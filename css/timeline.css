@@ -119,6 +119,7 @@ body, html { margin: 0; padding: 0;}
   color: white;
 }
 
+
 .reservation {
   border: 1px solid white;
   overflow: hidden;
@@ -130,4 +131,8 @@ body, html { margin: 0; padding: 0;}
 }
 .entry .details, .entry .tools {
   display: block;
+}
+
+.reservation.selected .details { 
+	background-color: #FFDD44 !important;	
 }

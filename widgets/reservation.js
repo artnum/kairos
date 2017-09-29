@@ -94,7 +94,7 @@ return djDeclare("artnum.reservation", [
 
 			/* Last day included */
       daySize = (daySize + 1) * currentWidth;
-      if(daySize == 0) { this.suicide(); return;  }
+      //if(daySize == 0) { this.suicide(); return;  }
       
 			switch(this.status) {
         case "1":
