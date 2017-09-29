@@ -57,7 +57,9 @@ return djDeclare("artnum.timeline", [
 	zoomCss: null,
 	lines: null,
 	moveQueue: null,
-	throttle: 80,
+	timeout: null,
+	lastDay: null,
+	firstDay: null,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -68,7 +70,9 @@ return djDeclare("artnum.timeline", [
 		this.todayOffset = -1;
 		this.months = new Array();
 		this.moveQueue = new Array();
-		this.throttle = 250;
+		this.timeout = null;
+		this.lastDay = null;
+		this.firstDay = null;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -100,7 +104,6 @@ return djDeclare("artnum.timeline", [
 	},
 
 	isBefore: function ( a, b ) {
-	
 		if(djDate.compare(a, b, "date")<=0) {
 			return true;
 		}
@@ -178,7 +181,7 @@ return djDeclare("artnum.timeline", [
 
 	postCreate: function () {
 		this.inherited(arguments);
-		this.drawTimeline();
+		this.update();	
 		djOn(this.moveright, "click", djLang.hitch(this, this.moveRight));
 		djOn(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
     djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
@@ -214,9 +217,7 @@ return djDeclare("artnum.timeline", [
 		}
   },
 	getDateRange: function () {
-		var b = djDateStamp.fromISOString(djDomAttr.get(this.line.firstChild, "data-artnum-day"));
-		var e = djDateStamp.fromISOString(djDomAttr.get(this.line.lastChild, "data-artnum-day"));
-		return { begin: b, end: e }
+		return { begin: this.firstDay, end: this.lastDay }
 
 	},
 
@@ -240,7 +241,7 @@ return djDeclare("artnum.timeline", [
 
 	drawTimeline: function() {
 		var def = new djDeferred();
-		djDebounce(window.requestAnimationFrame(djLang.hitch(this, function () {
+		window.requestAnimationFrame(djLang.hitch(this, function () {
 			var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
 			var avWidth = box.w - this.get('offset') - this.get('blockSize');
 			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
@@ -258,7 +259,8 @@ return djDeclare("artnum.timeline", [
 			var hFrag = document.createDocumentFragment();
 			var shFrag = document.createDocumentFragment();
 
-			for(var day = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2)), i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
+			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
+			for(var day = this.firstDay, i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
 
 				if(djDate.compare(day, new Date(), "date") == 0) {
 					this.todayOffset = i;	
@@ -290,6 +292,7 @@ return djDeclare("artnum.timeline", [
 				this.days.add(d , this.isBefore);	
 				djDomConstruct.place(d.domNode, docFrag, "last");
 				day = djDate.add(day, "day", 1);
+				this.lastDay = day;
 				dayCount++; dayMonthCount++;
 			}
 			if(dayCount > 0) {
@@ -304,7 +307,7 @@ return djDeclare("artnum.timeline", [
 
 			this.drawCanvas(months, weeks);
 			def.resolve();
-		})), 10);
+		}));
 		return def;
 	},
 
@@ -346,10 +349,8 @@ return djDeclare("artnum.timeline", [
 
 	update: function () {
 		var def = new djDeferred();
-		this.drawTimeline().then(djLang.hitch(this, function() {
-			this.emit("update", this.getDateRange());
-			def.resolve();
-		}));
+		this.drawTimeline();
+		this.emit("update", this.getDateRange());
 		return def;
 	}
 

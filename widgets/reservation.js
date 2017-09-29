@@ -72,6 +72,7 @@ return djDeclare("artnum.reservation", [
 		this.destroyRecursive(false);
   },
   resize: function() {
+		console.log('resize');
     var def = new djDeferred();
     window.requestAnimationFrame(djLang.hitch(this, function() {
 			if( ! this.myParent) { def.resolve(); return; }
@@ -94,8 +95,6 @@ return djDeclare("artnum.reservation", [
 
 			/* Last day included */
       daySize = (daySize + 1) * currentWidth;
-      //if(daySize == 0) { this.suicide(); return;  }
-      
 			switch(this.status) {
         case "1":
           djDomClass.add(this.tools, "reserved"); break;
@@ -105,7 +104,7 @@ return djDeclare("artnum.reservation", [
 
   
       var leftSize = Math.abs(djDate.difference(dateRange.begin, this.begin) + startDiff ) * currentWidth + this.get('offset') -1 ;
-	    djDomStyle.set(this.main, { "width": daySize + "px", "position": "absolute", "left": leftSize + "px" });
+			this.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + leftSize + 'px');
 			
 			def.resolve();
     }));
