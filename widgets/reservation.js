@@ -91,22 +91,22 @@ return djDeclare("artnum.reservation", [
         startDiff = Math.abs(djDate.difference(this.begin, dateRange.begin));
       	daySize -= startDiff;
      	} 
+
 			/* Last day included */
       daySize = (daySize + 1) * currentWidth;
-      switch(this.status) {
+      if(daySize == 0) { this.suicide(); return;  }
+      
+			switch(this.status) {
         case "1":
           djDomClass.add(this.tools, "reserved"); break;
         case "2":
           djDomClass.add(this.tools, "prereserved"); break;
       } 
 
-      if(daySize == 0) { this.suicide(); return;  }
-      djDomStyle.set(this.main, "width", daySize + "px");
-      djDomStyle.set(this.main, "position", "absolute");
-
+  
       var leftSize = Math.abs(djDate.difference(dateRange.begin, this.begin) + startDiff ) * currentWidth + this.get('offset') -1 ;
-
-      djDomStyle.set(this.main, "left", leftSize + "px");
+	    djDomStyle.set(this.main, { "width": daySize + "px", "position": "absolute", "left": leftSize + "px" });
+			
 			def.resolve();
     }));
     return def;

@@ -19,7 +19,7 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
-	"dojo/throttle"
+	"dojo/debounce"
 
 
 ], function(
@@ -42,7 +42,7 @@ define([
 	djDomClass,
 	djDomStyle,
 	djDomGeo,
-	djThrottle
+	djDebounce
 
 ) {
 	
@@ -50,7 +50,7 @@ return djDeclare("artnum.timeline", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 
 	center: new Date(),
-	offset: 146,
+	offset: 138,
 	blockSize: 42,
 	baseClass: "timeline",
 	templateString: _template,
@@ -112,27 +112,21 @@ return djDeclare("artnum.timeline", [
 		var c = "day";
 		if(newDay.getDay() == 0 || newDay.getDay() == 6) { c = "day weekend"}
 		txtDate = newDay.getDate();
-		var domDay = djDomConstruct.toDom('<span data-artnum-day="' + dayStamp + '" class="'+ c +'">' +txtDate + '</span>');
+		var domDay = document.createElement('SPAN')
+		domDay.setAttribute('data-artnum-day', dayStamp);
+		domDay.setAttribute('class', c);
+		domDay.innerHTML=txtDate;
 		this.own(domDay);
 		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line };
 	},
 
-	moves: function (event) {
-		this.moveQueue.push(event);
-		if(this.moveQueue.length == 1) { return true; }
-		if(! (this.moveQueue.length % 32)) {
-			return true;
-		}	
-		return false;
-	},
-
 	resize: function ( event ) {
-		djThrottle(djLang.hitch(this, this.update), this.throttle / 3)();
+		this.update;
 	},
 
 	createMonthName: function (month, year, days, frag) {
-		var n = djDomConstruct.toDom('<div class="monthName"></div>');
-		djDomStyle.set(n, { "width": (days * this.get('blockSize')) + "px" });
+		var n = document.createElement('DIV');
+		n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px');
 		switch(month+1) {
 			case 1: n.innerHTML = 'Janvier&nbsp;' + year; break;	
 			case 2: n.innerHTML = 'Février&nbsp;' + year; break;	
@@ -148,11 +142,11 @@ return djDeclare("artnum.timeline", [
 			case 12: n.innerHTML = 'Décembre&nbsp;' + year; break;	
 		}
 		if(month % 2) { 
-			djDomClass.add(n, "even");
+			n.setAttribute('class', 'monthName even');
 		} else {
-			djDomClass.add(n, "odd");
+			n.setAttribute('class', 'monthName odd');
 		}	
-		djDomConstruct.place(n, frag);
+		frag.appendChild(n);
 		this.months.push(n);
 	},
 	destroyMonthName: function() {
@@ -162,18 +156,18 @@ return djDeclare("artnum.timeline", [
 	},
 
 	createWeekNumber: function (number, days, frag) {
-		var n = djDomConstruct.toDom('<div class="weekNumber"></div>');
-		djDomStyle.set(n, { "width": (days * this.get('blockSize')) + "px" });
+		var n = document.createElement('DIV');
+		n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px');
 		n.innerHTML = 'Semaine ' + number;
 		if(days * this.get('blockSize') < 80) {
 			n.innerHTML = number;
 		}
 		if(number % 2) { 
-			djDomClass.add(n, "even");
+			n.setAttribute('class', 'weekNumber even');
 		} else {
-			djDomClass.add(n, "odd");
+			n.setAttribute('class', 'weekNumber odd');
 		}
-		djDomConstruct.place(n, frag);
+		frag.appendChild(n);
 		this.weekNumber.push(n);
 	},
 	destroyWeekNumber: function() {
@@ -194,27 +188,27 @@ return djDeclare("artnum.timeline", [
 
 	eWheel: function(event) {
 		if(event.deltaX < 0) {
-			djThrottle(djLang.hitch(this, this.moveLeft), this.throttle)();
+			this.moveLeft();
 		} else if(event.deltaX > 0) { 
-			djThrottle(djLang.hitch(this, this.moveRight), this.throttle)();
+			this.moveRighti();
 		}
 	},
 
   eKeyEvent: function (event) {
 		switch(event.key) {
 			case 'ArrowLeft': 
-				djThrottle(djLang.hitch(this, this.moveLeft), this.throttle)(); 
+				this.moveLeft(); 
 				break;
 			case 'ArrowRight': 
-				djThrottle(djLang.hitch(this, this.moveRight), this.throttle)(); 
+				this.moveRight();
 				break;
 			case 'ArrowUp': 
 				event.preventDefault(); 
-				djThrottle(djLang.hitch(this, this.zoomOut), this.throttle)();
+				this.zoomOut();
 				break;
 			case 'ArrowDown':
 				event.preventDefault(); 
-				djThrottle(djLang.hitch(this, this.zoomIn), this.throttle)();
+				this.zoomIn();
 				break;
 
 		}
@@ -246,7 +240,7 @@ return djDeclare("artnum.timeline", [
 
 	drawTimeline: function() {
 		var def = new djDeferred();
-		window.requestAnimationFrame(djLang.hitch(this, function () {
+		djDebounce(window.requestAnimationFrame(djLang.hitch(this, function () {
 			var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
 			var avWidth = box.w - this.get('offset') - this.get('blockSize');
 			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
@@ -310,22 +304,22 @@ return djDeclare("artnum.timeline", [
 
 			this.drawCanvas(months, weeks);
 			def.resolve();
-		}));
+		})), 10);
 		return def;
 	},
 
 	drawCanvas: function(months, weeks) {
 		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
-		var posX = 138;
-		if(this.lines) {
-			this.lines.parentNode.removeChild(this.lines);	
+		var posX = this.get('offset');
+		if(! this.lines) {
+			this.lines = document.createElement('canvas');
+			document.body.appendChild(this.lines)
 		}
-		this.lines = document.createElement('canvas');
-		djDomStyle.set(this.lines, { "top": box.t + "px", "left": box.l + "px", "position": "absolute", "z-index": "-1", "background-color" : "transparent"});
-		djDomAttr.set(this.lines, "height",  box.h);
-		djDomAttr.set(this.lines, "width", box.w);
-		document.body.appendChild(this.lines)
+		this.lines.setAttribute('style', "top:" + box.t + "px; left:" + box.l + "px; position: absolute; z-index: -1; background-color: transparent;");
+		this.lines.setAttribute("width", box.w);
+		this.lines.setAttribute("height", box.h);
 		var ctx = this.lines.getContext("2d");
+		ctx.clearRect(0,0,box.w, box.h);
 		ctx.lineWidth = 1.5;
 		ctx.lineCap = "round";
 		ctx.globalAlpha = 0.2;
@@ -353,8 +347,7 @@ return djDeclare("artnum.timeline", [
 	update: function () {
 		var def = new djDeferred();
 		this.drawTimeline().then(djLang.hitch(this, function() {
-			this.moveQueue.pop();
-			if(this.moveQueue.length <= 0) {	this.emit("update", this.getDateRange()); }
+			this.emit("update", this.getDateRange());
 			def.resolve();
 		}));
 		return def;

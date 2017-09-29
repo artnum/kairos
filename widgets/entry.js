@@ -125,7 +125,7 @@ return djDeclare("artnum.entry", [
 	addChild: function (child) {
 		this.childs.push(child);
 		this.own(child);
-		djDomConstruct.place(child.domNode, this.data);
+		this.data.appendChild(child.domNode);
 	},
 
 	_setParentAttr: function ( parent ) {
@@ -154,11 +154,13 @@ return djDeclare("artnum.entry", [
 	},
 
 	_stopWait: function () {
-		djDomClass.add(this.wait, "hidden");
+		var w = this.wait;
+		window.requestAnimationFrame(function() { djDomClass.add(w, "hidden") });
 	},
 
 	_onError: function() {
-		djDomClass.remove(this.err, "hidden");	
+		var e = this.err;
+		window.requestAimationFrame(function() { djDomClass.remove(e, "hidden")});	
 	},
 
 	displayResults: function ( reservations ) {
