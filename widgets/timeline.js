@@ -73,6 +73,7 @@ return djDeclare("artnum.timeline", [
 		this.timeout = null;
 		this.lastDay = null;
 		this.firstDay = null;
+		this.odd = true;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -229,6 +230,12 @@ return djDeclare("artnum.timeline", [
 	addEntry: function ( widget ) {
 		window.requestAnimationFrame(
 			djLang.hitch(this, function() {
+				if(this.odd) {
+					djDomClass.add(widget.domNode, "odd");
+				} else {
+					djDomClass.add(widget.domNode, "even");
+				}
+				this.odd = !this.odd;
 				this.domEntries.addChild(widget)
 			})
 		);
@@ -246,6 +253,7 @@ return djDeclare("artnum.timeline", [
 			var avWidth = box.w - this.get('offset') - this.get('blockSize');
 			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
 			this.todayOffset = -1;
+			this.weekOffset = -1;
 
 			this.destroyWeekNumber();
 			this.destroyMonthName();
@@ -270,6 +278,7 @@ return djDeclare("artnum.timeline", [
 					if(currentWeek == 0) {
 						currentWeek = day.getWeek();	
 					} else {
+						if(this.weekOffset == -1) { this.weekOffset = i; }
 						this.createWeekNumber(currentWeek, dayCount, hFrag);
 						dayCount = 0;
 						currentWeek = day.getWeek();
@@ -338,7 +347,14 @@ return djDeclare("artnum.timeline", [
 				ctx.fill();
 			} 
 			ctx.beginPath();
-			ctx.strokeStyle="black";	
+			console.log(this.weekOffset);
+			if((i - this.weekOffset) % 7) {
+				ctx.lineWidth = 0.5;
+				ctx.strokeStyle="#008d8d";
+			} else {
+				ctx.lineWidth = 3;
+				ctx.strokeStyle="#003f3f";
+			}
 			ctx.moveTo(posX, box.t);
 			ctx.lineTo(posX, box.h);
 			ctx.stroke();

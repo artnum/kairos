@@ -2,10 +2,12 @@
 <html>
 <head>
 <title>Timeline test</title>
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.12.1/dojo/resources/dojo.css" />
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.12.1/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" href="../css/timeline.css" />
 <link rel="stylesheet" href="../fonts/fontawesome.css" />
 </head>
-<body>
+<body class="claro">
 <div data-dojo-type="artnum/timeline" id="tl"></div>
 
 <script>
@@ -22,6 +24,7 @@ dojoConfig = {
 <script src="/location/js/dllist.js"></script>
 <script src="/location/js/array.js"></script>
 <script src="/location/js/date.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/1.0.0-alpha.1/classic/ckeditor.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.1/dojo/dojo.js" data-dojo-config="locale: 'fr-ch', async: true, parseOnLoad: true, isDebug: true"></script>
 <script>
 
@@ -48,7 +51,7 @@ djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "j
 		tl.addEntry(e);
 		if(machine.airaltref) {
 			machine.airaltref[0].split(',').forEach( function (altref ) {
-				var e = new entry({name: altref, parent: tl, isParent: false, target: altref,
+				var e = new entry({name: altref.trim(), parent: tl, isParent: false, target: altref.trim(),
 					stores : { reservation: stReservation }
 				});
 				tl.addEntry(e);

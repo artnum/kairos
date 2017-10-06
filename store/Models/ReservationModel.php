@@ -3,6 +3,7 @@
 class ReservationModel extends artnum\SQL {
    function __construct($db, $config) {
       parent::__construct($db, 'reservation', 'reservation_id', $config);
+      $this->conf('auto-increment', true);
    }
 
 /*   function listing($options) {
