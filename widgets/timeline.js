@@ -336,7 +336,7 @@ return djDeclare("artnum.timeline", [
 		ctx.lineCap = "round";
 		ctx.globalAlpha = 0.2;
 		for(var i = 0; i <= this.days.width(); i++) {
-			if(this.todayOffset != - 1 && this.todayOffset == i) {
+			if(this.todayOffset != - 1 && this.todayOffset == i - 1) {
 				ctx.fillStyle="#EC0000";
 				ctx.beginPath();
 				ctx.moveTo(posX, box.t);
@@ -347,7 +347,6 @@ return djDeclare("artnum.timeline", [
 				ctx.fill();
 			} 
 			ctx.beginPath();
-			console.log(this.weekOffset);
 			if((i - this.weekOffset) % 7) {
 				ctx.lineWidth = 0.5;
 				ctx.strokeStyle="#008d8d";
@@ -365,8 +364,10 @@ return djDeclare("artnum.timeline", [
 
 	update: function () {
 		var def = new djDeferred();
-		this.drawTimeline();
-		this.emit("update", this.getDateRange());
+		var that = this;
+		this.drawTimeline().then(function () { 
+			that.emit("update", that.getDateRange());
+		});
 		return def;
 	}
 

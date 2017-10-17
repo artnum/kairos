@@ -112,8 +112,6 @@ return djDeclare("artnum.entry", [
 				this.newReservation.o.set('begin', this.newReservation.start);
 				this.newReservation.o.set('end', d);
 			}
-			console.log(d, this.newReservation.o.get('begin'), this.newReservation.o.get('end'), this.newReservation.start, this.dayFromX(event.clientX), event.clientX);
-
 			this.newReservation.o.resize();		
 		}
 	},
@@ -150,12 +148,12 @@ return djDeclare("artnum.entry", [
 
 					djDomClass.remove(this.newReservation.o.domNode, "selected");
 					this.addChild(this.newReservation.o, this.data);
-					this.newReservation = null;
-
-					var f = new rForm();
-					var dialog = new dtDialog({ title: "Reservation", content: f, style: "width: 600px;" });
+					
+					var f = new rForm( {  begin: this.newReservation.o.get('begin'), end: this.newReservation.o.get('end'), reservation: this.newReservation.o, status: this.newReservation.o.get('status')  } );
+					var dialog = new dtDialog({ title: "Reservation " + result.data.id, content: f, style: "width: 600px;" });
 					dialog.show();
 
+					this.newReservation = null;
 					this._stopWait();
 				}
 			}));
@@ -192,12 +190,9 @@ return djDeclare("artnum.entry", [
 	},
 
 	update: function () {
-		if(this.timeout) {
-			window.clearTimeout(this.timeout);
-		}
 		this.childs.forEach(function (c) { c.resize();  });
-
-		this.timeout = window.setTimeout(djLang.hitch(this, this._update), 12);
+		this._update();
+		
 	},
 
 	_update: function () {
@@ -216,7 +211,7 @@ return djDeclare("artnum.entry", [
 		
 		
 			if(this.request && ! this.request.isFulfilled()) { return; }
-			this.request = djXhr.get('/location/store/Reservation', 
+			this.request = djXhr.get(locationConfig.store + '/Reservation', 
 				{ handleAs: "json", method: "GET", query: qParams })
 				.then( djLang.hitch(this, function (result) {
 					if(result.type == 'results' && result.data && result.data.length > 0) {
@@ -245,7 +240,7 @@ return djDeclare("artnum.entry", [
 			method = "PUT";
 		}	
 
-		djXhr("/location/store/Reservation", { method: method, data: query, handleAs: "json"}).then(def.resolve);
+		djXhr(locationConfig.store + "/Reservation", { method: method, data: query, handleAs: "json"}).then(def.resolve);
 		return def;
 	}, 
 
@@ -274,26 +269,24 @@ return djDeclare("artnum.entry", [
 	},
 
 	displayResults: function ( reservations ) {
-		window.requestAnimationFrame(djLang.hitch(this, function () {
-			var frag = document.createDocumentFragment();
-			for(var i = 0; i < reservations.length; i++) {
-				var IDent = reservations[i].id;
-				var begin = djDateStamp.fromISOString(reservations[i].begin);
-				var end = djDateStamp.fromISOString(reservations[i].end);
-				if(end != null && begin != null) {
-					if(this.childs.findIndex(
-						function (e) { 
-							if(e && e.IDent == IDent) { return true; } 
-							return false; 
-						}) == -1) {
-						var r = new reservation({ begin: begin, end: end, myParent: this, IDent: IDent, status: reservations[i].status });
-						this.addChild(r, frag);
-					}
+		var frag = document.createDocumentFragment();
+		for(var i = 0; i < reservations.length; i++) {
+			var IDent = reservations[i].id;
+			var begin = djDateStamp.fromISOString(reservations[i].begin);
+			var end = djDateStamp.fromISOString(reservations[i].end);
+			if(end != null && begin != null) {
+				if(this.childs.findIndex(
+					function (e) { 
+						if(e && e.IDent == IDent) { return true; } 
+						return false; 
+					}) == -1) {
+					var r = new reservation({ begin: begin, end: end, myParent: this, IDent: IDent, status: reservations[i].status });
+					this.addChild(r, frag);
 				}
 			}
-			console.log(this);
-			this.data.appendChild(frag);
-		}));
+		}
+		var d = this.data;
+		window.requestAnimationFrame(function () { d.appendChild(frag); });
 	},
 
 	abortChild: function (child) {

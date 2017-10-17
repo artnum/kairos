@@ -126,17 +126,19 @@ return djDeclare("artnum.reservation", [
 			hourDiff = Math.ceil((this.begin.getHours() + (this.begin.getMinutes() / 10)) / ( 24 / this.get('blockSize')));
  			daySize -= Math.ceil((this.end.getHours() + (this.end.getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
 
-			console.log(daySize);
-			window.requestAnimationFrame(djLang.hitch(this, function() {
-				switch(this.status) {
-					case "1":
-						djDomClass.add(this.tools, "reserved"); break;
-					case "2":
-						djDomClass.add(this.tools, "prereserved"); break;
-				} 
+			var bgcolor = '#FFFFF';
+			var that = this;
+			djXhr.get(locationConfig.store + '/Status/' + this.status, { handleAs: "json" } ).then( function ( results ) {
+				if(results.type=='results') {
+					if(results.data[0] && results.data[0].color) {
+						bgcolor = '#' + results.data[0].color;	
+					}	
+				}	
+				window.requestAnimationFrame(djLang.hitch(this, function() {
+					that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
+				}));
 
-				this.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px'); 
-			}));
+			});
 			
 			def.resolve();
     return def;
