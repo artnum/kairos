@@ -31,9 +31,6 @@ body, html { margin: 0; padding: 0;}
 	background-color: #008d8d;	
 	color: white;
 }
-.timeline .line {
-	border-bottom: 2px solid black;
-}
 .timeline .fixed {
 	position: fixed;
 	z-index: 5;	
@@ -164,8 +161,14 @@ body, html { margin: 0; padding: 0;}
   height: 4px;
   font-size: 0.6em;
 }
+
+.headerContainer {
+	background-color: white;
+	width: 100%;
+	border-bottom: 2px solid black;
+}
 .reservationContainer {
-	padding-top: 88px;	
+	padding-top: 88px !important;	
 }
 .reservation .reserved {
   background-color: #8B0025;
