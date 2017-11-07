@@ -258,9 +258,6 @@ return djDeclare("artnum.entry", [
 		var deferred = new Array();
 
 		if(rectsIntersect(getPageRect(), getElementRect(this.domNode))) {
-		 /*	this.childs.forEach(function (c) { 
-				c.resize();
-			});*/
 		}
 	},
 
@@ -304,33 +301,6 @@ return djDeclare("artnum.entry", [
 			});
 		}, 10);
 
-
-/*			var dRange = this.myParent.getDateRange(), qParams = { 
-					"search.end": ">" + djDateStamp.toISOString(dRange.begin, { selector: 'date'}),  
-					"search.begin": "<" + djDateStamp.toISOString(dRange.end, { selector: 'date'}), 
-					"search.target": this.target
-				};
-		
-		
-			if(this.request && ! this.request.isFulfilled()) { return; }
-			this.request = djXhr.get(locationConfig.store + '/Reservation', 
-				{ handleAs: "json", method: "GET", query: qParams })
-				.then( djLang.hitch(this, function (result) {
-					if(result.type == 'results' && result.data && result.data.length > 0) {
-						this.displayResults(result.data);	
-					}
-					this._stopWait();
-					def.resolve();
-				}), djLang.hitch(this, function (err) {
-					if(! this.request.isCanceled()) {
-						this._stopWait();
-						this._setError();
-						def.resolve();
-					}
-				}));
-				*/
-		
-
 		return def;
 	},
 
@@ -352,7 +322,7 @@ return djDeclare("artnum.entry", [
 	_setParentAttr: function ( parent ) {
 		this.myParent = parent;
 		djOn(parent, "update", djLang.hitch(this, this.update));
-		djOn(parent, "update-" + this.target, djLang.hitch(this, this.displayReservations));
+		djOn(parent, "update-" + this.target, djLang.hitch(this, this.update));
 		djOn(parent, "resize", djLang.hitch(this, this.resize));
 	},
 
@@ -397,16 +367,10 @@ return djDeclare("artnum.entry", [
 				"comment": reservations[i].comment
 				};
 			if(r.end != null && r.begin != null) {
-/*				if(this.childs.findIndex(
-					function (e) { 
-						if(e && e.IDent == r.IDent) { return true; } 
-						return false; 
-					}) == -1) {*/
-					if(dtRegistry.byId(r.id)) {
-						dtRegistry.byId(r.id).destroy();		
-					}
-					this.addChild(new reservation(r), frag);
-				/*}*/
+				if(dtRegistry.byId(r.id)) {
+					dtRegistry.byId(r.id).destroy();		
+				}
+				this.addChild(new reservation(r), frag);
 			}
 		}
 		var d = this.data, that = this;
