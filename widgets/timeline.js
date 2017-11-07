@@ -92,6 +92,22 @@ return djDeclare("artnum.timeline", [
 
 	},
 
+	zoomStyle: function () {
+		var tl = this.timeline;
+		var blockSize = this.blockSize;
+
+		window.requestAnimationFrame(function () {
+			console.log(blockSize);
+			if(blockSize < 30) {
+				djDomAttr.set(tl, "class", "timeline x1");
+			} else if(blockSize < 60) {
+				djDomAttr.set(tl, "class", "timeline x2");
+			} else if(blockSize <= 120) {
+				djDomAttr.set(tl, "class", "timeline x3");
+			}
+		});
+	},
+
 	zoomIn: function () {
 		if(this.blockSize > 14) {
 			this.blockSize = Math.ceil(this.blockSize / 1.3333);
@@ -103,6 +119,7 @@ return djDeclare("artnum.timeline", [
 			}
 			this.zoomCss.innerHTML = css;
 		}
+		this.zoomStyle();
 		this.update();
 	},
 
@@ -113,6 +130,7 @@ return djDeclare("artnum.timeline", [
 			
 			this.zoomCss.innerHTML = css;
 		}
+		this.zoomStyle();
 		this.update();
 	},
 
