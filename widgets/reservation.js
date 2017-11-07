@@ -105,13 +105,13 @@ return djDeclare("artnum.reservation", [
 	  
     var html = '';
 		if(this.IDent == null) {
-			html = "<div>[Nouvelle réservation]";	
+			html = '<div><span class="id">[Nouvelle réservation]</span>';	
 		} else {
-			html = "<div>N° " + this.IDent;	
+			html = '<div><span class="id">' + this.id + '</span>'; 	
 		}
 
     if(this.locality || this.address) {
-      html += " / ";
+      html += " - ";
       if(this.address) {
         html += this.address;
       }
