@@ -20,6 +20,7 @@ define([
 	"dojo/debounce",
 
 	"dijit/Dialog",
+	"dijit/registry",
 
 	"artnum/reservation",
 	"artnum/rForm"
@@ -46,6 +47,7 @@ define([
 	djDebounce,
 
 	dtDialog,
+	dtRegistry,
 
 	reservation,
 	rForm
@@ -67,7 +69,7 @@ return djDeclare("artnum.entry", [
 
 	constructor: function () {
 
-		this.childs = [];
+		this.childs = new Object();
 		this.power = true;
 		this.newReservation= null;
 		this.target = null;
@@ -203,8 +205,6 @@ return djDeclare("artnum.entry", [
 		window.requestAnimationFrame(djLang.hitch(this, function () {
 			if(!this.power) {
 				djDomClass.add(this.domNode, "off");
-				this.childs.forEach(function (c) { c.destroy(); });
-				this.childs = [];
 			} else {
 				djDomClass.remove(this.domNode, "off");
 				this.update();
@@ -224,13 +224,33 @@ return djDeclare("artnum.entry", [
 		return this.myParent.getDateRange();	
 	},
 	addChild: function (child, root) {
-		this.childs.push(child);
 		this.own(child);
-		root.appendChild(child.domNode);
+		if(! this.childs[child.id]) {
+			this.childs[child.id] = child;	
+		}
+		if(root && child && child.domNode) { root.appendChild(child.domNode); }
 	},
 
-	update: function () {
+	_update: function () {
 				//this._update();
+		this._startWait();
+	
+		var dRange = this.myParent.getDateRange();	
+
+		for(var idx in this.childs) {
+			if(this.childs.hasOwnProperty(idx)) {
+				var c = this.childs[idx];
+				if(c && (djDate.compare(c.begin, dRange.end, "date") > 0 || djDate.compare(c.end, dRange.begin, "date") < 0)) {
+					c.destroy();
+					this.childs[idx] = null;
+					delete this.childs[idx];
+				}				
+					
+			}	
+		}		
+
+
+		this._stopWait();
 		
 	},
 
@@ -238,9 +258,9 @@ return djDeclare("artnum.entry", [
 		var deferred = new Array();
 
 		if(rectsIntersect(getPageRect(), getElementRect(this.domNode))) {
-			this.childs.forEach(function (c) { 
+		 /*	this.childs.forEach(function (c) { 
 				c.resize();
-			});
+			});*/
 		}
 	},
 
@@ -248,13 +268,42 @@ return djDeclare("artnum.entry", [
 		this.displayResults(data);
 	},
 
-	_update: function () {
+	update: function () {
 		if(! this.power) { return; }
 		var def = new djDeferred();
-		
 	
-			this._resetError();
-			this._startWait();
+		this._resetError();
+		this._startWait();
+	
+		var w = dtRegistry.findWidgets(this.domNode);
+		w.forEach( function (n) { n.resize(); });	
+
+		var that = this;
+		if(this.to) {
+			window.clearTimeout(this.to);
+			this.to = null;
+		}
+
+		window.setTimeout(function() {
+			var range = that.myParent.getDateRange();
+			var	qParams = { 
+					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
+					"search.begin": "<" + djDateStamp.toISOString(range.end, { selector: 'date'}),
+					"search.target": that.target
+				};
+			
+			var qXhr = djXhr.get(locationConfig.store + '/Reservation',
+			{ handleAs: 'json', query: qParams });
+			qXhr.then(function (r) {
+				this.to = null;
+				if(r.type == 'results')	{
+					that.displayReservations(r.data);
+
+					that._stopWait();
+				}
+			});
+		}, 10);
+
 
 /*			var dRange = this.myParent.getDateRange(), qParams = { 
 					"search.end": ">" + djDateStamp.toISOString(dRange.begin, { selector: 'date'}),  
@@ -296,15 +345,14 @@ return djDeclare("artnum.entry", [
 			suffix = '/' + query.id;
 		}	
 
-		console.log(query);
-
 		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(def.resolve);
 		return def;
 	}, 
 
 	_setParentAttr: function ( parent ) {
 		this.myParent = parent;
-		djOn(parent, "update", djLang.hitch(this, this.xupdate));
+		djOn(parent, "update", djLang.hitch(this, this.update));
+		djOn(parent, "update-" + this.target, djLang.hitch(this, this.displayReservations));
 		djOn(parent, "resize", djLang.hitch(this, this.resize));
 	},
 
@@ -328,44 +376,41 @@ return djDeclare("artnum.entry", [
 	},
 
 	displayResults: function ( r ) {
-		var frag = document.createDocumentFragment();
-		var reservations = null;
 		if(r[this.target]) {
-			reservations = r[this.target];
-		} else  {
-			return;	
+			this.displayReservations(r[this.target]);
 		}
+	},
+	displayReservations: function ( reservations ) {
+		this._startWait();
+		var frag = document.createDocumentFragment();
 		for(var i = 0; i < reservations.length; i++) {
 			var r = { 
 				"myParent": this,
 				"IDent" : reservations[i].id,
+				"id" : reservations[i].id,
 				"begin": djDateStamp.fromISOString(reservations[i].begin),
 				"end" : djDateStamp.fromISOString(reservations[i].end), 
 				"status": reservations[i].status,
 				"contact": reservations[i].contact,
 				"address": reservations[i].address,
-				"locality": reservations[i].locality
+				"locality": reservations[i].locality,
+				"comment": reservations[i].comment
 				};
-
 			if(r.end != null && r.begin != null) {
-				if(this.childs.findIndex(
+/*				if(this.childs.findIndex(
 					function (e) { 
 						if(e && e.IDent == r.IDent) { return true; } 
 						return false; 
-					}) == -1) {
+					}) == -1) {*/
+					if(dtRegistry.byId(r.id)) {
+						dtRegistry.byId(r.id).destroy();		
+					}
 					this.addChild(new reservation(r), frag);
-				}
+				/*}*/
 			}
 		}
-		var d = this.data;
-		window.requestAnimationFrame(function () { d.appendChild(frag); });
-	},
-
-	abortChild: function (child) {
-		var idx = this.childs.findIndex	(function (e) { if(e && e.IDent == child.IDent) { return true; } return false; });
-		this.childs.splice(idx, 1);
+		var d = this.data, that = this;
+		window.requestAnimationFrame(function () { d.appendChild(frag); that._stopWait();  });
 	}
-
-	
 
 });});

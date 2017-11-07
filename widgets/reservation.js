@@ -60,7 +60,7 @@ return djDeclare("artnum.reservation", [
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
-		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
+		if(this.domNode) { djOn(this.domNode, "click", djLang.hitch(this, this.eClick)); }
   },
 
 	_setIDentAttr: function(value) {
@@ -74,8 +74,11 @@ return djDeclare("artnum.reservation", [
   _setLocalityAttr: function(value) {
     this._set('locality', value);
     this.setTextDesc();
-  },                
-     
+  },
+	_setCommentAttr: function(value) {
+		this._set('comment', value);
+		this.setTextDesc();
+	},                
 	_setContactAttr: function(value) {
 		var that = this;
 	  this._set('contact', value);
@@ -142,7 +145,11 @@ return djDeclare("artnum.reservation", [
 			}
     }
 
-    this.txtDesc.innerHTML = html;
+		if(this.comment) {
+			html += '<div>' + this.comment + '</div>';	
+		}
+
+    if(this.txtDesc) { this.txtDesc.innerHTML = html; }
 	},
 
 	eClick: function (event) {
@@ -181,9 +188,9 @@ return djDeclare("artnum.reservation", [
 			var l = this.longerRight;
       if(djDate.compare(this.end, dateRange.end) > 0) {
         daySize -= Math.abs(djDate.difference(this.end, dateRange.end));
-				window.requestAnimationFrame(function () { djDomClass.remove(l, "hidden");});
+				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
       } else {
-				window.requestAnimationFrame(function () { djDomClass.add(l, "hidden");});
+				window.requestAnimationFrame(function () { if(l) { djDomClass.add(l, "hidden"); }});
 			}
 
     	var startDiff = 0;
@@ -191,9 +198,9 @@ return djDeclare("artnum.reservation", [
      	if(djDate.compare(this.begin, dateRange.begin) < 0) {
         startDiff = Math.abs(djDate.difference(this.begin, dateRange.begin));
       	daySize -= startDiff;
-				window.requestAnimationFrame(function () { djDomClass.remove(l, "hidden");});
+				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
      	}  else {
-				window.requestAnimationFrame(function () { djDomClass.add(l, "hidden");});
+				window.requestAnimationFrame(function () { if(l) { djDomClass.add(l, "hidden");}});
 			}
 
 			/* Last day included */
@@ -210,7 +217,10 @@ return djDeclare("artnum.reservation", [
 				bgcolor = '#' + s.color;
 			}
 			window.requestAnimationFrame(djLang.hitch(this, function() {
-				that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
+				/* might be destroyed async */
+				if(that && that.main) {
+					that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
+				}
 			}));
 		
 			def.resolve();

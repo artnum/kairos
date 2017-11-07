@@ -103,8 +103,8 @@ return djDeclare("artnum.timeline", [
 				css += '.timeline .day { font-size: 0.6em !important }';	
 			}
 			this.zoomCss.innerHTML = css;
-			this.update();
 		}
+		this.update();
 	},
 
 	zoomOut: function () {
@@ -113,8 +113,8 @@ return djDeclare("artnum.timeline", [
 			var css = '.timeline .line span { width: '+ (this.blockSize - 2) +'px !important;}';
 			
 			this.zoomCss.innerHTML = css;
-			this.update();
 		}
+		this.update();
 	},
 
 	isBefore: function ( a, b ) {
@@ -138,7 +138,7 @@ return djDeclare("artnum.timeline", [
 	},
 
 	resize: function ( event ) {
-		this.update;
+		this.update();
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -381,7 +381,7 @@ return djDeclare("artnum.timeline", [
 
 		this.drawTimeline().then(function () {
 			that.emit("resize");
-			var	qParams = { 
+			/*var	qParams = { 
 						"search.end": ">" + djDateStamp.toISOString(that.firstDay, { selector: 'date'}),  
 						"search.begin": "<" + djDateStamp.toISOString(that.lastDay, { selector: 'date'})
 					};
@@ -391,17 +391,22 @@ return djDeclare("artnum.timeline", [
 				if(r.type == 'results') {
 					eData = new Object();
 					r.data.forEach(function (e) {
-						if(eData[e.target]) {
+						/*if(eData[e.target]) {
 							eData[e.target].push(e);	
 						} else {
 							eData[e.target] = new Array	(e);
 						}
+
+
+						that.emit("update-" + e.target, new Array(e));
 					});
-
-
-					that.emit("update", eData);
+					/*
+					console.log(eData);
+		
+					that.emit("update", this.getDateRange());
 				}
-			});
+			}); */
+					that.emit("update");
 		});
 		return def;
 	}

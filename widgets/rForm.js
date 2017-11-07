@@ -87,13 +87,11 @@ return djDeclare("artnum.rForm", [
 	},
 
 	_setAddressAttr:function (value) {
-		console.log(value);
 		if(value) {
 			this.nAddress.set('value', value);
 		}
 	},
 	_setLocalityAttr: function (value) {
-		console.log(value);
 		if(value) {
 			this.nLocality.set('value', value);	
 		}
@@ -152,6 +150,7 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('end', end);
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('locality', f.nLocality);
+		this.reservation.set('comment', f.nComment);
 		this.reservation.myParent.store({ o: this.reservation });
 		this.reservation.resize();
 
