@@ -231,29 +231,6 @@ return djDeclare("artnum.entry", [
 		if(root && child && child.domNode) { root.appendChild(child.domNode); }
 	},
 
-	_update: function () {
-				//this._update();
-		this._startWait();
-	
-		var dRange = this.myParent.getDateRange();	
-
-		for(var idx in this.childs) {
-			if(this.childs.hasOwnProperty(idx)) {
-				var c = this.childs[idx];
-				if(c && (djDate.compare(c.begin, dRange.end, "date") > 0 || djDate.compare(c.end, dRange.begin, "date") < 0)) {
-					c.destroy();
-					this.childs[idx] = null;
-					delete this.childs[idx];
-				}				
-					
-			}	
-		}		
-
-
-		this._stopWait();
-		
-	},
-
 	resize: function () {
 		var deferred = new Array();
 
@@ -299,7 +276,7 @@ return djDeclare("artnum.entry", [
 					that._stopWait();
 				}
 			});
-		}, 10);
+		}, 24);
 
 		return def;
 	},
@@ -323,6 +300,7 @@ return djDeclare("artnum.entry", [
 		this.myParent = parent;
 		djOn(parent, "update", djLang.hitch(this, this.update));
 		djOn(parent, "update-" + this.target, djLang.hitch(this, this.update));
+		djOn(parent, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
 		djOn(parent, "resize", djLang.hitch(this, this.resize));
 	},
 

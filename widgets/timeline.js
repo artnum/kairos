@@ -378,6 +378,7 @@ return djDeclare("artnum.timeline", [
 	update: function () {
 		var def = new djDeferred();
 		var that = this;
+		this.emit('cancel-update');
 
 		this.drawTimeline().then(function () {
 			that.emit("resize");
