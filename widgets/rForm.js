@@ -23,8 +23,13 @@ define([
 	"dijit/form/Form",
 	"dijit/form/DateTextBox",
 	"dijit/form/TimeTextBox",
+	"dijit/form/Textarea",
+	"dijit/form/TextBox",
 	"dijit/form/Button",
-	"dijit/form/Select"
+	"dijit/form/Select",
+	"dijit/Dialog",
+
+	"artnum/contacts"
 
 
 ], function(
@@ -52,8 +57,13 @@ define([
 	dtForm,
 	dtDateTextBox,
 	dtTimeTextBox,
+	djTextarea,
+	djTextBox,
 	dtButton,
-	dtSelect
+	dtSelect,
+	dtDialog,
+
+	contacts
 ) {
 
 return djDeclare("artnum.rForm", [
@@ -62,6 +72,9 @@ return djDeclare("artnum.rForm", [
 	templateString: _template,
 	editor: null,
 
+	_setDescriptionAttr: function (value) {
+		this.description = value;
+	},
 	_setBeginAttr: function (value) {
 		this.beginDate.set('value', value.toISOString());
 		this.beginTime.set('value', value.toISOString());
@@ -73,14 +86,26 @@ return djDeclare("artnum.rForm", [
 		this.end = value;
 	},
 
+	_setAddressAttr:function (value) {
+		console.log(value);
+		if(value) {
+			this.nAddress.set('value', value);
+		}
+	},
+	_setLocalityAttr: function (value) {
+		console.log(value);
+		if(value) {
+			this.nLocality.set('value', value);	
+		}
+	},
+
 	postCreate: function () {
 		this.inherited(arguments);
+		var select = this.status;
 		var that = this;
-		ClassicEditor.create(this.textEditor, { config: { height: 300} }).then(editor => {
+		ClassicEditor.create(this.textEditor, { config: { height: 600} }).then(editor => {
 			that.editor = editor;
 		});
-		
-		var select = this.status;
 		djXhr(locationConfig.store + '/Status/', { handleAs: 'json' }).then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
@@ -101,6 +126,18 @@ return djDeclare("artnum.rForm", [
 		
   },
 
+	saveContact: function (id) {
+		console.log(id);	
+		this.reservation.set('contact', id);
+	},
+
+	doAddContact: function (event) {
+		var c = new contacts({ target: this });
+		var dialog = new dtDialog({title: "Ajout contact", style: "width: 600px; height: 600px; background-color: white;", content: c});
+		c.set('dialog', dialog);
+		dialog.show();		
+	},
+
 	doSave: function (event) {
 		console.log(this.editor.getData());
 		var now = new Date();
@@ -113,11 +150,12 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('status', f.status);
 		this.reservation.set('begin', begin);
 		this.reservation.set('end', end);
+		this.reservation.set('address', f.nAddress);
+		this.reservation.set('locality', f.nLocality);
 		this.reservation.myParent.store({ o: this.reservation });
 		this.reservation.resize();
 
-			console.log(results);
-			djXhr.post(locationConfig.store  + '/Comments/', { handleAs: 'json', data: { content: that.editor.getData(), datetime: now.toISOString(), reservation: that.reservation  } });
+			//djXhr.post(locationConfig.store  + '/Comments/', { handleAs: 'json', data: { content: that.editor.getData(), datetime: now.toISOString(), reservation: that.reservation  } });
 	}
 
 });});

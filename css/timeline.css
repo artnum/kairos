@@ -83,8 +83,8 @@ body, html { margin: 0; padding: 0;}
 }
 .entry {
 	padding-left: 5px;
-  height: 2.8em;
-  min-height: 2.8em;
+  height: 52px;
+  min-height: 52px;
 }
 
 .entry .tools .fa {
@@ -96,16 +96,27 @@ body, html { margin: 0; padding: 0;}
 	color: #ffeedd !important;
 }
 
-.entry .fa-exclamation {
-	color: #ddd ;
-	text-shadow: none;
+.lock .fa-lock {
+	text-shadow: 0 0 1px #c50050, 0 0 2px #d51060, 0 0 4px #E52070, 0 0 5px #f53080, 0 0 6px #ff4090 !important;
+	color: #ffeedd !important;
 }
+
+.lock {
+	color: white;
+	background-color: #777 !important;
+}
+
+.mylock .fa-lock {
+	text-shadow: 0 0 1px #9602b6, 0 0 2px #a612c6, 0 0 4px #b622d6, 0 0 5px #c632e6, 0 0 6px #d642f6 !important;
+	color: #fdccff !important;
+}
+
 .refresh .fa-refresh {
 	text-shadow: 0 0 1px #50c500, 0 0 2px #60d510, 0 0 4px #70E520, 0 0 5px #80f530, 0 0 6px #90ff40 !important;
 	color: #ddffee !important;
 }
 
-.entry .fa-refresh {
+.entry .fa-refresh, .entry .fa-lock, .entry .fa-exclamation {
 	color: #ddd ;
 	text-shadow: none;
 }
@@ -114,6 +125,7 @@ body, html { margin: 0; padding: 0;}
 	text-shadow: 0 0 1px #5f70b5, 0 0 2px #4f60a5, 0 0 4px #5f70b5, 0 0 5px #6f80a5, 0 0 6px #7f90a5;
 	color: #ddeeff;
 }
+
 .entry.off .fa-power-off {
 	text-shadow: none !important;
 	color: black !important;
@@ -137,14 +149,19 @@ body, html { margin: 0; padding: 0;}
 
 .entry .reservation{
 	display: inline-block;
-	max-height: 36px;
+	max-height: 48px;
+	height: 48px;
 }
 .entry .details {
   font-size: 1em;
 }
 
+.entry .details p {
+	display: inline;
+}
+
 .entry .tools {
-  height: 0.8em;
+  height: 4px;
   font-size: 0.6em;
 }
 .reservationContainer {
@@ -161,12 +178,12 @@ body, html { margin: 0; padding: 0;}
 
 
 .reservation {
-  border: 1px solid white;
+  border: 1px solid #ddd;
   overflow: hidden;
 }
 
 .entry .details {
-  background-color: #ddd;
+  background-color: white;
 	padding: 0 3px 0 3px;
 }
 .entry .details, .entry .tools {
@@ -190,8 +207,31 @@ body, html { margin: 0; padding: 0;}
 	color: #aaa;
 }
 .reservation .details div {
-	max-height: 28px;
+	height: 42px;	
 	display: inline-block;
 	padding-left: 5px;
 	overflow: hidden;
+}
+
+.reservation .details div div {
+	line-height: 20px;
+	height: 20px;
+	padding: 0;
+	margin: 0;
+	display: block;
+	font-size: 18px;
+	overflow: hidden;
+}
+
+.contact {
+  cursor: pointer;
+  padding: 0.4em 0 0.4em 0;
+}
+
+.contact:hover {
+  background-color: #ddd; 
+}
+
+div.contact > div:first-child {
+  font-weight: bold;
 }

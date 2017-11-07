@@ -19,7 +19,8 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
-	"dojo/debounce"
+	"dojo/debounce",
+	"dojo/request/xhr"
 
 
 ], function(
@@ -42,7 +43,8 @@ define([
 	djDomClass,
 	djDomStyle,
 	djDomGeo,
-	djDebounce
+	djDebounce,
+	djXhr
 
 ) {
 	
@@ -78,6 +80,17 @@ return djDeclare("artnum.timeline", [
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
 		console.log("start timeline");
+
+
+		var sStore = window.sessionStorage;
+		djXhr.get(locationConfig.store + '/Status/', { handleAs: "json"}).then( function (results){
+			if(results && results.type == 'results') {
+				for(var i = 0; i < results.data.length; i++) {
+					sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]));
+				}
+			}
+		});
+
 	},
 
 	zoomIn: function () {
@@ -365,8 +378,30 @@ return djDeclare("artnum.timeline", [
 	update: function () {
 		var def = new djDeferred();
 		var that = this;
-		this.drawTimeline().then(function () { 
-			that.emit("update", that.getDateRange());
+
+		this.drawTimeline().then(function () {
+			that.emit("resize");
+			var	qParams = { 
+						"search.end": ">" + djDateStamp.toISOString(that.firstDay, { selector: 'date'}),  
+						"search.begin": "<" + djDateStamp.toISOString(that.lastDay, { selector: 'date'})
+					};
+			var qXhr = djXhr.get(locationConfig.store + '/Reservation',
+				{ handleAs: 'json', query: qParams })
+			qXhr.then(function (r) {
+				if(r.type == 'results') {
+					eData = new Object();
+					r.data.forEach(function (e) {
+						if(eData[e.target]) {
+							eData[e.target].push(e);	
+						} else {
+							eData[e.target] = new Array	(e);
+						}
+					});
+
+
+					that.emit("update", eData);
+				}
+			});
 		});
 		return def;
 	}

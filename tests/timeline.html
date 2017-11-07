@@ -11,7 +11,37 @@
 <div data-dojo-type="artnum/timeline" id="tl"></div>
 
 <script>
-locationConfig = { store: '/location/store/' };
+function storageAvailable(type) {
+  try {
+    var storage = window[type],
+      x = '__storage_test__';
+    storage.setItem(x, x);
+    storage.removeItem(x);
+    return true;
+  } catch(e) {
+    return e instanceof DOMException && (
+        // everything except Firefox
+        e.code === 22 ||
+        // Firefox
+        e.code === 1014 ||
+        // test name field too, because code might not be present
+        // everything except Firefox
+        e.name === 'QuotaExceededError' ||
+        // Firefox
+        e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
+      // acknowledge QuotaExceededError only if there's something already stored
+      storage.length !== 0;
+  }
+}
+if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
+  document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
+}
+
+
+locationConfig = { 
+	store: '/location/store/', 
+	dlm: '/location/lock.php'
+};
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",
 	parseOnLoad: true,
@@ -25,6 +55,8 @@ dojoConfig = {
 <script src="/location/js/dllist.js"></script>
 <script src="/location/js/array.js"></script>
 <script src="/location/js/date.js"></script>
+<script src="/location/js/view.js"></script>
+<script src="/location/js/ldap.js"></script>
 <script src="https://cdn.ckeditor.com/ckeditor5/1.0.0-alpha.1/classic/ckeditor.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.1/dojo/dojo.js" data-dojo-config="locale: 'fr-ch', async: true, parseOnLoad: true, isDebug: true"></script>
 <script>

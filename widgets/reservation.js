@@ -17,8 +17,11 @@ define([
 	"dojo/on",
   "dojo/dom-style",
 	"dojo/dom-class",
-	"dojo/request/xhr"
+	"dojo/request/xhr",
 
+	"dijit/Dialog",
+
+	"artnum/rForm"
 
 ], function(
 	djDeclare,
@@ -40,7 +43,11 @@ define([
   djDomStyle,
 	djDomClass,
 
-	djXhr
+	djXhr,
+
+	dtDialog,
+
+	rForm
 
 ) {
 
@@ -60,21 +67,91 @@ return djDeclare("artnum.reservation", [
 		this.IDent = value;
 		this.setTextDesc();
 	},
+  _setAddressAttr: function(value) {
+    this._set('address', value);
+		this.setTextDesc();
+	},
+  _setLocalityAttr: function(value) {
+    this._set('locality', value);
+    this.setTextDesc();
+  },                
+     
+	_setContactAttr: function(value) {
+		var that = this;
+	  this._set('contact', value);
+    this.lookupContact(value).then( function () {
+      that.setTextDesc(); 
+    });
+  },
+
+  lookupContact: function(id) {
+    var def = new djDeferred();
+    var that = this;
+		if(id) {
+    	djXhr.get(locationConfig.store + '/' + id, {handleAs: "json"}).then(function (result) {
+				if(result && result.type == 'results') {
+			  	that._set('dbContact', result.data[0]);
+        	def.resolve();
+				}
+			});
+		}
+    return def;
+  },
 
 	setTextDesc: function () {
-		if(this.description) {
-			this.txtDesc.innerHTML = this.description;
+	  
+    var html = '';
+		if(this.IDent == null) {
+			html = "<div>[Nouvelle réservation]";	
 		} else {
-			if(this.IDent == null) {
-				this.txtDesc.innerHTML = "[Nouvelle réservation]";	
-			} else {
-				this.txtDesc.innerHTML = "N° " + this.IDent;	
+			html = "<div>N° " + this.IDent;	
+		}
+
+    if(this.locality || this.address) {
+      html += " / ";
+      if(this.address) {
+        html += this.address;
+      }
+      if(this.locality) {
+        if(this.address) { html += ", " }
+        html += this.locality;
+      }
+    }
+    html += '</div>'
+
+    if(this.dbContact) {
+			var x = '';
+      if(this.dbContact.o) {
+        x += '<span class="o">' + this.dbContact.o + '</span>';
+      }
+
+      if(this.dbContact.givenname || this.dbContact.sn) {
+        if(this.dbContact.o) { x += ', '; }
+				var n = '';
+				if(this.dbContact.givenname) {
+					n += this.dbContact.givenname;
+				}
+				if(this.dbContact.sn) {
+					if(this.dbContact.givenname) { n += ' '; }
+					n += this.dbContact.sn;
+				}
+        x += '<span class="name">' + n + '</span>';
+      }
+			if(x != '') {
+				html += '<div>' + x + '</div>';
 			}
-		}		
+    }
+
+    this.txtDesc.innerHTML = html;
 	},
 
 	eClick: function (event) {
-		event.stopPropagation();	
+		event.stopPropagation();
+	
+		var f = new rForm( {  begin: this.get('begin'), end: this.get('end'), reservation: this, status: this.get('status'), address: this.get('address'), locality: this.get('locality')  } );
+		var dialog = new dtDialog({ title: "Reservation ", style: "width: 600px;", content: f });
+		dialog.show();
+	
 	},
 	_getOffsetAttr: function() {
 		return this.myParent.get('offset');	
@@ -128,18 +205,14 @@ return djDeclare("artnum.reservation", [
 
 			var bgcolor = '#FFFFF';
 			var that = this;
-			djXhr.get(locationConfig.store + '/Status/' + this.status, { handleAs: "json" } ).then( function ( results ) {
-				if(results.type=='results') {
-					if(results.data[0] && results.data[0].color) {
-						bgcolor = '#' + results.data[0].color;	
-					}	
-				}	
-				window.requestAnimationFrame(djLang.hitch(this, function() {
-					that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
-				}));
-
-			});
-			
+			var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
+			if(s && s.color) {
+				bgcolor = '#' + s.color;
+			}
+			window.requestAnimationFrame(djLang.hitch(this, function() {
+				that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
+			}));
+		
 			def.resolve();
     return def;
   }
