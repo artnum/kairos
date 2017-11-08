@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css?family=Pragati+Narrow');
+ @import url('https://fonts.googleapis.com/css?family=Questrial');
 
 body, html { margin: 0; padding: 0;}
 
 .timeline {
-	font-family: 'Pragati Narrow', sans-serif;
+	font-family: 'Questrial', sans-serif;
 	font-size: 16px !important;
 }
 
