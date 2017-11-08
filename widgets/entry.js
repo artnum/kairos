@@ -83,11 +83,6 @@ return djDeclare("artnum.entry", [
 	postCreate: function () {
 		this.inherited(arguments);
 		
-		
-		if(this.isParent) {
-			djDomClass.remove(this.extend, "invisible");
-		}
-
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 	},
@@ -250,7 +245,8 @@ return djDeclare("artnum.entry", [
 		this._startWait();
 	
 		var w = dtRegistry.findWidgets(this.domNode);
-		w.forEach( function (n) { n.resize(); });	
+		w.forEach( function (n) { n.resize(); } );
+
 
 		var that = this;
 		if(this.to) {
@@ -258,7 +254,7 @@ return djDeclare("artnum.entry", [
 			this.to = null;
 		}
 
-		window.setTimeout(function() {
+		this.to = window.setTimeout(function() {
 			var range = that.myParent.getDateRange();
 			var	qParams = { 
 					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
