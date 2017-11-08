@@ -51,7 +51,7 @@ return djDeclare("artnum.timeline", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 
 	center: new Date(),
-	offset: 138,
+	offset: 180,
 	blockSize: 42,
 	baseClass: "timeline",
 	templateString: _template,

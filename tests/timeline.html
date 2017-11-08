@@ -78,7 +78,11 @@ var stReservation = dsRest({target: "/location/store/Reservation"});
 djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "json", method: "GET"}).then(function ( response ) { 
 	var tl = dtRegistry.byId('tl');
 	response.forEach( function ( machine ) {
-		var e = new entry({name: machine.description, parent: tl, isParent: true, target: machine.description,
+		var name =  machine.description;
+		if(machine.cn && machine.cn.length > 0) {
+			name += '<br /><span class="name">' + machine.cn[0] + '</span>'; 	
+		}
+		var e = new entry({name: name, parent: tl, isParent: true, target: machine.description,
 			stores : { reservation: stReservation }
 		});
 		tl.addEntry(e);
