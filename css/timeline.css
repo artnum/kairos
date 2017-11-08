@@ -8,7 +8,7 @@ body, html { margin: 0; padding: 0;}
 }
 
 .timeline .header .tools {
-	width: 180px;	
+	width: 220px;	
 }
 
 .timeline .header div {
@@ -44,7 +44,7 @@ body, html { margin: 0; padding: 0;}
 }
 
 .timeline .left {
-	margin-left: 162px;	
+	margin-left: 202px;	
 }
 
 .day.weekend {
@@ -100,7 +100,7 @@ body, html { margin: 0; padding: 0;}
 
 .x1 .reservation .details div div {
 	line-height: 10px;
-	height: 10px;
+	2height: 10px;
 	font-size: 14px;
 }
 
@@ -109,14 +109,16 @@ body, html { margin: 0; padding: 0;}
 }
 
 .control .name {
-	width: 176px;
-	display: inline-block;
+	max-height: 14px;
+	width: 210px;
+	display: block;
 	overflow: hidden;
-	font-size: 0.8em;	
+	font-size: 12px;
+	
 }
 
 .control .fa {
-	font-size: 0.6em;	
+	font-size: 12px;
 }
 
 .entry, .x2 .entry {
@@ -154,6 +156,14 @@ body, html { margin: 0; padding: 0;}
 
 .x3 .entry .reservation div {
 	height: 72px;	
+}
+
+.x3 .control .name {
+	font-size: 14px;
+}
+
+.x3 .control .fa {
+	font-size: 12px;
 }
 
 .entry .tools .fa {

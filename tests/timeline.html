@@ -80,7 +80,7 @@ djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "j
 	response.forEach( function ( machine ) {
 		var name =  machine.description;
 		if(machine.cn && machine.cn.length > 0) {
-			name += '<br /><span class="name">' + machine.cn[0] + '</span>'; 	
+			name += '<div class="name">' + machine.cn[0] + '</div>'; 	
 		}
 		var e = new entry({name: name, parent: tl, isParent: true, target: machine.description,
 			stores : { reservation: stReservation }
