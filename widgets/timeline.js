@@ -411,7 +411,7 @@ return djDeclare("artnum.timeline", [
 			});
 		
 			lateUpdate.forEach(function ( target ) {
-				that.emit("update-" + target);
+				window.setTimeout(that.emit("update-" + target), 15);
 			});
 			
 		});
