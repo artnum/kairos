@@ -151,7 +151,7 @@ return djDeclare("artnum.entry", [
 	eClick: function(event) {
 		var d = this.dayFromX(event.clientX);
 		if(event.clientX <= this.get("offset")) { return; }
-		if( ! this.newReservation) {
+		if( ! this.newReservation && event.ctrlKey) {
 			this.lock().then(djLang.hitch(this, function( locked ) {
 				if(locked) {
 					d.setHours(8,0,0,0);
@@ -166,7 +166,7 @@ return djDeclare("artnum.entry", [
 					this.data.appendChild(this.newReservation.o.domNode);
 				}
 			}));
-		} else {
+		} else if(this.newReservation) {
 			this._startWait();
 			if(djDate.compare(d, this.newReservation.start) < 0) {
 				d.setHours(8,0,0,0);
