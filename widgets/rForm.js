@@ -29,7 +29,8 @@ define([
 	"dijit/form/Select",
 	"dijit/Dialog",
 
-	"artnum/contacts"
+	"artnum/contacts",
+	"artnum/_Cluster"
 
 
 ], function(
@@ -63,14 +64,14 @@ define([
 	dtSelect,
 	dtDialog,
 
-	contacts
+	contacts,
+	_Cluster
 ) {
 
 return djDeclare("artnum.rForm", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 	baseClass: "rForm",
 	templateString: _template,
-	editor: null,
 
 	_setDescriptionAttr: function (value) {
 		this.description = value;
@@ -101,9 +102,6 @@ return djDeclare("artnum.rForm", [
 		this.inherited(arguments);
 		var select = this.status;
 		var that = this;
-		ClassicEditor.create(this.textEditor, { config: { height: 600} }).then(editor => {
-			that.editor = editor;
-		});
 		djXhr(locationConfig.store + '/Status/', { handleAs: 'json' }).then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
@@ -136,8 +134,17 @@ return djDeclare("artnum.rForm", [
 		dialog.show();		
 	},
 
+	doDelete: function (event) {
+		if(confirm('Vraiment supprimer la réservation ' + this.reservation.get('IDent'))) {
+			var myParent = this.myParent;
+
+			djXhr(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { handleAs: "json", method: "delete" }).then(function() {
+				myParent.update();
+			});
+		}
+	},
+
 	doSave: function (event) {
-		console.log(this.editor.getData());
 		var now = new Date();
 
 		let f = djDomForm.toObject(this.domNode);
