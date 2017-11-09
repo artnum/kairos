@@ -154,7 +154,7 @@ return djDeclare("artnum.reservation", [
 
 	eClick: function (event) {
 		event.stopPropagation();
-	
+
 		var f = new rForm( {  begin: this.get('begin'), end: this.get('end'), reservation: this, status: this.get('status'), address: this.get('address'), locality: this.get('locality')  } );
 		var dialog = new dtDialog({ title: "Reservation ", style: "width: 600px;", content: f });
 		dialog.show();

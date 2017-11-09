@@ -253,8 +253,13 @@ return djDeclare("artnum.timeline", [
 				event.preventDefault(); 
 				this.zoomIn();
 				break;
+			case 'Escape':
+				event.preventDefault();
+				this.emit('cancel-reservation');
+				break;
 		}
   },
+	
 	getDateRange: function () {
 		return { begin: this.firstDay, end: this.lastDay }
 

@@ -85,6 +85,21 @@ return djDeclare("artnum.entry", [
 		
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
+		djOn(this.myParent, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+	},
+
+	cancelReservation: function() {
+		if(this.newReservation) {
+			var that = this;
+			this.unlock().then(function() {
+				var r = that.newReservation.o;
+				that.newReservation = null;
+				window.requestAnimationFrame( function (){
+					r.domNode.parentNode.removeChild(r.domNode);
+					r.destroy();
+				});
+			});
+		}
 	},
 
 	_getOffsetAttr: function () {
@@ -121,9 +136,12 @@ return djDeclare("artnum.entry", [
 	
 	unlock: function() {
 		var that = this;
+		var def = new djDeferred();
 		djXhr.get(locationConfig.dlm,  { query: { unlock: this.target }}).then(function () {
-			window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "mylock"); });	
+			window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "mylock"); def.resolve();});	
 		});
+
+		return def;
 	},
 
 	dayFromX: function (x) {
@@ -149,6 +167,7 @@ return djDeclare("artnum.entry", [
 	},
 
 	eClick: function(event) {
+		console.log(event);
 		var d = this.dayFromX(event.clientX);
 		if(event.clientX <= this.get("offset")) { return; }
 		if( ! this.newReservation && event.ctrlKey) {
