@@ -20,7 +20,9 @@ define([
 	"dojo/dom-style",
 	"dojo/dom-geometry",
 	"dojo/throttle",
-	"dojo/request/xhr"
+	"dojo/request/xhr",
+
+	"artnum/_Cluster"
 
 ], function(
 	djDeclare,
@@ -43,12 +45,14 @@ define([
 	djDomStyle,
 	djDomGeo,
 	djThrottle,
-	djXhr
+	djXhr,
+
+	_Cluster
 
 ) {
 	
 return djDeclare("artnum.timeline", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 
 	center: new Date(),
 	offset: 220,

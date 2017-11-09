@@ -39,6 +39,7 @@ if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
 
 
 locationConfig = { 
+	servers : [ 'https://airserve01.local.airnace.ch', 'https://airserve00.local.airnace.ch' ],
 	store: '/location/store/', 
 	dlm: '/location/lock.php'
 };
@@ -77,6 +78,7 @@ var stReservation = dsRest({target: "/location/store/Reservation"});
 
 djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "json", method: "GET"}).then(function ( response ) { 
 	var tl = dtRegistry.byId('tl');
+	tl.setServers(locationConfig.servers);
 	response.forEach( function ( machine ) {
 		var name =  machine.description;
 		if(machine.cn && machine.cn.length > 0) {
@@ -85,12 +87,15 @@ djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "j
 		var e = new entry({name: name, parent: tl, isParent: true, target: machine.description,
 			stores : { reservation: stReservation }
 		});
+		e.setServers(locationConfig.servers);
 		tl.addEntry(e);
 		if(machine.airaltref) {
 			machine.airaltref[0].split(',').forEach( function (altref ) {
 				var e = new entry({name: altref.trim(), parent: tl, isParent: false, target: altref.trim(),
 					stores : { reservation: stReservation }
 				});
+				
+				e.setServers(locationConfig.servers);
 				tl.addEntry(e);
 			});
 		}

@@ -23,7 +23,8 @@ define([
 	"dijit/registry",
 
 	"artnum/reservation",
-	"artnum/rForm"
+	"artnum/rForm",
+	"artnum/_Cluster"
 
 
 ], function(
@@ -50,12 +51,14 @@ define([
 	dtRegistry,
 
 	reservation,
-	rForm
+	rForm,
+
+	_Cluster
 
 ) {
 
 return djDeclare("artnum.entry", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 	
 	baseClass: "entry",
 	templateString: _template,
@@ -67,8 +70,7 @@ return djDeclare("artnum.entry", [
 	newReservation: null,
 	power: true,
 
-	constructor: function () {
-
+	constructor: function (args) {
 		this.childs = new Object();
 		this.power = true;
 		this.newReservation= null;
@@ -77,8 +79,6 @@ return djDeclare("artnum.entry", [
 		this.myParent = null;
 		this.stores = {};
 		this.runUpdate = 0;
-		
-		this.inherited(arguments);
 	},
 
 	postCreate: function () {
@@ -88,6 +88,7 @@ return djDeclare("artnum.entry", [
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.myParent, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		this.verifyLock();
+		console.log(this);
 	},
 
 	cancelReservation: function() {
@@ -273,9 +274,9 @@ return djDeclare("artnum.entry", [
 					"search.begin": "<" + djDateStamp.toISOString(range.end, { selector: 'date'}),
 					"search.target": this.target
 				};
-			
+		
 			this.runUpdate = Date.now();
-			var qXhr = djXhr.get(locationConfig.store + '/Reservation',
+			var qXhr = djXhr.get(this.getUrl(locationConfig.store + '/Reservation'),
 			{ handleAs: 'json', query: qParams });
 			var that = this;
 			qXhr.then(function (r) {
