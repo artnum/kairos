@@ -86,6 +86,7 @@ return djDeclare("artnum.entry", [
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.myParent, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+		this.verifyLock();
 	},
 
 	cancelReservation: function() {
@@ -127,8 +128,12 @@ return djDeclare("artnum.entry", [
 		var that = this;
 		djXhr.get(locationConfig.dlm, { query : { "status": that.target}}).then( function ( r ) {
 			if(r == '0') {
-				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });	
+				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });
+				that.update();
+				that.locked = false;
 			} else {
+				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
+				that.locked = true;
 				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 			}
 		});
@@ -274,6 +279,10 @@ return djDeclare("artnum.entry", [
 		}
 
 		this.to = window.setTimeout(function() {
+			if(that.locked) {
+				that._stopWait();
+				return;	
+			}
 			var range = that.myParent.getDateRange();
 			var	qParams = { 
 					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
