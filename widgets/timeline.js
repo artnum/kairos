@@ -19,7 +19,7 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
-	"dojo/debounce",
+	"dojo/throttle",
 	"dojo/request/xhr"
 
 ], function(
@@ -42,7 +42,7 @@ define([
 	djDomClass,
 	djDomStyle,
 	djDomGeo,
-	djDebounce,
+	djThrottle,
 	djXhr
 
 ) {
@@ -75,6 +75,7 @@ return djDeclare("artnum.timeline", [
 		this.lastDay = null;
 		this.firstDay = null;
 		this.odd = true;
+		this.lockCanvas = false;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -235,6 +236,8 @@ return djDeclare("artnum.timeline", [
 				this.zoomIn();	
 			}		
 		}
+
+		this.wheelTo = null;
 	},
 
   eKeyEvent: function (event) {
@@ -356,8 +359,13 @@ return djDeclare("artnum.timeline", [
 			this.line.appendChild(docFrag);
 			this.header.appendChild(hFrag);
 			this.supHeader.appendChild(shFrag);
-
-			this.drawCanvas(months, weeks);
+console.trace();
+			if(! this.lockCanvas) {
+				var that = this;
+				this.lockCanvas = true;
+				this.drawCanvas(months, weeks);
+				window.setTimeout(function() { that.lockCanvas = false; }, 500);
+			}
 			def.resolve();
 		}));
 		return def;
@@ -411,8 +419,6 @@ return djDeclare("artnum.timeline", [
 		this.emit('cancel-update');
 
 		this.drawTimeline().then(function () {
-			that.emit("resize");
-		
 			var lateUpdate = new Array();	
 			that.entries.forEach( function ( entry ) {
 				if(rectsIntersect(getPageRect(), getElementRect(entry.domNode))) {

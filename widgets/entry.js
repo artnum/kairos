@@ -17,7 +17,7 @@ define([
 	"dojo/on",
 	"dojo/dom-class",
 	"dojo/request/xhr",
-	"dojo/debounce",
+	"dojo/throttle",
 
 	"dijit/Dialog",
 	"dijit/registry",
@@ -44,7 +44,7 @@ define([
 	djOn,
 	djDomClass,
 	djXhr,
-	djDebounce,
+	djThrottle,
 
 	dtDialog,
 	dtRegistry,
@@ -76,6 +76,7 @@ return djDeclare("artnum.entry", [
 		this.isParent = false;
 		this.myParent = null;
 		this.stores = {};
+		this.runUpdate = 0;
 		
 		this.inherited(arguments);
 	},
@@ -250,57 +251,40 @@ return djDeclare("artnum.entry", [
 		if(root && child && child.domNode) { root.appendChild(child.domNode); }
 	},
 
-	resize: function () {
-		var deferred = new Array();
-
-		if(rectsIntersect(getPageRect(), getElementRect(this.domNode))) {
-		}
-	},
-
-	xupdate: function (data) {
-		this.displayResults(data);
-	},
-
 	update: function () {
 		if(! this.power) { return; }
 		var def = new djDeferred();
 	
-		this._resetError();
-		this._startWait();
-	
 		var w = dtRegistry.findWidgets(this.domNode);
 		w.forEach( function (n) { n.resize(); } );
 
+		this._resetError();
+		this._startWait();
 
-		var that = this;
-		if(this.to) {
-			window.clearTimeout(this.to);
-			this.to = null;
-		}
-
-		this.to = window.setTimeout(function() {
-			if(that.locked) {
-				that._stopWait();
+			if(this.locked || this.runUpdate) {
+				this._stopWait();
 				return;	
 			}
-			var range = that.myParent.getDateRange();
+
+			this.runUpdate = true;
+			var range = this.myParent.getDateRange();
 			var	qParams = { 
 					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
 					"search.begin": "<" + djDateStamp.toISOString(range.end, { selector: 'date'}),
-					"search.target": that.target
+					"search.target": this.target
 				};
 			
+			this.runUpdate = Date.now();
 			var qXhr = djXhr.get(locationConfig.store + '/Reservation',
 			{ handleAs: 'json', query: qParams });
+			var that = this;
 			qXhr.then(function (r) {
 				this.to = null;
 				if(r.type == 'results')	{
 					that.displayReservations(r.data);
-
-					that._stopWait();
+					window.setTimeout(function() { that.runUpdate = false; that._stopWait(); def.resolve(); }, 500);
 				}
 			});
-		}, 24);
 
 		return def;
 	},
@@ -325,7 +309,6 @@ return djDeclare("artnum.entry", [
 		djOn(parent, "update", djLang.hitch(this, this.update));
 		djOn(parent, "update-" + this.target, djLang.hitch(this, this.update));
 		djOn(parent, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
-		djOn(parent, "resize", djLang.hitch(this, this.resize));
 	},
 
 	_startWait: function() {
