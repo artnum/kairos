@@ -224,7 +224,16 @@ return djDeclare("artnum.timeline", [
 		if(event.deltaX < 0) {
 			this.moveLeft();
 		} else if(event.deltaX > 0) { 
-			this.moveRighti();
+			this.moveRight();
+		}
+
+		if(event.ctrlKey) {
+			event.preventDefault();
+			if(event.deltaY < 0) {
+				this.zoomOut();	
+			} else if(event.deltaY > 0) {
+				this.zoomIn();	
+			}		
 		}
 	},
 
@@ -244,14 +253,12 @@ return djDeclare("artnum.timeline", [
 				event.preventDefault(); 
 				this.zoomIn();
 				break;
-
 		}
   },
 	getDateRange: function () {
 		return { begin: this.firstDay, end: this.lastDay }
 
 	},
-
 	moveRight: function () {
 		this.center = djDate.add(this.center, "day", Math.floor(this.days.width() / 7));
 		this.update();
