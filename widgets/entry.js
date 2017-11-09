@@ -206,14 +206,13 @@ return djDeclare("artnum.entry", [
 					this.unlock();
 				} else {
 					this.newReservation.o.set('IDent', result.data.id);	
+					this.newReservation.o.set('id', result.data.id);	
 					this.newReservation.o.resize();
 
 					djDomClass.remove(this.newReservation.o.domNode, "selected");
 					this.addChild(this.newReservation.o, this.data);
 					
-					var f = new rForm( {  begin: this.newReservation.o.get('begin'), end: this.newReservation.o.get('end'), reservation: this.newReservation.o, status: this.newReservation.o.get('status')  } );
-					var dialog = new dtDialog({ title: "Reservation " + result.data.id, content: f, style: "width: 600px; background-color: white;" });
-					dialog.show();
+					this.newReservation.o.popMeUp();
 
 					this.newReservation = null;
 					this._stopWait();

@@ -20,6 +20,7 @@ define([
 	"dojo/request/xhr",
 
 	"dijit/Dialog",
+	"dijit/registry",
 
 	"artnum/rForm"
 
@@ -46,6 +47,7 @@ define([
 	djXhr,
 
 	dtDialog,
+	dtRegistry,
 
 	rForm
 
@@ -65,6 +67,7 @@ return djDeclare("artnum.reservation", [
 
 	_setIDentAttr: function(value) {
 		this.IDent = value;
+		this.id = value;
 		this.setTextDesc();
 	},
   _setAddressAttr: function(value) {
@@ -107,7 +110,7 @@ return djDeclare("artnum.reservation", [
 		if(this.IDent == null) {
 			html = '<div><span class="id">[Nouvelle réservation]</span>';	
 		} else {
-			html = '<div><span class="id">' + this.id + '</span>'; 	
+			html = '<div><span class="id">' + this.IDent + '</span>'; 	
 		}
 
     if(this.locality || this.address) {
@@ -154,12 +157,28 @@ return djDeclare("artnum.reservation", [
 
 	eClick: function (event) {
 		event.stopPropagation();
-
-		var f = new rForm( {  begin: this.get('begin'), end: this.get('end'), reservation: this, status: this.get('status'), address: this.get('address'), locality: this.get('locality')  } );
-		var dialog = new dtDialog({ title: "Reservation ", style: "width: 600px;", content: f });
-		dialog.show();
+		this.popMeUp();
 	
 	},
+
+	popMeUp: function() {
+		if(this.IDent == null) { return; }
+		var d = dtRegistry.byId('DIA_RES_' + this.IDent);
+		if(d) {
+			d.destroy();	
+		}
+			var f = new rForm( {  
+				begin: this.get('begin'), 
+				end: this.get('end'), 
+				reservation: this, status: this.get('status'), 
+				address: this.get('address'), 
+				locality: this.get('locality'),
+				comment: this.get('comment')  } );
+			var dialog = new dtDialog({ title: "Reservation " +  this.IDent, style: "width: 600px; background-color: white;", content: f,
+				id: 'DIA_RES_' + this.IDent });
+			dialog.show();
+	},
+
 	_getOffsetAttr: function() {
 		return this.myParent.get('offset');	
 	},
