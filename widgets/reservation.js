@@ -90,6 +90,32 @@ return djDeclare("artnum.reservation", [
     });
   },
 
+	_setStartAttr: function(value) {
+		if(value == this.get('stop')) { value -= this.get('blockSize'); }
+		this._set('start', value);
+		this._set('begin', this.timeFromX(value));
+	},
+	_setBeginAttr: function(value) {
+		if(djDate.compare(this.get('dateRange').begin, value) > 0) {
+			value = this.get('dateRange').begin;
+		}
+		this._set('begin', value);
+		this._set('start', this.xFromTime(value));	
+	},
+
+	_setStopAttr: function(value) {
+		if(value == this.get('start')) { value += this.get('blockSize'); }
+		this._set('stop', value);
+		this._set('end', this.timeFromX(value));
+	},
+	_setEndAttr: function(value) {
+		if(djDate.compare(this.get('dateRange').end, value) < 0) {
+			value = this.get('dateRange').end;
+		}
+		this._set('end', value);
+		this._set('stop', this.xFromTime(value));	
+	},
+
   lookupContact: function(id) {
     var def = new djDeferred();
     var that = this;
@@ -186,23 +212,41 @@ return djDeclare("artnum.reservation", [
 	_getBlockSizeAttr: function() {
 		return this.myParent.get('blockSize');	
 	},
-  suicide: function () {
-    var p = this.myParent;
-    this.events = [];
-    this.myParent = null;
-    window.requestAnimationFrame(djLang.hitch(this, function () { 
-			this.destroyRecursive(false);
-		}));
-  },
+	_getDateRangeAttr: function() {
+		return this.myParent.get('dateRange');
+	},
+
+	timeFromX: function (x) {
+		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
+		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
+		return djDate.add(this.get('dateRange').begin, "hour", hoursToX);
+	},
+
+	xFromTime: function (x) {
+		var diff = djDate.difference(this.get('dateRange').begin, x, "hour");
+		return (diff * this.get('blockSize') / 24) + this.get('offset');
+	},
+	
   resize: function() {
     var def = new djDeferred();
+		var that = this;
 			if( ! this.myParent) { def.resolve(); return; }
+			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
+     
+		 	 
+			/* Verify  if we keep this ourself */
+      if(djDate.compare(this.begin,this.myParent.get('dateRange').end, "date") > 0 || 
+      		djDate.compare(this.end, this.myParent.get('dateRange').begin, "date") < 0 ||
+					this.deleted) { 
+				window.requestAnimationFrame(function () { that.destroy(); });
+				def.resolve();
+				return; 
+			}
+
+			/* Size calculation */
+			var dateRange = this.myParent.get('dateRange');
       var currentWidth = this.myParent.get('blockSize');
-      var dateRange = this.myParent.get('dateRange');
-   
-      if(djDate.compare(this.begin, dateRange.end, "date") > 0) { this.destroyRecursive(false); return; }
-      if(djDate.compare(this.end, dateRange.begin, "date") < 0) { this.destroyRecursive(false); return; }
-			if(this.deleted) { this.destroy(); return; }
+
 
       var daySize = Math.abs(djDate.difference(this.begin, this.end));
 			if(daySize == 0) { daySize = 1; }
@@ -240,7 +284,7 @@ return djDeclare("artnum.reservation", [
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
 				if(that && that.main) {
-					that.main.setAttribute('style', 'width: ' + daySize + 'px; position: absolute; left: ' + (leftSize+hourDiff) + 'px; background-color: ' + bgcolor + ';'); 
+					that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px; background-color: ' + bgcolor + ';'); 
 				}
 			}));
 		

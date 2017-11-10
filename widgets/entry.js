@@ -157,6 +157,18 @@ return djDeclare("artnum.entry", [
 	},
 	eMouseMove: function(event) {
 		if(this.newReservation) {
+			console.log(event.clientX, this.newReservation.o.get('start'));
+			if(this.newReservation.o.get('start') > event.clientX) {
+				this.newReservation.o.set('start', event.clientX);
+				this.newReservation.o.set('stop', this.get('clickPoint'));
+			} else {
+				this.newReservation.o.set('stop', event.clientX);
+				this.newReservation.o.set('start', this.get('clickPoint'));
+			}
+
+			this.newReservation.o.resize();
+/*
+
 			var d = this.dayFromX(event.clientX);
 			if(djDate.compare(this.dayFromX(event.clientX), this.newReservation.start, "date") <= 0) {
 				d.setHours(8, 0, 0, 0);
@@ -168,7 +180,7 @@ return djDeclare("artnum.entry", [
 				this.newReservation.start.setHours(8,0,0,0);
 				this.newReservation.o.set('begin', this.newReservation.start);
 				this.newReservation.o.set('end', d);
-			}
+			} */
 			this.newReservation.o.resize();		
 		}
 	},
@@ -184,7 +196,11 @@ return djDeclare("artnum.entry", [
 					this.newReservation = {start :  new Date() };
 					this.newReservation.start.setTime(d.getTime());
 					d.setHours(17,0,0,0);
-					this.newReservation.o = new reservation({ begin: this.newReservation.start, end: d, myParent: this, IDent: null, status: "2" });
+					this.newReservation.o = new reservation({  myParent: this, IDent: null, status: "2" });
+					this.set('clickPoint', event.clientX);
+					this.newReservation.o.set('start', event.clientX);
+					this.newReservation.o.set('stop', event.clientX + this.get('blockSize'));
+
 					djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
 					djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 					this.own(this.newReservation);
