@@ -252,6 +252,11 @@ return djDeclare("artnum.entry", [
 	},
 
 	update: function () {
+
+		var force = false;
+		if(arguments[0]) {
+			force = true;
+		}
 		if(! this.power) { return; }
 		var def = new djDeferred();
 	
@@ -261,7 +266,7 @@ return djDeclare("artnum.entry", [
 		this._resetError();
 		this._startWait();
 
-			if(this.locked || this.runUpdate) {
+			if(!force && (this.locked || this.runUpdate)) {
 				this._stopWait();
 				return;	
 			}

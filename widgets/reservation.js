@@ -176,6 +176,7 @@ return djDeclare("artnum.reservation", [
 				comment: this.get('comment')  } );
 			var dialog = new dtDialog({ title: "Reservation " +  this.IDent, style: "width: 600px; background-color: white;", content: f,
 				id: 'DIA_RES_' + this.IDent });
+			f.set('dialog', dialog);
 			dialog.show();
 	},
 
@@ -201,6 +202,7 @@ return djDeclare("artnum.reservation", [
    
       if(djDate.compare(this.begin, dateRange.end, "date") > 0) { this.destroyRecursive(false); return; }
       if(djDate.compare(this.end, dateRange.begin, "date") < 0) { this.destroyRecursive(false); return; }
+			if(this.deleted) { this.destroy(); return; }
 
       var daySize = Math.abs(djDate.difference(this.begin, this.end));
 			if(daySize == 0) { daySize = 1; }

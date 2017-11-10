@@ -136,10 +136,11 @@ return djDeclare("artnum.rForm", [
 
 	doDelete: function (event) {
 		if(confirm('Vraiment supprimer la réservation ' + this.reservation.get('IDent'))) {
-			var myParent = this.myParent;
-
+			var that = this;
 			djXhr(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { handleAs: "json", method: "delete" }).then(function() {
-				myParent.update();
+				that.reservation.set('deleted', true);
+				that.reservation.myParent.update(true);
+				that.dialog.destroy();
 			});
 		}
 	},
@@ -159,7 +160,8 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComment);
 		this.reservation.myParent.store({ o: this.reservation });
-		this.reservation.resize();
+		this.reservation.myParent.update(true);
+		this.dialog.destroy();
 
 			//djXhr.post(locationConfig.store  + '/Comments/', { handleAs: 'json', data: { content: that.editor.getData(), datetime: now.toISOString(), reservation: that.reservation  } });
 	}
