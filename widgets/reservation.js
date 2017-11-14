@@ -145,8 +145,8 @@ return djDeclare("artnum.reservation", [
 		if(id) {
     	djXhr.get(locationConfig.store + '/' + id, {handleAs: "json"}).then(function (result) {
 				if(result && result.type == 'results') {
-			  	that._set('dbContact', result.data[0]);
-        	def.resolve();
+		  		that._set('dbContact', result.data[0]);
+       		def.resolve(result.data[0]);
 				}
 			});
 		}
@@ -222,7 +222,8 @@ return djDeclare("artnum.reservation", [
 				reservation: this, status: this.get('status'), 
 				address: this.get('address'), 
 				locality: this.get('locality'),
-				comment: this.get('comment')  } );
+				comment: this.get('comment'),
+				contact: this.get('contact') } );
 			var dialog = new dtDialog({ title: "Reservation " +  this.IDent, style: "width: 600px; background-color: white;", content: f,
 				id: 'DIA_RES_' + this.IDent });
 			f.set('dialog', dialog);

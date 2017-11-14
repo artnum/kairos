@@ -104,6 +104,14 @@ return djDeclare("artnum.rForm", [
 			this.nComments.set('value', value);
 		}	
 	},
+	_setContactAttr: function(value)  {
+		var that = this;
+		this.reservation.lookupContact(value).then(function (entry) {
+			c = new card();
+			c.entry(entry);
+			that.nContacts.appendChild(c.domNode);
+		});
+	},
 
 	postCreate: function () {
 		this.inherited(arguments);
@@ -130,20 +138,20 @@ return djDeclare("artnum.rForm", [
   },
 
 	saveContact: function (id, options) {
-			if(options.type && options.type == "client") {
-				this.reservation.set('contact', id);
-			} else {
-				
-			}
-			if(djDom.byId(this.id + '/' + id)) {
-				var x = djDom.byId(this.id + '/' + id);
-				x.parentNode.removeChild(x);
-			}
+		if(options.type && options.type == "client") {
+			this.reservation.set('contact', id);
+		} else {
+			
+		}
+		if(djDom.byId(this.id + '/' + id)) {
+			var x = djDom.byId(this.id + '/' + id);
+			x.parentNode.removeChild(x);
+		}
 
-			var entry = JSON.parse(window.sessionStorage.getItem(id));
-			var c = new card();
-			c.entry(entry);
-			this.nContacts.appendChild(c.domNode);
+		var entry = JSON.parse(window.sessionStorage.getItem(id));
+		var c = new card();
+		c.entry(entry);
+		this.nContacts.appendChild(c.domNode);
 	},
 
 	doAddContact: function (event) {
