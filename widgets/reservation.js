@@ -250,12 +250,23 @@ return djDeclare("artnum.reservation", [
 		return (diff * this.get('blockSize') / 24) + this.get('offset');
 	},
 	
+	remove: function() {
+		if(confirm('Vraiment supprimer la réservation ' + this.get('IDent'))) {
+			this.set('deleted', true);
+			this.destroy();
+			return true;
+		}
+
+		return false;
+	},
+
   resize: function() {
     var def = new djDeferred();
 		var that = this;
 			if( ! this.myParent) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
-     
+    
+			console.log(this.deleted); 
 		 	 
 			/* Verify  if we keep this ourself */
       if(djDate.compare(this.begin,this.myParent.get('dateRange').end, "date") > 0 || 

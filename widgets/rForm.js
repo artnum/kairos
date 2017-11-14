@@ -154,11 +154,9 @@ return djDeclare("artnum.rForm", [
 	},
 
 	doDelete: function (event) {
-		if(confirm('Vraiment supprimer la réservation ' + this.reservation.get('IDent'))) {
+		if(this.reservation.remove()) {
 			var that = this;
 			djXhr(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { handleAs: "json", method: "delete" }).then(function() {
-				that.reservation.set('deleted', true);
-				that.reservation.myParent.update(true);
 				that.dialog.destroy();
 			});
 		}

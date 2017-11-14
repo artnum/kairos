@@ -164,23 +164,7 @@ return djDeclare("artnum.entry", [
 				this.newReservation.o.set('stop', event.clientX);
 				this.newReservation.o.set('start', this.get('clickPoint'));
 			}
-
 			this.newReservation.o.resize();
-/*
-
-			var d = this.dayFromX(event.clientX);
-			if(djDate.compare(this.dayFromX(event.clientX), this.newReservation.start, "date") <= 0) {
-				d.setHours(8, 0, 0, 0);
-				this.newReservation.start.setHours(17,0,0,0);
-				this.newReservation.o.set('begin', d);
-				this.newReservation.o.set('end', this.newReservation.start);
-			} else {
-				d.setHours(17, 0, 0, 0);
-				this.newReservation.start.setHours(8,0,0,0);
-				this.newReservation.o.set('begin', this.newReservation.start);
-				this.newReservation.o.set('end', d);
-			} */
-			this.newReservation.o.resize();		
 		}
 	},
 
@@ -267,7 +251,6 @@ return djDeclare("artnum.entry", [
 	},
 
 	update: function () {
-
 		var force = false;
 		if(arguments[0]) {
 			force = true;
