@@ -207,6 +207,7 @@ return djDeclare("artnum.reservation", [
 	eClick: function (event) {
 		event.stopPropagation();
 		event.preventDefault();
+		if(! this.get('IDent')) { return; }
 		if(document.selection && document.selection.empty) {
 			document.selection.empty();
 		} else if(window.getSelection) {

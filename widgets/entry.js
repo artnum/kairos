@@ -156,7 +156,6 @@ return djDeclare("artnum.entry", [
 	},
 	eMouseMove: function(event) {
 		if(this.newReservation) {
-			console.log(event.clientX, this.newReservation.o.get('start'));
 			if(this.newReservation.o.get('start') > event.clientX) {
 				this.newReservation.o.set('start', event.clientX);
 				this.newReservation.o.set('stop', this.get('clickPoint'));
@@ -169,7 +168,6 @@ return djDeclare("artnum.entry", [
 	},
 
 	eClick: function(event) {
-		console.log(event);
 		var d = this.dayFromX(event.clientX);
 		if(event.clientX <= this.get("offset")) { return; }
 		if( ! this.newReservation && event.ctrlKey) {
@@ -191,29 +189,29 @@ return djDeclare("artnum.entry", [
 					this.data.appendChild(this.newReservation.o.domNode);
 				}
 			}));
-		} else if(this.newReservation) {
+		} 
+		if(this.newReservation) {
+			var r = this.newReservation;
+			this.newReservation = null;
 			this._startWait();
-			if(djDate.compare(d, this.newReservation.start) < 0) {
+			if(djDate.compare(d, r.start) < 0) {
 				d.setHours(8,0,0,0);
-				this.newReservation.o.set('begin', d);
+				r.o.set('begin', d);
 			} else {
 				d.setHours(17,0,0,0);
-				this.newReservation.o.set('end', d);
+				r.o.set('end', d);
 			}
-			this.store(this.newReservation).then( djLang.hitch(this, function (result) {
+			this.store(r).then( djLang.hitch(this, function (result) {
 				if(result.type == "error") {
 					this.unlock();
 				} else {
-					this.newReservation.o.set('IDent', result.data.id);	
-					this.newReservation.o.set('id', result.data.id);	
-					this.newReservation.o.resize();
+					r.o.set('IDent', result.data.id);	
+					r.o.resize();
 
-					djDomClass.remove(this.newReservation.o.domNode, "selected");
-					this.addChild(this.newReservation.o, this.data);
-					
-					this.newReservation.o.popMeUp();
+					djDomClass.remove(r.o.domNode, "selected");
+					this.addChild(r.o, this.data);
+					r.o.popMeUp();
 
-					this.newReservation = null;
 					this._stopWait();
 					this.unlock();
 				}
@@ -311,7 +309,7 @@ return djDeclare("artnum.entry", [
 			method = "PUT";
 			suffix = '/' + query.id;
 		}	
-
+console.log(reservation.o, query);
 		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(def.resolve);
 		return def;
 	}, 
