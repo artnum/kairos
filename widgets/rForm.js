@@ -97,6 +97,11 @@ return djDeclare("artnum.rForm", [
 			this.nLocality.set('value', value);	
 		}
 	},
+	_setCommentAttr: function (value) {
+		if(value) {
+			this.nComments.set('value', value);
+		}	
+	},
 
 	postCreate: function () {
 		this.inherited(arguments);
@@ -158,7 +163,7 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('end', end);
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('locality', f.nLocality);
-		this.reservation.set('comment', f.nComment);
+		this.reservation.set('comment', f.nComments);
 		this.reservation.myParent.store({ o: this.reservation });
 		this.reservation.myParent.update(true);
 		this.dialog.destroy();

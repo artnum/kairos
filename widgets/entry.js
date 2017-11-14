@@ -314,7 +314,16 @@ return djDeclare("artnum.entry", [
 		var def = new djDeferred();
 		var method = "POST";
 		var suffix = '';
-		var query = { begin: djDateStamp.toISOString(reservation.o.begin), end: djDateStamp.toISOString(reservation.o.end), status: reservation.o.status, target: this.target, address: reservation.o.address, locality: reservation.o.locality, contact: reservation.o.contact  };
+		var query = { };
+
+		reservation.o.attrs.forEach( function (attr) {
+			query[attr] = reservation.o[attr];
+		});
+
+		query.begin = djDateStamp.toISOString(reservation.o.begin);
+		query.end = djDateStamp.toISOString(reservation.o.end);
+		query.target = this.target;
+
 		if(reservation.o.IDent != null) {
 			query.id = reservation.o.IDent;
 			method = "PUT";

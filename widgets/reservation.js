@@ -58,12 +58,27 @@ return djDeclare("artnum.reservation", [
   events: [],	
 	baseClass: "reservation",
 	templateString: _template,
+	attrs: [],
 
+	constructor: function() {
+		this.attrs = new Array();
+	},
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
 		if(this.domNode) { djOn(this.domNode, "click", djLang.hitch(this, this.eClick)); }
   },
+
+	addAttr: function ( attr ) {
+		if(this.attrs.indexOf(attr) == -1) {
+			this.attrs.push(attr);	
+		}
+	},
+
+	_setStatusAttr: function(value) {
+		this.addAttr('status');
+		this._set('status', value);
+	},
 
 	_setIDentAttr: function(value) {
 		this.IDent = value;
@@ -71,18 +86,22 @@ return djDeclare("artnum.reservation", [
 		this.setTextDesc();
 	},
   _setAddressAttr: function(value) {
+		this.addAttr('address');
     this._set('address', value);
 		this.setTextDesc();
 	},
   _setLocalityAttr: function(value) {
+		this.addAttr('locality');
     this._set('locality', value);
     this.setTextDesc();
   },
 	_setCommentAttr: function(value) {
+		this.addAttr('comment');
 		this._set('comment', value);
 		this.setTextDesc();
 	},                
 	_setContactAttr: function(value) {
+		this.addAttr('contact');
 		var that = this;
 	  this._set('contact', value);
     this.lookupContact(value).then( function () {
@@ -91,11 +110,13 @@ return djDeclare("artnum.reservation", [
   },
 
 	_setStartAttr: function(value) {
+		this.addAttr('begin');
 		if(value == this.get('stop')) { value -= this.get('blockSize'); }
 		this._set('start', value);
 		this._set('begin', this.timeFromX(value));
 	},
 	_setBeginAttr: function(value) {
+		this.addAttr('begin');
 		if(djDate.compare(this.get('dateRange').begin, value) > 0) {
 			value = this.get('dateRange').begin;
 		}
@@ -104,11 +125,13 @@ return djDeclare("artnum.reservation", [
 	},
 
 	_setStopAttr: function(value) {
+		this.addAttr('end');
 		if(value == this.get('start')) { value += this.get('blockSize'); }
 		this._set('stop', value);
 		this._set('end', this.timeFromX(value));
 	},
 	_setEndAttr: function(value) {
+		this.addAttr('end');
 		if(djDate.compare(this.get('dateRange').end, value) < 0) {
 			value = this.get('dateRange').end;
 		}
