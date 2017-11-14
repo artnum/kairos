@@ -30,6 +30,7 @@ define([
 	"dijit/Dialog",
 
 	"artnum/contacts",
+	"artnum/card",
 	"artnum/_Cluster"
 
 
@@ -65,6 +66,7 @@ define([
 	dtDialog,
 
 	contacts,
+	card,
 	_Cluster
 ) {
 
@@ -127,9 +129,21 @@ return djDeclare("artnum.rForm", [
 		
   },
 
-	saveContact: function (id) {
-		console.log(id);	
-		this.reservation.set('contact', id);
+	saveContact: function (id, options) {
+			if(options.type && options.type == "client") {
+				this.reservation.set('contact', id);
+			} else {
+				
+			}
+			if(djDom.byId(this.id + '/' + id)) {
+				var x = djDom.byId(this.id + '/' + id);
+				x.parentNode.removeChild(x);
+			}
+
+			var entry = JSON.parse(window.sessionStorage.getItem(id));
+			var c = new card();
+			c.entry(entry);
+			this.nContacts.appendChild(c.domNode);
 	},
 
 	doAddContact: function (event) {

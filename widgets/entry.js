@@ -88,7 +88,6 @@ return djDeclare("artnum.entry", [
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.myParent, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		this.verifyLock();
-		console.log(this);
 	},
 
 	cancelReservation: function() {

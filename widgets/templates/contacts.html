@@ -1,9 +1,18 @@
 <div>
 <div class="search">
 <form data-dojo-type="dijit/form/Form" data-dojo-attach-point="form" data-dojo-attach-event="submit:doSearch">
+<div>
+<input type="radio" name="cType" value="client" data-dojo-type="dijit/form/RadioButton" checked><label>Client</label></input>
+<input type="radio" name="cType" value="responsable" data-dojo-type="dijit/form/RadioButton"><label>Responsable</label></input>
+<input type="radio" name="cType" value="place" data-dojo-type="dijit/form/RadioButton"><label>Client</label></input>
+<input type="radio" name="cType" value="autre" data-dojo-type="dijit/form/RadioButton"><label>Autre</label></input> <input type="text" data-dojo-type="dijit/form/TextBox" name="details" />
+</div>
+
+<div>
 <input type="text" data-dojo-type="dijit/form/TextBox" name="search" />
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
  type="button" data-dojo-attach-event="click:doSearch" ><i class="fa fa-search" aria-hidden="true"></i> Chercher</button>
+</div>
 </form>
 <div class="results" data-dojo-attach-point="results" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="style: { overflow: 'auto' }">
 </div>

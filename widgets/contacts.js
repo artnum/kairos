@@ -26,7 +26,10 @@ define([
 	"dijit/form/TimeTextBox",
 	"dijit/form/Button",
 	"dijit/form/RadioButton",
-	"dijit/form/Select"
+	"dijit/form/Select",
+	"dijit/registry",
+
+	"artnum/card"
 
 
 ], function(
@@ -57,12 +60,18 @@ define([
 	dtTimeTextBox,
 	dtButton,
 	dtRadioButton,
-	dtSelect
+	dtSelect,
+	dtRegistry,
+
+	card
 ) {
 
 return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "contacts",
 	templateString: _template,
+	mapping: { firstname: [ 'givenname', ' '] , familyname: [ 'sn', ' '],
+		organization: ['o', ' '], locality : [ 'l', null ], npa: [ 'postalcode', null],
+		address: ['postaladdress', null ] },
 
 	constructor: function(p) {
 		this.myParent = p.target;
@@ -77,38 +86,19 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 			var frag = document.createDocumentFragment();
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
-				this.cache.setItem('/Contacts/' + entry.IDent, JSON.stringify(entry));
-			
-				if(entry.givenname) { x += '<span class="name">' + flatten(entry.givenname) + "</span> "; }
-				if(entry.sn) { x += '<span class="family">' + flatten(entry.sn) + "</span> "; }
-				if(entry.o) { x += '<span class="company">' + flatten(entry.o) + "</span> "; }
-
-				var y = '';
-				if(entry.postalcode) { y += '<span class="code">' + entry.postalcode + "</span> "; }
-				if(entry.l) { y += '<span class="code">' + entry.l + "</span>"; }
-
-				if(entry.telephonenumber) { y += ' - <span class="code">' + flatten(entry.telephonenumber, '/') + '</span>'; }
-
+				var c = new card('/Contacts/');
+				
+				c.entry(entry);			
+				this.cache.setItem(c.get('identity'), JSON.stringify(entry));
 					
-				var n = djDomConstruct.toDom('<div class="contact" data-artnum-ident="/Contacts/' + entry.IDent + '"><div>' + x + "</div><div>" + y +"</div></div>");
-				djOn(n, "click", djLang.hitch(this, function (event) {
-						var id = '';
-						var n = event.target;
-						while(id == '' && n) {
-							console.log(n);
-							if(djDomAttr.has(n, 'data-artnum-ident')) {
-								id = djDomAttr.get(n, 'data-artnum-ident');	
-							}
-							n = n.parentNode;
-						}
-
-						console.log(id);
-						if(id != '') {
+				djOn(c.domNode, "click", djLang.hitch(this, function (event) {
+						var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
+						if(id != null) {
 							this.myParent.saveContact(id, { type: f.cType, comment: f.details });
 							this.dialog.destroy();
 						}
 					}));
-				frag.appendChild(n);
+				frag.appendChild(c.domNode);
 
 			}));
 			var d = this.results;
