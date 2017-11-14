@@ -1,8 +1,9 @@
-function flatten(value) {
+function flatten(value, sep) {
+	if(! sep) { sep = ' '}
 	if(is_array(value)) {
 		var txt = '';
 		value.forEach(function(v) {
-			if(txt != '') { txt += ' '; }
+			if(txt != '') { txt += sep; }
 			txt += v;
 		});
 		value = txt;

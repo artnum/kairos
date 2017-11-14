@@ -25,6 +25,7 @@ define([
 	"dijit/form/DateTextBox",
 	"dijit/form/TimeTextBox",
 	"dijit/form/Button",
+	"dijit/form/RadioButton",
 	"dijit/form/Select"
 
 
@@ -55,13 +56,13 @@ define([
 	dtDateTextBox,
 	dtTimeTextBox,
 	dtButton,
+	dtRadioButton,
 	dtSelect
 ) {
 
 return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "contacts",
 	templateString: _template,
-
 
 	constructor: function(p) {
 		this.myParent = p.target;
@@ -77,6 +78,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
 				this.cache.setItem('/Contacts/' + entry.IDent, JSON.stringify(entry));
+			
 				if(entry.givenname) { x += '<span class="name">' + flatten(entry.givenname) + "</span> "; }
 				if(entry.sn) { x += '<span class="family">' + flatten(entry.sn) + "</span> "; }
 				if(entry.o) { x += '<span class="company">' + flatten(entry.o) + "</span> "; }
@@ -84,6 +86,9 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 				var y = '';
 				if(entry.postalcode) { y += '<span class="code">' + entry.postalcode + "</span> "; }
 				if(entry.l) { y += '<span class="code">' + entry.l + "</span>"; }
+
+				if(entry.telephonenumber) { y += ' - <span class="code">' + flatten(entry.telephonenumber, '/') + '</span>'; }
+
 					
 				var n = djDomConstruct.toDom('<div class="contact" data-artnum-ident="/Contacts/' + entry.IDent + '"><div>' + x + "</div><div>" + y +"</div></div>");
 				djOn(n, "click", djLang.hitch(this, function (event) {
@@ -99,7 +104,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 
 						console.log(id);
 						if(id != '') {
-							this.myParent.saveContact(id);
+							this.myParent.saveContact(id, { type: f.cType, comment: f.details });
 							this.dialog.destroy();
 						}
 					}));
@@ -109,8 +114,6 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 			var d = this.results;
 			window.requestAnimationFrame(function () { d.set('content', frag); });
 		}));
-
 		return false;
 	}
-
 });});
