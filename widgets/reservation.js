@@ -66,7 +66,7 @@ return djDeclare("artnum.reservation", [
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
-		if(this.domNode) { djOn(this.domNode, "click", djLang.hitch(this, this.eClick)); }
+		if(this.domNode) { djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick)); }
   },
 
 	addAttr: function ( attr ) {
@@ -206,8 +206,14 @@ return djDeclare("artnum.reservation", [
 
 	eClick: function (event) {
 		event.stopPropagation();
+		event.preventDefault();
+		if(document.selection && document.selection.empty) {
+			document.selection.empty();
+		} else if(window.getSelection) {
+			var sel = window.getSelection();
+			sel.removeAllRanges();
+		}
 		this.popMeUp();
-	
 	},
 
 	popMeUp: function() {

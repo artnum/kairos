@@ -181,6 +181,7 @@ body, html { margin: 0; padding: 0;}
 }
 
 .lock {
+	cursor: not-allowed;
 	color: white;
 	background-color: #777 !important;
 }
@@ -261,6 +262,11 @@ body, html { margin: 0; padding: 0;}
 .reservation {
   border: 1px solid #ddd;
   overflow: hidden;
+	cursor: pointer;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
 }
 
 .entry .details {
