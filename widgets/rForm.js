@@ -109,6 +109,7 @@ return djDeclare("artnum.rForm", [
 		this.reservation.lookupContact(value).then(function (entry) {
 			c = new card();
 			c.entry(entry);
+			c.set('type', 'client');
 			that.nContacts.appendChild(c.domNode);
 		});
 	},
@@ -151,6 +152,7 @@ return djDeclare("artnum.rForm", [
 		var entry = JSON.parse(window.sessionStorage.getItem(id));
 		var c = new card();
 		c.entry(entry);
+		c.set('type', options.type);
 		this.nContacts.appendChild(c.domNode);
 	},
 

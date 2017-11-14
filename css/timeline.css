@@ -316,3 +316,6 @@ div.contact > div:first-child {
 .card span:empty, .card span:empty + br {
 	display: none;	
 }
+.card .type {
+	text-decoration: underline;	
+}
