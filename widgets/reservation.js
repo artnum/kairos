@@ -266,8 +266,6 @@ return djDeclare("artnum.reservation", [
 			if( ! this.myParent) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
     
-			console.log(this.deleted); 
-		 	 
 			/* Verify  if we keep this ourself */
       if(djDate.compare(this.begin,this.myParent.get('dateRange').end, "date") > 0 || 
       		djDate.compare(this.end, this.myParent.get('dateRange').begin, "date") < 0 ||
