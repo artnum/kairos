@@ -349,12 +349,15 @@ console.log(reservation.o, query);
 		this._startWait();
 		var frag = document.createDocumentFragment();
 		for(var i = 0; i < reservations.length; i++) {
+			console.log(reservations[i]);
 			var r = { 
 				"myParent": this,
 				"IDent" : reservations[i].id,
 				"id" : reservations[i].id,
 				"begin": djDateStamp.fromISOString(reservations[i].begin),
 				"end" : djDateStamp.fromISOString(reservations[i].end), 
+				"deliveryBegin": djDateStamp.fromISOString(reservations[i].deliveryBegin),
+				"deliveryEnd" : djDateStamp.fromISOString(reservations[i].deliveryEnd), 
 				"status": reservations[i].status,
 				"contact": reservations[i].contact,
 				"address": reservations[i].address,

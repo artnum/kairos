@@ -105,7 +105,7 @@ return djDeclare("artnum.rForm", [
 		if(! value) { return; }
 		this.nDeliveryEndDate.set('value', value.toISOString());
 		this.nDeliveryEndTime.set('value', value.toISOString());
-		this._set('endDelivery', value);
+		this._set('deliveryEnd', value);
 	},
 	_setAddressAttr:function (value) {
 		if(value) {
@@ -196,11 +196,15 @@ return djDeclare("artnum.rForm", [
 		let f = djDomForm.toObject(this.domNode);
 		let begin = djDateStamp.fromISOString(f.beginDate + f.beginTime);
 		let end = djDateStamp.fromISOString(f.endDate + f.endTime);
+		let deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
+		let deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
 		var that = this;
 
 		this.reservation.set('status', f.status);
 		this.reservation.set('begin', begin);
 		this.reservation.set('end', end);
+		this.reservation.set('deliveryBegin', deliveryBegin);
+		this.reservation.set('deliveryEnd', deliveryEnd);
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);

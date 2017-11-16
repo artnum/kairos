@@ -67,6 +67,8 @@ return djDeclare("artnum.reservation", [
 
 	constructor: function() {
 		this.attrs = new Array();
+		this.deliveryBegin = null;
+		this.deliveryEnd = null;
 		this.detailsHtml = '';
 	},
 	postCreate: function () {
@@ -144,7 +146,33 @@ return djDeclare("artnum.reservation", [
 		this._set('stop', this.xFromTime(value));	
 		this.setTextDesc();
 	},
+	_setDeliveryBeginAttr: function(value) {
+		this.addAttr('deliveryBegin');
+		this._set('deliveryBegin', value);	
+	},
+	_setDeliveryEndAttr: function(value) {
+		this.addAttr('deliveryEnd');
+		this._set('deliveryEnd', value);
+	},
+	_getTrueBeginAttr: function() {
+		console.log(this.get('deliveryBegin'));
+		if(this.get('deliveryBegin')) {
+			if(djDate.compare(this.get('begin'), this.get('deliveryBegin')) < 0) {
+				return this.get('deliveryBegin');	
+			}	
+		}
 
+		return this.get('begin');
+	},
+	_getTrueEndAttr: function() {
+		if(this.get('deliveryEnd')) {
+			if(djDate.compare(this.get('end'), this.get('deliveryEnd')) > 0) {
+				return this.get('deliveryEnd');	
+			}	
+		}
+
+		return this.get('end');
+	},
   lookupContact: function(id) {
     var def = new djDeferred();
     var that = this;
@@ -252,7 +280,7 @@ return djDeclare("artnum.reservation", [
 				begin: this.get('begin'), 
 				end: this.get('end'),
 				deliveryBegin: this.get('deliveryBegin'),
-				deliveryEnd: this.get('deliveryBegin'),
+				deliveryEnd: this.get('deliveryEnd'),
 				reservation: this, status: this.get('status'), 
 				address: this.get('address'), 
 				locality: this.get('locality'),
@@ -304,8 +332,8 @@ return djDeclare("artnum.reservation", [
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
     
 			/* Verify  if we keep this ourself */
-      if(djDate.compare(this.begin,this.myParent.get('dateRange').end, "date") > 0 || 
-      		djDate.compare(this.end, this.myParent.get('dateRange').begin, "date") < 0 ||
+      if(djDate.compare(this.get('trueBegin'),this.myParent.get('dateRange').end, "date") > 0 || 
+      		djDate.compare(this.get('trueEnd'), this.myParent.get('dateRange').begin, "date") < 0 ||
 					this.deleted) { 
 				window.requestAnimationFrame(function () { that.destroy(); });
 				def.resolve();
@@ -317,11 +345,11 @@ return djDeclare("artnum.reservation", [
       var currentWidth = this.myParent.get('blockSize');
 
 
-      var daySize = Math.abs(djDate.difference(this.begin, this.end));
+      var daySize = Math.abs(djDate.difference(this.get('trueBegin'), this.get('trueEnd')));
 			if(daySize == 0) { daySize = 1; }
 			var l = this.longerRight;
-      if(djDate.compare(this.end, dateRange.end) > 0) {
-        daySize -= Math.abs(djDate.difference(this.end, dateRange.end));
+      if(djDate.compare(this.get('trueEnd'), dateRange.end) > 0) {
+        daySize -= Math.abs(djDate.difference(this.get('trueEnd'), dateRange.end));
 				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
       } else {
 				window.requestAnimationFrame(function () { if(l) { djDomClass.add(l, "hidden"); }});
@@ -329,8 +357,8 @@ return djDeclare("artnum.reservation", [
 
     	var startDiff = 0;
 			l = this.longerLeft;
-     	if(djDate.compare(this.begin, dateRange.begin) < 0) {
-        startDiff = Math.abs(djDate.difference(this.begin, dateRange.begin));
+     	if(djDate.compare(this.get('trueBegin'), dateRange.begin) < 0) {
+        startDiff = Math.abs(djDate.difference(this.get('trueBegin'), dateRange.begin));
       	daySize -= startDiff;
 				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
      	}  else {
@@ -339,10 +367,9 @@ return djDeclare("artnum.reservation", [
 
 			/* Last day included */
       daySize = (daySize + 1) * currentWidth;
-
-      var leftSize = Math.abs(djDate.difference(dateRange.begin, this.begin) + startDiff ) * currentWidth + this.get('offset') -1; 
-			hourDiff = Math.ceil((this.begin.getHours() + (this.begin.getMinutes() / 10)) / ( 24 / this.get('blockSize')));
- 			daySize -= Math.ceil((this.end.getHours() + (this.end.getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
+      var leftSize = Math.abs(djDate.difference(dateRange.begin, this.get('trueBegin')) + startDiff ) * currentWidth + this.get('offset') -1; 
+			hourDiff = Math.ceil((this.get('trueBegin').getHours() + (this.get('trueBegin').getMinutes() / 10)) / ( 24 / this.get('blockSize')));
+ 			daySize -= Math.ceil((this.get('trueEnd').getHours() + (this.get('trueEnd').getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
 
 			var bgcolor = '#FFFFF';
 			var that = this;
