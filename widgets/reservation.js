@@ -162,20 +162,8 @@ return djDeclare("artnum.reservation", [
 			html = '<div><span class="id">' + this.IDent + '</span>'; 	
 		}
 
-    if(this.locality || this.address) {
-      html += " - ";
-      if(this.address) {
-        html += this.address;
-      }
-      if(this.locality) {
-        if(this.address) { html += ", " }
-        html += this.locality;
-      }
-    }
-    html += '</div>'
-
     if(this.dbContact) {
-			var x = '';
+			var x = ' - ';
       if(this.dbContact.o) {
         x += '<span class="o">' + this.dbContact.o + '</span>';
       }
@@ -192,10 +180,32 @@ return djDeclare("artnum.reservation", [
 				}
         x += '<span class="name">' + n + '</span>';
       }
-			if(x != '') {
-				html += '<div>' + x + '</div>';
+			if(x != ' - ') {
+				html += x + '</div>';
+			}
+    } else {
+			html += "</div>"	
+		}
+
+		html += "<span>" + this.begin.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false}) + "</span> - ";
+		
+		html += "<span>" + this.end.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false}) + "</span>";
+
+    if(this.locality || this.address) {
+      var x = ", ";
+      if(this.address) {
+        x += this.address;
+      }
+      if(this.locality) {
+        if(this.address) { x += ", " }
+        x += this.locality;
+      }
+
+			if(x != ", ") {
+				html += x + "</div>";	
 			}
     }
+
 
 		if(this.comment) {
 			html += '<div>' + this.comment + '</div>';	
