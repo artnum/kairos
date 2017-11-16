@@ -81,14 +81,32 @@ return djDeclare("artnum.rForm", [
 	_setBeginAttr: function (value) {
 		this.beginDate.set('value', value.toISOString());
 		this.beginTime.set('value', value.toISOString());
-		this.begin = value;
+		this._set('begin',  value);
+		if(! this.get('deliveryBegin')) {
+			this.set('deliveryBegin', value);	
+		}
+
 	},
 	_setEndAttr: function (value) {
 		this.endDate.set('value', value.toISOString());
 		this.endTime.set('value', value.toISOString());
-		this.end = value;
+		this._set('end', value);
+		if(! this.get('deliveryEnd')) {
+			this.set('deliveryEnd', value)
+		}
 	},
-
+	_setDeliveryBeginAttr: function (value) {
+		if(! value) { return; }
+		this.nDeliveryBeginDate.set('value', value.toISOString());
+		this.nDeliveryBeginTime.set('value', value.toISOString());
+		this._set('deliveryBegin', value);
+	},
+	_setDeliveryEndAttr: function(value) {
+		if(! value) { return; }
+		this.nDeliveryEndDate.set('value', value.toISOString());
+		this.nDeliveryEndTime.set('value', value.toISOString());
+		this._set('endDelivery', value);
+	},
 	_setAddressAttr:function (value) {
 		if(value) {
 			this.nAddress.set('value', value);

@@ -20,9 +20,11 @@ define([
 	"dojo/request/xhr",
 
 	"dijit/Dialog",
+	"dijit/Tooltip",
 	"dijit/registry",
 
-	"artnum/rForm"
+	"artnum/rForm",
+	"artnum/_Mouse"
 
 ], function(
 	djDeclare,
@@ -47,26 +49,33 @@ define([
 	djXhr,
 
 	dtDialog,
+	dtTooltip,
 	dtRegistry,
 
-	rForm
+	rForm,
+	Mouse
 
 ) {
 
 return djDeclare("artnum.reservation", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, Mouse], {
   events: [],	
 	baseClass: "reservation",
 	templateString: _template,
 	attrs: [],
+	detailsHtml: '',
 
 	constructor: function() {
 		this.attrs = new Array();
+		this.detailsHtml = '';
 	},
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
-		if(this.domNode) { djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick)); }
+		if(this.domNode) { 
+			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
+		//	djOn(this.domNode, "click", djLang.hitch(this, this.eDetails));
+		 }
   },
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
@@ -205,6 +214,19 @@ return djDeclare("artnum.reservation", [
 		}
 
     if(this.txtDesc) { this.txtDesc.innerHTML = html; }
+		this.detailsHtml = html;
+	},
+	eDetails: function(event) {
+		event.preventDefault();
+		event.stopPropagation();
+	
+		var pos = this.getAbsPos(event);	
+		var x = djDomConstruct.toDom("<div>" + this.detailsHtml + "</div>");
+		x.style = "background-color: white;position: absolute; top: "+ pos.y +"px; left: "+pos.x +"px; z-index: 100";
+
+		document.getElementsByTagName('BODY')[0].appendChild(x);
+			
+
 	},
 
 	eClick: function (event) {
@@ -228,7 +250,9 @@ return djDeclare("artnum.reservation", [
 		}
 			var f = new rForm( {  
 				begin: this.get('begin'), 
-				end: this.get('end'), 
+				end: this.get('end'),
+				deliveryBegin: this.get('deliveryBegin'),
+				deliveryEnd: this.get('deliveryBegin'),
 				reservation: this, status: this.get('status'), 
 				address: this.get('address'), 
 				locality: this.get('locality'),
@@ -253,7 +277,6 @@ return djDeclare("artnum.reservation", [
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
 		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
-		console.log(hoursToX);
 		var d = djDate.add(this.get('dateRange').begin, "hour", hoursToX);
 		d.setMinutes(0); d.setSeconds(0);
 		return d;
