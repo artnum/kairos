@@ -114,6 +114,7 @@ return djDeclare("artnum.reservation", [
 		if(value == this.get('stop')) { value -= this.get('blockSize'); }
 		this._set('start', value);
 		this._set('begin', this.timeFromX(value));
+		this.setTextDesc();
 	},
 	_setBeginAttr: function(value) {
 		this.addAttr('begin');
@@ -137,6 +138,7 @@ return djDeclare("artnum.reservation", [
 		}
 		this._set('end', value);
 		this._set('stop', this.xFromTime(value));	
+		this.setTextDesc();
 	},
 
   lookupContact: function(id) {
@@ -187,9 +189,8 @@ return djDeclare("artnum.reservation", [
 			html += "</div>"	
 		}
 
-		html += "<span>" + this.begin.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false}) + "</span> - ";
-		
-		html += "<span>" + this.end.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false}) + "</span>";
+		if(this.begin) { html += "<span>" + this.begin.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
+		if(this.end) { html += "<span>" + this.end.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
 
     if(this.locality || this.address) {
       var x = ", ";
@@ -260,7 +261,9 @@ return djDeclare("artnum.reservation", [
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
 		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
-		return djDate.add(this.get('dateRange').begin, "hour", hoursToX);
+		var d = djDate.add(this.get('dateRange').begin, "hour", hoursToX);
+		d.setMinutes(0); d.setSeconds(0);
+		return d;
 	},
 
 	xFromTime: function (x) {
