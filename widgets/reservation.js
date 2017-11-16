@@ -189,6 +189,7 @@ return djDeclare("artnum.reservation", [
 			html += "</div>"	
 		}
 
+		html += "<div>"
 		if(this.begin) { html += "<span>" + this.begin.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
 		if(this.end) { html += "<span>" + this.end.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
 
@@ -201,11 +202,8 @@ return djDeclare("artnum.reservation", [
         if(this.address) { x += ", " }
         x += this.locality;
       }
-
-			if(x != ", ") {
-				html += x + "</div>";	
-			}
     }
+		html += "</div>"
 
 
 		if(this.comment) {
@@ -261,6 +259,7 @@ return djDeclare("artnum.reservation", [
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
 		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
+		console.log(hoursToX);
 		var d = djDate.add(this.get('dateRange').begin, "hour", hoursToX);
 		d.setMinutes(0); d.setSeconds(0);
 		return d;

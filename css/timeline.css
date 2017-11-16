@@ -138,9 +138,9 @@ body, html { margin: 0; padding: 0;}
 }
 
 .reservation .details div div {
-	line-height: 20px;
-	height: 20px;
-	font-size: 18px;
+	line-height: 16px;
+	height: 16px;
+	font-size: 14px;
 }
 
 .x3 .entry {

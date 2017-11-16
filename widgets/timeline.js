@@ -54,7 +54,7 @@ define([
 return djDeclare("artnum.timeline", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 
-	center: new Date(),
+	center: null,
 	offset: 220,
 	blockSize: 42,
 	baseClass: "timeline",
@@ -80,6 +80,9 @@ return djDeclare("artnum.timeline", [
 		this.firstDay = null;
 		this.odd = true;
 		this.lockCanvas = false;
+		this.center = new Date();
+		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
+
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -363,7 +366,6 @@ return djDeclare("artnum.timeline", [
 			this.line.appendChild(docFrag);
 			this.header.appendChild(hFrag);
 			this.supHeader.appendChild(shFrag);
-console.trace();
 			if(! this.lockCanvas) {
 				var that = this;
 				this.lockCanvas = true;
