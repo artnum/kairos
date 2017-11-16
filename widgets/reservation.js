@@ -68,18 +68,15 @@ return djDeclare("artnum.reservation", [
 	  this.resize();
 		if(this.domNode) { djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick)); }
   },
-
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
 			this.attrs.push(attr);	
 		}
 	},
-
 	_setStatusAttr: function(value) {
 		this.addAttr('status');
 		this._set('status', value);
 	},
-
 	_setIDentAttr: function(value) {
 		this.IDent = value;
 		this.id = value;
@@ -108,7 +105,6 @@ return djDeclare("artnum.reservation", [
       that.setTextDesc(); 
     });
   },
-
 	_setStartAttr: function(value) {
 		this.addAttr('begin');
 		if(value == this.get('stop')) { value -= this.get('blockSize'); }
@@ -124,7 +120,6 @@ return djDeclare("artnum.reservation", [
 		this._set('begin', value);
 		this._set('start', this.xFromTime(value));	
 	},
-
 	_setStopAttr: function(value) {
 		this.addAttr('end');
 		if(value == this.get('start')) { value += this.get('blockSize'); }
@@ -156,7 +151,6 @@ return djDeclare("artnum.reservation", [
   },
 
 	setTextDesc: function () {
-	  
     var html = '';
 		if(this.IDent == null) {
 			html = '<div><span class="id">[Nouvelle réservation]</span>';	
