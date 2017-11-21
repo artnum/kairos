@@ -301,9 +301,18 @@ return djDeclare("artnum.entry", [
 		});
 
 		query.begin = djDateStamp.toISOString(reservation.o.begin);
-		query.end = djDateStamp.toISOString(reservation.o.end);
-		query.deliveryBegin = djDateStamp.toISOString(reservation.o.deliveryBegin);
-		query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
+		if(! reservation.o.is('noend')) {
+			query.end = djDateStamp.toISOString(reservation.o.end);
+			if(reservation.o.deliveryEnd) { 
+				query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
+			}
+		} else {
+			query.end = null;	
+			query.deliveryEnd = null;
+		}
+		if(reservation.o.deliveryBegin) {
+			query.deliveryBegin = djDateStamp.toISOString(reservation.o.deliveryBegin);
+		}
 		query.target = this.target;
 
 		if(reservation.o.IDent != null) {

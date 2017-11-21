@@ -67,7 +67,7 @@ return djDeclare("artnum.reservation", [
 	special: 0,
 
 	constructor: function () {
-		this.attrs = new Array();
+		this.attrs = new Array('special');
 		this.detailsHtml = '';
 		this.special = 0;	
 	},
@@ -185,6 +185,13 @@ return djDeclare("artnum.reservation", [
 			default: return false;
 			case 'noend': if(this.special & 0x1) { return true; } else { return false; }
 		}
+	},
+	setIs: function(what, value) {
+		switch(what) {
+			case 'noend': if(value) { this.special |= 0x1; }	
+		}
+
+		return;
 	},
   lookupContact: function(id) {
     var def = new djDeferred();

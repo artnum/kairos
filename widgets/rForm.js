@@ -27,6 +27,7 @@ define([
 	"dijit/form/TextBox",
 	"dijit/form/Button",
 	"dijit/form/Select",
+	"dijit/form/CheckBox",
 	"dijit/Dialog",
 
 	"artnum/contacts",
@@ -63,6 +64,7 @@ define([
 	djTextBox,
 	dtButton,
 	dtSelect,
+	dtCheckBox,
 	dtDialog,
 
 	contacts,
@@ -153,8 +155,25 @@ return djDeclare("artnum.rForm", [
 				}
 			}	
 		});
-		
+		if(! this.reservation.is('noend')) {
+			this.nNoEnd.set('checked', true);
+		}
+		this.toggleNoEnd();
   },
+
+	toggleNoEnd: function() {
+		if(! this.nNoEnd.get('checked')) {
+			this.endTime.set('disabled', true);
+			this.endDate.set('disabled', true);	
+			this.nDeliveryEndTime.set('disabled', true);
+			this.nDeliveryEndDate.set('disabled', true);	
+		} else {
+			this.endTime.set('disabled', false);
+			this.endDate.set('disabled', false);	
+			this.nDeliveryEndTime.set('disabled', false);
+			this.nDeliveryEndDate.set('disabled', false);	
+		}
+	},
 
 	saveContact: function (id, options) {
 		if(options.type && options.type == "client") {
@@ -200,6 +219,7 @@ return djDeclare("artnum.rForm", [
 		let deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
 		var that = this;
 
+		this.reservation.setIs('noend', !this.nNoEnd.get('checked'));
 		this.reservation.set('status', f.status);
 		this.reservation.set('begin', begin);
 		this.reservation.set('end', end);
