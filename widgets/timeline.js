@@ -420,6 +420,7 @@ return djDeclare("artnum.timeline", [
 	},
 
 	update: function () {
+		console.log('update timeline');
 		var def = new djDeferred();
 		var that = this;
 		this.emit('cancel-update');
@@ -437,7 +438,7 @@ return djDeclare("artnum.timeline", [
 			lateUpdate.forEach(function ( target ) {
 				window.setTimeout(that.emit("update-" + target), 15);
 			});
-			
+			def.resolve();		
 		});
 		return def;
 	}

@@ -390,24 +390,7 @@ return djDeclare("artnum.reservation", [
 		var dateRange = this.myParent.get('dateRange');
 		var currentWidth = this.myParent.get('blockSize');
 
-		var daySize = Math.abs(djDate.difference(this.get('trueBegin'), this.get('trueEnd')));
-		if(daySize == 0) { daySize = 1; }
-		var startDiff = 0;
-
-		window.requestAnimationFrame( function () {
-			if(that.is('confirmed')) {
-				djDomClass.add(that.main, 'confirmed');
-			} else {
-				djDomClass.remove(that.main, 'confirmed');
-			}
-		});
-
 		/* Last day included */
-		daySize = (daySize + 1) * currentWidth;
-		var leftSize = Math.abs(djDate.difference(dateRange.begin, this.get('trueBegin')) + startDiff ) * currentWidth + this.get('offset') -1; 
-		hourDiff = Math.ceil((this.get('trueBegin').getHours() + (this.get('trueBegin').getMinutes() / 10)) / ( 24 / this.get('blockSize')));
-		daySize -= Math.ceil((this.get('trueEnd').getHours() + (this.get('trueEnd').getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
-
 		var bgcolor = '#FFFFF';
 		var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
 		if(s && s.color) {
@@ -416,24 +399,32 @@ return djDeclare("artnum.reservation", [
 
 		var dSDiff = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), "hour"));
 		if(dSDiff > 0) {
+			if(djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin, 'date') < 0) {
+				dSDiff = - Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, "hour"));
+			}
 			dSDiff = (dSDiff / 24) * currentWidth;
+
 		}
 		var dEDiff = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
 		if(dEDiff > 0) {
 			dEDiff = (dEDiff / 24) * currentWidth;
 		}
 
-
-
 		window.requestAnimationFrame(djLang.hitch(this, function() {
 			/* might be destroyed async */
-			if(that && that.main) {
-				that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
-				that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+			if(! that || ! that.main) { def.resolve(); return ; }
+			
+			if(that.is('confirmed')) {
+				djDomClass.add(that.main, 'confirmed');
+			} else {
+				djDomClass.remove(that.main, 'confirmed');
 			}
+			that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
+			that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+		
+			def.resolve();
 		}));
 	
-		def.resolve();
     return def;
   }
 

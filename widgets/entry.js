@@ -256,11 +256,11 @@ return djDeclare("artnum.entry", [
 		if(! this.power) { return; }
 		var def = new djDeferred();
 	
-		var w = dtRegistry.findWidgets(this.domNode);
-		w.forEach( function (n) { n.resize(); } );
-
 		this._resetError();
 		this._startWait();
+
+		var w = dtRegistry.findWidgets(this.domNode);
+		w.forEach( function (n) { n.resize(); } );
 
 			if(!force && (this.locked || this.runUpdate)) {
 				this._stopWait();
@@ -283,7 +283,7 @@ return djDeclare("artnum.entry", [
 				this.to = null;
 				if(r.type == 'results')	{
 					that.displayReservations(r.data);
-					window.setTimeout(function() { that.runUpdate = false; that._stopWait(); def.resolve(); }, 500);
+					window.setTimeout(function() { that.runUpdate = false; that._stopWait(); def.resolve(); }, 50);
 				}
 			});
 
@@ -321,9 +321,8 @@ return djDeclare("artnum.entry", [
 
 	_setParentAttr: function ( parent ) {
 		this.myParent = parent;
-		djOn(parent, "update", djLang.hitch(this, this.update));
 		djOn(parent, "update-" + this.target, djLang.hitch(this, this.update));
-		djOn(parent, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
+		djOn(parent, "cancel-update", djLang.hitch(this, function () { if(this.to) { console.log('clear timeout'); window.clearTimeout(this.to); this.to = null; } }));
 	},
 
 	_startWait: function() {
