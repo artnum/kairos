@@ -65,14 +65,10 @@ return djDeclare("artnum.reservation", [
 	attrs: [],
 	detailsHtml: '',
 
-	constructor: function() {
-		this.attrs = new Array();
-		this.deliveryBegin = null;
-		this.deliveryEnd = null;
-		this.detailsHtml = '';
-	},
 	postCreate: function () {
 		this.inherited(arguments);
+		this.attrs = new Array();
+		this.detailsHtml = '';
 	  this.resize();
 		if(this.domNode) { 
 			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
@@ -123,6 +119,12 @@ return djDeclare("artnum.reservation", [
 		this._set('begin', this.timeFromX(value));
 		this.setTextDesc();
 	},
+	_getStartAttr: function() {
+		return this.xFromTime(this.get('trueBegin'));
+	},
+	_getStopAttr: function() {
+		return this.xFromTime(this.get('trueEnd'));
+	},
 	_setBeginAttr: function(value) {
 		this.addAttr('begin');
 		if(djDate.compare(this.get('dateRange').begin, value) > 0) {
@@ -155,23 +157,21 @@ return djDeclare("artnum.reservation", [
 		this._set('deliveryEnd', value);
 	},
 	_getTrueBeginAttr: function() {
-		console.log(this.get('deliveryBegin'));
-		if(this.get('deliveryBegin')) {
-			if(djDate.compare(this.get('begin'), this.get('deliveryBegin')) < 0) {
-				return this.get('deliveryBegin');	
+		if(this.deliveryBegin) {
+			if(djDate.compare(this.begin, this.deliveryBegin) > 0) {
+				return this.deliveryBegin;	
 			}	
 		}
 
-		return this.get('begin');
+		return this.begin;
 	},
 	_getTrueEndAttr: function() {
-		if(this.get('deliveryEnd')) {
-			if(djDate.compare(this.get('end'), this.get('deliveryEnd')) > 0) {
-				return this.get('deliveryEnd');	
+		if(this.deliveryEnd) {
+			if(djDate.compare(this.end, this.deliveryEnd) < 0) {
+				return this.deliveryEnd;	
 			}	
 		}
-
-		return this.get('end');
+		return this.end;
 	},
   lookupContact: function(id) {
     var def = new djDeferred();
@@ -221,8 +221,8 @@ return djDeclare("artnum.reservation", [
 		}
 
 		html += "<div>"
-		if(this.begin) { html += "<span>" + this.begin.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
-		if(this.end) { html += "<span>" + this.end.toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
+		if(this.get('trueBegin')) { html += "<span>" + this.get('trueBegin').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
+		if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
 
     if(this.locality || this.address) {
       var x = ", ";

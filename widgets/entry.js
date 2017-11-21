@@ -302,6 +302,8 @@ return djDeclare("artnum.entry", [
 
 		query.begin = djDateStamp.toISOString(reservation.o.begin);
 		query.end = djDateStamp.toISOString(reservation.o.end);
+		query.deliveryBegin = djDateStamp.toISOString(reservation.o.deliveryBegin);
+		query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
 		query.target = this.target;
 
 		if(reservation.o.IDent != null) {
@@ -309,7 +311,6 @@ return djDeclare("artnum.entry", [
 			method = "PUT";
 			suffix = '/' + query.id;
 		}	
-console.log(reservation.o, query);
 		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(def.resolve);
 		return def;
 	}, 
@@ -349,7 +350,6 @@ console.log(reservation.o, query);
 		this._startWait();
 		var frag = document.createDocumentFragment();
 		for(var i = 0; i < reservations.length; i++) {
-			console.log(reservations[i]);
 			var r = { 
 				"myParent": this,
 				"IDent" : reservations[i].id,
