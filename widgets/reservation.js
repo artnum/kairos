@@ -64,11 +64,15 @@ return djDeclare("artnum.reservation", [
 	templateString: _template,
 	attrs: [],
 	detailsHtml: '',
+	special: 0,
 
-	postCreate: function () {
-		this.inherited(arguments);
+	constructor: function () {
 		this.attrs = new Array();
 		this.detailsHtml = '';
+		this.special = 0;	
+	},
+	postCreate: function () {
+		this.inherited(arguments);
 	  this.resize();
 		if(this.domNode) { 
 			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
@@ -166,12 +170,21 @@ return djDeclare("artnum.reservation", [
 		return this.begin;
 	},
 	_getTrueEndAttr: function() {
+		if(this.is('noend')) {
+			return this.myParent.get('dateRange').end;	
+		}
 		if(this.deliveryEnd) {
 			if(djDate.compare(this.end, this.deliveryEnd) < 0) {
 				return this.deliveryEnd;	
 			}	
 		}
 		return this.end;
+	},
+	is: function(what) {
+		switch(what) {
+			default: return false;
+			case 'noend': if(this.special & 0x1) { return true; } else { return false; }
+		}
 	},
   lookupContact: function(id) {
     var def = new djDeferred();
@@ -186,7 +199,6 @@ return djDeclare("artnum.reservation", [
 		}
     return def;
   },
-
 	setTextDesc: function () {
     var html = '';
 		if(this.IDent == null) {
@@ -222,7 +234,11 @@ return djDeclare("artnum.reservation", [
 
 		html += "<div>"
 		if(this.get('trueBegin')) { html += "<span>" + this.get('trueBegin').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
-		if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
+		if(this.is('noend')) {
+			html += '<span> ... </span>';
+		} else {
+			if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
+		}
 
     if(this.locality || this.address) {
       var x = ", ";

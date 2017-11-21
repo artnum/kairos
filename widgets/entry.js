@@ -362,7 +362,8 @@ return djDeclare("artnum.entry", [
 				"contact": reservations[i].contact,
 				"address": reservations[i].address,
 				"locality": reservations[i].locality,
-				"comment": reservations[i].comment
+				"comment": reservations[i].comment,
+				"special": reservations[i].special
 				};
 			if(r.end != null && r.begin != null) {
 				if(dtRegistry.byId(r.id)) {
