@@ -155,23 +155,23 @@ return djDeclare("artnum.rForm", [
 				}
 			}	
 		});
-		if(! this.reservation.is('noend')) {
-			this.nNoEnd.set('checked', true);
+		if(this.reservation.is('confirmed')) {
+			this.nConfirmed.set('checked', true);
 		}
-		this.toggleNoEnd();
+		this.toggleConfirmed();
   },
 
-	toggleNoEnd: function() {
-		if(! this.nNoEnd.get('checked')) {
-			this.endTime.set('disabled', true);
-			this.endDate.set('disabled', true);	
-			this.nDeliveryEndTime.set('disabled', true);
-			this.nDeliveryEndDate.set('disabled', true);	
+	toggleConfirmed: function() {
+		if(this.nConfirmed.get('checked')) {
+			this.endTime.set('readOnly', true);
+			this.endDate.set('readOnly', true);	
+			this.nDeliveryEndTime.set('readOnly', true);
+			this.nDeliveryEndDate.set('readOnly', true);	
 		} else {
-			this.endTime.set('disabled', false);
-			this.endDate.set('disabled', false);	
-			this.nDeliveryEndTime.set('disabled', false);
-			this.nDeliveryEndDate.set('disabled', false);	
+			this.endTime.set('readOnly', false);
+			this.endDate.set('readOnly', false);	
+			this.nDeliveryEndTime.set('readOnly', false);
+			this.nDeliveryEndDate.set('readOnly', false);	
 		}
 	},
 
@@ -218,8 +218,7 @@ return djDeclare("artnum.rForm", [
 		let deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
 		let deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
 		var that = this;
-
-		this.reservation.setIs('noend', !this.nNoEnd.get('checked'));
+		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
 		this.reservation.set('status', f.status);
 		this.reservation.set('begin', begin);
 		this.reservation.set('end', end);

@@ -299,16 +299,11 @@ return djDeclare("artnum.entry", [
 		reservation.o.attrs.forEach( function (attr) {
 			query[attr] = reservation.o[attr];
 		});
-
+		
 		query.begin = djDateStamp.toISOString(reservation.o.begin);
-		if(! reservation.o.is('noend')) {
-			query.end = djDateStamp.toISOString(reservation.o.end);
-			if(reservation.o.deliveryEnd) { 
-				query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
-			}
-		} else {
-			query.end = null;	
-			query.deliveryEnd = null;
+		query.end = djDateStamp.toISOString(reservation.o.end);
+		if(reservation.o.deliveryEnd) { 
+			query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
 		}
 		if(reservation.o.deliveryBegin) {
 			query.deliveryBegin = djDateStamp.toISOString(reservation.o.deliveryBegin);

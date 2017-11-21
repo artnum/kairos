@@ -329,3 +329,7 @@ div.contact > div:first-child {
 .rForm legend {
 	font-weight: bold;	
 }
+
+.dijitReadOnly {
+	background-color: #ccc !important;	
+}
