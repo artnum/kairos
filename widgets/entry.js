@@ -63,7 +63,7 @@ return djDeclare("artnum.entry", [
 	baseClass: "entry",
 	templateString: _template,
 	stores: {},
-	childs: [],
+	childs: {},
 	myParent: null,
 	isParent: false,
   target: null,
@@ -221,10 +221,14 @@ return djDeclare("artnum.entry", [
 	eShutdown: function(event) {
 		window.requestAnimationFrame(djLang.hitch(this, function () {
 			if(!this.power) {
+				for(var i in this.childs) {
+					this.childs[i].destroy();	
+				}
+				this.childs = new Object();
 				djDomClass.add(this.domNode, "off");
 			} else {
+				this.update(); 
 				djDomClass.remove(this.domNode, "off");
-				this.update();
 			}
 		}));
 		this.power = !this.power;
