@@ -212,7 +212,7 @@ return djDeclare("artnum.rForm", [
 	},
 	doAddContact: function (event) {
 		var c = new contacts({ target: this });
-		var dialog = new dtDialog({title: "Ajout contact", style: "width: 600px; height: 600px; background-color: white;", content: c});
+		var dialog = new dtDialog({title: "Ajout contact", style: "width: 600px; background-color: white;", content: c});
 		c.set('dialog', dialog);
 		dialog.show();		
 	},
