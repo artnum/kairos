@@ -144,11 +144,11 @@ return djDeclare("artnum.rForm", [
 					if(d.default == '1') { def = d.id; }
 					select.addOption({
 						label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-						value: ""+d.id
+						value: d.id
 					});
 				});
-				if(that.get('status')) {
-					select.set('value', that.get('status'));
+				if(that.reservation.get('status')) {
+					select.set('value', that.reservation.get('status'));
 				} else {
 					select.set('value', def);
 				}
