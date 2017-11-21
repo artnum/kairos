@@ -76,7 +76,6 @@ return djDeclare("artnum.reservation", [
 	  this.resize();
 		if(this.domNode) { 
 			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
-		//	djOn(this.domNode, "click", djLang.hitch(this, this.eDetails));
 		 }
   },
 	addAttr: function ( attr ) {
@@ -200,6 +199,7 @@ return djDeclare("artnum.reservation", [
 		switch(what) {
 			default: return false;
 			case 'confirmed': if(this.special & 0x1) { return true; } else { return false; }
+			case 'deliverydate': if(this.special & 0x2) { return true; } else { return false; }
 		}
 	},
 	setIs: function(what, value) {
@@ -208,11 +208,17 @@ return djDeclare("artnum.reservation", [
 				if(value) { 
 					this.special |= 0x1; 
 				} else {
-					this.special &= (!0x1);
+					this.special &= (~0x1);
 				}
-				break;	
+				break;
+			case 'deliverydate':
+				if(value) {
+					this.special |= 0x2;	
+				} else {
+					this.special &= (~0x2);
+				}
+				break;
 		}
-
 		return;
 	},
   lookupContact: function(id) {
@@ -360,78 +366,70 @@ return djDeclare("artnum.reservation", [
 		return false;
 	},
   resize: function() {
+		var that = this;
     var def = new djDeferred();
 		var that = this;
-			if( ! this.myParent) { def.resolve(); return; }
-			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
-    
-			/* Verify  if we keep this ourself */
-      if(djDate.compare(this.get('trueBegin'),this.myParent.get('dateRange').end, "date") > 0 || 
-      		djDate.compare(this.get('trueEnd'), this.myParent.get('dateRange').begin, "date") < 0 ||
-					this.deleted) { 
-				window.requestAnimationFrame(function () { that.destroy(); });
-				def.resolve();
-				return; 
-			}
-
-			/* Size calculation */
-			var dateRange = this.myParent.get('dateRange');
-      var currentWidth = this.myParent.get('blockSize');
-
-
-      var daySize = Math.abs(djDate.difference(this.get('trueBegin'), this.get('trueEnd')));
-			if(daySize == 0) { daySize = 1; }
-			var l = this.longerRight;
-      if(djDate.compare(this.get('trueEnd'), dateRange.end) > 0) {
-        daySize -= Math.abs(djDate.difference(this.get('trueEnd'), dateRange.end));
-				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
-      } else {
-				window.requestAnimationFrame(function () { if(l) { djDomClass.add(l, "hidden"); }});
-			}
-
-    	var startDiff = 0;
-			l = this.longerLeft;
-     	if(djDate.compare(this.get('trueBegin'), dateRange.begin) < 0) {
-        startDiff = Math.abs(djDate.difference(this.get('trueBegin'), dateRange.begin));
-      	daySize -= startDiff;
-				window.requestAnimationFrame(function () { if(l) { djDomClass.remove(l, "hidden");}});
-     	}  else {
-				window.requestAnimationFrame(function () { if(l) { djDomClass.add(l, "hidden");}});
-			}
-
-			/* Last day included */
-      daySize = (daySize + 1) * currentWidth;
-      var leftSize = Math.abs(djDate.difference(dateRange.begin, this.get('trueBegin')) + startDiff ) * currentWidth + this.get('offset') -1; 
-			hourDiff = Math.ceil((this.get('trueBegin').getHours() + (this.get('trueBegin').getMinutes() / 10)) / ( 24 / this.get('blockSize')));
- 			daySize -= Math.ceil((this.get('trueEnd').getHours() + (this.get('trueEnd').getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
-
-			var bgcolor = '#FFFFF';
-			var that = this;
-			var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
-			if(s && s.color) {
-				bgcolor = '#' + s.color;
-			}
-
-			var dSDiff = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), "hour"));
-			if(dSDiff > 0) {
-				dSDiff = (dSDiff / 24) * currentWidth;
-			}
-			var dEDiff = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
-			if(dEDiff > 0) {
-				dEDiff = (dEDiff / 24) * currentWidth;
-			}
-
-
-
-			window.requestAnimationFrame(djLang.hitch(this, function() {
-				/* might be destroyed async */
-				if(that && that.main) {
-					that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
-					that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
-				}
-			}));
 		
+		if( ! this.myParent) { def.resolve(); return; }
+		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
+	
+		/* Verify  if we keep this ourself */
+		if(djDate.compare(this.get('trueBegin'),this.myParent.get('dateRange').end, "date") > 0 || 
+				djDate.compare(this.get('trueEnd'), this.myParent.get('dateRange').begin, "date") < 0 ||
+				this.deleted) { 
+			window.requestAnimationFrame(function () { that.destroy(); });
 			def.resolve();
+			return; 
+		}
+
+		/* Size calculation */
+		var dateRange = this.myParent.get('dateRange');
+		var currentWidth = this.myParent.get('blockSize');
+
+		var daySize = Math.abs(djDate.difference(this.get('trueBegin'), this.get('trueEnd')));
+		if(daySize == 0) { daySize = 1; }
+		var startDiff = 0;
+
+		window.requestAnimationFrame( function () {
+			if(that.is('confirmed')) {
+				djDomClass.add(that.main, 'confirmed');
+			} else {
+				djDomClass.remove(that.main, 'confirmed');
+			}
+		});
+
+		/* Last day included */
+		daySize = (daySize + 1) * currentWidth;
+		var leftSize = Math.abs(djDate.difference(dateRange.begin, this.get('trueBegin')) + startDiff ) * currentWidth + this.get('offset') -1; 
+		hourDiff = Math.ceil((this.get('trueBegin').getHours() + (this.get('trueBegin').getMinutes() / 10)) / ( 24 / this.get('blockSize')));
+		daySize -= Math.ceil((this.get('trueEnd').getHours() + (this.get('trueEnd').getMinutes() / 10)) / ( 24 / this.get('blockSize'))) + hourDiff; 
+
+		var bgcolor = '#FFFFF';
+		var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
+		if(s && s.color) {
+			bgcolor = '#' + s.color;
+		}
+
+		var dSDiff = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), "hour"));
+		if(dSDiff > 0) {
+			dSDiff = (dSDiff / 24) * currentWidth;
+		}
+		var dEDiff = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
+		if(dEDiff > 0) {
+			dEDiff = (dEDiff / 24) * currentWidth;
+		}
+
+
+
+		window.requestAnimationFrame(djLang.hitch(this, function() {
+			/* might be destroyed async */
+			if(that && that.main) {
+				that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
+				that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+			}
+		}));
+	
+		def.resolve();
     return def;
   }
 

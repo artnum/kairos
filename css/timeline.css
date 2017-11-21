@@ -269,10 +269,16 @@ body, html { margin: 0; padding: 0;}
 	background-color: #ccc;
 }
 
+
 .entry .details {
   background-color: white;
 	padding: 0 3px 0 3px;
 }
+
+.reservation.confirmed .details {
+	background-color: #eef;
+}
+
 .entry .details, .entry .tools {
   display: block;
 }

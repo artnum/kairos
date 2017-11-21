@@ -158,7 +158,28 @@ return djDeclare("artnum.rForm", [
 			this.nConfirmed.set('checked', true);
 		}
 		this.toggleConfirmed();
+		
+		if(this.reservation.is('deliverydate')) {
+			this.nDelivery.set('checked', true);
+		}
+		this.toggleDelivery();
   },
+	toggleDelivery: function () {
+		if(this.nDelivery.get('checked')) {
+			this.nDeliveryFields.style ='display: block;';
+			
+			if(!this.deliveryBegin) {
+				this.nDeliveryBeginTime.set('value', this.beginTime.get('value'));
+				this.nDeliveryBeginDate.set('value', this.beginDate.get('value'));
+			}
+			if(!this.deliveryEnd) {
+				this.nDeliveryEndTime.set('value', this.endTime.get('value'));
+				this.nDeliveryEndDate.set('value', this.endDate.get('value'));
+			}
+		} else {
+			this.nDeliveryFields.style= 'display: none;';	
+		}
+	},
 	toggleConfirmed: function() {
 		if(this.nConfirmed.get('checked')) {
 			this.endTime.set('readOnly', true);
@@ -209,8 +230,15 @@ return djDeclare("artnum.rForm", [
 		let f = djDomForm.toObject(this.domNode);
 		let begin = djDateStamp.fromISOString(f.beginDate + f.beginTime);
 		let end = djDateStamp.fromISOString(f.endDate + f.endTime);
-		let deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
-		let deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
+	
+		this.reservation.setIs('deliverydate', this.nDelivery.get('checked'));
+	
+		let deliveryBegin = begin;
+		let deliveryEnd = end;
+		if(this.reservation.is('deliverydate')) {
+			deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
+			deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
+		}
 
 		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
 		this.reservation.set('status', f.status);
