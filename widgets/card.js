@@ -55,14 +55,14 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 	constructor: function(idprefix) {
 		this._set('idprefix', idprefix);
 	},
-	type: '',
-	_setTypeAttr: function (value) {
+
+	getType: function (value) {
 		switch(value) {
 			case 'client': value = 'Client'; break;
 			case 'responsable': value = 'Responsable'; break;
 			case 'place': value = 'Contact sur place'; break;
 		}
-		this.nType.innerHTML = value;
+		return value;
 	},
 	organization: '',
 	_setOrganizationAttr: { node: 'nOrganization', type: 'innerHTML' },

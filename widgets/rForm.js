@@ -29,6 +29,8 @@ define([
 	"dijit/form/Select",
 	"dijit/form/CheckBox",
 	"dijit/Dialog",
+	"dijit/layout/TabContainer",
+	"dijit/layout/ContentPane",
 
 	"artnum/contacts",
 	"artnum/card",
@@ -66,6 +68,8 @@ define([
 	dtSelect,
 	dtCheckBox,
 	dtDialog,
+	dtTabContainer,
+	dtContentPane,
 
 	contacts,
 	card,
@@ -76,7 +80,11 @@ return djDeclare("artnum.rForm", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 	baseClass: "rForm",
 	templateString: _template,
+	contacts: {},
 
+	constructor: function() {
+		this.contacts = new Object();
+	},
 	_setDescriptionAttr: function (value) {
 		this.description = value;
 	},
@@ -127,10 +135,7 @@ return djDeclare("artnum.rForm", [
 	_setContactAttr: function(value)  {
 		var that = this;
 		this.reservation.lookupContact(value).then(function (entry) {
-			c = new card();
-			c.entry(entry);
-			c.set('type', 'client');
-			that.nContacts.appendChild(c.domNode);
+			that.createContact(entry, 'client');
 		});
 	},
 	postCreate: function () {
@@ -193,22 +198,34 @@ return djDeclare("artnum.rForm", [
 			this.nDeliveryEndDate.set('readOnly', false);	
 		}
 	},
+	createContact: function (entry, type) {
+		var c = new card();
+		c.entry(entry);
+		if(this.contacts[type]) {
+			this.nContactsContainer.removeChild(this.contacts[type]);	
+		}
+
+		this.contacts[type] = new dtContentPane({
+		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
+				content: c.domNode
+			});
+		this.nContactsContainer.addChild(this.contacts[type]);
+		this.nContactsContainer.resize();
+	},
 	saveContact: function (id, options) {
 		if(options.type && options.type == "client") {
 			this.reservation.set('contact', id);
 		} else {
 			
 		}
-		if(djDom.byId(this.id + '/' + id)) {
-			var x = djDom.byId(this.id + '/' + id);
-			x.parentNode.removeChild(x);
-		}
-
 		var entry = JSON.parse(window.sessionStorage.getItem(id));
-		var c = new card();
-		c.entry(entry);
-		c.set('type', options.type);
-		this.nContacts.appendChild(c.domNode);
+		
+		var type = options.type;
+		if(options.type == 'autre') {
+			type = options.comment;
+		} 
+		
+		this.createContact(entry, type);
 	},
 	doAddContact: function (event) {
 		var c = new contacts({ target: this });
