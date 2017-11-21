@@ -78,7 +78,6 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 		this.cache = window.sessionStorage;
 		this.inherited(arguments);		
 	},
-
 	doSearch: function (event) {
 		var f = djDomForm.toObject(this.form.domNode);
 		djXhr(locationConfig.store + '/Contacts/',

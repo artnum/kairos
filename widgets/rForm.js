@@ -133,7 +133,6 @@ return djDeclare("artnum.rForm", [
 			that.nContacts.appendChild(c.domNode);
 		});
 	},
-
 	postCreate: function () {
 		this.inherited(arguments);
 		var select = this.status;
@@ -160,7 +159,6 @@ return djDeclare("artnum.rForm", [
 		}
 		this.toggleConfirmed();
   },
-
 	toggleConfirmed: function() {
 		if(this.nConfirmed.get('checked')) {
 			this.endTime.set('readOnly', true);
@@ -174,7 +172,6 @@ return djDeclare("artnum.rForm", [
 			this.nDeliveryEndDate.set('readOnly', false);	
 		}
 	},
-
 	saveContact: function (id, options) {
 		if(options.type && options.type == "client") {
 			this.reservation.set('contact', id);
@@ -192,14 +189,12 @@ return djDeclare("artnum.rForm", [
 		c.set('type', options.type);
 		this.nContacts.appendChild(c.domNode);
 	},
-
 	doAddContact: function (event) {
 		var c = new contacts({ target: this });
 		var dialog = new dtDialog({title: "Ajout contact", style: "width: 600px; height: 600px; background-color: white;", content: c});
 		c.set('dialog', dialog);
 		dialog.show();		
 	},
-
 	doDelete: function (event) {
 		if(this.reservation.remove()) {
 			var that = this;
@@ -208,7 +203,6 @@ return djDeclare("artnum.rForm", [
 			});
 		}
 	},
-
 	doSave: function (event) {
 		var now = new Date();
 
@@ -217,7 +211,7 @@ return djDeclare("artnum.rForm", [
 		let end = djDateStamp.fromISOString(f.endDate + f.endTime);
 		let deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
 		let deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
-		var that = this;
+
 		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
 		this.reservation.set('status', f.status);
 		this.reservation.set('begin', begin);
@@ -230,8 +224,5 @@ return djDeclare("artnum.rForm", [
 		this.reservation.myParent.store({ o: this.reservation });
 		this.reservation.myParent.update(true);
 		this.dialog.destroy();
-
-			//djXhr.post(locationConfig.store  + '/Comments/', { handleAs: 'json', data: { content: that.editor.getData(), datetime: now.toISOString(), reservation: that.reservation  } });
 	}
-
 });});

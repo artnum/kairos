@@ -52,11 +52,9 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 	mapping: { firstname: [ 'givenname', ' '] , familyname: [ 'sn', ' '],
 		organization: ['o', ' '], locality : [ 'l', null ], npa: [ 'postalcode', null],
 		address: ['postaladdress', null ], identity: [ 'IDent', null ] },
-
 	constructor: function(idprefix) {
 		this._set('idprefix', idprefix);
 	},
-
 	type: '',
 	_setTypeAttr: function (value) {
 		switch(value) {
@@ -85,7 +83,6 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 		}
 		return null;
 	},
-
 	entry: function(entry) {
 		for(var k in this.mapping) {
 			if(entry[this.mapping[k][0]]) {

@@ -123,14 +123,14 @@ body, html { margin: 0; padding: 0;}
 
 .entry, .x2 .entry {
 	padding-left: 5px;
-  height: 62px;
-  min-height: 62px;
+  height: 66px;
+  min-height: 66px;
 }
 
 .entry .reservation, .x2 .entry .reservation {
 	display: inline-block;
-	max-height: 58px;
-	height: 58px;
+	max-height: 62px;
+	height: 62px;
 }
 
 .reservation .details div, .x2 .entry .reservation div {
@@ -237,8 +237,7 @@ body, html { margin: 0; padding: 0;}
 }
 
 .entry .tools {
-  height: 4px;
-  font-size: 0.6em;
+  height: 8px;
 }
 
 .headerContainer {
@@ -267,6 +266,7 @@ body, html { margin: 0; padding: 0;}
 	-moz-user-select: none;
 	-webkit-user-select: none;
 	-ms-user-select: none;
+	background-color: #ccc;
 }
 
 .entry .details {

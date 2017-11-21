@@ -160,6 +160,25 @@ return djDeclare("artnum.reservation", [
 		this.addAttr('deliveryEnd');
 		this._set('deliveryEnd', value);
 	},
+	_getDeliveryBeginAttr: function () {
+		if(this.deliveryBegin) {
+			return this.deliveryBegin;	
+		}
+
+		return this.begin;
+	},
+	_getDeliveryEndAttr: function () {
+		if(this.deliveryEnd) {
+			return this.deliveryEnd;	
+		}
+		return this.end;
+	},
+	_getBeginAttr: function() {
+		return this.begin;	
+	},
+	_getEndAttr: function() {
+		return this.end;
+	},
 	_getTrueBeginAttr: function() {
 		if(this.deliveryBegin) {
 			if(djDate.compare(this.begin, this.deliveryBegin) > 0) {
@@ -278,7 +297,6 @@ return djDeclare("artnum.reservation", [
 			
 
 	},
-
 	eClick: function (event) {
 		event.stopPropagation();
 		event.preventDefault();
@@ -291,7 +309,6 @@ return djDeclare("artnum.reservation", [
 		}
 		this.popMeUp();
 	},
-
 	popMeUp: function() {
 		if(this.IDent == null) { return; }
 		var d = dtRegistry.byId('DIA_RES_' + this.IDent);
@@ -313,7 +330,6 @@ return djDeclare("artnum.reservation", [
 			f.set('dialog', dialog);
 			dialog.show();
 	},
-
 	_getOffsetAttr: function() {
 		return this.myParent.get('offset');	
 	},
@@ -323,7 +339,6 @@ return djDeclare("artnum.reservation", [
 	_getDateRangeAttr: function() {
 		return this.myParent.get('dateRange');
 	},
-
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
 		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
@@ -331,12 +346,10 @@ return djDeclare("artnum.reservation", [
 		d.setMinutes(0); d.setSeconds(0);
 		return d;
 	},
-
 	xFromTime: function (x) {
 		var diff = djDate.difference(this.get('dateRange').begin, x, "hour");
 		return (diff * this.get('blockSize') / 24) + this.get('offset');
 	},
-	
 	remove: function() {
 		if(confirm('Vraiment supprimer la réservation ' + this.get('IDent'))) {
 			this.set('deleted', true);
@@ -346,7 +359,6 @@ return djDeclare("artnum.reservation", [
 
 		return false;
 	},
-
   resize: function() {
     var def = new djDeferred();
 		var that = this;
@@ -399,10 +411,23 @@ return djDeclare("artnum.reservation", [
 			if(s && s.color) {
 				bgcolor = '#' + s.color;
 			}
+
+			var dSDiff = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), "hour"));
+			if(dSDiff > 0) {
+				dSDiff = (dSDiff / 24) * currentWidth;
+			}
+			var dEDiff = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
+			if(dEDiff > 0) {
+				dEDiff = (dEDiff / 24) * currentWidth;
+			}
+
+
+
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
 				if(that && that.main) {
-					that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px; background-color: ' + bgcolor + ';'); 
+					that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
+					that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
 				}
 			}));
 		
