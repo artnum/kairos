@@ -232,7 +232,6 @@ return djDeclare("artnum.entry", [
 
 	name: "undef",
 	_setNameAttr: {node: "nameNode", type: "innerHTML"},
-
 	_getBlockSizeAttr: function () {
 		return this.myParent.get('blockSize');
 	},

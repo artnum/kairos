@@ -123,7 +123,9 @@ return djDeclare("artnum.reservation", [
 		this.setTextDesc();
 	},
 	_getStartAttr: function() {
-		return this.xFromTime(this.get('trueBegin'));
+		var s = this.xFromTime(this.get('trueBegin'));
+		if(s < this.get('offset')) { s = this.get('offset'); }
+		return s;
 	},
 	_getStopAttr: function() {
 		return this.xFromTime(this.get('trueEnd'));
