@@ -29,7 +29,8 @@ define([
 	"dijit/form/Select",
 	"dijit/registry",
 
-	"artnum/card"
+	"artnum/card",
+	"artnum/_Request"
 
 
 ], function(
@@ -63,7 +64,8 @@ define([
 	dtSelect,
 	dtRegistry,
 
-	card
+	card,
+	request
 ) {
 
 return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
@@ -75,21 +77,21 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 
 	constructor: function(p) {
 		this.myParent = p.target;
-		this.cache = window.sessionStorage;
 		this.inherited(arguments);		
+		console.log(request);
 	},
 	doSearch: function (event) {
 		var f = djDomForm.toObject(this.form.domNode);
-		djXhr(locationConfig.store + '/Contacts/',
-			{ handleAs: 'json', query: { "search.sn": f.search + "*", "search.givenname": f.search + "*", "search.o": f.search + "*" } }).then(djLang.hitch(this, function (res) {
+		request.get(locationConfig.store + '/Contacts/',
+			{ query: { "search.sn": f.search + "*", "search.givenname": f.search + "*", "search.o": f.search + "*" } }).then(djLang.hitch(this, function (res) {
+				console.log(res);
 			var frag = document.createDocumentFragment();
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
-				var c = new card('/Contacts/');
 				
-				c.entry(entry);			
-				this.cache.setItem(c.get('identity'), JSON.stringify(entry));
-					
+				var c = new card('/Contacts/');
+				c.entry(entry);
+				
 				djOn(c.domNode, "click", djLang.hitch(this, function (event) {
 						var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
 						if(id != null) {

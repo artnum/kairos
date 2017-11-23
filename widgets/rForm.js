@@ -34,7 +34,8 @@ define([
 
 	"artnum/contacts",
 	"artnum/card",
-	"artnum/_Cluster"
+	"artnum/_Cluster",
+	"artnum/_Request"
 
 
 ], function(
@@ -73,7 +74,8 @@ define([
 
 	contacts,
 	card,
-	_Cluster
+	_Cluster,
+	request
 ) {
 
 return djDeclare("artnum.rForm", [
@@ -213,19 +215,28 @@ return djDeclare("artnum.rForm", [
 		this.nContactsContainer.resize();
 	},
 	saveContact: function (id, options) {
-		if(options.type && options.type == "client") {
-			this.reservation.set('contact', id);
-		} else {
-			
-		}
-		var entry = JSON.parse(window.sessionStorage.getItem(id));
-		
-		var type = options.type;
-		if(options.type == 'autre') {
+		var type = options.type ? options.type : '_client';
+		if(options.type == '_autre') {
 			type = options.comment;
 		} 
-		
-		this.createContact(entry, type);
+	
+		if(options.type && options.type == "_client") {
+			this.reservation.set('contact', id);
+		} else {
+			djXhr(locationConfig.store + '/ReservationContact/', { handleAs: 'json', query: {
+					'search.reservation': this.reservation.get('IDent'),
+					'search.target': id,
+					'search.comment': type
+				}}).then(djLang.hitch(this, function(results){
+					if(results.data.length == 0) {
+						djXhr(locationConfig.store + '/ReservationContact/', { handleAs: 'json', method: 'post', query: { reservation: this.reservation.get('IDent'), comment: type, freeform: null, target: id }});
+					}
+				}));
+		}
+		request.get(locationConfig.store + '/' + id).then(djLang.hitch(this, function (c) {
+			console.log(c);
+			this.createContact(c.data[0], type);
+		}));
 	},
 	doAddContact: function (event) {
 		var c = new contacts({ target: this });

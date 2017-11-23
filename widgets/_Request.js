@@ -5,11 +5,11 @@ define([
 ], function(
 	djLang,
 	djDeferred,
-	djXhr
+	djXhr,
 ){
 return { 
 		_options: function() {
-			var options =  { handleAs: 'json'};
+			var options =  { handleAs: 'json', cacheTimeout: 60 };
 			if(arguments[0]) {
 				if(arguments[0].query) {
 					options.query = arguments[0].query;	
@@ -19,6 +19,9 @@ return {
 				}
 				if(arguments[0].data) {
 					options.data = arguments[0].data;	
+				}
+				if(arguments[0].cacheTimeout) {
+					options.data = arguments[0].cacheTimeout;	
 				}
 			}
 
@@ -38,7 +41,7 @@ return {
 				hash.update(JSON.stringify(options.data));
 			}
 
-			return sjcl.codec.base64.fromBits(hash.finalize(ash.finalize()));
+			return sjcl.codec.base64.fromBits(hash.finalize());
 		},
 
 		_getFromCache: function(url, options) {
@@ -46,7 +49,7 @@ return {
 			var r = window.sessionStorage.getItem(id);
 			if(r) {
 				r = JSON.parse(r);
-				if(Date.now() - r.time > 60) {
+				if(Date.now() - r.time < options.cacheTimeout) {
 					window.sessionStorage.removeItem(id);
 					r = null;
 				} else {
