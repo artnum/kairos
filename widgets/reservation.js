@@ -76,7 +76,7 @@ return djDeclare("artnum.reservation", [
 	  this.resize();
 		if(this.domNode) { 
 			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
-		 }
+		}
   },
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
@@ -158,6 +158,10 @@ return djDeclare("artnum.reservation", [
 	_setDeliveryEndAttr: function(value) {
 		this.addAttr('deliveryEnd');
 		this._set('deliveryEnd', value);
+	},
+	_setMyParentAttr:function(value) {
+		this._set('myParent', value);
+		djOn(this.myParent, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
 	},
 	_getDeliveryBeginAttr: function () {
 		if(this.deliveryBegin) {
