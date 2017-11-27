@@ -343,7 +343,7 @@ return djDeclare("artnum.reservation", [
 				locality: this.get('locality'),
 				comment: this.get('comment'),
 				contact: this.get('contact') } );
-			var dialog = new dtDialog({ title: "Reservation " +  this.IDent, style: "width: 600px; background-color: white;", content: f, id: 'DIA_RES_' + this.IDent });
+			var dialog = new dtDialog({ title: "Reservation " +  this.IDent + ", machine " + this.myParent.get('target'), style: "width: 600px; background-color: white;", content: f, id: 'DIA_RES_' + this.IDent });
 			f.set('dialog', dialog);
 			dialog.show();
 			dialog.resize();
