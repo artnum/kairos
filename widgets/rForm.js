@@ -83,6 +83,11 @@ return djDeclare("artnum.rForm", [
 	baseClass: "rForm",
 	templateString: _template,
 	contacts: {},
+	isLayoutContainer: true,
+
+	resize: function() {
+		this.nContactsContainer.resize();
+	},
 
 	constructor: function() {
 		this.contacts = new Object();
@@ -225,10 +230,24 @@ return djDeclare("artnum.rForm", [
 		}
 		this.contacts[type] = new dtContentPane({
 		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
-				content: c.domNode
+				content: c.domNode,
+				closable: true,
+				contactType: type,
+				style: "height: 80px;",
+				onClose: djLang.hitch(this, function (event) {
+						if(confirm('Supprimer le contact ') + c.getType(type)) {
+							console.log(event, this);
+						}
+					})
 			});
+		this.contacts[type].startup();
+		console.log(this.nContactsContainer);
 		this.nContactsContainer.addChild(this.contacts[type]);
-		this.nContactsContainer.resize();
+		if(this.contacts['_client']) {
+			this.nContactsContainer.selectChild(this.contacts['_client']);
+		} else { 
+			this.nContactsContainer.selectChild(this.contacts[type]);
+		}
 	},
 	saveContact: function (id, options) {
 		var type = options.type ? options.type : '_client';

@@ -2,8 +2,8 @@
 <div class="contacts" data-dojo-attach-point="nContacts">
 <button data-dojo-type="dijit/form/Button" value="Ajouter contacts"
  type="button" data-dojo-attach-event="click:doAddContact" ><i class="fa fa-address-book-o" aria-hidden="true"></i> Ajouter contacts</button>
-<div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 140px;"></div>
 </div>
+<div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 140px;" data-dojo-props="isLayoutContainer: true"></div>
 
 <fieldset><legend>Location</legend>
 Début : <input data-dojo-type="dijit/form/DateTextBox" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
