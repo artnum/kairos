@@ -2,12 +2,14 @@
 <div class="search">
 <form data-dojo-type="dijit/form/Form" data-dojo-attach-point="form" data-dojo-attach-event="submit:doSearch">
 <div>
-<input type="radio" name="cType" value="client" data-dojo-type="dijit/form/RadioButton" checked><label>Client</label></input>
-<input type="radio" name="cType" value="responsable" data-dojo-type="dijit/form/RadioButton"><label>Responsable</label></input>
-<input type="radio" name="cType" value="place" data-dojo-type="dijit/form/RadioButton"><label>Sur place</label></input>
-<input type="radio" name="cType" value="autre" data-dojo-type="dijit/form/RadioButton"><label>Autre</label></input> <input type="text" data-dojo-type="dijit/form/TextBox" name="details" />
+<input type="radio" name="cType" value="_client" data-dojo-type="dijit/form/RadioButton" checked><label>Client</label></input>
+<input type="radio" name="cType" value="_responsable" data-dojo-type="dijit/form/RadioButton"><label>Responsable</label></input>
+<input type="radio" name="cType" value="_place" data-dojo-type="dijit/form/RadioButton"><label>Sur place</label></input>
+<input type="radio" name="cType" value="_autre" data-dojo-type="dijit/form/RadioButton"><label>Autre</label></input> <input type="text" data-dojo-type="dijit/form/TextBox" name="details" />
 </div>
-
+<div>
+<textarea name="freeform" data-dojo-attach-point="nFreeform"></textarea>
+</div>
 <div>
 <input type="text" data-dojo-type="dijit/form/TextBox" name="search" />
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"

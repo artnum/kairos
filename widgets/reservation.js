@@ -24,7 +24,8 @@ define([
 	"dijit/registry",
 
 	"artnum/rForm",
-	"artnum/_Mouse"
+	"artnum/_Mouse",
+	"artnum/_Request"
 
 ], function(
 	djDeclare,
@@ -53,7 +54,8 @@ define([
 	dtRegistry,
 
 	rForm,
-	Mouse
+	Mouse,
+	request
 
 ) {
 
@@ -231,7 +233,7 @@ return djDeclare("artnum.reservation", [
     var def = new djDeferred();
     var that = this;
 		if(id) {
-    	djXhr.get(locationConfig.store + '/' + id, {handleAs: "json"}).then(function (result) {
+    	request.get(locationConfig.store + '/' + id).then(function (result) {
 				if(result && result.type == 'results') {
 		  		that._set('dbContact', result.data[0]);
        		def.resolve(result.data[0]);

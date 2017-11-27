@@ -77,8 +77,6 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 
 	constructor: function(p) {
 		this.myParent = p.target;
-		this.inherited(arguments);		
-		console.log(request);
 	},
 	doSearch: function (event) {
 		var f = djDomForm.toObject(this.form.domNode);
