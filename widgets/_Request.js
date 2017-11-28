@@ -78,7 +78,7 @@ return {
 			}
 			return false;
 		},
-		
+
 		get: function (url) {
 			var def = new djDeferred();
 			var options = this._options(arguments[1]);

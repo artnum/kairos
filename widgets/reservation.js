@@ -113,9 +113,14 @@ return djDeclare("artnum.reservation", [
 		this.addAttr('contact');
 		var that = this;
 	  this._set('contact', value);
-    this.lookupContact(value).then( function () {
-      that.setTextDesc(); 
-    });
+		if(value) {
+	    this.lookupContact(value).then( function () {
+  	    that.setTextDesc(); 
+    	});
+		} else {
+			that.dbContact = null;
+			that.setTextDesc();	
+		}
   },
 	_setStartAttr: function(value) {
 		this.addAttr('begin');
@@ -235,8 +240,8 @@ return djDeclare("artnum.reservation", [
 		if(id) {
     	request.get(locationConfig.store + '/' + id).then(function (result) {
 				if(result && result.type == 'results') {
-		  		that._set('dbContact', result.data[0]);
-       		def.resolve(result.data[0]);
+		  		that._set('dbContact', result.first());
+       		def.resolve(result.first());
 				}
 			});
 		}

@@ -108,7 +108,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 			}));
 			var d = this.results;
 			var dialog = this.dialog;
-			window.requestAnimationFrame(function () { d.set('content', frag); d.resize(); dialog.resize();});
+			window.requestAnimationFrame(function () { if(d) { d.set('content', frag); d.resize(); } ; if(dialog) { dialog.resize(); } });
 		}));
 		return false;
 	}

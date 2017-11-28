@@ -64,7 +64,7 @@ return djDeclare(null, {
 		if(this._data.length > 0) {
 			return this._data;
 		}
-		return null;
+		return new Array();
 	},
 	count: function() {
 		return this._data.length;	

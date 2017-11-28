@@ -24,8 +24,8 @@ define([
 
 	"artnum/reservation",
 	"artnum/rForm",
-	"artnum/_Cluster"
-
+	"artnum/_Cluster",
+	"artnum/_Request"
 
 ], function(
 	djDeclare,
@@ -53,7 +53,8 @@ define([
 	reservation,
 	rForm,
 
-	_Cluster
+	_Cluster,
+	request
 
 ) {
 
@@ -313,7 +314,7 @@ return djDeclare("artnum.entry", [
 			query.id = reservation.o.IDent;
 			method = "PUT";
 			suffix = '/' + query.id;
-		}	
+		}
 		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(def.resolve);
 		return def;
 	}, 
