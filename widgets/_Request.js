@@ -1,11 +1,13 @@
 define([
 	"dojo/_base/lang",
 	"dojo/Deferred",
-	"dojo/request/xhr"
+	"dojo/request/xhr",
+	"artnum/_Result"
 ], function(
 	djLang,
 	djDeferred,
 	djXhr,
+	result
 ){
 return { 
 		_options: function() {
@@ -53,7 +55,7 @@ return {
 					window.sessionStorage.removeItem(id);
 					r = null;
 				} else {
-					return r.data;	
+					return new result(r.data);	
 				}
 			}
 	
@@ -65,7 +67,7 @@ return {
 			var cacheEntry = JSON.stringify({ data: data, time: Date.now() });
 			
 			window.sessionStorage.setItem(id, cacheEntry);
-			return data;	
+			return new result(data);	
 		},
 		
 		get: function (url) {
@@ -86,21 +88,33 @@ return {
 		},
 
 		post: function (url) {
+			var def = new djDeferred();
 			var options = this._options(arguments[1]);
 			options.method = 'POST';
-			return djXhr(url, options);			
+			djXhr(url, options).then( function (r) {
+				def.resolve(new result(r));
+			});
+			return def;			
 		},
 
 		put: function (url) {
+			var def = new djDeferred();
 			var options = this._options(arguments[1]);
 			options.method = 'PUT';
-			return djXhr(url, options);
+			djXhr(url, options).then( function (r) {
+				def.resolve(new result(r));	
+			});
+			return def;
 		},
 
 		del: function (url) {
+			var def = new djDeferred();
 			var options = this._options(arguments[1]);
 			options.method = 'DELETE';
-			return djXhr(url, options);	
+			djXhr(url, options).then( function (r) {
+				def.resolve(new result(r));
+			});
+			return def;
 		}
 	};
 });
