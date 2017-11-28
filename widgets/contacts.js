@@ -80,8 +80,15 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 	},
 	doSearch: function (event) {
 		var f = djDomForm.toObject(this.form.domNode);
+	
+		var terms = f.search.split(/\s+/);
+		for(var i = 0; i < terms.length; i++) {
+			/* add = in front of searh as * means verify for presence if first letter in search term */
+			terms[i] = "=*" + terms[i] + "*";	
+		}
+		
 		request.get(locationConfig.store + '/Contacts/',
-			{ query: { "search.sn": f.search + "*", "search.givenname": f.search + "*", "search.o": f.search + "*" } }).then(djLang.hitch(this, function (res) {
+			{ query: { "search.sn": terms, "search.givenname": terms, "search.o": terms } }).then(djLang.hitch(this, function (res) {
 			var frag = document.createDocumentFragment();
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
