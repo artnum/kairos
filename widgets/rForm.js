@@ -190,7 +190,6 @@ return djDeclare("artnum.rForm", [
 		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('IDent') }}).then(djLang.hitch(this, function (res) {
 			if(res.success()) {
 				res.whole().forEach(djLang.hitch(this, function (contact) {
-					console.log(contact);
 					if(contact.freeform) {
 						
 					} else {
@@ -247,6 +246,7 @@ return djDeclare("artnum.rForm", [
 		if(this.contacts[type]) {
 			this.nContactsContainer.removeChild(this.contacts[type]);	
 		}
+		
 		this.contacts[type] = new dtContentPane({
 		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
 				content: c.domNode,
@@ -271,7 +271,7 @@ return djDeclare("artnum.rForm", [
 						}
 					})
 			});
-		this.contacts[type].startup();
+		
 		this.nContactsContainer.addChild(this.contacts[type]);
 		if(this.contacts['_client']) {
 			this.nContactsContainer.selectChild(this.contacts['_client']);
@@ -289,8 +289,13 @@ return djDeclare("artnum.rForm", [
 			type = options.comment;
 		} 
 	
-		if(options.type && options.type == "_client") {
+		if(options.type == "_client") {
 			this.reservation.set('contact', id);
+			request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
+				var e = c.first();
+				e.linkId=null;
+				this.createContact(e, type, true);
+			}));
 		} else {
 			request.get(locationConfig.store + '/ReservationContact/', { query: {
 					'search.reservation': this.reservation.get('IDent'),
