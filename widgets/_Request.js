@@ -69,13 +69,26 @@ return {
 			window.sessionStorage.setItem(id, cacheEntry);
 			return new result(data);	
 		},
+
+		_skipCache: function(args) {
+			if(args) {
+				if(args.skipCache) {
+					return true;	
+				}
+			}
+			return false;
+		},
 		
 		get: function (url) {
 			var def = new djDeferred();
 			var options = this._options(arguments[1]);
 			options.method = 'GET';
 
-			var cached = this._getFromCache(url, options);
+			var cached = null;
+			if(this._skipCache(arguments[1])) {
+				cached = this._getFromCache(url, options);
+			}
+
 			if(cached) {
 				def.resolve(cached);
 			} else {
@@ -84,6 +97,7 @@ return {
 					def.resolve(that._setInCache(url, options, r));
 				});
 			}
+
 			return def;
 		},
 

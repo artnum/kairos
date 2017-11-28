@@ -83,11 +83,8 @@ return djDeclare("artnum.timeline", [
 		this.center = new Date();
 		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
 
-
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
-		console.log("start timeline");
-
 
 		var sStore = window.sessionStorage;
 		djXhr.get(locationConfig.store + '/Status/', { handleAs: "json"}).then( function (results){
@@ -105,7 +102,6 @@ return djDeclare("artnum.timeline", [
 		var blockSize = this.blockSize;
 
 		window.requestAnimationFrame(function () {
-			console.log(blockSize);
 			if(blockSize < 30) {
 				djDomAttr.set(tl, "class", "timeline x1");
 			} else if(blockSize < 60) {
@@ -420,7 +416,6 @@ return djDeclare("artnum.timeline", [
 	},
 
 	update: function () {
-		console.log('update timeline');
 		var def = new djDeferred();
 		var that = this;
 		this.emit('cancel-update');

@@ -93,6 +93,5 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 				}
 			}
 		}
-		console.log(this.domNode);
 	}
 });});

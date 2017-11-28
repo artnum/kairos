@@ -17,7 +17,10 @@ return djDeclare(null, {
 		
 		if(raw.type) {
 			this._parseWithType(raw);
-		}		
+		}
+		if(raw.success) {
+			this._parseWithSuccess(raw);	
+		}
 
 		djLang.mixin(this, raw);
 	},
@@ -31,7 +34,15 @@ return djDeclare(null, {
 				this._data = new Array(raw.data);	
 			}
 		} else if(raw.type == 'error') {
-			
+			this._success = false;			
+		}
+	},
+
+	_parseWithSuccess: function (raw) {
+		if(raw.success) {
+			this._success = true;	
+		} else {
+			this._success = false;			
 		}
 	},
 

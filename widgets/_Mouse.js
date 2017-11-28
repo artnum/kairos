@@ -9,8 +9,6 @@ define([
 var _Mouse = djDeclare(null, {
 
 	getAbsPos: function(event) {
-		console.log(event);
-
 		if(event.pageX && event.pageY) {
 			return {x : event.pageX, y: event.pageY };	
 		} else {
