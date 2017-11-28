@@ -88,7 +88,13 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 		}
 		
 		request.get(locationConfig.store + '/Contacts/',
-			{ query: { "search.sn": terms, "search.givenname": terms, "search.o": terms } }).then(djLang.hitch(this, function (res) {
+			{ query: { 
+									"search.sn": terms, 
+									"search.givenname": terms, 
+									"search.o": terms,
+									"search._sn": 'or',
+									"search._givenname": 'or'
+								} }).then(djLang.hitch(this, function (res) {
 			var frag = document.createDocumentFragment();
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
