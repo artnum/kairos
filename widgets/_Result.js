@@ -14,13 +14,15 @@ return djDeclare(null, {
 	constructor: function( raw ) {
 		this._success = false;
 		this._data = new Array();
-		
+
 		if(raw.type) {
 			this._parseWithType(raw);
-		}
-		if(raw.success) {
+		} else if(raw.success) {
 			this._parseWithSuccess(raw);	
+		} else if(djLang.isArray(raw)) {
+			this._parseArray(raw);	
 		}
+
 
 		djLang.mixin(this, raw);
 	},
@@ -44,6 +46,15 @@ return djDeclare(null, {
 		} else {
 			this._success = false;			
 		}
+	},
+
+	_parseArray: function (raw) {
+		if(raw.length > 0) {
+			this._success = true;	
+		} else {
+			this._success = false;	
+		}
+		this._data = raw;
 	},
 
 	current: function() {
