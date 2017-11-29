@@ -50,7 +50,7 @@ return {
 			var id = this._getId(url, options);
 			var r = window.sessionStorage.getItem(id);
 			if(r) {
-				r = JSON.parse(r);
+				r = JSON.parse(LZString.decompress(r));
 				if(Date.now() - r.time < options.cacheTimeout) {
 					window.sessionStorage.removeItem(id);
 					r = null;
@@ -66,7 +66,7 @@ return {
 			var id = this._getId(url, options);
 			var cacheEntry = JSON.stringify({ data: data, time: Date.now() });
 			
-			window.sessionStorage.setItem(id, cacheEntry);
+			window.sessionStorage.setItem(id, LZString.compress(cacheEntry));
 			return new result(data);	
 		},
 
