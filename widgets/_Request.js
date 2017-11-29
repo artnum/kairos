@@ -85,7 +85,7 @@ return {
 			options.method = 'GET';
 
 			var cached = null;
-			if(this._skipCache(arguments[1])) {
+			if(! this._skipCache(arguments[1])) {
 				cached = this._getFromCache(url, options);
 			}
 
