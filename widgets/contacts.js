@@ -78,6 +78,26 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 	constructor: function(p) {
 		this.myParent = p.target;
 	},
+	keyEvent: function(event) {
+		var k = event.key ? event.key : event.keyCode;
+	
+		if(k == 'Enter') {
+			if(event.target.name == 'search') {
+				this.doSearch(event);	
+			}
+		}
+	},
+	doAddFreeform: function(event) {
+		var f = fjDomForm.toObject(this.form.domNode);
+		
+		if(f.freeform) {
+			this.myParent.saveContact(null, { 
+				type: f.cType,
+				comment: f.details, 
+				freeform: f.freeform});
+				this.dialog.destroy();
+		}		
+	},
 	doSearch: function (event) {
 		var f = djDomForm.toObject(this.form.domNode);
 	

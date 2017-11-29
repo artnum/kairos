@@ -411,18 +411,33 @@ return djDeclare("artnum.reservation", [
 			bgcolor = '#' + s.color;
 		}
 
-		var dSDiff = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), "hour"));
-		if(dSDiff > 0) {
-			if(djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin, 'date') < 0) {
-				dSDiff = - Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, "hour"));
-			}
-			dSDiff = (dSDiff / 24) * currentWidth;
+		var dayNightFactor = 10, hourDay = 10, blockSubdivision = (dayNightFactor * hourDay) + (24 - hourDay), blockUnit = this.get('blockSize') / blockSubdivision;
+		var width = Math.abs(djDate.difference(this.get('trueEnd'), this.get('trueBegin'), 'day'));
+		var startPoint = this.get('offset') + (this.get('blockSize') * djDate.difference(this.get('dateRange').begin, this.get('begin'), 'day'));	
+		var stopPoint = (this.get('blockSize') * width);
+	
+		var sHour = this.get('trueBegin').getHours() ; 	
+		var eHour = this.get('trueEnd').getHours() ; 	
+		var d = 0;
+		if(sHour <= 7 && sHour >= 0) {
+			d = sHour * blockUnit;
+		} else if(sHour < 17) {
+			d = (7 * blockUnit) + (sHour - 7) * dayNightFactor * blockUnit;	
+		} else {
+			d = (7 * blockUnit) + hourDay * dayNightFactor * blockUnit + (sHour-17) * blockUnit;	
+		}
+		startPoint += d;
+		stopPoint -= d;
 
+		if(eHour <= 7 && eHour >= 0) {
+			d = eHour * blockUnit;
+		} else if(sHour < 17) {
+			d = (7 * blockUnit) + (eHour - 7) * dayNightFactor * blockUnit;	
+		} else {
+			d = (7 * blockUnit) + hourDay * dayNightFactor * blockUnit + (eHour-17) * blockUnit;	
 		}
-		var dEDiff = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
-		if(dEDiff > 0) {
-			dEDiff = (dEDiff / 24) * currentWidth;
-		}
+		console.log(eHour, d);
+		stopPoint += d;
 
 		window.requestAnimationFrame(djLang.hitch(this, function() {
 			/* might be destroyed async */
@@ -433,8 +448,9 @@ return djDeclare("artnum.reservation", [
 			} else {
 				djDomClass.remove(that.main, 'confirmed');
 			}
-			that.main.setAttribute('style', 'width: ' + (this.get('stop') - this.get('start')) + 'px; position: absolute; left: ' + this.get('start') + 'px;'); 
-			that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+			that.main.setAttribute('style', 'width: ' + stopPoint + 'px; position: absolute; left: ' + (startPoint) + 'px;'); 
+			//that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+			that.tools.setAttribute('style', 'background-color:' + bgcolor); 
 		
 			def.resolve();
 		}));

@@ -7,15 +7,16 @@
 <input type="radio" name="cType" value="_place" data-dojo-type="dijit/form/RadioButton"><label>Sur place</label></input>
 <input type="radio" name="cType" value="_autre" data-dojo-type="dijit/form/RadioButton"><label>Autre</label></input> <input type="text" data-dojo-type="dijit/form/TextBox" name="details" />
 </div>
-<div>
-<textarea name="freeform" data-dojo-attach-point="nFreeform"></textarea>
-</div>
-<div>
-<input type="text" data-dojo-type="dijit/form/TextBox" name="search" />
+<fieldset><label>Adresse libre</label>
+<textarea name="freeform" data-dojo-attach-point="nFreeform" style="width: 100%;"></textarea><br />
+<button data-dojo-type="dijit/form/Button" value="Ajouter" name="add" data-dojo-attach-event="click:doAddFreeform" ><i class="fa fa-plus-circle" aria-hidden="true"></i> Ajouter</button>
+</fieldset>
+<fieldset><label>Adresse du carnet</label>
+<input type="text" data-dojo-type="dijit/form/TextBox" name="search" 
+	data-dojo-attach-event="keypress:keyEvent" />
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
  type="button" data-dojo-attach-event="click:doSearch" ><i class="fa fa-search" aria-hidden="true"></i> Chercher</button>
-</div>
+</fieldset>
 </form>
-<div class="results" data-dojo-attach-point="results" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="style: { overflow: 'auto', 'max-height': '400px' }">
-</div>
+<div class="results" data-dojo-attach-point="results" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="style: { overflow: 'auto', 'max-height': '400px' }"></div>
 </div>
