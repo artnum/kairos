@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="/location/fonts/fontawesome.css" />
 </head>
 <body class="claro">
-<div data-dojo-type="artnum/timeline" id="tl"></div>
 
 <script>
 function storageAvailable(type) {
@@ -45,10 +44,10 @@ locationConfig = {
 };
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",
-	parseOnLoad: true,
+	parseOnLoad: false,
 	isDebug: true,
+	locale: 'fr-ch',
 	packages: [
-		{ name: "dstore", location: "//cdn.rawgit.com/SitePen/dstore/v1.1.2"},
 		{ name: "artnum", location: "/location/widgets/"}
 	]
 }
@@ -59,52 +58,46 @@ dojoConfig = {
 <script src="/location/js/date.js"></script>
 <script src="/location/js/view.js"></script>
 <script src="/location/js/ldap.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.2/dojo/dojo.js" data-dojo-config="locale: 'fr-ch', async: true, parseOnLoad: true, isDebug: true"></script>
+<!-- https://raw.githubusercontent.com/pieroxy/lz-string/master/libs/lz-string.min.js //-->
+<script src="/location/js/lz-string.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.2/dojo/dojo.js"></script> 
 <script>
 
 require([
-
 	"artnum/timeline",
 	"artnum/entry",
 	"dojo/request/xhr",
 	"dijit/registry",
-	"dstore/Rest",
-
+	"artnum/_Request",
 	"dojo/domReady!"
-], function (timeline, entry, djXhr, dtRegistry, dsRest) {
+], function (timeline, entry, djXhr, dtRegistry, request) {
 
+var tl = new timeline();
+document.getElementsByTagName('body')[0].appendChild(tl.domNode);
 
-var stReservation = dsRest({target: "/location/store/Reservation"});
-
-djXhr.get('https://airserve01.local.airnace.ch/Airnace/Machines', { handleAs: "json", method: "GET"}).then(function ( response ) { 
-	var tl = dtRegistry.byId('tl');
-	tl.setServers(locationConfig.servers);
-	response.forEach( function ( machine ) {
-		var name =  machine.description;
-		if(machine.cn && machine.cn.length > 0) {
-			name += '<div class="name">' + machine.cn[0] + '</div>'; 	
-		}
-		var e = new entry({name: name, parent: tl, isParent: true, target: machine.description,
-			stores : { reservation: stReservation }
-		});
-		e.setServers(locationConfig.servers);
-		tl.addEntry(e);
-		if(machine.airaltref) {
-			machine.airaltref[0].split(',').forEach( function (altref ) {
-				var e = new entry({name: altref.trim(), parent: tl, isParent: false, target: altref.trim(),
-					stores : { reservation: stReservation }
-				});
-				
+request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(function ( response ) { 
+		tl.setServers(locationConfig.servers);
+		if(response.success()) {
+			response.whole().forEach( function ( machine ) {
+				var name =  machine.description;
+				if(machine.cn && machine.cn.length > 0) {
+					name += '<div class="name">' + machine.cn[0] + '</div>'; 	
+				}
+				var e = new entry({name: name, parent: tl, isParent: true, target: machine.description });
 				e.setServers(locationConfig.servers);
 				tl.addEntry(e);
+				if(machine.airaltref) {
+					machine.airaltref[0].split(',').forEach( function (altref ) {
+						var e = new entry({name: altref.trim(), parent: tl, isParent: false, target: altref.trim() });
+						
+						e.setServers(locationConfig.servers);
+						tl.addEntry(e);
+					});
+				}
 			});
+			tl.update();
 		}
-	});
-	tl.update();
-}, function (err) { console.log(err); });
-
-//	let x = new timeline();	
-	
+	}, function (err) { console.log(err); });
 });
 </script>
 </body>
