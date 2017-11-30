@@ -357,8 +357,8 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
-		this.reservation.myParent.store({ o: this.reservation });
-		this.reservation.myParent.update(true);
+		this.reservation.sup.store({ o: this.reservation });
+		this.reservation.sup.update(true);
 		this.dialog.destroy();
 	}
 });});

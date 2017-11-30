@@ -76,7 +76,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 		address: ['postaladdress', null ] },
 
 	constructor: function(p) {
-		this.myParent = p.target;
+		this.sup = p.target;
 	},
 	keyEvent: function(event) {
 		var k = event.key ? event.key : event.keyCode;
@@ -91,7 +91,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 		var f = fjDomForm.toObject(this.form.domNode);
 		
 		if(f.freeform) {
-			this.myParent.saveContact(null, { 
+			this.sup.saveContact(null, { 
 				type: f.cType,
 				comment: f.details, 
 				freeform: f.freeform});
@@ -125,7 +125,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 				djOn(c.domNode, "click", djLang.hitch(this, function (event) {
 						var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
 						if(id != null) {
-							this.myParent.saveContact(id, { type: f.cType, comment: f.details });
+							this.sup.saveContact(id, { type: f.cType, comment: f.details });
 							this.dialog.destroy();
 						}
 					}));

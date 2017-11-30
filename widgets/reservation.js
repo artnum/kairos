@@ -168,9 +168,13 @@ return djDeclare("artnum.reservation", [
 		this.addAttr('deliveryEnd');
 		this._set('deliveryEnd', value);
 	},
+	_setSupAttr: function ( sup ) {
+		this._set('sup', sup);
+		djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
+	},
 	_setMyParentAttr:function(value) {
-		this._set('myParent', value);
-		djOn(this.myParent, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
+		console.log('This function is deprecated')
+		this.set('sup', value);
 	},
 	_getDeliveryBeginAttr: function () {
 		if(this.deliveryBegin) {
@@ -348,20 +352,23 @@ return djDeclare("artnum.reservation", [
 				locality: this.get('locality'),
 				comment: this.get('comment'),
 				contact: this.get('contact') } );
-			var dialog = new dtDialog({ title: "Reservation " +  this.IDent + ", machine " + this.myParent.get('target'), style: "width: 600px; background-color: white;", content: f, id: 'DIA_RES_' + this.IDent });
+			var dialog = new dtDialog({ title: "Reservation " +  this.IDent + ", machine " + this.get('target'), style: "width: 600px; background-color: white;", content: f, id: 'DIA_RES_' + this.IDent });
 			f.set('dialog', dialog);
 			dialog.startup();
 			dialog.show();
 			dialog.resize();
 	},
+	_getTargetAttr: function() {
+		return this.sup.get('target');
+	},
 	_getOffsetAttr: function() {
-		return this.myParent.get('offset');	
+		return this.sup.get('offset');	
 	},
 	_getBlockSizeAttr: function() {
-		return this.myParent.get('blockSize');	
+		return this.sup.get('blockSize');	
 	},
 	_getDateRangeAttr: function() {
-		return this.myParent.get('dateRange');
+		return this.sup.get('dateRange');
 	},
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
@@ -388,12 +395,12 @@ return djDeclare("artnum.reservation", [
     var def = new djDeferred();
 		var that = this;
 		
-		if( ! this.myParent) { def.resolve(); return; }
+		if( ! this.sup) { def.resolve(); return; }
 		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 	
 		/* Verify  if we keep this ourself */
-		if(djDate.compare(this.get('trueBegin'),this.myParent.get('dateRange').end, "date") > 0 || 
-				djDate.compare(this.get('trueEnd'), this.myParent.get('dateRange').begin, "date") < 0 ||
+		if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") > 0 || 
+				djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
 				this.deleted) { 
 			window.requestAnimationFrame(function () { that.destroy(); });
 			def.resolve();
@@ -401,8 +408,8 @@ return djDeclare("artnum.reservation", [
 		}
 
 		/* Size calculation */
-		var dateRange = this.myParent.get('dateRange');
-		var currentWidth = this.myParent.get('blockSize');
+		var dateRange = this.get('dateRange');
+		var currentWidth = this.get('blockSize');
 
 		/* Last day included */
 		var bgcolor = '#FFFFF';

@@ -65,7 +65,7 @@ return djDeclare("artnum.entry", [
 	templateString: _template,
 	stores: {},
 	childs: {},
-	myParent: null,
+	sup: null,
 	isParent: false,
   target: null,
 	newReservation: null,
@@ -77,7 +77,7 @@ return djDeclare("artnum.entry", [
 		this.newReservation= null;
 		this.target = null;
 		this.isParent = false;
-		this.myParent = null;
+		this.sup = null;
 		this.stores = {};
 		this.runUpdate = 0;
 	},
@@ -87,7 +87,7 @@ return djDeclare("artnum.entry", [
 		
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
-		djOn(this.myParent, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		this.verifyLock();
 	},
 	cancelReservation: function() {
@@ -105,7 +105,7 @@ return djDeclare("artnum.entry", [
 	},
 
 	_getOffsetAttr: function () {
-		return this.myParent.get('offset');
+		return this.sup.get('offset');
 	},
 	
 	lock: function() {
@@ -152,7 +152,7 @@ return djDeclare("artnum.entry", [
 
 	dayFromX: function (x) {
 		var dayPx = Math.ceil((x - this.get('offset'))  / this.get('blockSize'))-1;
-		return djDate.add(this.myParent.getDateRange().begin, "day", dayPx);
+		return djDate.add(this.sup.getDateRange().begin, "day", dayPx);
 	},
 	eMouseMove: function(event) {
 		if(this.newReservation) {
@@ -177,7 +177,7 @@ return djDeclare("artnum.entry", [
 					this.newReservation = {start :  new Date() };
 					this.newReservation.start.setTime(d.getTime());
 					d.setHours(17,0,0,0);
-					this.newReservation.o = new reservation({  myParent: this, IDent: null, status: "2" });
+					this.newReservation.o = new reservation({  sup: this, IDent: null, status: "2" });
 					this.set('clickPoint', event.clientX);
 					this.newReservation.o.set('start', event.clientX);
 					this.newReservation.o.set('stop', event.clientX + this.get('blockSize'));
@@ -234,11 +234,11 @@ return djDeclare("artnum.entry", [
 	name: "undef",
 	_setNameAttr: {node: "nameNode", type: "innerHTML"},
 	_getBlockSizeAttr: function () {
-		return this.myParent.get('blockSize');
+		return this.sup.get('blockSize');
 	},
 
 	_getDateRangeAttr: function() {
-		return this.myParent.getDateRange();	
+		return this.sup.getDateRange();	
 	},
 	addChild: function (child, root) {
 		this.own(child);
@@ -268,7 +268,7 @@ return djDeclare("artnum.entry", [
 			}
 
 			this.runUpdate = true;
-			var range = this.myParent.getDateRange();
+			var range = this.sup.getDateRange();
 			var	qParams = { 
 					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
 					"search.begin": "<" + djDateStamp.toISOString(range.end, { selector: 'date'}),
@@ -319,10 +319,15 @@ return djDeclare("artnum.entry", [
 		return def;
 	}, 
 
+	_setSupAttr: function ( sup ) {
+		this.sup = sup;
+		djOn(this.sup, "update-" + this.target, djLang.hitch(this, this.update));
+		djOn(this.sup, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
+			
+	},
 	_setParentAttr: function ( parent ) {
-		this.myParent = parent;
-		djOn(parent, "update-" + this.target, djLang.hitch(this, this.update));
-		djOn(parent, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
+		console.log('This function is deprecated');
+		this.set('sup', parent);
 	},
 
 	_startWait: function() {
@@ -354,7 +359,7 @@ return djDeclare("artnum.entry", [
 		var frag = document.createDocumentFragment();
 		for(var i = 0; i < reservations.length; i++) {
 			var r = { 
-				"myParent": this,
+				"sup": this,
 				"IDent" : reservations[i].id,
 				"id" : reservations[i].id,
 				"begin": djDateStamp.fromISOString(reservations[i].begin),
