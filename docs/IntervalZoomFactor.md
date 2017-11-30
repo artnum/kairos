@@ -1,7 +1,7 @@
 Facteur de zoom pour des intervalles données
 ============================================
 
-À l'affichage d'une réservation ([reservation.js](artnum/location/blob/master/widgets/reservation.js)), la durée d'une heure peut être différente en fonction d'un facteur de zoom déterminé. Une journée est représentée, à l'écran, sous une forme d'une case d'une longueur X. Chaque heure de la journée peut ne pas avoir la même importance, ainsi il est possible d'informer une largeur différente pour une heure dans une intervalle que pour une autre. Prenons le cas d'une case d'une longueur de 48 pixels à l'écran :
+À l'affichage d'une réservation ([reservation.js](../widgets/reservation.js)), la durée d'une heure peut être différente en fonction d'un facteur de zoom déterminé. Une journée est représentée, à l'écran, sous une forme d'une case d'une longueur X. Chaque heure de la journée peut ne pas avoir la même importance, ainsi il est possible d'informer une largeur différente pour une heure dans une intervalle que pour une autre. Prenons le cas d'une case d'une longueur de 48 pixels à l'écran :
 
      1             8              16              24              32              40            48    [px]
      |             |               |               |               |               |             | 
