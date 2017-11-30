@@ -65,10 +65,12 @@ return djDeclare("artnum.timeline", [
 	timeout: null,
 	lastDay: null,
 	firstDay: null,
+	verticals: null,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
-		this.days = new ExtArray();
+		this.verticals = new Array();
+		this.days = new Array();
 		this.weekNumber = new Array();
 		this.entries = new Array();
 		this.lines = null;
@@ -154,7 +156,7 @@ return djDeclare("artnum.timeline", [
 		domDay.setAttribute('class', c);
 		domDay.innerHTML=txtDate;
 		this.own(domDay);
-		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line };
+		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) };
 	},
 
 	resize: function ( event ) {
@@ -232,7 +234,7 @@ return djDeclare("artnum.timeline", [
 		window.requestAnimationFrame(function() {
 			var none = true;
 			days.forEach( function (day) {
-				var pos = djDomGeo.position(day.domNode);
+				var pos = djDomGeo.position(day.domNode, day.computedStyle);
 				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
 					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 900; background-color: yellow; opacity: 0.2; pointer-events: none');	
 					none = false;
@@ -294,7 +296,7 @@ return djDeclare("artnum.timeline", [
 
 	},
 	moveRight: function () {
-		this.center = djDate.add(this.center, "day", Math.floor(this.days.width() / 7));
+		this.center = djDate.add(this.center, "day", Math.floor(this.days.length / 7));
 		this.update();
 	},
 
@@ -303,6 +305,7 @@ return djDeclare("artnum.timeline", [
 	},
 
 	endDraw: function() {
+		var that = this;
 		var node = this.domEntries;
 		var newBuffer = this.newBuffer;
 		this.newBuffer = null;
@@ -327,7 +330,7 @@ return djDeclare("artnum.timeline", [
 	},
 
 	moveLeft: function () {
-		this.center = djDate.add(this.center, "day", -Math.floor(this.days.width() / 7));
+		this.center = djDate.add(this.center, "day", -Math.floor(this.days.length / 7));
 		this.update();
 	},
 
@@ -383,7 +386,7 @@ return djDeclare("artnum.timeline", [
 					}
 				}
 				var d = this.makeDay(day);
-				this.days.add(d , this.isBefore);	
+				this.days.push(d);
 				djDomConstruct.place(d.domNode, docFrag, "last");
 				day = djDate.add(day, "day", 1);
 				this.lastDay = day;
@@ -403,6 +406,41 @@ return djDeclare("artnum.timeline", [
 		return def;
 	},
 
+	drawVerticalLine: function() {
+		var def = new djDeferred();
+		var that = this;
+		var verticals = new Array();
+
+		var frag = document.createDocumentFragment();
+		var even = false;
+		that.days.forEach( function (d) {
+			var node  = document.createElement('DIV');
+			if(even) {
+				node.setAttribute('class', 'vertical even');	
+			}	else {
+				node.setAttribute('class', 'vertical odd');	
+			}
+			
+			box = djDomGeo.getContentBox(d.domNode, d.computedStyle);
+			node.setAttribute('style', 'height: 100%; position: fixed; top: 0; left: ' + box.l + 'px; width: ' + box.w + 'px;');
+
+			frag.appendChild(node);
+			verticals.push(node);
+			even = !even;
+		});
+		
+		window.requestAnimationFrame(function () {
+			that.verticals.forEach( function (v){
+				that.domEntries.removeChild(v);	
+			});
+			that.domEntries.appendChild(frag);	
+			that.verticals = verticals;
+			def.resolve();
+		});
+
+		
+		return def;	
+	},
 	
 	update: function () {
 		var def = new djDeferred();
@@ -410,19 +448,21 @@ return djDeclare("artnum.timeline", [
 		this.emit('cancel-update');
 
 		this.drawTimeline().then(function () {
-			var lateUpdate = new Array();	
-			that.entries.forEach( function ( entry ) {
-				if(rectsIntersect(getPageRect(), getElementRect(entry.domNode))) {
-					that.emit("update-" + entry.target);
-				} else {
-					lateUpdate.push(entry.target);	
-				}			
-			});
+			that.drawVerticalLine().then(function() {
+				var lateUpdate = new Array();	
+				that.entries.forEach( function ( entry ) {
+					if(rectsIntersect(getPageRect(), getElementRect(entry.domNode))) {
+						that.emit("update-" + entry.target);
+					} else {
+						lateUpdate.push(entry.target);	
+					}			
+				});
 
-			lateUpdate.forEach(function ( target ) {
-				window.setTimeout(that.emit("update-" + target), 150);
+				lateUpdate.forEach(function ( target ) {
+					window.setTimeout(that.emit("update-" + target), 150);
+				});
+				def.resolve();		
 			});
-			def.resolve();		
 		});
 		return def;
 	}
