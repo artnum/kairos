@@ -79,7 +79,6 @@ return djDeclare("artnum.timeline", [
 		this.lastDay = null;
 		this.firstDay = null;
 		this.odd = true;
-		this.lockCanvas = false;
 		this.center = new Date();
 		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
 
@@ -399,59 +398,12 @@ return djDeclare("artnum.timeline", [
 			this.line.appendChild(docFrag);
 			this.header.appendChild(hFrag);
 			this.supHeader.appendChild(shFrag);
-			if(! this.lockCanvas) {
-				var that = this;
-				this.lockCanvas = true;
-//				this.drawCanvas(months, weeks);
-//				window.setTimeout(function() { that.lockCanvas = false; }, 500);
-			}
 			def.resolve();
 		}));
 		return def;
 	},
 
-	drawCanvas: function(months, weeks) {
-		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.newBuffer));
-		var posX = this.get('offset');
-		if(! this.lines) {
-			this.lines = document.createElement('canvas');
-			this.domEntries.appendChild(this.lines)
-		}
-		this.lines.setAttribute('style', "top:" + box.t + "px; left:" + box.l + "px; position: absolute; z-index: -1; background-color: transparent;");
-		this.lines.setAttribute("width", box.w);
-		this.lines.setAttribute("height", box.h);
-		var ctx = this.lines.getContext("2d");
-		ctx.clearRect(0,0,box.w, box.h);
-		ctx.lineWidth = 1.5;
-		ctx.lineCap = "round";
-		ctx.globalAlpha = 0.2;
-		for(var i = 0; i <= this.days.width(); i++) {
-			if(this.todayOffset != - 1 && this.todayOffset == i - 1) {
-				ctx.fillStyle="#EC0000";
-				ctx.beginPath();
-				ctx.moveTo(posX, box.t);
-				ctx.lineTo(posX, box.h);
-				ctx.lineTo(posX-this.get('blockSize'), box.h);
-				ctx.lineTo(posX-this.get('blockSize'), box.t);
-				ctx.lineTo(posX, box.t);
-				ctx.fill();
-			} 
-			ctx.beginPath();
-			if((i - this.weekOffset) % 7) {
-				ctx.lineWidth = 0.5;
-				ctx.strokeStyle="#008d8d";
-			} else {
-				ctx.lineWidth = 3;
-				ctx.strokeStyle="#003f3f";
-			}
-			ctx.moveTo(posX, box.t);
-			ctx.lineTo(posX, box.h);
-			ctx.stroke();
-			ctx.closePath();
-			posX += this.get('blockSize');	
-		}
-	},
-
+	
 	update: function () {
 		var def = new djDeferred();
 		var that = this;
