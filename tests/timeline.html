@@ -83,12 +83,12 @@ request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(functio
 				if(machine.cn && machine.cn.length > 0) {
 					name += '<div class="name">' + machine.cn[0] + '</div>'; 	
 				}
-				var e = new entry({name: name, parent: tl, isParent: true, target: machine.description });
+				var e = new entry({name: name, sup: tl, isParent: true, target: machine.description });
 				e.setServers(locationConfig.servers);
 				tl.addEntry(e);
 				if(machine.airaltref) {
 					machine.airaltref[0].split(',').forEach( function (altref ) {
-						var e = new entry({name: altref.trim(), parent: tl, isParent: false, target: altref.trim() });
+						var e = new entry({name: altref.trim(), sup: tl, isParent: false, target: altref.trim() });
 						
 						e.setServers(locationConfig.servers);
 						tl.addEntry(e);
