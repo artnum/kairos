@@ -67,10 +67,14 @@ return djDeclare("artnum.reservation", [
 	attrs: [],
 	detailsHtml: '',
 	special: 0,
+	intervalZoomFactors : [],
+
 
 	constructor: function () {
 		this.attrs = new Array('special');
 		this.detailsHtml = '';
+		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
+		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 		this.special = 0;	
 	},
 	postCreate: function () {
@@ -370,6 +374,9 @@ return djDeclare("artnum.reservation", [
 	_getDateRangeAttr: function() {
 		return this.sup.get('dateRange');
 	},
+	_setIntervalZoomFactor: function ( arr ) {
+		console.log('Not implemented');
+	},
 	timeFromX: function (x) {
 		var blockTime = this.get('blockSize')	/ 24; /* block is a day, day is 24 hours */
 		var hoursToX = Math.ceil((x - this.get('offset')) / blockTime);
@@ -389,6 +396,33 @@ return djDeclare("artnum.reservation", [
 		}
 
 		return false;
+	},
+	computeIntervalOffset: function ( date ) {
+		var offset = 0;
+		var days = 24, sub = 0;
+
+		this.intervalZoomFactors.forEach( function ( izf ) {
+			days -= izf[1] - izf[0];
+			sub += (izf[1] - izf[0]) * izf[2];
+		});
+		sub += days;
+
+		var hour = date.getHours();
+		var within = 0, without = 0;
+		var offset = 0;
+		this.intervalZoomFactors.forEach ( function ( izf ) {
+			if(hour >= izf[0]) {
+				within = hour - izf[0];
+				if(hour > izf[1]) {
+					without =  24 - izf[1];
+					within -= without;
+				}
+				without += izf[0]
+			}	
+			offset = (within * izf[2]) + without;
+		});
+		
+		return (this.get('blockSize') / sub *  offset);
 	},
   resize: function() {
 		var that = this;
@@ -418,33 +452,14 @@ return djDeclare("artnum.reservation", [
 			bgcolor = '#' + s.color;
 		}
 
-		var dayNightFactor = 10, hourDay = 10, blockSubdivision = (dayNightFactor * hourDay) + (24 - hourDay), blockUnit = this.get('blockSize') / blockSubdivision;
 		var width = Math.abs(djDate.difference(this.get('trueEnd'), this.get('trueBegin'), 'day'));
 		var startPoint = this.get('offset') + (this.get('blockSize') * djDate.difference(this.get('dateRange').begin, this.get('begin'), 'day'));	
 		var stopPoint = (this.get('blockSize') * width);
 	
-		var sHour = this.get('trueBegin').getHours() ; 	
-		var eHour = this.get('trueEnd').getHours() ; 	
-		var d = 0;
-		if(sHour <= 7 && sHour >= 0) {
-			d = sHour * blockUnit;
-		} else if(sHour < 17) {
-			d = (7 * blockUnit) + (sHour - 7) * dayNightFactor * blockUnit;	
-		} else {
-			d = (7 * blockUnit) + hourDay * dayNightFactor * blockUnit + (sHour-17) * blockUnit;	
-		}
+		var d = this.computeIntervalOffset(this.get('trueBegin'));
 		startPoint += d;
 		stopPoint -= d;
-
-		if(eHour <= 7 && eHour >= 0) {
-			d = eHour * blockUnit;
-		} else if(sHour < 17) {
-			d = (7 * blockUnit) + (eHour - 7) * dayNightFactor * blockUnit;	
-		} else {
-			d = (7 * blockUnit) + hourDay * dayNightFactor * blockUnit + (eHour-17) * blockUnit;	
-		}
-		console.log(eHour, d);
-		stopPoint += d;
+		stopPoint += this.computeIntervalOffset(this.get('trueEnd'));
 
 		window.requestAnimationFrame(djLang.hitch(this, function() {
 			/* might be destroyed async */
