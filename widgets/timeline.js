@@ -222,7 +222,31 @@ return djDeclare("artnum.timeline", [
     djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
     djOn(window, "resize", djLang.hitch(this, this.resize));
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
-   },
+		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
+	},
+
+	mouseOver: function (event) {
+		var nodeBox = djDomGeo.getContentBox(this.domNode);
+		var sight = this.sight;
+		var days = this.days;
+
+		window.requestAnimationFrame(function() {
+			var none = true;
+			days.forEach( function (day) {
+				var pos = djDomGeo.position(day.domNode);
+				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
+					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 900; background-color: yellow; opacity: 0.2; pointer-events: none');	
+					none = false;
+				}
+			});
+			
+			if(none) {
+				sight.removeAttribute('style');	
+			}
+
+			
+		}); 
+	},
 
 	eWheel: function(event) {
 		if(event.deltaX < 0) {
@@ -275,19 +299,32 @@ return djDeclare("artnum.timeline", [
 		this.update();
 	},
 
+	beginDraw: function() {
+		this.newBuffer = document.createDocumentFragment();
+	},
+
+	endDraw: function() {
+		var node = this.domEntries;
+		var newBuffer = this.newBuffer;
+		this.newBuffer = null;
+
+		window.requestAnimationFrame( function() {
+			while(node.firstChild) {
+				node.removeChild(node.firstChild);
+			}
+			node.appendChild(newBuffer);
+		});
+	},
+
 	addEntry: function ( widget ) {
-		window.requestAnimationFrame(
-			djLang.hitch(this, function() {
-				if(this.odd) {
-					djDomClass.add(widget.domNode, "odd");
-				} else {
-					djDomClass.add(widget.domNode, "even");
-				}
-				this.odd = !this.odd;
-				this.domEntries.addChild(widget)
-				this.entries.push(widget);
-			})
-		);
+		if(this.odd) {
+			djDomClass.add(widget.domNode, "odd");
+		} else {
+			djDomClass.add(widget.domNode, "even");
+		}
+		this.odd = !this.odd;
+		this.newBuffer.appendChild(widget.domNode);
+		this.entries.push(widget);
 	},
 
 	moveLeft: function () {
@@ -365,8 +402,8 @@ return djDeclare("artnum.timeline", [
 			if(! this.lockCanvas) {
 				var that = this;
 				this.lockCanvas = true;
-				this.drawCanvas(months, weeks);
-				window.setTimeout(function() { that.lockCanvas = false; }, 500);
+//				this.drawCanvas(months, weeks);
+//				window.setTimeout(function() { that.lockCanvas = false; }, 500);
 			}
 			def.resolve();
 		}));
@@ -374,11 +411,11 @@ return djDeclare("artnum.timeline", [
 	},
 
 	drawCanvas: function(months, weeks) {
-		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
+		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.newBuffer));
 		var posX = this.get('offset');
 		if(! this.lines) {
 			this.lines = document.createElement('canvas');
-			document.body.appendChild(this.lines)
+			this.domEntries.appendChild(this.lines)
 		}
 		this.lines.setAttribute('style', "top:" + box.t + "px; left:" + box.l + "px; position: absolute; z-index: -1; background-color: transparent;");
 		this.lines.setAttribute("width", box.w);
@@ -429,9 +466,9 @@ return djDeclare("artnum.timeline", [
 					lateUpdate.push(entry.target);	
 				}			
 			});
-		
+
 			lateUpdate.forEach(function ( target ) {
-				window.setTimeout(that.emit("update-" + target), 15);
+				window.setTimeout(that.emit("update-" + target), 150);
 			});
 			def.resolve();		
 		});

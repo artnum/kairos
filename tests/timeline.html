@@ -78,6 +78,7 @@ document.getElementsByTagName('body')[0].appendChild(tl.domNode);
 request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(function ( response ) { 
 		tl.setServers(locationConfig.servers);
 		if(response.success()) {
+			tl.beginDraw();
 			response.whole().forEach( function ( machine ) {
 				var name =  machine.description;
 				if(machine.cn && machine.cn.length > 0) {
@@ -95,8 +96,8 @@ request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(functio
 					});
 				}
 			});
-			tl.update();
 		}
+		tl.endDraw();
 	}, function (err) { console.log(err); });
 });
 </script>
