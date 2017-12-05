@@ -51,11 +51,13 @@ return {
 			var r = window.sessionStorage.getItem(id);
 			if(r) {
 				r = JSON.parse(LZString.decompress(r));
-				if(Date.now() - r.time < options.cacheTimeout) {
-					window.sessionStorage.removeItem(id);
-					r = null;
-				} else {
-					return new result(r.data);	
+				if(r) {
+					if(Date.now() - r.time < options.cacheTimeout) {
+						window.sessionStorage.removeItem(id);
+						r = null;
+					} else {
+						return new result(r.data);	
+					}
 				}
 			}
 	
