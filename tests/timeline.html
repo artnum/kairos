@@ -10,6 +10,7 @@
 <body class="claro">
 
 <script>
+
 function storageAvailable(type) {
   try {
     var storage = window[type],
@@ -35,6 +36,7 @@ function storageAvailable(type) {
 if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
   document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
 }
+
 
 
 locationConfig = { 
@@ -71,7 +73,6 @@ require([
 	"artnum/_Request",
 	"dojo/domReady!"
 ], function (timeline, entry, djXhr, dtRegistry, request) {
-
 var tl = new timeline();
 document.getElementsByTagName('body')[0].appendChild(tl.domNode);
 

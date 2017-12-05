@@ -11,7 +11,7 @@ define([
 ){
 return { 
 		_options: function() {
-			var options =  { handleAs: 'json', cacheTimeout: 60 };
+			var options =  { handleAs: 'json', cacheTimeout: 240 };
 			if(arguments[0]) {
 				if(arguments[0].query) {
 					options.query = arguments[0].query;	
@@ -52,7 +52,7 @@ return {
 			if(r) {
 				r = JSON.parse(LZString.decompress(r));
 				if(r) {
-					if(Date.now() - r.time < options.cacheTimeout) {
+					if(Date.now() - r.time > options.cacheTimeout * 1000) {
 						window.sessionStorage.removeItem(id);
 						r = null;
 					} else {
@@ -90,14 +90,14 @@ return {
 			if(! this._skipCache(arguments[1])) {
 				cached = this._getFromCache(url, options);
 			}
-
-			if(cached) {
+			if(cached != null) {
 				def.resolve(cached);
 			} else {
 				var that = this;
 				djXhr(url, options).then(function (r) {
 					def.resolve(that._setInCache(url, options, r));
 				});
+
 			}
 
 			return def;

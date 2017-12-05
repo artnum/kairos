@@ -83,6 +83,7 @@ return djDeclare("artnum.timeline", [
 		this.odd = true;
 		this.center = new Date();
 		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
+		var verticals = new Array();
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -160,7 +161,6 @@ return djDeclare("artnum.timeline", [
 	},
 
 	resize: function ( event ) {
-		this.update();
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -217,6 +217,11 @@ return djDeclare("artnum.timeline", [
 
 	postCreate: function () {
 		this.inherited(arguments);
+		
+		djDomStyle.set(this.domNode, 'width', document.documentElement.clientWidth - 20);
+		djDomStyle.set(this.domNode, 'max-width', document.documentElement.clientWidth - 20);
+		djDomStyle.set(this.domNode, 'overflow-y', 'hidden');
+		
 		this.update();	
 		djOn(this.moveright, "click", djLang.hitch(this, this.moveRight));
 		djOn(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
@@ -340,7 +345,6 @@ return djDeclare("artnum.timeline", [
 			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
 			this.todayOffset = -1;
 			this.weekOffset = -1;
-
 			this.destroyWeekNumber();
 			this.destroyMonthName();
 			for(var x = this.days.pop(); x!=null; x = this.days.pop()) {
@@ -407,35 +411,38 @@ return djDeclare("artnum.timeline", [
 	drawVerticalLine: function() {
 		var def = new djDeferred();
 		var that = this;
-		var verticals = new Array();
 
-		var frag = document.createDocumentFragment();
-		var even = false;
-		that.days.forEach( function (d) {
+	
+		var newCount = this.days.length - this.verticals.length;	
+		for(var i = 0; i < newCount; i++) {
 			var node  = document.createElement('DIV');
-			if(even) {
-				node.setAttribute('class', 'vertical even');	
-			}	else {
-				node.setAttribute('class', 'vertical odd');	
+			node.setAttribute('class', 'vertical');	
+			node.setAttribute('style', 'height: 100%; position: fixed; top: 0; width: ' + 
+				this.get('blockSize') + 'px; display: none;');
+			this.domNode.appendChild(node);
+			this.verticals.push(node);	
+		}
+		
+		var i = 0, blockSize = this.get('blockSize'), offset = this.get('offset');
+		window.requestAnimationFrame(function() {
+			for(i = 0; i < that.days.length; i++) {
+					var vertical = that.verticals[i];
+					djDomStyle.set(vertical, 'width',  blockSize + 'px');
+					djDomStyle.set(vertical, 'left',  (offset + (blockSize * i)) + 'px');
+					djDomStyle.set(vertical, 'display',  'block');
+					if(i % 2) {
+						vertical.setAttribute('class', 'vertical even');
+					} else {
+						vertical.setAttribute('class', 'vertical odd');
+					}
 			}
 			
-			box = djDomGeo.getContentBox(d.domNode, d.computedStyle);
-			node.setAttribute('style', 'height: 100%; position: fixed; top: 0; left: ' + box.l + 'px; width: ' + box.w + 'px;');
-
-			frag.appendChild(node);
-			verticals.push(node);
-			even = !even;
-		});
-		
-		window.requestAnimationFrame(function () {
-			that.verticals.forEach( function (v){
-				that.domEntries.removeChild(v);	
-			});
-			that.domEntries.appendChild(frag);	
-			that.verticals = verticals;
+			for(; i < that.verticals.length; i++) {
+				var vertical = that.verticals[i];
+					djDomStyle.set(vertical, 'display',  'none');
+			}
 			def.resolve();
 		});
-
 		
 		return def;	
 	},
@@ -443,7 +450,6 @@ return djDeclare("artnum.timeline", [
 	update: function () {
 		var def = new djDeferred();
 		var that = this;
-		this.emit('cancel-update');
 
 		this.drawTimeline().then(function () {
 			that.drawVerticalLine().then(function() {
@@ -456,9 +462,9 @@ return djDeclare("artnum.timeline", [
 					}			
 				});
 
-				lateUpdate.forEach(function ( target ) {
+/*				lateUpdate.forEach(function ( target ) {
 					window.setTimeout(that.emit("update-" + target), 150);
-				});
+				});*/
 				def.resolve();		
 			});
 		});

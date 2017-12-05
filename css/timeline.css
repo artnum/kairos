@@ -1,6 +1,6 @@
  @import url('https://fonts.googleapis.com/css?family=Questrial');
 
-body, html { margin: 0; padding: 0;}
+body, html { margin: 0; padding: 0; overflow-x: hidden;}
 
 .timeline {
 	font-family: 'Questrial', sans-serif;
@@ -342,7 +342,7 @@ div.contact > div:first-child {
 .vertical {
 	pointer-events: none;
 }
-.vertical.even {
+.vertical.odd {
 	border-left: 1px solid  black;
 	border-right: 1px solid black;
 	opacity: 0.2;	
