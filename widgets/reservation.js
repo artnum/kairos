@@ -453,7 +453,9 @@ return djDeclare("artnum.reservation", [
 		}
 
 		var width = Math.abs(djDate.difference(this.get('trueEnd'), this.get('trueBegin'), 'day'));
-		var startPoint = this.get('offset') + (this.get('blockSize') * djDate.difference(this.get('dateRange').begin, this.get('begin'), 'day'));	
+		var bDay = djDate.difference(this.get('dateRange').begin, this.get('trueBegin'), 'day');	
+		if(bDay < 0) { bDay = 0; }
+		var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
 		var stopPoint = (this.get('blockSize') * width);
 	
 		var d = this.computeIntervalOffset(this.get('trueBegin'));

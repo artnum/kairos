@@ -244,8 +244,6 @@ return djDeclare("artnum.timeline", [
 			if(none) {
 				sight.removeAttribute('style');	
 			}
-
-			
 		}); 
 	},
 

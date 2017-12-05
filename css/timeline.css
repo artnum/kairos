@@ -339,9 +339,10 @@ div.contact > div:first-child {
 .dijitReadOnly {
 	background-color: #ccc !important;	
 }
-
-.vertical.even {
+.vertical {
 	pointer-events: none;
+}
+.vertical.even {
 	border-left: 1px solid  black;
 	border-right: 1px solid black;
 	opacity: 0.2;	

@@ -17,7 +17,7 @@ define([
 	"dojo/on",
 	"dojo/dom-class",
 	"dojo/request/xhr",
-	"dojo/throttle",
+	"dojo/promise/all",
 
 	"dijit/Dialog",
 	"dijit/registry",
@@ -45,7 +45,7 @@ define([
 	djOn,
 	djDomClass,
 	djXhr,
-	djThrottle,
+	djAll, 
 
 	dtDialog,
 	dtRegistry,
@@ -268,24 +268,40 @@ return djDeclare("artnum.entry", [
 			}
 
 			this.runUpdate = true;
-			var range = this.sup.getDateRange();
-			var	qParams = { 
-					"search.end": ">" + djDateStamp.toISOString(range.begin, { selector: 'date'}),  
-					"search.begin": "<" + djDateStamp.toISOString(range.end, { selector: 'date'}),
-					"search.target": this.target
-				};
-		
+			var range = this.get('dateRange');
+			var months = new Array();
+			var qParamsS = new Array();
+
+			for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
+				var m = d.getMonth();
+				if(months.indexOf(m) < 0) {
+					months.push(m);
+					qParamsS.push({
+						"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
+						"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
+						"search.target" : this.target
+					});
+				}	
+			}
 			this.runUpdate = Date.now();
-			var qXhr = djXhr.get(this.getUrl(locationConfig.store + '/Reservation'),
-			{ handleAs: 'json', query: qParams });
+			var requests = new Array();
 			var that = this;
-			qXhr.then(function (r) {
-				this.to = null;
-				if(r.type == 'results')	{
-					that.displayReservations(r.data);
-					window.setTimeout(function() { that.runUpdate = false; that._stopWait(); def.resolve(); }, 50);
-				}
+			qParamsS.forEach(function (	qParams ){ 
+				requests.push(request.get(that.getUrl(locationConfig.store + '/Reservation'), { query: qParams }));
 			});
+
+			requests.forEach(function (r) {
+				r.then(function (result) {
+					if(result.success()) {
+						that.displayReservations(result.whole());
+					}
+				});
+			});
+		djAll(requests).then(function(r) {
+			that.runUpdate = false;
+			that._stopWait();
+			def.resolve(); 
+		});
 
 		return def;
 	},
@@ -356,30 +372,38 @@ return djDeclare("artnum.entry", [
 	},
 	displayReservations: function ( reservations ) {
 		this._startWait();
+		var range = this.get('dateRange');
 		var frag = document.createDocumentFragment();
-		for(var i = 0; i < reservations.length; i++) {
-			var r = { 
-				"sup": this,
-				"IDent" : reservations[i].id,
-				"id" : reservations[i].id,
-				"begin": djDateStamp.fromISOString(reservations[i].begin),
-				"end" : djDateStamp.fromISOString(reservations[i].end), 
-				"deliveryBegin": djDateStamp.fromISOString(reservations[i].deliveryBegin),
-				"deliveryEnd" : djDateStamp.fromISOString(reservations[i].deliveryEnd), 
-				"status": reservations[i].status,
-				"contact": reservations[i].contact,
-				"address": reservations[i].address,
-				"locality": reservations[i].locality,
-				"comment": reservations[i].comment,
-				"special": reservations[i].special
-				};
-			if(r.end != null && r.begin != null) {
-				if(dtRegistry.byId(r.id)) {
-					dtRegistry.byId(r.id).destroy();		
+		var that = this;
+		reservations.forEach(function (reserv) {
+			if(	
+				djDate.compare(djDateStamp.fromISOString(reservation.begin), range.end, 'date') <= 0 ||
+				djDate.compare(djDateStamp.fromISOString(reservation.end), range.begin, 'date') > 0
+				) {
+				var r = { 
+					"sup": that,
+					"IDent" : reserv.id,
+					"id" : reserv.id,
+					"begin": djDateStamp.fromISOString(reserv.begin),
+					"end" : djDateStamp.fromISOString(reserv.end), 
+					"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
+					"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
+					"status": reserv.status,
+					"contact": reserv.contact,
+					"address": reserv.address,
+					"locality": reserv.locality,
+					"comment": reserv.comment,
+					"special": reserv.special
+					};
+				if(r.end != null && r.begin != null) {
+					if(dtRegistry.byId(r.id)) {
+						dtRegistry.byId(r.id).resize();		
+					} else {
+						that.addChild(new reservation(r), frag);
+					}
 				}
-				this.addChild(new reservation(r), frag);
 			}
-		}
+		});
 		var d = this.data, that = this;
 		window.requestAnimationFrame(function () { d.appendChild(frag); that._stopWait();  });
 	}
