@@ -462,9 +462,9 @@ return djDeclare("artnum.timeline", [
 					}			
 				});
 
-/*				lateUpdate.forEach(function ( target ) {
-					window.setTimeout(that.emit("update-" + target), 150);
-				});*/
+				lateUpdate.forEach(function ( target ) {
+					that.emit("update-" + target);
+				});
 				def.resolve();		
 			});
 		});

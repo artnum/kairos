@@ -67,14 +67,11 @@ return djDeclare("artnum.reservation", [
 	attrs: [],
 	detailsHtml: '',
 	special: 0,
-	intervalZoomFactors : [],
 
 
 	constructor: function () {
 		this.attrs = new Array('special');
 		this.detailsHtml = '';
-		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
-		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 		this.special = 0;	
 	},
 	postCreate: function () {
@@ -126,12 +123,25 @@ return djDeclare("artnum.reservation", [
 			that.setTextDesc();	
 		}
   },
+	animate: function (x) {
+		var that = this;
+		window.requestAnimationFrame(function() {
+			if(x && x > that.get('offset')) {
+				djDomStyle.set(that.domNode, 'width', Math.abs(x - that.get('clickPoint')));
+				if(that.get('clickPoint') < x) {
+					djDomStyle.set(that.domNode, 'left', that.get('clickPoint'));
+				} else {
+					djDomStyle.set(that.domNode, 'left', x);
+				}
+			}
+			djDomStyle.set(that.domNode, 'display', '');
+			djDomStyle.set(that.domNode, 'position', 'absolute');
+		});
+	},
 	_setStartAttr: function(value) {
 		this.addAttr('begin');
 		if(value == this.get('stop')) { value -= this.get('blockSize'); }
 		this._set('start', value);
-		this._set('begin', this.timeFromX(value));
-		this.setTextDesc();
 	},
 	_getStartAttr: function() {
 		var s = this.xFromTime(this.get('trueBegin'));
@@ -153,7 +163,6 @@ return djDeclare("artnum.reservation", [
 		this.addAttr('end');
 		if(value == this.get('start')) { value += this.get('blockSize'); }
 		this._set('stop', value);
-		this._set('end', this.timeFromX(value));
 	},
 	_setEndAttr: function(value) {
 		this.addAttr('end');
@@ -398,31 +407,7 @@ return djDeclare("artnum.reservation", [
 		return false;
 	},
 	computeIntervalOffset: function ( date ) {
-		var offset = 0;
-		var days = 24, sub = 0;
-
-		this.intervalZoomFactors.forEach( function ( izf ) {
-			days -= izf[1] - izf[0];
-			sub += (izf[1] - izf[0]) * izf[2];
-		});
-		sub += days;
-
-		var hour = date.getHours();
-		var within = 0, without = 0;
-		var offset = 0;
-		this.intervalZoomFactors.forEach ( function ( izf ) {
-			if(hour >= izf[0]) {
-				within = hour - izf[0];
-				if(hour > izf[1]) {
-					without =  24 - izf[1];
-					within -= without;
-				}
-				without += izf[0]
-			}	
-			offset = (within * izf[2]) + without;
-		});
-		
-		return (this.get('blockSize') / sub *  offset);
+		return this.sup.computeIntervalOffset(date);
 	},
   resize: function() {
 		var that = this;
@@ -430,10 +415,10 @@ return djDeclare("artnum.reservation", [
 		var that = this;
 		
 		if(! rectsIntersect(getPageRect(), getElementRect(this.domNode))) {
-			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'visibility', 'hidden'); }});
+			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }});
 			def.resolve(); return; 
 		} else {
-			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'visibility', 'visibility'); }});
+			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', ''); }});
 		}
 
 		if( ! this.sup) { def.resolve(); return; }

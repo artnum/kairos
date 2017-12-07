@@ -69,6 +69,7 @@ return djDeclare("artnum.entry", [
 	isParent: false,
   target: null,
 	newReservation: null,
+	intervalZoomFactors : [],
 	power: true,
 
 	constructor: function (args) {
@@ -80,8 +81,36 @@ return djDeclare("artnum.entry", [
 		this.sup = null;
 		this.stores = {};
 		this.runUpdate = 0;
+		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
+		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 	},
+	computeIntervalOffset: function ( date ) {
+		var offset = 0;
+		var days = 24, sub = 0;
 
+		this.intervalZoomFactors.forEach( function ( izf ) {
+			days -= izf[1] - izf[0];
+			sub += (izf[1] - izf[0]) * izf[2];
+		});
+		sub += days;
+
+		var hour = date.getHours();
+		var within = 0, without = 0;
+		var offset = 0;
+		this.intervalZoomFactors.forEach ( function ( izf ) {
+			if(hour >= izf[0]) {
+				within = hour - izf[0];
+				if(hour > izf[1]) {
+					without =  24 - izf[1];
+					within -= without;
+				}
+				without += izf[0]
+			}	
+			offset = (within * izf[2]) + without;
+		});
+		
+		return (this.get('blockSize') / sub *  offset);
+	},
 	postCreate: function () {
 		this.inherited(arguments);
 		
@@ -151,36 +180,30 @@ return djDeclare("artnum.entry", [
 	},
 
 	dayFromX: function (x) {
-		var dayPx = Math.ceil((x - this.get('offset'))  / this.get('blockSize'))-1;
-		return djDate.add(this.sup.getDateRange().begin, "day", dayPx);
+		var datehour = null;
+		if(x > this.get('offset')) {
+			/* add 1px borders */
+			datehour = djDate.add(this.get('dateRange').begin, 'day', Math.ceil((x + 1 - this.get('offset')) / this.get('blockSize')) - 1);
+		}
+
+		return datehour;
 	},
 	eMouseMove: function(event) {
 		if(this.newReservation) {
-			if(this.newReservation.o.get('start') > event.clientX) {
-				this.newReservation.o.set('start', event.clientX);
-				this.newReservation.o.set('stop', this.get('clickPoint'));
-			} else {
-				this.newReservation.o.set('stop', event.clientX);
-				this.newReservation.o.set('start', this.get('clickPoint'));
-			}
-			this.newReservation.o.resize();
+			this.newReservation.o.animate(event.clientX);
 		}
 	},
 
 	eClick: function(event) {
-		var d = this.dayFromX(event.clientX);
 		if(event.clientX <= this.get("offset")) { return; }
 		if( ! this.newReservation && event.ctrlKey) {
 			this.lock().then(djLang.hitch(this, function( locked ) {
 				if(locked) {
-					d.setHours(8,0,0,0);
-					this.newReservation = {start :  new Date() };
-					this.newReservation.start.setTime(d.getTime());
-					d.setHours(17,0,0,0);
-					this.newReservation.o = new reservation({  sup: this, IDent: null, status: "2" });
-					this.set('clickPoint', event.clientX);
-					this.newReservation.o.set('start', event.clientX);
-					this.newReservation.o.set('stop', event.clientX + this.get('blockSize'));
+					var dBegin = this.dayFromX(event.clientX), dEnd = new Date(dBegin);
+					dBegin.setHours(8,0,0,0);
+					dEnd.setHours(17,0,0,0);
+					this.newReservation = {start :  dBegin };
+					this.newReservation.o = new reservation({  sup: this, IDent: null, status: "2", begin: dBegin, end: dEnd, clickPoint: event.clientX });
 
 					djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
 					djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
@@ -194,19 +217,23 @@ return djDeclare("artnum.entry", [
 			var r = this.newReservation;
 			this.newReservation = null;
 			this._startWait();
-			if(djDate.compare(d, r.start) < 0) {
-				d.setHours(8,0,0,0);
-				r.o.set('begin', d);
+
+			var currentDay = this.dayFromX(event.clientX);
+			if(djDate.compare(currentDay, r.start) < 0) {
+				currentDay.setHours(8,0,0,0);
+				r.o.set('begin', currentDay);
+				r.o.set('end', r.start);
 			} else {
-				d.setHours(17,0,0,0);
-				r.o.set('end', d);
+				currentDay.setHours(17,0,0,0);
+				r.o.set('begin', r.start);
+				r.o.set('end', currentDay);
 			}
+			
 			this.store(r).then(djLang.hitch(this, function (result) {
 				if(result.type == "error") {
 					this.unlock();
 				} else {
 					this.update().then(djLang.hitch(this, function () {
-						r.o.destroy();
 						this.emit('show-' + result.data.id);
 						this._stopWait();
 						this.unlock();
