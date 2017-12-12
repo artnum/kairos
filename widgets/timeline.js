@@ -222,7 +222,7 @@ return djDeclare("artnum.timeline", [
 
 	postCreate: function () {
 		this.inherited(arguments);
-		
+	
 		this.update();	
 		
 		djOn(this.moveright, "click", djLang.hitch(this, this.moveRight));
@@ -233,6 +233,7 @@ return djDeclare("artnum.timeline", [
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
 		djOn(window, "scroll", djLang.hitch(this, this.update));
 		djOn(window, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+		this.refresh();	
 	},
 
 	mouseUpDown: function(event) {
@@ -492,16 +493,24 @@ return djDeclare("artnum.timeline", [
 		
 		return def;	
 	},
+
+	refresh: function() {
+		if(new Date().getTime() - this.lastUpdate.getTime() > 5000) {
+			this.update();
+		}	
+		window.setTimeout(djLang.hitch(this, this.refresh), 250);	
+	},
 	
 	update: function () {
+		this.lastUpdate = new Date();
 		var def = new djDeferred();
 		var that = this;
 
 		this.drawTimeline().then(function () {
 			that.drawVerticalLine().then(function() {
-				var lateUpdate = new Array();	
 				that.entries.forEach( function ( entry ) {
 					if(intoYView(entry.domNode)) {
+						entry.verifyLock();
 						that.emit("update-" + entry.target);
 					}			
 				});

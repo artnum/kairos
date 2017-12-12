@@ -143,6 +143,7 @@ return djDeclare("artnum.entry", [
 		djXhr.get(locationConfig.dlm,  { query: { lock: this.target }}).then(function ( r ) {
 			if(r == '1') {
 				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "mylock"); });	
+				that.myLock = true;
 				def.resolve(true);
 			} else {
 				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
@@ -156,6 +157,10 @@ return djDeclare("artnum.entry", [
 
 	verifyLock: function() {
 		var that = this;
+		if(this.myLock) {
+			setTimeout(djLang.hitch(that, that.verifyLock), 800);	
+			return;	
+		}
 		djXhr.get(locationConfig.dlm, { query : { "status": that.target}}).then( function ( r ) {
 			if(r == '0') {
 				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });
@@ -173,7 +178,10 @@ return djDeclare("artnum.entry", [
 		var that = this;
 		var def = new djDeferred();
 		djXhr.get(locationConfig.dlm,  { query: { unlock: this.target }}).then(function () {
-			window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "mylock"); def.resolve();});	
+			window.requestAnimationFrame(function() {
+				djDomClass.remove(that.domNode, "mylock"); 
+				that.verifyLock();
+				def.resolve();});
 		});
 
 		return def;
