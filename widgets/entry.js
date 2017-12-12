@@ -214,9 +214,9 @@ return djDeclare("artnum.entry", [
 			}));
 		} 
 		if(this.newReservation) {
+			this._startWait();
 			var r = this.newReservation;
 			this.newReservation = null;
-			this._startWait();
 
 			var currentDay = this.dayFromX(event.clientX);
 			if(djDate.compare(currentDay, r.start) < 0) {
@@ -233,9 +233,10 @@ return djDeclare("artnum.entry", [
 				if(result.type == "error") {
 					this.unlock();
 				} else {
+					this.data.removeChild(r.o.domNode);	
+					r.o.set('IDent', result.data.id);
+					r.o.popMeUp();
 					this.update().then(djLang.hitch(this, function () {
-						r.o.set('IDent', result.data.id);
-						r.o.popMeUp();
 						this._stopWait();
 						this.unlock();
 					}))
