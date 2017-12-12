@@ -66,6 +66,7 @@ return djDeclare("artnum.timeline", [
 	lastDay: null,
 	firstDay: null,
 	verticals: null,
+	lastClientXY: [0, 0],
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -84,6 +85,7 @@ return djDeclare("artnum.timeline", [
 		this.center = new Date();
 		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
 		var verticals = new Array();
+		this.lastClientXY = new Array(0,0);
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -237,6 +239,26 @@ return djDeclare("artnum.timeline", [
 		var sight = this.sight;
 		var days = this.days;
 
+		if(document.selection && document.selection.empty) {
+			document.selection.empty();
+		} else if(window.getSelection) {
+			var sel = window.getSelection();
+			sel.removeAllRanges();
+		}
+
+		if(event.buttons == 1) {
+			var diff = Math.abs(Math.abs(this.lastClientXY[0] - event.clientX) / this.get('blockSize'));
+			if(this.lastClientXY[0] - event.clientX > 0) {
+				for(var i = 0; i < diff; i++) {
+					this.moveOneRight();		
+				}
+			}	else if(this.lastClientXY[0] - event.clientX < 0) {
+				for(var i = 0; i < diff; i++) {
+					this.moveOneLeft();		
+				}
+			}
+		}
+
 		window.requestAnimationFrame(function() {
 			var none = true;
 			days.forEach( function (day) {
@@ -251,6 +273,9 @@ return djDeclare("artnum.timeline", [
 				sight.removeAttribute('style');	
 			}
 		}); 
+	
+		this.lastClientXY[0] = event.clientX;
+		this.lastClientXY[1] = event.clientX;
 	},
 
 	eWheel: function(event) {
@@ -299,6 +324,10 @@ return djDeclare("artnum.timeline", [
 		return { begin: this.firstDay, end: this.lastDay }
 
 	},
+	moveOneRight: function () {
+		this.center = djDate.add(this.center, "day", 1);
+		this.update();
+	},
 	moveRight: function () {
 		this.center = djDate.add(this.center, "day", Math.floor(this.days.length / 7));
 		this.update();
@@ -333,6 +362,10 @@ return djDeclare("artnum.timeline", [
 		this.entries.push(widget);
 	},
 
+	moveOneLeft: function() {
+		this.center = djDate.add(this.center, "day", -1);
+		this.update();
+	},
 	moveLeft: function () {
 		this.center = djDate.add(this.center, "day", -Math.floor(this.days.length / 7));
 		this.update();

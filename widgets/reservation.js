@@ -352,6 +352,7 @@ return djDeclare("artnum.reservation", [
 			var sel = window.getSelection();
 			sel.removeAllRanges();
 		}
+		this.popMeUp();
 	},
 	popMeUp: function() {
 		if(this.get('id') == null) { return; }
