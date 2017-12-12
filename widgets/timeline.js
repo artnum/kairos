@@ -232,6 +232,18 @@ return djDeclare("artnum.timeline", [
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
 		djOn(window, "scroll", djLang.hitch(this, this.resize));
+		djOn(window, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+	},
+
+	mouseUpDown: function(event) {
+		window.requestAnimationFrame(function() {
+			var domNode = document.getElementsByTagName('body')[0]
+			if(event.type=='mouseup') {
+				domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')	
+			}	else {
+				domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')	
+			}
+		});
 	},
 
 	mouseOver: function (event) {
