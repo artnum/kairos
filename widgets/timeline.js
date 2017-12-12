@@ -231,7 +231,7 @@ return djDeclare("artnum.timeline", [
     djOn(window, "resize", djLang.hitch(this, this.resize));
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
-		djOn(window, "scroll", djLang.hitch(this, this.resize));
+		djOn(window, "scroll", djLang.hitch(this, this.update));
 		djOn(window, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 	},
 
@@ -503,14 +503,9 @@ return djDeclare("artnum.timeline", [
 				that.entries.forEach( function ( entry ) {
 					if(intoYView(entry.domNode)) {
 						that.emit("update-" + entry.target);
-					} else {
-						lateUpdate.push(entry.target);	
 					}			
 				});
 
-				lateUpdate.forEach(function ( target ) {
-					that.emit("update-" + target);
-				});
 				def.resolve();		
 			});
 		});
