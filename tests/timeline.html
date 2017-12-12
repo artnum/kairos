@@ -42,7 +42,8 @@ if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
 locationConfig = { 
 	servers : [ ],
 	store: '/location/store/', 
-	dlm: '/location/lock.php'
+	dlm: '/location/lock.php',
+	skipCache: true
 };
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",

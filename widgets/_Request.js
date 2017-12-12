@@ -65,10 +65,12 @@ return {
 		},
 
 		_setInCache: function(url, options, data) {
-			var id = this._getId(url, options);
-			var cacheEntry = JSON.stringify({ data: data, time: Date.now() });
-			
-			window.sessionStorage.setItem(id, LZString.compress(cacheEntry));
+			if(! this._skipCache) {
+				var id = this._getId(url, options);
+				var cacheEntry = JSON.stringify({ data: data, time: Date.now() });
+				
+				window.sessionStorage.setItem(id, LZString.compress(cacheEntry));
+			}
 			return new result(data);	
 		},
 
@@ -77,6 +79,10 @@ return {
 				if(args.skipCache) {
 					return true;	
 				}
+			}
+
+			if(locationConfig && locationConfig.skipCache) {
+				return true;
 			}
 			return false;
 		},
