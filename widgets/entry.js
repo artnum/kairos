@@ -234,7 +234,8 @@ return djDeclare("artnum.entry", [
 					this.unlock();
 				} else {
 					this.update().then(djLang.hitch(this, function () {
-						this.emit('show-' + result.data.id);
+						r.o.set('IDent', result.data.id);
+						r.o.popMeUp();
 						this._stopWait();
 						this.unlock();
 					}))

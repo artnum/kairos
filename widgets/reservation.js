@@ -93,6 +93,9 @@ return djDeclare("artnum.reservation", [
 	_setIDentAttr: function(value) {
 		this.IDent = value;
 		this.id = value;
+		if(this.sup) {
+			djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
+		}
 		this.setTextDesc();
 	},
   _setAddressAttr: function(value) {
@@ -183,7 +186,9 @@ return djDeclare("artnum.reservation", [
 	},
 	_setSupAttr: function ( sup ) {
 		this._set('sup', sup);
-		djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
+		if(this.id) {
+			djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
+		}
 	},
 	_setMyParentAttr:function(value) {
 		console.log('This function is deprecated')
@@ -353,8 +358,8 @@ return djDeclare("artnum.reservation", [
 		if(this.IDent == null) { return; }
 		var d = dtRegistry.byId('DIA_RES_' + this.IDent);
 		if(d) {
-			d.destroy();	
-		}
+			d.show();
+		} else {
 			var f = new rForm( {  
 				begin: this.get('begin'), 
 				end: this.get('end'),
@@ -364,12 +369,15 @@ return djDeclare("artnum.reservation", [
 				address: this.get('address'), 
 				locality: this.get('locality'),
 				comment: this.get('comment'),
-				contact: this.get('contact') } );
-			var dialog = new dtDialog({ title: "Reservation " +  this.IDent + ", machine " + this.get('target'), style: "width: 600px; background-color: white;", content: f, id: 'DIA_RES_' + this.IDent });
-			f.set('dialog', dialog);
-			dialog.startup();
-			dialog.show();
-			dialog.resize();
+				contact: this.get('contact') }
+			);
+			var d = new dtDialog({title:
+				"Reservation " +  this.IDent + ", machine " + this.get('target'),
+				content: f.nContent
+				});
+			f.set('dialog', d);
+			d.show();
+		}
 	},
 	_getTargetAttr: function() {
 		return this.sup.get('target');

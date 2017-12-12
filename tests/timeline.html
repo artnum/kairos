@@ -72,8 +72,9 @@ require([
 	"dojo/request/xhr",
 	"dijit/registry",
 	"artnum/_Request",
+	"dijit/Dialog",
 	"dojo/domReady!"
-], function (timeline, entry, djXhr, dtRegistry, request) {
+], function (timeline, entry, djXhr, dtRegistry, request, dtDialog) {
 var tl = new timeline();
 document.getElementsByTagName('body')[0].appendChild(tl.domNode);
 

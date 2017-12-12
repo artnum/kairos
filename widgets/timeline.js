@@ -221,11 +221,8 @@ return djDeclare("artnum.timeline", [
 	postCreate: function () {
 		this.inherited(arguments);
 		
-		djDomStyle.set(this.domNode, 'width', document.documentElement.clientWidth - 20);
-		djDomStyle.set(this.domNode, 'max-width', document.documentElement.clientWidth - 20);
-		djDomStyle.set(this.domNode, 'overflow-y', 'hidden');
-		
 		this.update();	
+		
 		djOn(this.moveright, "click", djLang.hitch(this, this.moveRight));
 		djOn(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
     djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
