@@ -235,8 +235,8 @@ return djDeclare("artnum.entry", [
 				} else {
 					this.data.removeChild(r.o.domNode);	
 					r.o.set('IDent', result.data.id);
-					r.o.popMeUp();
 					this.update().then(djLang.hitch(this, function () {
+						r.o.popMeUp();
 						this._stopWait();
 						this.unlock();
 					}))

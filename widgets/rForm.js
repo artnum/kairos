@@ -323,6 +323,12 @@ return djDeclare("artnum.rForm", [
 		dialog.show();		
 	},
 
+	show: function () {
+		if(this.dialog) {
+			this.dialog.show();	
+		}
+	},
+
 	doDelete: function (event) {
 		if(this.reservation.remove()) {
 			var that = this;

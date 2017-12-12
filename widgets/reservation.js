@@ -352,15 +352,15 @@ return djDeclare("artnum.reservation", [
 			var sel = window.getSelection();
 			sel.removeAllRanges();
 		}
-		this.popMeUp();
 	},
 	popMeUp: function() {
-		if(this.IDent == null) { return; }
-		var d = dtRegistry.byId('DIA_RES_' + this.IDent);
-		if(d) {
-			d.show();
-		} else {
-			var f = new rForm( {  
+		if(this.get('id') == null) { return; }
+		var f = dtRegistry.byId('RFORM_' + this.get('id'));
+		if(f) {
+			f.destroy();
+		}
+			f = new rForm( { 
+				id: 'RFORM_' + this.get('id'),
 				begin: this.get('begin'), 
 				end: this.get('end'),
 				deliveryBegin: this.get('deliveryBegin'),
@@ -372,12 +372,12 @@ return djDeclare("artnum.reservation", [
 				contact: this.get('contact') }
 			);
 			var d = new dtDialog({title:
-				"Reservation " +  this.IDent + ", machine " + this.get('target'),
-				content: f.nContent
+				"Reservation " +  this.get('id') + ", machine " + this.get('target'),
+				id: 'DIA_RES_' + this.get('id'),
+				content: f
 				});
 			f.set('dialog', d);
-			d.show();
-		}
+			f.show();
 	},
 	_getTargetAttr: function() {
 		return this.sup.get('target');
