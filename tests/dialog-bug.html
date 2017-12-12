@@ -1,0 +1,25 @@
+<!DOCTYPE>
+<html>
+<head>
+<style>
+html, body { overflow-x: hidden; }
+</style>
+<title>Dialog bug</title>
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.12.2/dojo/resources/dojo.css" />
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.12.2/dijit/themes/claro/claro.css" />
+</head>
+<body class="claro">
+
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.12.2/dojo/dojo.js"></script> 
+<script>
+require([
+	"dijit/Dialog",
+], function (Dialog) {
+
+	var d = new Dialog({title: "Bug", content: "<p>Bug</p>"});
+	d.show();
+
+});
+</script>
+</body>
+</html>
