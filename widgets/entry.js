@@ -171,6 +171,8 @@ return djDeclare("artnum.entry", [
 				that.locked = true;
 				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 			}
+		}, function(err) {
+				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 		});
 	},
 	
