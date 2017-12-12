@@ -274,7 +274,13 @@ return djDeclare("artnum.entry", [
 		}
 		if(root && child && child.domNode) { root.appendChild(child.domNode); }
 	},
-
+	resize: function () {
+		if(intoYView(this.domNode)) {
+			for(var i in this.childs) {
+				this.childs[i].resize();		
+			}
+		}
+	},
 	update: function () {
 		var force = false;
 		if(arguments[0]) {
@@ -432,7 +438,7 @@ return djDeclare("artnum.entry", [
 			}
 		});
 		var d = this.data, that = this;
-		window.requestAnimationFrame(function () { d.appendChild(frag); that._stopWait();  });
+		window.requestAnimationFrame(function () { d.appendChild(frag); that._stopWait();});
 	}
 
 });});

@@ -414,7 +414,7 @@ return djDeclare("artnum.reservation", [
     var def = new djDeferred();
 		var that = this;
 		
-		if(! rectsIntersect(getPageRect(), getElementRect(this.domNode))) {
+		if(! intoYView(this.sup.domNode)) {
 			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }});
 			def.resolve(); return; 
 		} else {
@@ -431,7 +431,7 @@ return djDeclare("artnum.reservation", [
 			window.requestAnimationFrame(function () { that.destroy(); });
 			def.resolve();
 			return; 
-		}
+		} 
 
 		/* Size calculation */
 		var dateRange = this.get('dateRange');

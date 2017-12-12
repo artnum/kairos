@@ -3,8 +3,8 @@
 function getPageRect() {
 	var isquirks= document.compatMode!=='BackCompat';
 	var page= isquirks? document.documentElement : document.body;
-	var x= page.scrollLeft;
-	var y= page.scrollTop;
+	var x= window.pageXOffset;
+	var y= window.pageYOffset;
 	var w= 'innerWidth' in window? window.innerWidth : page.clientWidth;
 	var h= 'innerHeight' in window? window.innerHeight : page.clientHeight;
 	return [x, y, x+w, y+h];
@@ -22,4 +22,12 @@ function getElementRect(element) {
 }
 function rectsIntersect(a, b) {
 	return a[0]<b[2] && a[2]>b[0] && a[1]<b[3] && a[3]>b[1];
+}
+
+function intoYView(e) {
+	var page = getPageRect();
+	var element = getElementRect(e);
+
+	if(element[1] >= page[1] && element[1] <= page[3]) { return true; }
+	return false;
 }

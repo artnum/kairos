@@ -160,7 +160,10 @@ return djDeclare("artnum.timeline", [
 		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) };
 	},
 
-	resize: function ( event ) {
+	resize: function ( ) {
+		this.entries.forEach(function (e) {
+			e.resize();	
+		});
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -229,6 +232,7 @@ return djDeclare("artnum.timeline", [
     djOn(window, "resize", djLang.hitch(this, this.resize));
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
+		djOn(window, "scroll", djLang.hitch(this, this.resize));
 	},
 
 	mouseOver: function (event) {
@@ -455,7 +459,7 @@ return djDeclare("artnum.timeline", [
 			that.drawVerticalLine().then(function() {
 				var lateUpdate = new Array();	
 				that.entries.forEach( function ( entry ) {
-					if(rectsIntersect(getPageRect(), getElementRect(entry.domNode))) {
+					if(intoYView(entry.domNode)) {
 						that.emit("update-" + entry.target);
 					} else {
 						lateUpdate.push(entry.target);	
