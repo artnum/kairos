@@ -265,15 +265,12 @@ return djDeclare("artnum.timeline", [
 			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
 
 			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
-				var diff = Math.abs(xDiff / (this.get('blockSize') * 4));
+				var diff = Math.floor(Math.abs(xDiff / (this.get('blockSize'))) * 6);
+				console.log(diff);
 				if(this.lastClientXY[0] - event.clientX > 0) {
-					for(var i = 0; i < diff; i++) {
-						this.moveOneRight();		
-					}
+					this.moveXRight(diff);		
 				}	else if(this.lastClientXY[0] - event.clientX < 0) {
-					for(var i = 0; i < diff; i++) {
-						this.moveOneLeft();		
-					}
+					this.moveXLeft(diff);		
 				}
 			}
 
@@ -352,6 +349,10 @@ return djDeclare("artnum.timeline", [
 		return { begin: this.firstDay, end: this.lastDay }
 
 	},
+	moveXRight: function(x) {
+		this.center = djDate.add(this.center, "day", Math.abs(x));
+		this.update();
+	},
 	moveOneRight: function () {
 		this.center = djDate.add(this.center, "day", 1);
 		this.update();
@@ -389,7 +390,10 @@ return djDeclare("artnum.timeline", [
 		this.newBuffer.appendChild(widget.domNode);
 		this.entries.push(widget);
 	},
-
+	moveXLeft: function(x) {
+		this.center = djDate.add(this.center, "day", -Math.abs(x));
+		this.update();
+	},
 	moveOneLeft: function() {
 		this.center = djDate.add(this.center, "day", -1);
 		this.update();
