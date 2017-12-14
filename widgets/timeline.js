@@ -259,15 +259,30 @@ return djDeclare("artnum.timeline", [
 			sel.removeAllRanges();
 		}
 
+		/* Move, following mouse, timeline left/right and up/down when left button is held */
 		if(event.buttons == 1) {
-			var diff = Math.abs(Math.abs(this.lastClientXY[0] - event.clientX) / this.get('blockSize'));
-			if(this.lastClientXY[0] - event.clientX > 0) {
-				for(var i = 0; i < diff; i++) {
-					this.moveOneRight();		
+			var xDiff = Math.abs(this.lastClientXY[0] - event.clientX);
+			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
+
+			if(xDiff > yDiff) {	
+				var diff = Math.abs(xDiff / (this.get('blockSize') * 4));
+				if(this.lastClientXY[0] - event.clientX > 0) {
+					for(var i = 0; i < diff; i++) {
+						this.moveOneRight();		
+					}
+				}	else if(this.lastClientXY[0] - event.clientX < 0) {
+					for(var i = 0; i < diff; i++) {
+						this.moveOneLeft();		
+					}
 				}
-			}	else if(this.lastClientXY[0] - event.clientX < 0) {
-				for(var i = 0; i < diff; i++) {
-					this.moveOneLeft();		
+			}
+
+			if(yDiff > xDiff) {
+				var top = (window.pageYOffset || document.documentElement.scrollTop)  - (document.documentElement.clientTop || 0);
+				if(this.lastClientXY[1] - event.clientY > 0) {
+					window.scrollTo(0, top + yDiff);			
+				} else if(this.lastClientXY[1] - event.clientY < 0){
+					window.scrollTo(0, top - yDiff);			
 				}
 			}
 		}
@@ -288,7 +303,7 @@ return djDeclare("artnum.timeline", [
 		}); 
 	
 		this.lastClientXY[0] = event.clientX;
-		this.lastClientXY[1] = event.clientX;
+		this.lastClientXY[1] = event.clientY;
 	},
 
 	eWheel: function(event) {
