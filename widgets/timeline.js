@@ -266,12 +266,12 @@ return djDeclare("artnum.timeline", [
 
 			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
 				var diff = 0;
-				if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 64) {
+				if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 48) {
 					diff = 1;	
 				} else if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 32) {
 					diff = 2;
 				} else if(xDiff > this.get('blockSize')) {
-					diff = Math.round(Math.abs(xDiff / this.get('blockSize') * 32)) + 1;
+					diff = Math.round(Math.abs(xDiff / this.get('blockSize') * 8)) + 1;
 				}
 				if(this.lastClientXY[0] - event.clientX > 0) {
 					this.moveXRight(diff);		
@@ -283,9 +283,9 @@ return djDeclare("artnum.timeline", [
 			if((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
 				var top = (window.pageYOffset || document.documentElement.scrollTop)  - (document.documentElement.clientTop || 0);
 				if(this.lastClientXY[1] - event.clientY > 0) {
-					window.scrollTo(0, top + yDiff);			
+					window.scrollTo(0, top + (yDiff * 1.25));
 				} else if(this.lastClientXY[1] - event.clientY < 0){
-					window.scrollTo(0, top - yDiff);			
+					window.scrollTo(0, top - (yDiff * 1.25));			
 				}
 			}
 		}
