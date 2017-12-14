@@ -337,14 +337,66 @@ return djDeclare("artnum.rForm", [
 			});
 		}
 	},
+	validate: function () {
+		[ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach( function (c) {
+			c.set('state', 'Normale');
+		});
+		
+		var f = djDomForm.toObject(this.domNode);
+		var begin = djDateStamp.fromISOString(f.beginDate + f.beginTime);
+		var end = djDateStamp.fromISOString(f.endDate + f.endTime);
+
+		if(djDate.compare(begin, end) >= 0) {
+			this.beginDate.set('state', 'Error');
+			this.endDate.set('state', 'Error');
+			return false;
+		}
+
+
+		if(this.nDelivery.get('checked')) {
+			var deliveryBegin = djDateStamp.fromISOString(f.deliveryBeginDate + f.deliveryBeginTime);
+			var deliveryEnd = djDateStamp.fromISOString(f.deliveryEndDate + f.deliveryEndTime);
+
+			if(djDate.compare(deliveryBegin, deliveryEnd) >= 0) {
+				this.nDeliveryBeginDate.set('state', 'Error');
+				this.nDeliveryEndDate.set('state', 'Error');
+				return false;	
+			}
+
+			if(djDate.compare(deliveryBegin, begin) == 0 &&
+				djDate.compare(deliveryEnd, end) == 0	
+			) {
+				this.nDelivery.set('checked', false);
+				this.toggleDelivery();
+				return false;	
+			}
+
+			if(djDate.compare(deliveryBegin, begin) > 0) {
+				this.beginDate.set('state', 'Error');
+				this.nDeliveryBeginDate.set('state', 'Error');
+				return false;
+			}
+
+			if(djDate.compare(deliveryEnd, end) < 0) {
+				this.nDeliveryEndDate.set('state', 'Error');
+				this.endDate.set('state', 'Error');
+				return false;
+			}
+		}
+
+		return true;	
+	},
 
 	doSave: function (event) {
 		var now = new Date();
 
+		if(! this.validate()) { return; }
+
+
 		let f = djDomForm.toObject(this.domNode);
 		let begin = djDateStamp.fromISOString(f.beginDate + f.beginTime);
 		let end = djDateStamp.fromISOString(f.endDate + f.endTime);
-	
+
 		this.reservation.setIs('deliverydate', this.nDelivery.get('checked'));
 	
 		let deliveryBegin = begin;
