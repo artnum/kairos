@@ -287,11 +287,22 @@ return djDeclare("artnum.entry", [
 		if(root && child && child.domNode) { root.appendChild(child.domNode); }
 	},
 	resize: function () {
-		if(intoYView(this.domNode)) {
-			for(var i in this.childs) {
-				this.childs[i].resize();		
+		var def = new djDeferred();
+		var that = this;
+
+		window.setTimeout(function (){
+			if(intoYView(that.domNode)) {
+				dtRegistry.findWidgets(that.domNode).forEach(function(child) {				
+					if(child.get('enabled')) {
+						child.resize();
+					}
+				});
 			}
-		}
+
+			def.resolve();
+		}, 0);
+
+		return def;
 	},
 	update: function () {
 		var force = false;
@@ -304,8 +315,7 @@ return djDeclare("artnum.entry", [
 		this._resetError();
 		this._startWait();
 
-		var w = dtRegistry.findWidgets(this.domNode);
-		w.forEach( function (n) { n.resize(); } );
+		this.resize();
 
 			if(!force && (this.locked || this.runUpdate)) {
 				this._stopWait();

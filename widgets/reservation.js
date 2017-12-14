@@ -67,12 +67,14 @@ return djDeclare("artnum.reservation", [
 	attrs: [],
 	detailsHtml: '',
 	special: 0,
+	hidden: true,
 
 
 	constructor: function () {
 		this.attrs = new Array('special');
 		this.detailsHtml = '';
 		this.special = 0;	
+		this.hidden = true;
 	},
 	postCreate: function () {
 		this.inherited(arguments);
@@ -126,6 +128,24 @@ return djDeclare("artnum.reservation", [
 			that.setTextDesc();	
 		}
   },
+	_setEnableAttr: function() {
+		var that = this;
+		this.hidden = false;
+		window.requestAnimationFrame(
+			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', ''); }
+		});
+	},
+	_setDisableAttr: function() {
+		var that = this;
+		this.hidden = true;
+		window.requestAnimationFrame(
+			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'node'); }
+		});
+	},
+	_getEnabledAttr: function() {
+		return ! this.hidden;
+	},
+
 	animate: function (x) {
 		var that = this;
 		window.requestAnimationFrame(function() {
@@ -137,7 +157,7 @@ return djDeclare("artnum.reservation", [
 					djDomStyle.set(that.domNode, 'left', x);
 				}
 			}
-			djDomStyle.set(that.domNode, 'display', '');
+			that.set('enable');
 			djDomStyle.set(that.domNode, 'position', 'absolute');
 		});
 	},
@@ -424,10 +444,10 @@ return djDeclare("artnum.reservation", [
 		var that = this;
 		
 		if(! intoYView(this.sup.domNode)) {
-			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }});
+			this.set('disable');
 			def.resolve(); return; 
 		} else {
-			window.requestAnimationFrame(function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', ''); }});
+			this.set('enable');
 		}
 
 		if( ! this.sup) { def.resolve(); return; }
