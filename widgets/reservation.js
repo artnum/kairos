@@ -455,8 +455,8 @@ return djDeclare("artnum.reservation", [
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 		
 			/* Verify  if we keep this ourself */
-			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") > 0 || 
-					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
+			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
+					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") <= 0 ||
 					this.deleted) { 
 				this.set('disable');
 				def.resolve();
@@ -476,11 +476,11 @@ return djDeclare("artnum.reservation", [
 
 			var range = this.get('dateRange');	
 			var begin = this.get('trueBegin');
-			if(djDate.compare(range.begin, begin, 'date')>0) {
+			if(djDate.compare(range.begin, begin, 'date')>=0) {
 				begin = range.begin;
 			}
 			var end = this.get('trueEnd');
-			if(djDate.compare(range.end, end, 'date')<0) {
+			if(djDate.compare(range.end, end, 'date')<=0) {
 				end = range.end;
 			}
 
