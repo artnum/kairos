@@ -68,6 +68,7 @@ return djDeclare("artnum.reservation", [
 	detailsHtml: '',
 	special: 0,
 	hidden: true,
+	form: null,
 
 
 	constructor: function () {
@@ -75,6 +76,7 @@ return djDeclare("artnum.reservation", [
 		this.detailsHtml = '';
 		this.special = 0;	
 		this.hidden = true;
+		this.form = null;
 	},
 	postCreate: function () {
 		this.inherited(arguments);
@@ -96,7 +98,6 @@ return djDeclare("artnum.reservation", [
 		this.IDent = value;
 		this.id = value;
 		if(this.sup) {
-			djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
 		}
 		this.setTextDesc();
 	},
@@ -375,30 +376,22 @@ return djDeclare("artnum.reservation", [
 		this.popMeUp();
 	},
 	popMeUp: function() {
+		console.log('popmeup');
 		if(this.get('id') == null) { return; }
-		var f = dtRegistry.byId('RFORM_' + this.get('id'));
-		if(f) {
-			f.destroy();
+		if( ! this.form) {
+			this.form = new rForm({ reservation: this });
 		}
-			f = new rForm( { 
-				id: 'RFORM_' + this.get('id'),
-				begin: this.get('begin'), 
-				end: this.get('end'),
-				deliveryBegin: this.get('deliveryBegin'),
-				deliveryEnd: this.get('deliveryEnd'),
-				reservation: this, status: this.get('status'), 
-				address: this.get('address'), 
-				locality: this.get('locality'),
-				comment: this.get('comment'),
-				contact: this.get('contact') }
-			);
-			var d = new dtDialog({title:
-				"Reservation " +  this.get('id') + ", machine " + this.get('target'),
-				id: 'DIA_RES_' + this.get('id'),
-				content: f
-				});
-			f.set('dialog', d);
-			f.show();
+		var f = this.form;
+		f.set('begin', this.get('begin'));
+		f.set('end', this.get('end'));
+		f.set('deliveryBegin', this.get('deliveryBegin'));
+		f.set('deliveryEnd', this.get('deliveryEnd'));
+		f.set('status', this.get('status'));
+		f.set('address', this.get('address'));
+		f.set('locality', this.get('locality'));
+		f.set('comment', this.get('comment'));
+		f.set('contact', this.get('contact'));
+		f.show();	
 	},
 	_getTargetAttr: function() {
 		return this.sup.get('target');
