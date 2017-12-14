@@ -265,8 +265,14 @@ return djDeclare("artnum.timeline", [
 			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
 
 			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
-				var diff = Math.floor(Math.abs(xDiff / (this.get('blockSize'))) * 6);
-				console.log(diff);
+				var diff = 0;
+				if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 64) {
+					diff = 1;	
+				} else if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 32) {
+					diff = 2;
+				} else if(xDiff > this.get('blockSize')) {
+					diff = Math.round(Math.abs(xDiff / this.get('blockSize') * 32)) + 1;
+				}
 				if(this.lastClientXY[0] - event.clientX > 0) {
 					this.moveXRight(diff);		
 				}	else if(this.lastClientXY[0] - event.clientX < 0) {
