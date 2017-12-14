@@ -71,8 +71,10 @@ return djDeclare("artnum.entry", [
 	newReservation: null,
 	intervalZoomFactors : [],
 	power: true,
+	waiters: 0, /* number of nested "waiting" func */
 
 	constructor: function (args) {
+		this.waiters = 0;
 		this.childs = new Object();
 		this.power = true;
 		this.newReservation= null;
@@ -292,11 +294,13 @@ return djDeclare("artnum.entry", [
 
 		window.setTimeout(function (){
 			if(intoYView(that.domNode)) {
+				that._startWait();
 				dtRegistry.findWidgets(that.domNode).forEach(function(child) {				
 					if(child.get('enabled')) {
 						child.resize();
 					}
 				});
+				that._stopWait();
 			}
 
 			def.resolve();
@@ -315,47 +319,49 @@ return djDeclare("artnum.entry", [
 		this._resetError();
 		this._startWait();
 
-		this.resize();
+		var resizing = this.resize();
 
-			if(!force && (this.locked || this.runUpdate)) {
-				this._stopWait();
-				return;	
-			}
+		if(!force && (this.locked || this.runUpdate)) {
+			this._stopWait();
+			return;	
+		}
 
-			this.runUpdate = true;
-			var range = this.get('dateRange');
-			var months = new Array();
-			var qParamsS = new Array();
+		this.runUpdate = true;
+		var range = this.get('dateRange');
+		var months = new Array();
+		var qParamsS = new Array();
 
-			for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
-				var m = d.getMonth();
-				if(months.indexOf(m) < 0) {
-					months.push(m);
-					qParamsS.push({
-						"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
-						"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
-						"search.target" : this.target
-					});
-				}	
-			}
-			this.runUpdate = Date.now();
-			var requests = new Array();
-			var that = this;
-			qParamsS.forEach(function (	qParams ){ 
-				requests.push(request.get(that.getUrl(locationConfig.store + '/Reservation'), { query: qParams }));
-			});
-
-			requests.forEach(function (r) {
-				r.then(function (result) {
-					if(result.success()) {
-						that.displayReservations(result.whole());
-					}
+		for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
+			var m = d.getMonth();
+			if(months.indexOf(m) < 0) {
+				months.push(m);
+				qParamsS.push({
+					"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
+					"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
+					"search.target" : this.target
 				});
+			}	
+		}
+		this.runUpdate = Date.now();
+		var requests = new Array();
+		var that = this;
+		qParamsS.forEach(function (	qParams ){ 
+			requests.push(request.get(that.getUrl(locationConfig.store + '/Reservation'), { query: qParams }));
+		});
+
+		requests.forEach(function (r) {
+			r.then(function (result) {
+				if(result.success()) {
+					that.displayReservations(result.whole());
+				}
 			});
+		});
 		djAll(requests).then(function(r) {
-			that.runUpdate = false;
-			that._stopWait();
-			def.resolve(); 
+			resizing.then(function() {
+				that.runUpdate = false;
+				that._stopWait();
+				def.resolve(); 
+			});
 		});
 
 		return def;
@@ -403,12 +409,17 @@ return djDeclare("artnum.entry", [
 
 	_startWait: function() {
 		var t = this.domNode;
+		this.waiters++;
 		window.requestAnimationFrame(function() { djDomClass.add(t, "refresh"); });	
 	},
 
 	_stopWait: function () {
 		var t = this.domNode;
-		window.requestAnimationFrame(function() { djDomClass.remove(t, "refresh"); });
+		this.waiters--;
+		if(this.waiters <= 0) {
+			window.requestAnimationFrame(function() { djDomClass.remove(t, "refresh"); });
+			this.waiters = 0;
+		}
 	},
 
 	_setError: function() {
