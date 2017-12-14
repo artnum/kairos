@@ -139,7 +139,7 @@ return djDeclare("artnum.reservation", [
 		var that = this;
 		this.hidden = true;
 		window.requestAnimationFrame(
-			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'node'); }
+			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }
 		});
 	},
 	_getEnabledAttr: function() {
@@ -442,75 +442,76 @@ return djDeclare("artnum.reservation", [
 		var that = this;
     var def = new djDeferred();
 		var that = this;
-		
-		if(! intoYView(this.sup.domNode)) {
-			this.set('disable');
-			def.resolve(); return; 
-		} else {
-			this.set('enable');
-		}
 
-		if( ! this.sup) { def.resolve(); return; }
-		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
-	
-		/* Verify  if we keep this ourself */
-		if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") > 0 || 
-				djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
-				this.deleted) { 
-			window.requestAnimationFrame(function () { that.destroy(); });
-			def.resolve();
-			return; 
-		} 
-
-		/* Size calculation */
-		var dateRange = this.get('dateRange');
-		var currentWidth = this.get('blockSize');
-
-		/* Last day included */
-		var bgcolor = '#FFFFF';
-		var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
-		if(s && s.color) {
-			bgcolor = '#' + s.color;
-		}
-
-		var range = this.get('dateRange');	
-		var begin = this.get('trueBegin');
-		if(djDate.compare(range.begin, begin, 'date')>0) {
-			begin = range.begin;
-		}
-		var end = this.get('trueEnd');
-		if(djDate.compare(range.end, end, 'date')<0) {
-			end = range.end;
-		}
-
-
-		var width = Math.abs(djDate.difference(end, begin, 'day'));
-		var bDay = djDate.difference(this.get('dateRange').begin, begin, 'day');	
-		if(bDay < 0) { bDay = 0; }
-		var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
-		var stopPoint = (this.get('blockSize') * width);
-	
-		var d = this.computeIntervalOffset(begin);
-		startPoint += d;
-		stopPoint -= d;
-		stopPoint += this.computeIntervalOffset(end);
-
-		window.requestAnimationFrame(djLang.hitch(this, function() {
-			/* might be destroyed async */
-			if(! that || ! that.main) { def.resolve(); return ; }
-			
-			if(that.is('confirmed')) {
-				djDomClass.add(that.main, 'confirmed');
+		window.setTimeout(djLang.hitch(this, function() {		
+			if(! intoYView(this.sup.domNode)) {
+				this.set('disable');
+				def.resolve(); return; 
 			} else {
-				djDomClass.remove(that.main, 'confirmed');
+				this.set('enable');
 			}
-			that.main.setAttribute('style', 'width: ' + stopPoint + 'px; position: absolute; left: ' + (startPoint) + 'px;'); 
-			//that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
-			that.tools.setAttribute('style', 'background-color:' + bgcolor); 
+
+			if( ! this.sup) { def.resolve(); return; }
+			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 		
-			def.resolve();
-		}));
-	
+			/* Verify  if we keep this ourself */
+			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") > 0 || 
+					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
+					this.deleted) { 
+				this.set('disable');
+				def.resolve();
+				return; 
+			} 
+
+			/* Size calculation */
+			var dateRange = this.get('dateRange');
+			var currentWidth = this.get('blockSize');
+
+			/* Last day included */
+			var bgcolor = '#FFFFF';
+			var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
+			if(s && s.color) {
+				bgcolor = '#' + s.color;
+			}
+
+			var range = this.get('dateRange');	
+			var begin = this.get('trueBegin');
+			if(djDate.compare(range.begin, begin, 'date')>0) {
+				begin = range.begin;
+			}
+			var end = this.get('trueEnd');
+			if(djDate.compare(range.end, end, 'date')<0) {
+				end = range.end;
+			}
+
+
+			var width = Math.abs(djDate.difference(end, begin, 'day'));
+			var bDay = djDate.difference(this.get('dateRange').begin, begin, 'day');	
+			if(bDay < 0) { bDay = 0; }
+			var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
+			var stopPoint = (this.get('blockSize') * width);
+		
+			var d = this.computeIntervalOffset(begin);
+			startPoint += d;
+			stopPoint -= d;
+			stopPoint += this.computeIntervalOffset(end);
+
+			window.requestAnimationFrame(djLang.hitch(this, function() {
+				/* might be destroyed async */
+				if(! that || ! that.main) { def.resolve(); return ; }
+				
+				if(that.is('confirmed')) {
+					djDomClass.add(that.main, 'confirmed');
+				} else {
+					djDomClass.remove(that.main, 'confirmed');
+				}
+				that.main.setAttribute('style', 'width: ' + stopPoint + 'px; position: absolute; left: ' + (startPoint) + 'px;'); 
+				//that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
+				that.tools.setAttribute('style', 'background-color:' + bgcolor); 
+			
+				def.resolve();
+			}));
+		}), 0);
     return def;
   }
 
