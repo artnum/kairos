@@ -264,7 +264,7 @@ return djDeclare("artnum.timeline", [
 			var xDiff = Math.abs(this.lastClientXY[0] - event.clientX);
 			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
 
-			if(xDiff > yDiff) {	
+			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
 				var diff = Math.abs(xDiff / (this.get('blockSize') * 4));
 				if(this.lastClientXY[0] - event.clientX > 0) {
 					for(var i = 0; i < diff; i++) {
@@ -277,7 +277,7 @@ return djDeclare("artnum.timeline", [
 				}
 			}
 
-			if(yDiff > xDiff) {
+			if((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
 				var top = (window.pageYOffset || document.documentElement.scrollTop)  - (document.documentElement.clientTop || 0);
 				if(this.lastClientXY[1] - event.clientY > 0) {
 					window.scrollTo(0, top + yDiff);			
