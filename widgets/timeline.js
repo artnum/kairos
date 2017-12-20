@@ -127,8 +127,8 @@ return djDeclare("artnum.timeline", [
 	error: function(txt, code) {
 		this.log('error', txt, code);
 	},
-	log: function (level, txt) {
-		var entry = new Object({ level: level, message: txt, date: new Date(), code: entry.code }), that = this;
+	log: function (level, txt, code) {
+		var entry = new Object({ level: level, message: txt, date: new Date(), code: code }), that = this;
 			
 		this.logs.push(entry);
 
