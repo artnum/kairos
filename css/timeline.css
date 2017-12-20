@@ -242,10 +242,30 @@ body, html { margin: 0; padding: 0; }
 }
 
 .headerContainer {
+	max-height: 60px;
+	height: 60px;
 	background-color: white;
 	width: 100%;
+	max-width: 100%;
 	border-bottom: 2px solid black;
 }
+.logline {
+	position: fixed;
+	background-color: rgba(255, 255, 255, 0.2);
+	text-align: right;
+	font-family: monospace;
+	font-size: 0.8em;
+	width: 100%;
+	top: 62px;
+}
+
+.logline.warning {
+	background-color: rgba(255, 127, 0, 0.2) !important;
+}
+.logline.error {
+	background-color: rgba(255, 0, 0, 0.2) !important;
+}
+
 .reservationContainer {
 	padding-top: 88px !important;	
 }

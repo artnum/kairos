@@ -86,6 +86,15 @@ return djDeclare("artnum.entry", [
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 	},
+	warn: function(txt) {
+		this.sup.warn(txt);	
+	},
+	error: function(txt) {
+		this.sup.error(txt);	
+	},
+	info: function(txt) {
+		this.sup.info(txt);	
+	},
 	computeIntervalOffset: function ( date ) {
 		var offset = 0;
 		var days = 24, sub = 0;

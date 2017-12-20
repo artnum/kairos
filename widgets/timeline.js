@@ -67,6 +67,7 @@ return djDeclare("artnum.timeline", [
 	firstDay: null,
 	verticals: null,
 	lastClientXY: [0, 0],
+	logs: null,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -86,6 +87,7 @@ return djDeclare("artnum.timeline", [
 		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
 		var verticals = new Array();
 		this.lastClientXY = new Array(0,0);
+		this.logs = new Array();
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -114,6 +116,43 @@ return djDeclare("artnum.timeline", [
 				djDomAttr.set(tl, "class", "timeline x3");
 			}
 		});
+	},
+
+	info: function(txt) {
+		this.log('info', txt);
+	},
+	warn: function(txt) {
+		this.log('warning', txt);
+	},
+	error: function(txt) {
+		this.log('error', txt);
+	},
+	log: function (level, txt) {
+		var entry = new Object({ level: level, message: txt, date: new Date() }), that = this;
+			
+		this.logs.push(entry);
+
+		window.requestAnimationFrame(function (){
+			if(that.logline.firstChild) {
+				that.logline.removeChild(that.logline.firstChild);
+			}
+
+			var frag = document.createDocumentFragment();
+			var span = document.createElement('SPAN');
+			span.setAttribute('class', entry.level);
+			span.appendChild(document.createTextNode(entry.message));
+			frag.appendChild(span);
+			that.logline.appendChild(frag);
+			that.logline.setAttribute('class', 'logline ' + entry.level);
+		});
+		window.setTimeout(function () {
+			window.requestAnimationFrame( function() {
+				if(that.logline.firstChild) {
+					that.logline.removeChild(that.logline.firstChild);
+				}
+				that.logline.setAttribute('class', 'logline');
+			})
+		}, 10000);
 	},
 
 	zoomIn: function () {

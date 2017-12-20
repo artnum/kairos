@@ -311,7 +311,8 @@ return djDeclare("artnum.rForm", [
 			var current = this.reservation.get('contact');
 			if(current) {
 				if(confirm('Voulez-vous vraiment remplacer le client ?')) {
-					proceed = true;	
+					proceed = true;
+					this.reservation.warn('Client remplacé');
 				}
 			} else {
 				proceed = true;	
