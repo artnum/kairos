@@ -118,17 +118,17 @@ return djDeclare("artnum.timeline", [
 		});
 	},
 
-	info: function(txt) {
-		this.log('info', txt);
+	info: function(txt, code) {
+		this.log('info', txt, code);
 	},
-	warn: function(txt) {
-		this.log('warning', txt);
+	warn: function(txt, code) {
+		this.log('warning', txt, code);
 	},
-	error: function(txt) {
-		this.log('error', txt);
+	error: function(txt, code) {
+		this.log('error', txt, code);
 	},
 	log: function (level, txt) {
-		var entry = new Object({ level: level, message: txt, date: new Date() }), that = this;
+		var entry = new Object({ level: level, message: txt, date: new Date(), code: entry.code }), that = this;
 			
 		this.logs.push(entry);
 
@@ -140,7 +140,7 @@ return djDeclare("artnum.timeline", [
 			var frag = document.createDocumentFragment();
 			var span = document.createElement('SPAN');
 			span.setAttribute('class', entry.level);
-			span.appendChild(document.createTextNode(entry.message));
+			span.appendChild(document.createTextNode(entry.message + ' (' + entry.code + ')'));
 			frag.appendChild(span);
 			that.logline.appendChild(frag);
 			that.logline.setAttribute('class', 'logline ' + entry.level);

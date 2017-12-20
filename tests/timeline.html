@@ -101,7 +101,7 @@ request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(functio
 			});
 		}
 		tl.endDraw();
-	}, function (err) { console.log(err); });
+	}, function (err) { tl.error('Impossible de se connecter au serveur', 101); });
 });
 </script>
 </body>

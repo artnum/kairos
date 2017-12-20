@@ -78,14 +78,14 @@ return djDeclare("artnum.reservation", [
 		this.hidden = true;
 		this.form = null;
 	},
-	error: function(txt) {
-		this.sup.error(txt);
+	error: function(txt, code) {
+		this.sup.error(txt, code);
 	},
-	warn: function(txt) {
-		this.sup.warn(txt);	
+	warn: function(txt, code) {
+		this.sup.warn(txt, code);	
 	},
-	info: function(txt) {
-		this.sup.info(txt);	
+	info: function(txt, code) {
+		this.sup.info(txt, code);	
 	},
 	postCreate: function () {
 		this.inherited(arguments);

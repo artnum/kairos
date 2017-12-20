@@ -86,14 +86,14 @@ return djDeclare("artnum.entry", [
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 	},
-	warn: function(txt) {
-		this.sup.warn(txt);	
+	warn: function(txt, code) {
+		this.sup.warn(txt, code);	
 	},
-	error: function(txt) {
-		this.sup.error(txt);	
+	error: function(txt, code) {
+		this.sup.error(txt, code);	
 	},
-	info: function(txt) {
-		this.sup.info(txt);	
+	info: function(txt, code) {
+		this.sup.info(txt, code);	
 	},
 	computeIntervalOffset: function ( date ) {
 		var offset = 0;
@@ -183,7 +183,8 @@ return djDeclare("artnum.entry", [
 				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 			}
 		}, function(err) {
-				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
+			this.warning("L'état du verrouillage n'a pas pu être déterminé correctement.", 201);
+			setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 		});
 	},
 	
@@ -252,6 +253,7 @@ return djDeclare("artnum.entry", [
 			
 			this.store(r).then(djLang.hitch(this, function (result) {
 				if(result.type == "error") {
+					this.error("Impossible d'enregistrer les données", 300);
 					this.unlock();
 				} else {
 					this.data.removeChild(r.o.domNode);	

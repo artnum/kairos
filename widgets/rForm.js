@@ -312,7 +312,7 @@ return djDeclare("artnum.rForm", [
 			if(current) {
 				if(confirm('Voulez-vous vraiment remplacer le client ?')) {
 					proceed = true;
-					this.reservation.warn('Client remplacé');
+					this.reservation.warn('Client remplacé', 301);
 				}
 			} else {
 				proceed = true;	
