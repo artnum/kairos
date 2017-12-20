@@ -88,7 +88,7 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 		}
 	},
 	doAddFreeform: function(event) {
-		var f = fjDomForm.toObject(this.form.domNode);
+		var f = djDomForm.toObject(this.form.domNode);
 		
 		if(f.freeform) {
 			this.sup.saveContact(null, { 

@@ -281,12 +281,18 @@ return djDeclare("artnum.reservation", [
     var def = new djDeferred();
     var that = this;
 		if(id) {
-    	request.get(locationConfig.store + '/' + id).then(function (result) {
-				if(result && result.type == 'results') {
-		  		that._set('dbContact', result.first());
-       		def.resolve(result.first());
-				}
-			});
+			if(id.substr(0,1) == ':') {
+				request.get(locationConfig.store + '/ReservationContact/' + id.substr(1)).then(function(result){
+					def.resolve(result.first());
+				});
+			} else {
+    		request.get(locationConfig.store + '/' + id).then(function (result) {
+					if(result && result.type == 'results') {
+		  			that._set('dbContact', result.first());
+       			def.resolve(result.first());
+					}
+				});
+			}
 		}
     return def;
   },

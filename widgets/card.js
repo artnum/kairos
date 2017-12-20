@@ -84,14 +84,28 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 		return null;
 	},
 	entry: function(entry) {
-		for(var k in this.mapping) {
-			if(entry[this.mapping[k][0]]) {
-				if(this.mapping[k][1] != null) {
-					this.set(k, flatten(entry[this.mapping[k][0]], this.mapping[k][1]));
-				} else {
-					this.set(k, entry[this.mapping[k][0]]);
+		if(! entry) { return ; }
+		if(! entry.freeform)  {
+			for(var k in this.mapping) {
+				if(entry[this.mapping[k][0]]) {
+					if(this.mapping[k][1] != null) {
+						this.set(k, flatten(entry[this.mapping[k][0]], this.mapping[k][1]));
+					} else {
+						this.set(k, entry[this.mapping[k][0]]);
+					}
 				}
 			}
+		} else {
+			this.raw(entry.freeform);
 		}
-	}
+  },
+  raw: function(txt) {
+    var e = document.createElement('P'), first = true;
+    txt.split(/(?:\r\n|\r|\n)/g).forEach(function(line){
+			if(!first) { e.appendChild(document.createElement('BR')); }
+			e.appendChild(document.createTextNode(line));
+			first = false;
+		});
+    this.domNode = e;    
+  }
 });});
