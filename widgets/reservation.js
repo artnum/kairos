@@ -397,6 +397,9 @@ return djDeclare("artnum.reservation", [
 	popMeUp: function() {
 		console.log('popmeup');
 		if(this.get('id') == null) { return; }
+		if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
+			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));			
+		}
 		if( ! this.form) {
 			this.form = new rForm({ reservation: this });
 		}
