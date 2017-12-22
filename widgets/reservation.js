@@ -220,6 +220,10 @@ return djDeclare("artnum.reservation", [
 			djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
 		}
 	},
+	_setWithWorkerAttr: function(value) {
+		this.addAttr('withWorker');
+		this._set('withWorker', value);
+	},
 	_setMyParentAttr:function(value) {
 		console.log('This function is deprecated')
 		this.set('sup', value);

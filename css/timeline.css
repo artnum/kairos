@@ -358,6 +358,18 @@ div.contact > div:first-child {
 	font-weight: bold;	
 }
 
+.rForm div.flex {
+	display: flex;
+		
+}
+
+.rForm div.flex > div {
+	min-width: 320px;
+	max-width: 320px;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
 .dijitReadOnly {
 	background-color: #ccc !important;	
 }
@@ -369,4 +381,23 @@ div.contact > div:first-child {
 	border-right: 1px solid black;
 	opacity: 0.2;	
 	z-index: -1;
+}
+
+.bitsfield {
+	text-align: center;	
+}
+
+.bit {
+	font-size: 1.3em !important;
+	margin: 2px;	
+}
+
+fieldset {
+	margin-top: 1em;	
+	margin-bottom: 1em;	
+}
+
+.dijitDateTextBox {
+	width: 14ch;
+	max-width: 14ch;	
 }

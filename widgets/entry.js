@@ -470,7 +470,8 @@ return djDeclare("artnum.entry", [
 					"address": reserv.address,
 					"locality": reserv.locality,
 					"comment": reserv.comment,
-					"special": reserv.special
+					"special": reserv.special,
+					"withWorker": reserv.withWorker
 					};
 				if(r.end != null && r.begin != null) {
 					if(dtRegistry.byId(r.id)) {

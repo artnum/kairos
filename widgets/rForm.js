@@ -35,7 +35,8 @@ define([
 	"artnum/contacts",
 	"artnum/card",
 	"artnum/_Cluster",
-	"artnum/_Request"
+	"artnum/_Request",
+	"artnum/bitsfield"
 
 
 ], function(
@@ -75,7 +76,8 @@ define([
 	contacts,
 	card,
 	_Cluster,
-	request
+	request,
+	bitsfield
 ) {
 
 return djDeclare("artnum.rForm", [
@@ -164,6 +166,7 @@ return djDeclare("artnum.rForm", [
 		this.inherited(arguments);
 		var select = this.status;
 		var that = this;
+		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 		request.get(locationConfig.store + '/Status/').then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
@@ -216,6 +219,13 @@ return djDeclare("artnum.rForm", [
 				}));
 			}
 		}));
+
+
+		var diff = djDate.difference(this.reservation.get('begin'),  this.reservation.get('end'), "day");
+		var bf = new bitsfield(diff);
+		this.machinist = bf;
+		this.nMachinist.appendChild(bf.domNode);
+		bf.set('value', this.reservation.get('withWorker'));
   },
 
 	toggleDelivery: function () {
@@ -252,7 +262,6 @@ return djDeclare("artnum.rForm", [
 	createContact: function (entry, type) {
 		var show = false;
 		var that = this;
-		console.log(type);
 		if(arguments[2]) { show = true; }
 		c = new card('/Contacts/');
 		c.entry(entry);
@@ -471,6 +480,7 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
+		this.reservation.set('withWorker', this.machinist.get('value'));
 		this.reservation.resize();
 		this.reservation.sup.store({ o: this.reservation });
 		this.reservation.sup.update(true);
