@@ -158,7 +158,6 @@ return djDeclare("artnum.entry", [
 				def.resolve(true);
 			} else {
 				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
-				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 				def.resolve(false);
 			}
 		});
@@ -166,25 +165,32 @@ return djDeclare("artnum.entry", [
 		return def;
 	},
 
+	setLocked: function ( lock ) {
+		var that = this;
+		if(this.myLock) { return; }
+		if(lock) {
+				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
+				that.locked = true;
+		}	else {
+				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });
+				that.update();
+				that.locked = false;
+		}
+	},
+
 	verifyLock: function() {
 		var that = this;
 		if(this.myLock) {
-			setTimeout(djLang.hitch(that, that.verifyLock), 800);	
 			return;	
 		}
 		djXhr.get(locationConfig.dlm, { query : { "status": that.target}}).then( function ( r ) {
 			if(r == '0') {
-				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });
-				that.update();
-				that.locked = false;
+				that.setLocked(false);
 			} else {
-				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
-				that.locked = true;
-				setTimeout(djLang.hitch(that, that.verifyLock), 800);	
+				that.setLocked(true);
 			}
 		}, function(err) {
-			this.warning("L'état du verrouillage n'a pas pu être déterminé correctement.", 201);
-			setTimeout(djLang.hitch(that, that.verifyLock), 800);	
+			that.warning("L'état du verrouillage n'a pas pu être déterminé correctement.", 201);
 		});
 	},
 	
@@ -194,7 +200,6 @@ return djDeclare("artnum.entry", [
 		djXhr.get(locationConfig.dlm,  { query: { unlock: this.target }}).then(function () {
 			window.requestAnimationFrame(function() {
 				djDomClass.remove(that.domNode, "mylock"); 
-				that.verifyLock();
 				def.resolve();});
 		});
 
@@ -287,6 +292,15 @@ return djDeclare("artnum.entry", [
 	_setNameAttr: {node: "nameNode", type: "innerHTML"},
 	_getBlockSizeAttr: function () {
 		return this.sup.get('blockSize');
+	},
+
+	_getTargetAttr: function () {
+		var t = this._get('target');
+		if(djLang.isArray(t)) {
+			return t[0];	
+		}
+
+		return t;
 	},
 
 	_getDateRangeAttr: function() {

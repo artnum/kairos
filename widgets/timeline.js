@@ -68,6 +68,7 @@ return djDeclare("artnum.timeline", [
 	verticals: null,
 	lastClientXY: [0, 0],
 	logs: null,
+	lockEvents: null,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -272,6 +273,10 @@ return djDeclare("artnum.timeline", [
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
 		djOn(window, "scroll", djLang.hitch(this, this.update));
 		djOn(window, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+
+		this.lockEvents = new EventSource('/location/lock.php?follow=1');
+		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
+
 		this.refresh();	
 	},
 
@@ -574,7 +579,6 @@ return djDeclare("artnum.timeline", [
 			that.drawVerticalLine().then(function() {
 				that.entries.forEach( function ( entry ) {
 					if(intoYView(entry.domNode)) {
-						entry.verifyLock();
 						that.emit("update-" + entry.target);
 					}			
 				});
@@ -583,6 +587,20 @@ return djDeclare("artnum.timeline", [
 			});
 		});
 		return def;
+	},
+
+	lockChange: function (event) {
+		var that = this;
+		var data = JSON.parse(event.data);
+		this.entries.forEach( function (entry) {
+			if(entry.get('target') == data.target) {
+				if(data.status == "0") {
+					entry.setLocked(false);
+				}	else {
+					entry.setLocked(true);
+				}
+			}	
+		})
 	}
 
 });});
