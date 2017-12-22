@@ -226,7 +226,17 @@ return djDeclare("artnum.rForm", [
 		this.machinist = bf;
 		this.nMachinist.appendChild(bf.domNode);
 		bf.set('value', this.reservation.get('withWorker'));
+
+		djOn(this.beginDate, "change", djLang.hitch(this, this.resizeBits));
+		djOn(this.endDate, "change", djLang.hitch(this, this.resizeBits));
   },
+
+	resizeBits: function() {
+		var size = Math.abs(djDate.difference(this.beginDate.get('value'), this.endDate.get('value'), "day"));
+		if(size) {
+			this.machinist.newSize(size);	
+		}
+	},
 
 	toggleDelivery: function () {
 		if(this.nDelivery.get('checked')) {

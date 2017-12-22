@@ -60,6 +60,7 @@ return djDeclare("artnum.rForm", [
 	_showValue: function() {
 		var number = 0;
 		var value = this._get('value');
+		if(! value ) { return; }
 		for(var i = this.nDotLine.firstChild; i; i = i.nextSibling) {
 			if(number < value.length) { 
 				if(value.substr(number, 1) == '1') {
@@ -135,18 +136,48 @@ return djDeclare("artnum.rForm", [
 		}
 	},
 
+	newSize: function(number) {
+		var that = this;
+		window.requestAnimationFrame(function () {
+			var n = number;
+			for(var i = that.nDotLine.firstChild; i; i = i.nextSibling) {
+				if(number < 0) {
+					var n = i;
+					i = i.previousSibling;
+					that.nDotLine.removeChild(n);
+				}
+				number--;	
+			}	
+
+			if(number > 0) {
+				for(var i = 0; i <= number; i++) {
+					that.nDotLine.appendChild(that._newBit(i + n));
+				}	
+			}
+
+			n = 0;
+			for(var i = that.nDotLine.firstChild; i; i = i.nextSibling) {
+				i.setAttribute('data-artnum-number', n);
+				n++;	
+			}
+		});
+	},
+
+	_newBit: function ( th ) {
+		var b = document.createElement('I');
+		b.setAttribute('class', this.bitClass + 'fa-circle-o');
+		b.setAttribute('aria-hidden', 'true');
+		b.setAttribute('data-artnum-number', th);
+		djOn(b, "mousedown", djLang.hitch(this, this.eDown));
+		djOn(b, "mouseover", djLang.hitch(this, this.eMove));
+		return b;	
+	},
 	postCreate: function ( ) {
 		var that = this;
 		window.requestAnimationFrame(function () {
 			var frag = document.createDocumentFragment();
 			for(var i = 0; i < that.bitsCount; i++) {
-				var b = document.createElement('I');
-				b.setAttribute('class', that.bitClass + 'fa-circle-o');
-				b.setAttribute('aria-hidden', 'true');
-				b.setAttribute('data-artnum-number', i);
-				frag.appendChild(b);
-				djOn(b, "mousedown", djLang.hitch(that, that.eDown));
-				djOn(b, "mouseover", djLang.hitch(that, that.eMove));
+				frag.appendChild(that._newBit(i));
 			}
 			that.nDotLine.appendChild(frag);
 			that._showValue();
