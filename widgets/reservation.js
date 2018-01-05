@@ -90,9 +90,9 @@ return djDeclare("artnum.reservation", [
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
-		if(this.domNode) { 
-			djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
-		}
+		//if(this.domNode) { 
+			//djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
+		//}
   },
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
@@ -503,7 +503,6 @@ return djDeclare("artnum.reservation", [
 
 			var width = Math.abs(djDate.difference(end, begin, 'day'));
 			var bDay = djDate.difference(this.get('dateRange').begin, begin, 'day');	
-			console.log(bDay);
 			if(bDay < 0) { bDay = 0; }
 			var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
 			var stopPoint = (this.get('blockSize') * width);

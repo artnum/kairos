@@ -118,6 +118,7 @@ return djDeclare("artnum.entry", [
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+		djOn(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
 		this.verifyLock();
 	},
 	cancelReservation: function() {
@@ -131,6 +132,19 @@ return djDeclare("artnum.entry", [
 					r.destroy();
 				});
 			});
+		}
+	},
+
+	evtDblClick: function(event) {
+		var n = event.target;
+		while(n) {
+			if(n.getAttribute('widgetid')) { break; }
+			n = n.parentNode;	
+		}
+		
+		if(n) {
+			var w = dtRegistry.byId(n.getAttribute('widgetid'));
+			w.popMeUp();
 		}
 	},
 
