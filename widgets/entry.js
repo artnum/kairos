@@ -96,31 +96,21 @@ return djDeclare("artnum.entry", [
 		this.sup.info(txt, code);	
 	},
 	computeIntervalOffset: function ( date ) {
-		var offset = 0;
-		var days = 24, sub = 0;
-
-		this.intervalZoomFactors.forEach( function ( izf ) {
-			days -= izf[1] - izf[0];
-			sub += (izf[1] - izf[0]) * izf[2];
-		});
-		sub += days;
-
-		var hour = date.getHours();
-		var within = 0, without = 0;
-		var offset = 0;
-		this.intervalZoomFactors.forEach ( function ( izf ) {
-			if(hour >= izf[0]) {
-				within = hour - izf[0];
-				if(hour > izf[1]) {
-					without =  24 - izf[1];
-					within -= without;
-				}
-				without += izf[0]
-			}	
-			offset = (within * izf[2]) + without;
-		});
+		var px_h = this.get('blockSize') / 24;
+		var virtual_hour = 24;
+		var c_hour = 24 - date.getHours();
 		
-		return (this.get('blockSize') / sub *  offset);
+		this.intervalZoomFactors.forEach( function ( izf ) {
+			var x = Math.abs(izf[1] - izf[0]);
+			virtual_hour += (x * izf[2]) - x;
+			if(date.getHours() >= izf[1]) {
+				c_hour += (x * izf[2]) - x;
+			} else if(date.getHours() < izf[1] && date.getHours() > izf[0]) {
+				c_hour += ((date.getHours() - izf[0]) * izf[2]) - (date.getHours() - izf[0]);
+			}
+		});
+		var px_h = this.get('blockSize') / virtual_hour;
+		return c_hour * px_h;
 	},
 	postCreate: function () {
 		this.inherited(arguments);

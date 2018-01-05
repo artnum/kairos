@@ -444,7 +444,8 @@ return djDeclare("artnum.reservation", [
 	remove: function() {
 		if(confirm('Vraiment supprimer la réservation ' + this.get('IDent'))) {
 			this.set('deleted', true);
-			this.destroy();
+
+			this.resize();
 			return true;
 		}
 
@@ -458,7 +459,7 @@ return djDeclare("artnum.reservation", [
     var def = new djDeferred();
 		var that = this;
 
-		window.setTimeout(djLang.hitch(this, function() {		
+	
 			if(! intoYView(this.sup.domNode)) {
 				this.set('disable');
 				def.resolve(); return; 
@@ -502,6 +503,7 @@ return djDeclare("artnum.reservation", [
 
 			var width = Math.abs(djDate.difference(end, begin, 'day'));
 			var bDay = djDate.difference(this.get('dateRange').begin, begin, 'day');	
+			console.log(bDay);
 			if(bDay < 0) { bDay = 0; }
 			var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
 			var stopPoint = (this.get('blockSize') * width);
@@ -526,7 +528,7 @@ return djDeclare("artnum.reservation", [
 			
 				def.resolve();
 			}));
-		}), 0);
+		
     return def;
   }
 
