@@ -151,13 +151,44 @@ return djDeclare("artnum.entry", [
 			if(w.baseClass == "reservation") {
 				w.popMeUp();
 			} else if(w.baseClass == "entry") {
-				w.createReservation();	
+				w.createReservation(this.dayFromX(event.clientX));	
 			}
 		}
 	},
 
-	createReservation: function() {
-		console.log('dsaf');	
+	createReservation: function(day) {
+		var that = this;
+		this.lock().then(function () {
+			if(!day) {
+				day = that.get('dateRange').begin;	
+			}
+			var end = new Date(day.getTime());
+			end.setHours(17,0,0,0);
+			day.setHours(8,0,0,0);
+
+			var r = { start: day,
+				o: new reservation({ sup: that, status: "2", begin: day, end: end	})
+			}
+			
+			that.store(r).then(function (result) {
+				that.unlock();
+				if(result.type == 'error') {
+					that.error("Impossible d'enregistrer les données", 300);
+				} else {
+					window.requestAnimationFrame(function() {
+						that.data.appendChild(r.o.domNode);
+					});
+					var oldId = r.o.get('id');
+					dtRegistry.remove(oldId);
+					r.o.set('IDent', result.data.id);
+					dtRegistry.add(r.o);
+					r.o.domNode.setAttribute('widgetid', result.data.id);
+					r.o.domNode.setAttribute('id', result.data.id);
+					r.o.popMeUp();
+				}				
+			});
+		});
+
 	},
 
 	_getOffsetAttr: function () {
