@@ -16,6 +16,7 @@ define([
 	"dojo/dom-construct",
 	"dojo/on",
 	"dojo/dom-class",
+	"dojo/dom-style",
 	"dojo/request/xhr",
 	"dojo/promise/all",
 
@@ -44,6 +45,7 @@ define([
 	djDomConstruct,
 	djOn,
 	djDomClass,
+	djDomStyle,
 	djXhr,
 	djAll, 
 
@@ -72,6 +74,7 @@ return djDeclare("artnum.entry", [
 	intervalZoomFactors : [],
 	power: true,
 	waiters: 0, /* number of nested "waiting" func */
+	originalHeight: 0,
 
 	constructor: function (args) {
 		this.waiters = 0;
@@ -83,6 +86,7 @@ return djDeclare("artnum.entry", [
 		this.sup = null;
 		this.stores = {};
 		this.runUpdate = 0;
+		this.originalHeight = 0;
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
 	},
@@ -123,6 +127,9 @@ return djDeclare("artnum.entry", [
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		djOn(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
+
+		this.originalHeight = djDomStyle.get(this.domNode, 'height');
+
 		this.verifyLock();
 	},
 	cancelReservation: function() {
@@ -365,20 +372,11 @@ return djDeclare("artnum.entry", [
 	_getDateRangeAttr: function() {
 		return this.sup.getDateRange();	
 	},
-	addChild: function (child, root) {
-		/*this.own(child);
-		if(! this.childs[child.id]) {
-			this.childs[child.id] = child;	
-		}
-		if(root && child && child.domNode) {
-				root.appendChild(child.domNode);
-		}*/
-	},
 	resize: function () {
 		var def = new djDeferred();
 		var that = this;
 
-		window.setTimeout(function (){
+		window.requestAnimationFrame( function () {
 			if(intoYView(that.domNode)) {
 				that._startWait();
 				dtRegistry.findWidgets(that.domNode).forEach(function(child) {				
@@ -390,7 +388,7 @@ return djDeclare("artnum.entry", [
 			}
 
 			def.resolve();
-		}, 0);
+		});
 
 		return def;
 	},
@@ -522,6 +520,32 @@ return djDeclare("artnum.entry", [
 			this.displayReservations(r[this.target]);
 		}
 	},
+
+	overlap: function () {
+		var that = this;
+		var overlap = false;
+		var dates = new Array();
+		
+		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
+			dates.forEach( function (d) {
+				if((child.get('begin').getTime() >  d.begin  && 
+						child.get('begin').getTime() < d.end) ||
+						(child.get('end').getTime() > d.end &&
+						child.get('end').getTime() < d.end)
+					 ) {
+					djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px");
+					overlap = true;	
+				}
+			
+			});
+			dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime()});
+		});
+	
+		if(overlap) {
+			djDomStyle.set(this.domNode, 'height', (this.originalHeight * 2) + "px");
+		}
+	},
+
 	displayReservations: function ( reservations ) {
 		this._startWait();
 		var range = this.get('dateRange');
@@ -558,7 +582,7 @@ return djDeclare("artnum.entry", [
 			}
 		});
 		var d = this.data, that = this;
-		window.requestAnimationFrame(function () { d.appendChild(frag); that._stopWait();});
+		window.requestAnimationFrame(function () { d.appendChild(frag); that.overlap(); that._stopWait();});
 	}
 
 });});

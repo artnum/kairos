@@ -89,6 +89,7 @@ return djDeclare("artnum.reservation", [
 	},
 	postCreate: function () {
 		this.inherited(arguments);
+		this.originalTop = djDomStyle.get(this.domNode, 'top');
 	  this.resize();
   },
 	addAttr: function ( attr ) {
@@ -514,7 +515,10 @@ return djDeclare("artnum.reservation", [
 				} else {
 					djDomClass.remove(that.main, 'confirmed');
 				}
-				that.main.setAttribute('style', 'width: ' + stopPoint + 'px; position: absolute; left: ' + (startPoint) + 'px;'); 
+				djDomStyle.set(that.main, 'width', stopPoint);
+				djDomStyle.set(that.main, 'left', startPoint);
+				djDomStyle.set(that.main, 'position', 'absolute');
+
 				//that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
 				that.tools.setAttribute('style', 'background-color:' + bgcolor); 
 			
