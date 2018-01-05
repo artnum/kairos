@@ -139,6 +139,10 @@ return djDeclare("artnum.entry", [
 		}
 	},
 
+	defaultStatus: function() {
+		return this.sup.defaultStatus();	
+	},
+
 	evtDblClick: function(event) {
 		var n = event.target;
 		while(n) {
@@ -166,26 +170,28 @@ return djDeclare("artnum.entry", [
 			end.setHours(17,0,0,0);
 			day.setHours(8,0,0,0);
 
-			var r = { start: day,
-				o: new reservation({ sup: that, status: "2", begin: day, end: end	})
-			}
+			that.defaultStatus().then(function(s) {
+				var r = { start: day,
+					o: new reservation({ sup: that, status: s, begin: day, end: end	})
+				}
 			
-			that.store(r).then(function (result) {
-				that.unlock();
-				if(result.type == 'error') {
-					that.error("Impossible d'enregistrer les données", 300);
-				} else {
-					window.requestAnimationFrame(function() {
-						that.data.appendChild(r.o.domNode);
-					});
-					var oldId = r.o.get('id');
-					dtRegistry.remove(oldId);
-					r.o.set('IDent', result.data.id);
-					dtRegistry.add(r.o);
-					r.o.domNode.setAttribute('widgetid', result.data.id);
-					r.o.domNode.setAttribute('id', result.data.id);
-					r.o.popMeUp();
-				}				
+				that.store(r).then(function (result) {
+					that.unlock();
+					if(result.type == 'error') {
+						that.error("Impossible d'enregistrer les données", 300);
+					} else {
+						window.requestAnimationFrame(function() {
+							that.data.appendChild(r.o.domNode);
+						});
+						var oldId = r.o.get('id');
+						dtRegistry.remove(oldId);
+						r.o.set('IDent', result.data.id);
+						dtRegistry.add(r.o);
+						r.o.domNode.setAttribute('widgetid', result.data.id);
+						r.o.domNode.setAttribute('id', result.data.id);
+						r.o.popMeUp();
+					}				
+				});
 			});
 		});
 
@@ -273,19 +279,21 @@ return djDeclare("artnum.entry", [
 		if(event.clientX <= this.get("offset")) { return; }
 		if( ! this.newReservation && event.ctrlKey) {
 			this.lock().then(djLang.hitch(this, function( locked ) {
-				if(locked) {
-					var dBegin = this.dayFromX(event.clientX), dEnd = new Date(dBegin);
-					dBegin.setHours(8,0,0,0);
-					dEnd.setHours(17,0,0,0);
-					this.newReservation = {start :  dBegin };
-					this.newReservation.o = new reservation({  sup: that, status: "2", begin: dBegin, end: dEnd, clickPoint: event.clientX });
+				this.defaultStatus().then(djLang.hitch(this, function (s) {
+					if(locked) {
+						var dBegin = this.dayFromX(event.clientX), dEnd = new Date(dBegin);
+						dBegin.setHours(8,0,0,0);
+						dEnd.setHours(17,0,0,0);
+						this.newReservation = {start :  dBegin };
+						this.newReservation.o = new reservation({  sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX });
 
-					djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
-					djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
-					this.own(this.newReservation);
-					djDomClass.add(this.newReservation.o.domNode, "selected");
-					this.data.appendChild(this.newReservation.o.domNode);
-				}
+						djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
+						djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
+						this.own(this.newReservation);
+						djDomClass.add(this.newReservation.o.domNode, "selected");
+						this.data.appendChild(this.newReservation.o.domNode);
+					}
+				}));
 			}));
 		} 
 		if(this.newReservation) {

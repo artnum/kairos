@@ -22,7 +22,8 @@ define([
 	"dojo/throttle",
 	"dojo/request/xhr",
 
-	"artnum/_Cluster"
+	"artnum/_Cluster",
+	"artnum/_Request"
 
 ], function(
 	djDeclare,
@@ -47,7 +48,8 @@ define([
 	djThrottle,
 	djXhr,
 
-	_Cluster
+	_Cluster,
+	request
 
 ) {
 	
@@ -104,6 +106,17 @@ return djDeclare("artnum.timeline", [
 
 	},
 
+	defaultStatus: function () {
+		var def = new djDeferred();
+		request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1}}).then(function(result){
+			if(result.success()) {
+				def.resolve(result.whole()[0].id);	
+			}
+			def.resolve("0");
+		});
+		return def;
+	},
+	
 	zoomStyle: function () {
 		var tl = this.timeline;
 		var blockSize = this.blockSize;
