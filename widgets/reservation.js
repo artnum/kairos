@@ -90,9 +90,6 @@ return djDeclare("artnum.reservation", [
 	postCreate: function () {
 		this.inherited(arguments);
 	  this.resize();
-		//if(this.domNode) { 
-			//djOn(this.domNode, "dblclick", djLang.hitch(this, this.eClick));
-		//}
   },
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
@@ -186,9 +183,6 @@ return djDeclare("artnum.reservation", [
 	},
 	_setBeginAttr: function(value) {
 		this.addAttr('begin');
-		if(djDate.compare(this.get('dateRange').begin, value) > 0) {
-			value = this.get('dateRange').begin;
-		}
 		this._set('begin', value);
 		this._set('start', this.xFromTime(value));	
 	},
@@ -199,9 +193,6 @@ return djDeclare("artnum.reservation", [
 	},
 	_setEndAttr: function(value) {
 		this.addAttr('end');
-		if(djDate.compare(this.get('dateRange').end, value) < 0) {
-			value = this.get('dateRange').end;
-		}
 		this._set('end', value);
 		this._set('stop', this.xFromTime(value));	
 		this.setTextDesc();
