@@ -123,6 +123,8 @@ return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsI
 				c.entry(entry);
 				
 				djOn(c.domNode, "click", djLang.hitch(this, function (event) {
+						/* get form once again it may have changed */
+						var f = djDomForm.toObject(this.form.domNode);
 						var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
 						if(id != null) {
 							this.sup.saveContact(id, { type: f.cType, comment: f.details });
