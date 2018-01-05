@@ -26,3 +26,7 @@ Date.prototype.join = function(hour) {
 
 	return date;
 }
+
+Date.prototype.hours = function() {
+	return this.getHours() + (this.getMinutes() / 60) + (this.getSeconds() / 60 / 60);	
+}

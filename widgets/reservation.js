@@ -103,8 +103,6 @@ return djDeclare("artnum.reservation", [
 	_setIDentAttr: function(value) {
 		this.IDent = value;
 		this.id = value;
-		if(this.sup) {
-		}
 		this.setTextDesc();
 	},
   _setAddressAttr: function(value) {
@@ -386,7 +384,6 @@ return djDeclare("artnum.reservation", [
 		this.popMeUp();
 	},
 	popMeUp: function() {
-		console.log('popmeup');
 		if(this.get('id') == null) { return; }
 		if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
 			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));			
@@ -449,7 +446,6 @@ return djDeclare("artnum.reservation", [
 		var that = this;
     var def = new djDeferred();
 		var that = this;
-
 	
 			if(! intoYView(this.sup.domNode)) {
 				this.set('disable');
@@ -458,9 +454,10 @@ return djDeclare("artnum.reservation", [
 				this.set('enable');
 			}
 
+
 			if( ! this.sup) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
-		
+	
 			/* Verify  if we keep this ourself */
 			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
 					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") <= 0 ||
@@ -483,17 +480,22 @@ return djDeclare("artnum.reservation", [
 
 			var range = this.get('dateRange');	
 			var begin = this.get('trueBegin');
-			if(djDate.compare(range.begin, begin, 'date')>=0) {
+			if(djDate.compare(range.begin, begin, 'date')>0) {
 				begin = range.begin;
 			}
 			var end = this.get('trueEnd');
-			if(djDate.compare(range.end, end, 'date')<=0) {
+			if(djDate.compare(range.end, end, 'date')<0) {
 				end = range.end;
 			}
 
-
-			var width = Math.abs(djDate.difference(end, begin, 'day'));
-			var bDay = djDate.difference(this.get('dateRange').begin, begin, 'day');	
+			var t1, t2;
+			t1 = new Date(end.getTime()); t2 = new Date(begin.getTime()); 
+			t1.setHours(0,0); t2.setHours(0,0);
+			var width = Math.abs(djDate.difference(t1, t2, 'day'));
+			t1 = new Date(this.get('dateRange').begin.getTime()); t2 = new Date(begin.getTime()); 
+			t1.setHours(0, 0); t2.setHours(0, 0);
+			var bDay = djDate.difference(t1, t2, 'day');	
+			
 			if(bDay < 0) { bDay = 0; }
 			var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
 			var stopPoint = (this.get('blockSize') * width);
@@ -502,7 +504,7 @@ return djDeclare("artnum.reservation", [
 			startPoint += d;
 			stopPoint -= d;
 			stopPoint += this.computeIntervalOffset(end);
-
+			
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
 				if(! that || ! that.main) { def.resolve(); return ; }

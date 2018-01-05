@@ -96,17 +96,21 @@ return djDeclare("artnum.entry", [
 		this.sup.info(txt, code);	
 	},
 	computeIntervalOffset: function ( date ) {
+		var hour = date.hours ? date.hours() : date.getHours();
 		var px_h = this.get('blockSize') / 24;
 		var virtual_hour = 24;
-		var c_hour = 24 - date.getHours();
-		
+		var c_hour = 24 - hour;
+
+		if(hour == 0)  { return 0; }
+		if(hour > 23.9833 ) { return this.get('blockSize'); }
+	
 		this.intervalZoomFactors.forEach( function ( izf ) {
 			var x = Math.abs(izf[1] - izf[0]);
 			virtual_hour += (x * izf[2]) - x;
-			if(date.getHours() >= izf[1]) {
+			if(hour >= izf[1]) {
 				c_hour += (x * izf[2]) - x;
-			} else if(date.getHours() < izf[1] && date.getHours() > izf[0]) {
-				c_hour += ((date.getHours() - izf[0]) * izf[2]) - (date.getHours() - izf[0]);
+			} else if(hour < izf[1] && hour > izf[0]) {
+				c_hour += ((hour - izf[0]) * izf[2]) - (hour - izf[0]);
 			}
 		});
 		var px_h = this.get('blockSize') / virtual_hour;
@@ -144,8 +148,16 @@ return djDeclare("artnum.entry", [
 		
 		if(n) {
 			var w = dtRegistry.byId(n.getAttribute('widgetid'));
-			w.popMeUp();
+			if(w.baseClass == "reservation") {
+				w.popMeUp();
+			} else if(w.baseClass == "entry") {
+				w.createReservation();	
+			}
 		}
+	},
+
+	createReservation: function() {
+		console.log('dsaf');	
 	},
 
 	_getOffsetAttr: function () {
@@ -226,6 +238,7 @@ return djDeclare("artnum.entry", [
 	},
 
 	eClick: function(event) {
+		var that = this;
 		if(event.clientX <= this.get("offset")) { return; }
 		if( ! this.newReservation && event.ctrlKey) {
 			this.lock().then(djLang.hitch(this, function( locked ) {
@@ -234,7 +247,7 @@ return djDeclare("artnum.entry", [
 					dBegin.setHours(8,0,0,0);
 					dEnd.setHours(17,0,0,0);
 					this.newReservation = {start :  dBegin };
-					this.newReservation.o = new reservation({  sup: this, IDent: null, status: "2", begin: dBegin, end: dEnd, clickPoint: event.clientX });
+					this.newReservation.o = new reservation({  sup: that, status: "2", begin: dBegin, end: dEnd, clickPoint: event.clientX });
 
 					djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
 					djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
@@ -265,13 +278,16 @@ return djDeclare("artnum.entry", [
 					this.error("Impossible d'enregistrer les données", 300);
 					this.unlock();
 				} else {
-					this.data.removeChild(r.o.domNode);	
+					var oldId = r.o.get('id');
+					dtRegistry.remove(oldId);
 					r.o.set('IDent', result.data.id);
-					this.update().then(djLang.hitch(this, function () {
-						r.o.popMeUp();
-						this._stopWait();
-						this.unlock();
-					}))
+					dtRegistry.add(r.o);
+					r.o.domNode.setAttribute("widgetid", result.data.id);
+					r.o.domNode.setAttribute("id", result.data.id);
+					djDomClass.remove(r.o.domNode, "selected");
+					r.o.popMeUp();
+					this._stopWait();
+					this.unlock();
 				}
 			}));
 		}
@@ -279,10 +295,10 @@ return djDeclare("artnum.entry", [
 	eShutdown: function(event) {
 		window.requestAnimationFrame(djLang.hitch(this, function () {
 			if(!this.power) {
-				for(var i in this.childs) {
+				/*for(var i in this.childs) {
 					this.childs[i].destroy();	
 				}
-				this.childs = new Object();
+				this.childs = new Object(); */
 				djDomClass.add(this.domNode, "off");
 			} else {
 				this.update(); 
@@ -311,11 +327,13 @@ return djDeclare("artnum.entry", [
 		return this.sup.getDateRange();	
 	},
 	addChild: function (child, root) {
-		this.own(child);
+		/*this.own(child);
 		if(! this.childs[child.id]) {
 			this.childs[child.id] = child;	
 		}
-		if(root && child && child.domNode) { root.appendChild(child.domNode); }
+		if(root && child && child.domNode) {
+				root.appendChild(child.domNode);
+		}*/
 	},
 	resize: function () {
 		var def = new djDeferred();
@@ -495,7 +513,7 @@ return djDeclare("artnum.entry", [
 					if(dtRegistry.byId(r.id)) {
 						dtRegistry.byId(r.id).resize();		
 					} else {
-						that.addChild(new reservation(r), frag);
+						frag.appendChild(new reservation(r).domNode);
 					}
 				}
 			}

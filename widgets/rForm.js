@@ -479,6 +479,9 @@ return djDeclare("artnum.rForm", [
 		if(this.reservation.is('deliverydate')) {
 			deliveryBegin =f.deliveryBeginDate.join(f.deliveryBeginTime);
 			deliveryEnd =f.deliveryEndDate.join(f.deliveryEndTime);
+		} else {
+			deliveryBegin = null;
+			deliveryEnd = null;	
 		}
 
 		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
@@ -493,7 +496,6 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('withWorker', this.machinist.get('value'));
 		this.reservation.resize();
 		this.reservation.sup.store({ o: this.reservation });
-		this.reservation.sup.update(true);
 		this.dialog.hide();
 	}
 });});
