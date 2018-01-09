@@ -472,7 +472,7 @@ return djDeclare("artnum.reservation", [
 	
 			/* Verify  if we keep this ourself */
 			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
-					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") <= 0 ||
+					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
 					this.deleted) { 
 				this.set('disable');
 				def.resolve();
