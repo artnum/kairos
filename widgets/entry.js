@@ -532,30 +532,35 @@ return djDeclare("artnum.entry", [
 		
 		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
 			var o = false;
-			dates.forEach( function (d) {
-				if((
-					 	(child.get('begin').getTime() >  d.begin  &&
-						child.get('begin').getTime() < d.end) ||
-						(child.get('end').getTime() > d.end &&
-						child.get('end').getTime() < d.end)
-					 ) ||
-					 (
-					 	(d.begin > child.get('begin').getTime() &&
-						d.end < child.get('begin').getTime()) ||
-						(d.end > child.get('end').getTime() &&
-						d.end < child.get('end').getTime())
-					 )
-					 ){
-					if(! d.overlap) { djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px"); o = true; }
-					overlap = true;
-				}
-			
-			});
-			dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+		
+			if(!child.get('hidden')) { 
+				dates.forEach( function (d) {
+					if((
+							(child.get('begin').getTime() >  d.begin  &&
+							child.get('begin').getTime() < d.end) ||
+							(child.get('end').getTime() > d.end &&
+							child.get('end').getTime() < d.end)
+						 ) ||
+						 (
+							(d.begin > child.get('begin').getTime() &&
+							d.end < child.get('begin').getTime()) ||
+							(d.end > child.get('end').getTime() &&
+							d.end < child.get('end').getTime())
+						 )
+						 ){
+						if(! d.overlap) { djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px"); o = true; }
+						overlap = true;
+					}
+				
+				});
+				dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+			}
 		});
 	
 		if(overlap) {
 			djDomStyle.set(this.domNode, 'height', (this.originalHeight * 2) + "px");
+		} else {
+			djDomStyle.set(this.domNode, 'height', '');
 		}
 	},
 
