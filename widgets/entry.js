@@ -425,7 +425,8 @@ return djDeclare("artnum.entry", [
 				qParamsS.push({
 					"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
 					"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
-					"search.target" : this.target
+					"search.target" : this.target,
+					"search.deleted" : '-'
 				});
 			}	
 		}

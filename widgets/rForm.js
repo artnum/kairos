@@ -407,11 +407,12 @@ return djDeclare("artnum.rForm", [
 	doDelete: function (event) {
 		if(this.reservation.remove()) {
 			var that = this;
-			request.del(locationConfig.store + '/Reservation/' + this.reservation.get('IDent')).then(function() {
+			request.put(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { data: { 'deleted' : new Date().toISOString(), 'id': this.reservation.get('IDent') } }).then(function() {
 				that.dialog.destroy();
 			});
 		}
 	},
+
 	validate: function () {
 		[ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach( function (c) {
 			c.set('state', 'Normale');
