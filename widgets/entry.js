@@ -390,6 +390,7 @@ return djDeclare("artnum.entry", [
 			def.resolve();
 		});
 
+
 		return def;
 	},
 	update: function () {
@@ -527,18 +528,27 @@ return djDeclare("artnum.entry", [
 		var dates = new Array();
 		
 		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
+			var o = false;
 			dates.forEach( function (d) {
-				if((child.get('begin').getTime() >  d.begin  && 
+				if((
+					 	(child.get('begin').getTime() >  d.begin  &&
 						child.get('begin').getTime() < d.end) ||
 						(child.get('end').getTime() > d.end &&
 						child.get('end').getTime() < d.end)
-					 ) {
-					djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px");
-					overlap = true;	
+					 ) ||
+					 (
+					 	(d.begin > child.get('begin').getTime() &&
+						d.end < child.get('begin').getTime()) ||
+						(d.end > child.get('end').getTime() &&
+						d.end < child.get('end').getTime())
+					 )
+					 ){
+					if(! d.overlap) { djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px"); o = true; }
+					overlap = true;
 				}
 			
 			});
-			dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime()});
+			dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
 		});
 	
 		if(overlap) {
