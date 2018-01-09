@@ -21,9 +21,11 @@ define([
 	"dojo/dom-geometry",
 	"dojo/throttle",
 	"dojo/request/xhr",
+	"dijit/registry",
 
 	"artnum/_Cluster",
-	"artnum/_Request"
+	"artnum/_Request",
+	"artnum/entry"
 
 ], function(
 	djDeclare,
@@ -47,9 +49,11 @@ define([
 	djDomGeo,
 	djThrottle,
 	djXhr,
+	dtRegistry,
 
 	_Cluster,
-	request
+	request,
+	entry
 
 ) {
 	
@@ -583,6 +587,47 @@ return djDeclare("artnum.timeline", [
 			this.update();
 		}	
 		window.setTimeout(djLang.hitch(this, this.refresh), 250);	
+	},
+
+	run: function () {
+		var that = this;
+		request.get('https://aircluster.local.airnace.ch/store/Machine').then( function (response) {
+			that.setServers(locationConfig.servers);
+			if(response.success()) {
+				that.beginDraw();
+				var whole = response.whole();
+				whole.sort(function(a,b){
+					if(a.description < b.description) { return -1 };
+					if(a.description > b.description) { return 1 };
+					return 0;
+				});
+				
+				whole.forEach( function ( machine ) {
+				var name =  machine.description;
+				if(machine.cn ) {
+					name += '<div class="name">' + machine.cn + '</div>'; 	
+				}
+				var e = new entry({name: name, sup: that, isParent: true, target: machine.description });
+				e.setServers(locationConfig.servers);
+				that.addEntry(e);
+				if(machine.airaltref && djLang.isArray(machine.airaltref)) {
+					machine.airaltref.forEach( function (altref ) {
+							var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
+							var e = new entry({name: name, sup: that, isParent: false, target: altref.trim() });
+						
+							e.setServers(locationConfig.servers);
+							that.addEntry(e);
+						});
+					} else if(machine.airaltref) {
+						var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
+						var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim() });
+						e.setServers(locationConfig.servers);
+						that.addEntry(e);
+					}
+				});
+			}
+			that.endDraw();
+		});
 	},
 	
 	update: function () {

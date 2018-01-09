@@ -64,6 +64,7 @@ dojoConfig = {
 <script>
 
 require([
+	"dojo/_base/lang",
 	"artnum/timeline",
 	"artnum/entry",
 	"dojo/request/xhr",
@@ -71,34 +72,10 @@ require([
 	"artnum/_Request",
 	"dijit/Dialog",
 	"dojo/domReady!"
-], function (timeline, entry, djXhr, dtRegistry, request, dtDialog) {
+], function (djLang, timeline, entry, djXhr, dtRegistry, request, dtDialog) {
 var tl = new timeline();
 document.getElementsByTagName('body')[0].appendChild(tl.domNode);
-
-request.get('https://airserve01.local.airnace.ch/Airnace/Machines').then(function ( response ) { 
-		tl.setServers(locationConfig.servers);
-		if(response.success()) {
-			tl.beginDraw();
-			response.whole().forEach( function ( machine ) {
-				var name =  machine.description;
-				if(machine.cn && machine.cn.length > 0) {
-					name += '<div class="name">' + machine.cn[0] + '</div>'; 	
-				}
-				var e = new entry({name: name, sup: tl, isParent: true, target: machine.description });
-				e.setServers(locationConfig.servers);
-				tl.addEntry(e);
-				if(machine.airaltref) {
-					machine.airaltref[0].split(',').forEach( function (altref ) {
-						var e = new entry({name: altref.trim(), sup: tl, isParent: false, target: altref.trim() });
-						
-						e.setServers(locationConfig.servers);
-						tl.addEntry(e);
-					});
-				}
-			});
-		}
-		tl.endDraw();
-	}, function (err) { tl.error('Impossible de se connecter au serveur', 101); });
+tl.run();
 });
 </script>
 </body>
