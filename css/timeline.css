@@ -17,6 +17,10 @@ body, html { margin: 0; padding: 0; }
 	overflow: hidden;
 }
 
+.header {
+	max-height: 20px;
+}
+
 .weekNumber, .monthName {
 	text-align: center;
 }
