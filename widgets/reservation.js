@@ -286,6 +286,7 @@ return djDeclare("artnum.reservation", [
 		if(id) {
 			if(id.substr(0,1) == ':') {
 				request.get(locationConfig.store + '/ReservationContact/' + id.substr(1)).then(function(result){
+					that._set('dbContact', result.first());
 					def.resolve(result.first());
 				});
 			} else {
@@ -308,33 +309,37 @@ return djDeclare("artnum.reservation", [
 		}
 
     if(this.dbContact) {
-			var x = ' - ';
-      if(this.dbContact.o) {
-        x += '<span class="o">' + this.dbContact.o + '</span>';
-      }
+			if(this.dbContact.freeform) {
+				html += ' - ' +  (this.dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</div>';	
+			} else {
+				var x = ' - ';
+				if(this.dbContact.o) {
+					x += '<span class="o">' + this.dbContact.o + '</span>';
+				}
 
-      if(this.dbContact.givenname || this.dbContact.sn) {
-        if(this.dbContact.o) { x += ', '; }
-				var n = '';
-				if(this.dbContact.givenname) {
-					n += this.dbContact.givenname;
+				if(this.dbContact.givenname || this.dbContact.sn) {
+					if(this.dbContact.o) { x += ', '; }
+					var n = '';
+					if(this.dbContact.givenname) {
+						n += this.dbContact.givenname;
+					}
+					if(this.dbContact.sn) {
+						if(this.dbContact.givenname) { n += ' '; }
+						n += this.dbContact.sn;
+					}
+					x += '<span class="name">' + n + '</span>';
 				}
-				if(this.dbContact.sn) {
-					if(this.dbContact.givenname) { n += ' '; }
-					n += this.dbContact.sn;
+				if(x != ' - ') {
+					html += x + '</div>';
 				}
-        x += '<span class="name">' + n + '</span>';
-      }
-			if(x != ' - ') {
-				html += x + '</div>';
 			}
     } else {
 			html += "</div>"	
 		}
 
 		html += "<div>"
-		if(this.get('trueBegin')) { html += "<span>" + this.get('trueBegin').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span> - "; }
-		if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').toLocaleTimeString('fr-CH', {hour: "2-digit", minute: "2-digit", hour12: false, day: "2-digit", month: "2-digit"}) + "</span>"; }
+		if(this.get('trueBegin')) { html += "<span>" + this.get('trueBegin').shortDate() + "</span> - "; }
+		if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').shortDate() + "</span>"; }
     
 		if(this.locality || this.address) {
       var x = ", ";

@@ -30,3 +30,7 @@ Date.prototype.join = function(hour) {
 Date.prototype.hours = function() {
 	return this.getHours() + (this.getMinutes() / 60) + (this.getSeconds() / 60 / 60);	
 }
+
+Date.prototype.shortDate = function() {
+	return this.getDate() + '.' + (this.getMonth() + 1);
+}
