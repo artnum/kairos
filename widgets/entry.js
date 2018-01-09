@@ -121,12 +121,14 @@ return djDeclare("artnum.entry", [
 		return c_hour * px_h;
 	},
 	postCreate: function () {
+		var that = this;
 		this.inherited(arguments);
 		
 		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
 		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		djOn(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
+		djOn(this.sup, "zoom", function(event) { djDomStyle.set(that.domNode, 'height', ''); that.originalHeight = djDomStyle.get(that.domNode, "height"); that.resize(); });
 
 		this.originalHeight = djDomStyle.get(this.domNode, 'height');
 

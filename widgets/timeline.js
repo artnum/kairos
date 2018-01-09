@@ -120,6 +120,8 @@ return djDeclare("artnum.timeline", [
 	zoomStyle: function () {
 		var tl = this.timeline;
 		var blockSize = this.blockSize;
+		
+		this.emit('zoom');
 
 		window.requestAnimationFrame(function () {
 			if(blockSize < 30) {
