@@ -278,6 +278,15 @@ body, html { margin: 0; padding: 0; }
 	background-color: rgba(255, 0, 0, 0.2) !important;
 }
 
+.reservation address {
+	display: inline;
+	font-weight: bold;	
+}
+
+.reservation .date {
+	color: rgb(80,80,80);
+}
+
 .reservationContainer {
 	padding-top: 88px !important;	
 }

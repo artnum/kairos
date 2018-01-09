@@ -310,9 +310,9 @@ return djDeclare("artnum.reservation", [
 
     if(this.dbContact) {
 			if(this.dbContact.freeform) {
-				html += ' - ' +  (this.dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</div>';	
+				html += ' - ' +  '<address>' + (this.dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
 			} else {
-				var x = ' - ';
+				var x = ' - <address>';
 				if(this.dbContact.o) {
 					x += '<span class="o">' + this.dbContact.o + '</span>';
 				}
@@ -329,8 +329,8 @@ return djDeclare("artnum.reservation", [
 					}
 					x += '<span class="name">' + n + '</span>';
 				}
-				if(x != ' - ') {
-					html += x + '</div>';
+				if(x != ' - <address>') {
+					html += x + '</address></div>';
 				}
 			}
     } else {
@@ -338,11 +338,17 @@ return djDeclare("artnum.reservation", [
 		}
 
 		html += "<div>"
-		if(this.get('trueBegin')) { html += "<span>" + this.get('trueBegin').shortDate() + "</span> - "; }
-		if(this.get('trueEnd')) { html += "<span>" + this.get('trueEnd').shortDate() + "</span>"; }
+		if(this.get('trueBegin') && this.get('trueEnd')) {
+			if((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
+				html += '<span class="date">' + this.get('trueBegin').shortDate() + '</span>'; 
+			} else {
+				html += '<span class="date"><span>' + this.get('trueBegin').shortDate() + '</span>-'; 
+				html += '<span>' + this.get('trueEnd').shortDate() + '</span></span>'; 
+			}
+		}
     
 		if(this.locality || this.address) {
-      var x = ", ";
+      var x = " <address>";
       if(this.address) {
         x += this.address;
       }
@@ -350,10 +356,10 @@ return djDeclare("artnum.reservation", [
         if(this.address) { x += ", " }
         x += this.locality;
       }
-			if(x != ", ") {
-				html += x;	
+			if(x != ", <address>") {
+				html += x + "</address>";	
 			}
-    }
+    } 
 
 		html += "</div>"
 
