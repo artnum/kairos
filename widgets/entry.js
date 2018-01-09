@@ -533,6 +533,7 @@ return djDeclare("artnum.entry", [
 		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
 			var o = false;
 		
+
 			if(!child.get('hidden')) { 
 				dates.forEach( function (d) {
 					if((
@@ -548,7 +549,12 @@ return djDeclare("artnum.entry", [
 							d.end < child.get('end').getTime())
 						 )
 						 ){
-						if(! d.overlap) { djDomStyle.set(child.domNode, 'margin-top', that.originalHeight + "px"); o = true; }
+						if(! d.overlap) {
+							var height = djDomStyle.get(child.domNode, "height"); 
+							djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
+						} else {
+							 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
+						}
 						overlap = true;
 					}
 				
@@ -558,7 +564,9 @@ return djDeclare("artnum.entry", [
 		});
 	
 		if(overlap) {
-			djDomStyle.set(this.domNode, 'height', (this.originalHeight * 2) + "px");
+		 	djDomStyle.set(that.domNode, 'height', ''); 
+			var height = djDomStyle.get(that.domNode, "height"); 
+			djDomStyle.set(this.domNode, 'height', (height * 2) + "px");
 		} else {
 			djDomStyle.set(this.domNode, 'height', '');
 		}

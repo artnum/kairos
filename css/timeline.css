@@ -96,10 +96,22 @@ body, html { margin: 0; padding: 0; }
 	font-size: 1.8em !important;	
 }
 
+.entry {
+	padding-left: 5px;
+  height: 66px;
+  min-height: 66px;
+}
+
 .x1 .entry {
 	padding-left: 3px;
-  height: 42px !important;
-  min-height: 42px !important;
+  height: 42px;
+  min-height: 42px;
+}
+
+.x3 .entry {
+	padding-left: 7px;
+  height: 82px;
+  min-height: 82px;
 }
 
 .control {
@@ -119,11 +131,6 @@ body, html { margin: 0; padding: 0; }
 	font-size: 12px;
 }
 
-.entry {
-	padding-left: 5px;
-  height: 66px;
-  min-height: 66px;
-}
 
 .entry .reservation {
 	display: inline-block;
@@ -131,11 +138,6 @@ body, html { margin: 0; padding: 0; }
 	height: 62px;
 }
 
-.x3 .entry {
-	padding-left: 7px;
-  height: 82px;
-  min-height: 82px;
-}
 
 .x3 .entry .reservation {
 	max-height: 78px;
