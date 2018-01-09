@@ -597,34 +597,42 @@ return djDeclare("artnum.timeline", [
 				that.beginDraw();
 				var whole = response.whole();
 				whole.sort(function(a,b){
-					if(a.description < b.description) { return -1 };
-					if(a.description > b.description) { return 1 };
+					if(parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };
+					if(parseInt(a.description, 10) > parseInt(b.description, 10)) { return 1 };
 					return 0;
 				});
 				
+
+				var inc = 0;
 				whole.forEach( function ( machine ) {
-				var name =  machine.description;
-				if(machine.cn ) {
-					name += '<div class="name">' + machine.cn + '</div>'; 	
-				}
-				var e = new entry({name: name, sup: that, isParent: true, target: machine.description });
-				e.setServers(locationConfig.servers);
-				that.addEntry(e);
-				if(machine.airaltref && djLang.isArray(machine.airaltref)) {
-					machine.airaltref.forEach( function (altref ) {
-							var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
-							var e = new entry({name: name, sup: that, isParent: false, target: altref.trim() });
+					var groupName = "group" + (inc % 2);
+					var name =  machine.description;
+					if(machine.cn ) {
+						name += '<div class="name">' + machine.cn + '</div>'; 	
+					}
+					var e = new entry({name: name, sup: that, isParent: true, target: machine.description });
+					djDomClass.add(e.domNode, groupName);
+					e.setServers(locationConfig.servers);
+					that.addEntry(e);
+					if(machine.airaltref && djLang.isArray(machine.airaltref)) {
+						machine.airaltref.forEach( function (altref ) {
+								var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
+								var e = new entry({name: name, sup: that, isParent: false, target: altref.trim() });
+								djDomClass.add(e.domNode, groupName);
 						
+								e.setServers(locationConfig.servers);
+								that.addEntry(e);
+							});
+						} else if(machine.airaltref) {
+							var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
+							var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim() });
+							djDomClass.add(e.domNode, groupName);
 							e.setServers(locationConfig.servers);
 							that.addEntry(e);
-						});
-					} else if(machine.airaltref) {
-						var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
-						var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim() });
-						e.setServers(locationConfig.servers);
-						that.addEntry(e);
-					}
-				});
+						}
+				
+						inc++;
+					});
 			}
 			that.endDraw();
 		});
