@@ -61,6 +61,7 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 			case '_client': value = 'Client'; break;
 			case '_responsable': value = 'Responsable'; break;
 			case '_place': value = 'Contact sur place'; break;
+			case '_facturation': value = 'Facturation'; break;
 		}
 		return value;
 	},
