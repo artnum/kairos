@@ -6,7 +6,7 @@ class MyPDF extends artnum\PDF {
    function __construct() {
       parent::__construct();
 
-      $this->SetMargins(20, 15, 10);
+      $this->SetMargins(20, 10, 10);
       $this->addTaggedFont('c', 'century-gothic', '', 'century-gothic.ttf', true);
       $this->addTaggedFont('cb', 'century-gothic-bold', '', 'century-gothic-bold.ttf', true);
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);
@@ -14,7 +14,7 @@ class MyPDF extends artnum\PDF {
    }
 
    function Header() {
-      $w = ($this->w / 2) - $this->lMargin;
+      $w = ($this->w / 2.2) - $this->lMargin;
       $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
    }
 
@@ -100,6 +100,8 @@ if(!isset($res['data'][0])) {
 }
 $reservation = $res['data'][0];
 
+header('Content-Disposition: inline; filename="' .  $_GET['id'] . '.pdf"');
+
 if(!empty($reservation['deliveryBegin'])) {
    if($reservation['deliveryBegin'] != $reservation['begin']) {
       $reservation['deliveryBegin'] = new DateTime($reservation['deliveryBegin']);
@@ -166,7 +168,7 @@ if(!is_null($client)) {
 
 /* PDF Generation */
 $PDF = new MyPDF();
-$PDF->addVTab(24);
+$PDF->addVTab(21);
 $PDF->addVTab(50);
 $PDF->addVTab(85);
 $PDF->addTab('right', 'right');
