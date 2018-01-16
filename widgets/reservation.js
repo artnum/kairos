@@ -421,6 +421,8 @@ return djDeclare("artnum.reservation", [
 		f.set('locality', this.get('locality'));
 		f.set('comment', this.get('comment'));
 		f.set('contact', this.get('contact'));
+		f.set('equipment', this.get('equipment'));
+		f.set('reference', this.get('reference'));
 		f.show();	
 	},
 	_getTargetAttr: function() {

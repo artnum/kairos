@@ -328,8 +328,6 @@ return djDeclare("artnum.rForm", [
 		}
 	},
 
-		
-
 	saveContact: function (id, options) {
 		var that = this;
 		var type = options.type ? options.type : '_client';
@@ -414,6 +412,10 @@ return djDeclare("artnum.rForm", [
 		if(this.dialog) {
 			this.dialog.show();	
 		}
+	},
+
+	doPrint: function (event) {
+		window.open('pdf.php?id=' + this.reservation.get('IDent'));
 	},
 
 	doDelete: function (event) {

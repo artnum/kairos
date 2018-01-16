@@ -596,6 +596,8 @@ return djDeclare("artnum.entry", [
 					"locality": reserv.locality,
 					"comment": reserv.comment,
 					"special": reserv.special,
+					"reference": reserv.reference,
+					"equipment": reserv.equipment,
 					"withWorker": reserv.withWorker
 					};
 				if(r.end != null && r.begin != null) {
