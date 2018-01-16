@@ -76,7 +76,7 @@ function format_address($addr) {
    } else {
       $l = explode("\n", $addr['data']['freeform']);
       foreach($l as $_l) {
-         if(!empty(trim($_l))) {
+         if(!empty($_l)) {
             $lines[] = $_l;
          }
       }
