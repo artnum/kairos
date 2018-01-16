@@ -145,6 +145,12 @@ return djDeclare("artnum.rForm", [
 		}
 	},
 
+	_setEquipmentAttr:function (value) {
+		if(value) {
+			this.nEquipment.set('value', value);
+		}
+	},
+
 	_setLocalityAttr: function (value) {
 		if(value) {
 			this.nLocality.set('value', value);	
@@ -499,6 +505,7 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('deliveryEnd', deliveryEnd);
 		this.reservation.set('address', f.nAddress);
 		this.reservation.set('reference', f.nReference);
+		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
 		this.reservation.set('withWorker', this.machinist.get('value'));

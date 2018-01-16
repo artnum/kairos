@@ -106,6 +106,10 @@ return djDeclare("artnum.reservation", [
 		this.id = value;
 		this.setTextDesc();
 	},
+	_setEquipmentAttr: function(value) {
+		this.addAttr('equipment');
+    this._set('equipment', value);
+	},
 	_setReferenceAttr: function(value) {
 		this.addAttr('reference');
     this._set('reference', value);
