@@ -106,6 +106,10 @@ return djDeclare("artnum.reservation", [
 		this.id = value;
 		this.setTextDesc();
 	},
+	_setReferenceAttr: function(value) {
+		this.addAttr('reference');
+    this._set('reference', value);
+	},
   _setAddressAttr: function(value) {
 		this.addAttr('address');
     this._set('address', value);
