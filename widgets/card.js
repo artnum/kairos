@@ -85,6 +85,7 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 		return null;
 	},
 	entry: function(entry) {
+		console.log(entry);
 		if(! entry) { return ; }
 		if(! entry.freeform)  {
 			for(var k in this.mapping) {
@@ -96,6 +97,23 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 					}
 				}
 			}
+			if(entry['telephonenumber'] || entry['mobile']) {
+				this.domNode.appendChild(document.createElement('br'));
+				var num = entry['mobile'] ? entry['mobile']	: entry['telephonenumber']
+				var s = document.createElement('span');
+				s.appendChild(document.createTextNode(num));
+				this.domNode.appendChild(s);
+			}
+			if(entry['mail']) {
+				this.domNode.appendChild(document.createElement('br'));
+				var num = entry['mobile'] ? entry['mobile']	: entry['telephonenumber']
+				var s = document.createElement('span');
+				s.appendChild(document.createElement('a'));
+				s.firstChild.setAttribute('href', 'mailto:'+entry['mail']);
+				s.firstChild.appendChild(document.createTextNode(entry['mail']));
+				this.domNode.appendChild(s);
+			}
+
 		} else {
 			this.raw(entry.freeform);
 		}
