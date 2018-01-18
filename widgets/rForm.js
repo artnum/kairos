@@ -419,6 +419,13 @@ return djDeclare("artnum.rForm", [
 		});
 		
 		var f = this.nForm.get('value');
+	
+		if( f.beginDate == null || f.endDate == null || f.beginTime == null || f.endTime == null) {
+			this.beginDate.set('state', 'Error');
+			this.endDate.set('state', 'Error');
+			return false;
+		}
+			
 		var begin = f.beginDate.join(f.beginTime);
 		var end = f.endDate.join(f.endTime);
 		
