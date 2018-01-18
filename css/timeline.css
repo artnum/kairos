@@ -341,7 +341,7 @@ body, html { margin: 0; padding: 0; }
   padding: 0.4em 0 0.4em 0;
 }
 
-.contact:hover {
+.contacts .contact:hover {
   background-color: #ddd; 
 }
 

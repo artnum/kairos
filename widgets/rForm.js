@@ -232,23 +232,9 @@ return djDeclare("artnum.rForm", [
 			}
 		}));
 
-
-		var diff = djDate.difference(this.reservation.get('begin'),  this.reservation.get('end'), "day");
-		var bf = new bitsfield(diff);
-		this.machinist = bf;
-		this.nMachinist.appendChild(bf.domNode);
-		bf.set('value', this.reservation.get('withWorker'));
-
 		djOn(this.beginDate, "change", djLang.hitch(this, this.resizeBits));
 		djOn(this.endDate, "change", djLang.hitch(this, this.resizeBits));
   },
-
-	resizeBits: function() {
-		var size = Math.abs(djDate.difference(this.beginDate.get('value'), this.endDate.get('value'), "day"));
-		if(size) {
-			this.machinist.newSize(size);	
-		}
-	},
 
 	toggleDelivery: function () {
 		if(this.nDelivery.get('checked')) {
@@ -510,7 +496,6 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
-		this.reservation.set('withWorker', this.machinist.get('value'));
 		this.reservation.resize();
 		this.reservation.sup.store({ o: this.reservation });
 		this.dialog.hide();

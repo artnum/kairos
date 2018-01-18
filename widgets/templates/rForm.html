@@ -15,9 +15,8 @@ Début : <input data-dojo-type="dijit/form/DateTextBox" name="deliveryBeginDate"
 Fin : <input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
 </fieldset>
 
-
-<fieldset><legend>Machiniste</legend>
-<div data-dojo-attach-point="nMachinist"></div>
+<fieldset><legend>Matériel</legend>
+<textarea data-dojo-type="dijit/form/Textarea" name="nEquipment" data-dojo-attach-point="nEquipment" style="min-height: 10ex;"></textarea>
 </fieldset>
 
 <fieldset><legend>Commentaire</legend>
@@ -35,12 +34,9 @@ Localité : <input data-dojo-type="dijit/form/TextBox" name="nLocality" data-doj
 Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="status" /><br />
 </fieldset> 
 
-<fieldset><legend>Matériel</legend>
-<textarea data-dojo-type="dijit/form/Textarea" name="nEquipment" data-dojo-attach-point="nEquipment" style="min-height: 10ex;"></textarea>
-</fieldset>
 
 <fieldset><legend>Contacts</legend>
-<div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 16ex;" data-dojo-props="isLayoutContainer: true"></div>
+<div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 20ex;" data-dojo-props="isLayoutContainer: true"></div>
 <div class="contacts" data-dojo-attach-point="nContacts">
 <button data-dojo-type="dijit/form/Button" value="Ajouter contacts"
  type="button" data-dojo-attach-event="click:doAddContact" ><i class="fa fa-address-book-o" aria-hidden="true"></i> Ajouter contacts</button>
