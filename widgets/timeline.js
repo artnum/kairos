@@ -98,21 +98,20 @@ return djDeclare("artnum.timeline", [
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
+    var sStore = window.sessionStorage;
 
-		var sStore = window.sessionStorage;
-		djXhr.get(locationConfig.store + '/Status/', { handleAs: "json"}).then( function (results){
+		djXhr.get(locationConfig.store + '/Status/', { handleAs: "json", query: { 'search.type': 0}}).then( function (results){
 			if(results && results.type == 'results') {
 				for(var i = 0; i < results.data.length; i++) {
 					sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]));
 				}
 			}
 		});
-
 	},
 
 	defaultStatus: function () {
 		var def = new djDeferred();
-		request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1}}).then(function(result){
+		request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1, 'search.type': 0}}).then(function(result){
 			if(result.success()) {
 				def.resolve(result.whole()[0].id);	
 			}

@@ -179,7 +179,7 @@ return djDeclare("artnum.rForm", [
 		var select = this.status;
 		var that = this;
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
-		request.get(locationConfig.store + '/Status/').then( function (results) {
+		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0}}).then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
 				results.data.forEach(function (d) {
