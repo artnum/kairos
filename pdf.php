@@ -14,17 +14,17 @@ class MyPDF extends artnum\PDF {
    }
 
    function Header() {
-      $w = ($this->w / 2.2) - $this->lMargin;
+      $w = ($this->w / 2.4) - $this->lMargin;
       $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
    }
 
    function Footer() {
-      $this->SetY(270);
-      $this->setFontSize(2.6);
+      $this->SetY(280);
+      $this->setFontSize(2.4);
       $this->hr();
-      $this->printTaggedLn(array('%c', 'Airnace SA, Route du Rhône 20, 1902 Evionnaz'));
-      $this->printTaggedLn(array('%c', 'Téléphone: +41 27 767 30 38, Fax: +41 27 767 30 28'));
-      $this->printTaggedLn(array('%c', 'Mail: info@airnace.ch, Site: https://airnace.ch'));
+      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route du Rhône 20, 1902 Evionnaz'), array('break' => false));
+      $this->printTaggedLn(array('%c', ' | Téléphone: +41 27 767 30 38, Fax: +41 27 767 30 28'), array('break' => false));
+      $this->printTaggedLn(array('%c', ' | info@airnace.ch | https://www.airnace.ch'));
       $this->resetFontSize();
    }
 }
@@ -73,6 +73,13 @@ function format_address($addr) {
             case 'de': $lines[] = 'Allemagne'; break;
          }
       }
+
+      if(isset($addr['mobile']) || isset($addr['telephonenumber'])) {
+         $lines[] = isset($addr['mobile']) ?  $addr['mobile'] : $addr['telephonenumber'];
+      }
+      if(isset($addr['mail'])) {
+         $lines[] = $addr['mail'];
+      }
    } else {
       $l = explode("\n", $addr['data']['freeform']);
       foreach($l as $_l) {
@@ -86,8 +93,6 @@ function format_address($addr) {
    return $lines;
 }
 
-
-
 $JClient = new artnum\JRestClient('http://localhost/location/store');
 $Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
@@ -99,8 +104,6 @@ if(!isset($res['data'][0])) {
    exit(0);
 }
 $reservation = $res['data'][0];
-
-header('Content-Disposition: inline; filename="' .  $_GET['id'] . '.pdf"');
 
 if(!empty($reservation['deliveryBegin'])) {
    if($reservation['deliveryBegin'] != $reservation['begin']) {
@@ -168,9 +171,11 @@ if(!is_null($client)) {
 
 /* PDF Generation */
 $PDF = new MyPDF();
-$PDF->addVTab(21);
+$PDF->addVTab(19);
 $PDF->addVTab(50);
 $PDF->addVTab(85);
+$PDF->addVTab(240);
+$PDF->addVTab(244);
 $PDF->addTab('right', 'right');
 $PDF->addTab('middle');
 $PDF->addTab(62);
@@ -191,7 +196,7 @@ if(! is_null($client)) {
    $PDF->printLn(' pour ' . $client[0], array('break' => false));
 }
 $PDF->br();
-$PDF->setFontSize(3.6);
+$PDF->setFontSize(3.2);
 $PDF->hr();
 $PDF->SetFont('century-gothic');
 
@@ -222,7 +227,7 @@ if(!is_null($client)) {
    }  
 } else {
    $PDF->vtab(2); 
-   $PDF->squaredFrame(30, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 53));
+   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 53, 'square' => 6));
 }
 
 if(!is_null($addrs['facturation'])) {
@@ -236,13 +241,13 @@ if(!is_null($addrs['facturation'])) {
 } else {
    $PDF->vtab(2);
    $PDF->tab(3); 
-   $PDF->squaredFrame(30, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 53));
+   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
 }
 
 
 $PDF->vtab(2);
 $PDF->tab(4);
-$PDF->squaredFrame(30, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true  ));
+$PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6));
 
 $PDF->vtab(3);
 $PDF->hr();
@@ -308,21 +313,29 @@ if(isset($reservation['equipment'])) {
       if($txt != '') { $txt .= ', '; }
       $txt .= $e;
    }
-   
-   $PDF->printTaggedLn(array('%c', 'Équipement : ', '%cb', $txt));
+   if($txt != '') {
+      $PDF->printTaggedLn(array('%c', 'Équipement : ', '%cb', $txt));
+   }
 }
-$PDF->br();
+$PDF->vtab(4);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Plein d\'essence effectué'), array('break' => false));
 $PDF->tab(2);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Décompte intermédiaire'));
-$PDF->hr();
 
+$PDF->vtab(5);
+$PDF->hr();
+$PDF->br();
 $PDF->printTaggedLn(array('%c', 'Lieu et date : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
-$PDF->br();
+$PDF->br(); $PDF->br();
 $PDF->printTaggedLn(array('%c', 'Signature : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
 $PDF->br();
 
-$PDF->Output(); 
+if(is_null($client)) {
+   $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
+} else {
+   $PDF->Output($reservation['id'] . ' @ ' . $client[0] . '.pdf', 'I'); 
+
+}
 ?>
