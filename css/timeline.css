@@ -378,6 +378,7 @@ div.contact > div:first-child {
 .vertical {
 	pointer-events: none;
 }
+
 .vertical.odd {
 	border-left: 1px solid  black;
 	border-right: 1px solid black;

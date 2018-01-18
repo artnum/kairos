@@ -288,10 +288,10 @@ return djDeclare("artnum.timeline", [
 		djOn(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
     djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
     djOn(window, "resize", djLang.hitch(this, this.resize));
-		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
-		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
+		djOn(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
+		djOn(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
 		djOn(window, "scroll", djLang.hitch(this, this.update));
-		djOn(window, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.lockEvents = new EventSource('/location/lock.php?follow=1');
 		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
@@ -392,25 +392,27 @@ return djDeclare("artnum.timeline", [
 	},
 
   eKeyEvent: function (event) {
-		switch(event.key) {
-			case 'ArrowLeft': 
-				this.moveLeft(); 
-				break;
-			case 'ArrowRight': 
-				this.moveRight();
-				break;
-			case 'ArrowUp': 
-				event.preventDefault(); 
-				this.zoomOut();
-				break;
-			case 'ArrowDown':
-				event.preventDefault(); 
-				this.zoomIn();
-				break;
-			case 'Escape':
-				event.preventDefault();
-				this.emit('cancel-reservation');
-				break;
+		if(event.ctrlKey) {
+			switch(event.key) {
+				case 'ArrowLeft': 
+					this.moveLeft(); 
+					break;
+				case 'ArrowRight': 
+					this.moveRight();
+					break;
+				case 'ArrowUp': 
+					event.preventDefault(); 
+					this.zoomOut();
+					break;
+				case 'ArrowDown':
+					event.preventDefault(); 
+					this.zoomIn();
+					break;
+				case 'Escape':
+					event.preventDefault();
+					this.emit('cancel-reservation');
+					break;
+			}
 		}
   },
 	
