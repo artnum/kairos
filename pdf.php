@@ -132,15 +132,14 @@ if($res['type'] == 'results') {
 
 
 $client = null;
-if(!empty($reservation['contact'])) {
-   if($reservation['contact'][0] == ':') {
-      $res = $JClient->get(substr($reservation['contact'], 1), 'ReservationContact');
-      if($res['type'] == 'results') {
-         $client = array('type' => 'freeform', 'data' => $res['data'][0]);
-      }
+$res = $JClient->search(array('search.comment' => '_client'), 'ReservationContact');
+
+if($res['type'] == 'results' && count($res['data'])>0) {
+   $contact = $res['data'][0];
+   if(!empty($contact['freeform'])) {
+      $client = array('type' => 'freeform', 'data' => $res['data'][0]);
    } else {
-      $c = explode('/', $reservation['contact']);
-      $res = $JClient->get($c[count($c) - 1], 'Contacts');
+      $res = $JClient->get($contact['target'], 'Contacts');
       if($res['type'] == 'results') {
          $client = array('type' => 'db', 'data' => $res['data'][0]);
       }
