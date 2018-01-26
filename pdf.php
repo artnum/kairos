@@ -41,11 +41,11 @@ function format_address($addr) {
       if(isset($addr['givenname']) || isset($addr['sn'])) {
          $cn = '';
          if(isset($addr['givenname'])) {
-            $cn = $addr['givenname'];
+            $cn = trim($addr['givenname']);
          }
          if(isset($addr['sn'])) {
             if($cn != '') { $cn .= ' '; };
-            $cn .= $addr['sn'];
+            $cn .= trim($addr['sn']);
          }
          
          $lines[] = $cn;
@@ -54,11 +54,11 @@ function format_address($addr) {
       if(isset($addr['l']) || isset($addr['postalcode'])) {
          $locality = '';
          if(isset($addr['postalcode'])) {
-            $locality = $addr['postalcode'];
+            $locality = trim($addr['postalcode']);
          }
          if(isset($addr['l'])) {
             if($locality != '') { $locality .= ' '; }
-            $locality .= $addr['l'];
+            $locality .= trim($addr['l']);
          }
          
          $lines[] = $locality;
@@ -75,16 +75,16 @@ function format_address($addr) {
       }
 
       if(isset($addr['mobile']) || isset($addr['telephonenumber'])) {
-         $lines[] = isset($addr['mobile']) ?  $addr['mobile'] : $addr['telephonenumber'];
+         $lines[] = isset($addr['mobile']) ?  trim($addr['mobile']) : trim($addr['telephonenumber']);
       }
       if(isset($addr['mail'])) {
-         $lines[] = $addr['mail'];
+         $lines[] = trim($addr['mail']);
       }
    } else {
       $l = explode("\n", $addr['data']['freeform']);
       foreach($l as $_l) {
          if(!empty($_l)) {
-            $lines[] = $_l;
+            $lines[] = trim($_l);
          }
       }
 
