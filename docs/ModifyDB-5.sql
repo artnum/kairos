@@ -1,1 +1,1 @@
-CREATE TABLE IF NOT EXISTS 'association' ( 'association_id' INTEGER PRIMARY KEY, 'association_reservation' INTEGER, 'association_target' TEXT, 'association_begin' DATETIME, 'association_end' DATETIME, 'association_comment' TEXT );
+CREATE TABLE IF NOT EXISTS 'association' ( 'association_id' INTEGER PRIMARY KEY, 'association_reservation' INTEGER, 'association_target' TEXT, 'association_type' TEXT, 'association_begin' DATETIME, 'association_end' DATETIME, 'association_comment' TEXT );
