@@ -62,7 +62,6 @@ dojoConfig = {
 <script src="/location/js/lz-string.min.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script> 
 <script>
-
 require([
 	"dojo/_base/lang",
 	"artnum/timeline",
@@ -73,9 +72,9 @@ require([
 	"dijit/Dialog",
 	"dojo/domReady!"
 ], function (djLang, timeline, entry, djXhr, dtRegistry, request, dtDialog) {
-var tl = new timeline();
-document.getElementsByTagName('body')[0].appendChild(tl.domNode);
-tl.run();
+	var tl = new timeline();
+	document.getElementsByTagName('body')[0].appendChild(tl.domNode);
+	tl.run();
 });
 </script>
 </body>

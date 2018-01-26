@@ -404,3 +404,13 @@ fieldset {
 	width: 14ch;
 	max-width: 14ch;	
 }
+
+.dijitDialog {
+	cursor: auto;
+}
+
+label.big {
+	padding: 2px;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}

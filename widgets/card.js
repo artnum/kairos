@@ -85,7 +85,6 @@ return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTem
 		return null;
 	},
 	entry: function(entry) {
-		console.log(entry);
 		if(! entry) { return ; }
 		if(! entry.freeform)  {
 			for(var k in this.mapping) {

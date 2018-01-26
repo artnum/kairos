@@ -163,17 +163,6 @@ return djDeclare("artnum.rForm", [
 		}	
 	},
 
-	_setContactAttr: function(value)  {
-		var that = this;
-		this.reservation.lookupContact(value).then(function (entry) {
-			if(entry.target) {
-				that.createContact(entry, '_client');
-			} else {
-				that.createContact(entry, '_client');
-			}
-		});
-	},
-
 	postCreate: function () {
 		this.inherited(arguments);
 		var select = this.status;
@@ -217,6 +206,7 @@ return djDeclare("artnum.rForm", [
 			if(res.success()) {
 				res.whole().forEach(djLang.hitch(this, function (contact) {
 					if(contact.freeform) {
+						contact.linkId = contact.id;
 						this.createContact(contact, contact.comment);	
 					} else {
 						var linkId = contact.id, comment = contact.comment;
@@ -273,9 +263,6 @@ return djDeclare("artnum.rForm", [
 		if(arguments[2]) { show = true; }
 		c = new card('/Contacts/');
 		c.entry(entry);
-		if(type == '_client' && this.contacts[type]) {
-			this.nContactsContainer.removeChild(this.contacts[type]);	
-		}
 		
 		this.contacts[type] = new dtContentPane({
 		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
@@ -283,6 +270,7 @@ return djDeclare("artnum.rForm", [
 				closable: true,
 				contactType: type,
 				contactCard: c,
+				contactLinkId: entry.linkId,
 				style: "height: 80px;",
 				onClose: djLang.hitch(this, function (event) {
 						if(confirm('Supprimer le contact ' + c.getType(type))) {
@@ -290,12 +278,7 @@ return djDeclare("artnum.rForm", [
 							if(tab) {
 								if(tab.contactType) {
 									that.contacts[tab.contactType] = null;
-									if(tab.contactType == '_client') {
-										this.reservation.set('contact', '');
-									}	else {
-										request.del(locationConfig.store + '/ReservationContact/' + entry.linkId);
-									}
-									
+									request.del(locationConfig.store + '/ReservationContact/' + tab.contactLinkId);
 									event.removeChild(tab);
 								}	
 							}
@@ -316,54 +299,25 @@ return djDeclare("artnum.rForm", [
 
 	saveContact: function (id, options) {
 		var that = this;
-		var type = options.type ? options.type : '_client';
+		var type = options.type ? options.type : '';
 		if(options.type == '_autre') {
 			type = options.comment;
 		} 
 	
-		if(options.type == "_client") {
-			var proceed = false;
-			var current = this.reservation.get('contact');
-			if(current) {
-				if(confirm('Voulez-vous vraiment remplacer le client ?')) {
-					proceed = true;
-					this.reservation.warn('Client remplacé', 301);
-				}
-			} else {
-				proceed = true;	
-			}
-			if(proceed) {
-				if(id != null) {
-					this.reservation.set('contact', id);
-					request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
-						var e = c.first();
-						e.linkId=null;
-						this.createContact(e, type, true);
-					}));
-				} else {
-					request.post(locationConfig.store + '/ReservationContact/', { query: {
-						reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function(result) {	
-						if(result.success()) {
-							that.reservation.set('contact', ':' + result.whole()[0].id);
-							that.createContact(options, type, true);
-						}
-					});	
-				}
-			}
-		} else {
-			if(id != null) {
+		if(id != null) {
 				request.get(locationConfig.store + '/ReservationContact/', { query: {
 						'search.reservation': this.reservation.get('IDent'),
 						'search.target': id,
 						'search.comment': type
 					}}).then(djLang.hitch(this, function(results){
 						if(results.count() == 0) {
-							request.post(locationConfig.store + '/ReservationContact/', { method: 'post', query: { reservation: this.reservation.get('IDent'), comment: type, freeform: null, target: id }})
+							request.post(locationConfig.store + '/ReservationContact/', { method: 'post', query: { reservation: that.reservation.get('IDent'), comment: type, freeform: null, target: id }})
 								.then(djLang.hitch(this, function ( results) {
 										request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
 											var e = c.first();
-											e.linkId =  results.id;
-											this.createContact(e, type, true);
+											e.linkId =  results.first().id;
+											that.createContact(e, type, true);
+											that.reservation.set('contact',''); 
 										}));
 								}));
 						}
@@ -377,14 +331,14 @@ return djDeclare("artnum.rForm", [
 							request.post(locationConfig.store + '/ReservationContact/', { query: {
 								reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function(result) {	
 									if(result.success()) {
-										that.reservation.set('contact', ':' + result.whole()[0].id);
+										options.linkId = result.first().id;
 										that.createContact(options, type, true);
+										that.reservation.set('contact',''); 
 									}
 								});
 						}
 				}));
 			}
-		}
 	},
 
 	doAddContact: function (event) {
@@ -503,8 +457,8 @@ return djDeclare("artnum.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
+		this.reservation.store();
 		this.reservation.resize();
-		this.reservation.sup.store({ o: this.reservation });
 		this.dialog.hide();
 	}
 });});

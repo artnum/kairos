@@ -106,7 +106,7 @@ return {
 
 			}
 
-			return def;
+			return def.promise;
 		},
 
 		post: function (url) {
@@ -116,7 +116,7 @@ return {
 			djXhr(url, options).then( function (r) {
 				def.resolve(new result(r));
 			});
-			return def;			
+			return def.promise;			
 		},
 
 		put: function (url) {
@@ -126,7 +126,7 @@ return {
 			djXhr(url, options).then( function (r) {
 				def.resolve(new result(r));	
 			});
-			return def;
+			return def.promise;
 		},
 
 		del: function (url) {
@@ -136,7 +136,7 @@ return {
 			djXhr(url, options).then( function (r) {
 				def.resolve(new result(r));
 			});
-			return def;
+			return def.promise;
 		}
 	};
 });

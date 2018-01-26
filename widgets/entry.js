@@ -224,7 +224,7 @@ return djDeclare("artnum.entry", [
 			}
 		});
 
-		return def;
+		return def.promise;
 	},
 
 	setLocked: function ( lock ) {
@@ -265,7 +265,7 @@ return djDeclare("artnum.entry", [
 				def.resolve();});
 		});
 
-		return def;
+		return def.promise;
 	},
 
 	dayFromX: function (x) {
@@ -393,7 +393,7 @@ return djDeclare("artnum.entry", [
 		});
 
 
-		return def;
+		return def.promise;
 	},
 	update: function () {
 		var force = false;
@@ -452,7 +452,7 @@ return djDeclare("artnum.entry", [
 			});
 		});
 
-		return def;
+		return def.promise;
 	},
 
 	store: function(reservation) {
@@ -480,8 +480,8 @@ return djDeclare("artnum.entry", [
 			method = "PUT";
 			suffix = '/' + query.id;
 		}
-		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(def.resolve);
-		return def;
+		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(function () { def.resolve() });
+		return def.promise;
 	}, 
 
 	_setSupAttr: function ( sup ) {

@@ -117,7 +117,7 @@ return djDeclare("artnum.timeline", [
 			}
 			def.resolve("0");
 		});
-		return def;
+		return def.promise;
 	},
 	
 	zoomStyle: function () {
@@ -541,7 +541,7 @@ return djDeclare("artnum.timeline", [
 			this.supHeader.appendChild(shFrag);
 			def.resolve();
 		}));
-		return def;
+		return def.promise;
 	},
 
 	drawVerticalLine: function() {
@@ -580,7 +580,7 @@ return djDeclare("artnum.timeline", [
 			def.resolve();
 		});
 		
-		return def;	
+		return def.promise;	
 	},
 
 	refresh: function() {
@@ -657,7 +657,7 @@ return djDeclare("artnum.timeline", [
 				def.resolve();		
 			});
 		});
-		return def;
+		return def.promise;
 	},
 
 	lockChange: function (event) {

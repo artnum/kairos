@@ -69,6 +69,7 @@ return djDeclare("artnum.reservation", [
 	special: 0,
 	hidden: true,
 	form: null,
+	dbContact: null,
 
 
 	constructor: function () {
@@ -77,6 +78,7 @@ return djDeclare("artnum.reservation", [
 		this.special = 0;	
 		this.hidden = true;
 		this.form = null;
+		this.dbContact = null;
 	},
 	error: function(txt, code) {
 		this.sup.error(txt, code);
@@ -91,6 +93,7 @@ return djDeclare("artnum.reservation", [
 		this.inherited(arguments);
 		this.originalTop = djDomStyle.get(this.domNode, 'top');
 	  this.resize();
+		this.set('contact', '');
   },
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
@@ -130,17 +133,8 @@ return djDeclare("artnum.reservation", [
 		this.setTextDesc();
 	},                
 	_setContactAttr: function(value) {
-		this.addAttr('contact');
 		var that = this;
-	  this._set('contact', value);
-		if(value) {
-	    this.lookupContact(value).then( function () {
-  	    that.setTextDesc(); 
-    	});
-		} else {
-			that.dbContact = null;
-			that.setTextDesc();	
-		}
+		this.loadDbContact().then( function () { that.setTextDesc(); });
   },
 	_setEnableAttr: function() {
 		var that = this;
@@ -288,26 +282,39 @@ return djDeclare("artnum.reservation", [
 		}
 		return;
 	},
-  lookupContact: function(id) {
-    var def = new djDeferred();
-    var that = this;
-		if(id) {
-			if(id.substr(0,1) == ':') {
-				request.get(locationConfig.store + '/ReservationContact/' + id.substr(1)).then(function(result){
-					that._set('dbContact', result.first());
-					def.resolve(result.first());
-				});
-			} else {
-    		request.get(locationConfig.store + '/' + id).then(function (result) {
-					if(result && result.type == 'results') {
-		  			that._set('dbContact', result.first());
-       			def.resolve(result.first());
-					}
-				});
+
+	store: function () {
+		var that = this;
+		this.sup.store({o: this}).then(function() {
+			that.set('contact', '');
+			that.resize();
+		})
+	},
+
+	loadDbContact: function () {
+		var def = new djDeferred();
+		var that = this;
+		this.set('dbContact', null);
+		
+		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.get("IDent"), "search.comment": '_client', "limit": 1}}).then( function (res) {
+			if(res.whole().length>0) {
+				if(res.first().target == null) {
+					that._set('dbContact', res.first());
+					def.resolve(res.first(), true);
+				} else {
+					request.get(locationConfig.store + '/' + res.first().target).then( function (result){
+						if(result.whole().length>0) {
+							that._set('dbContact', result.first());
+							def.resolve(result.first(), true);
+						}
+					}); 
+				}
 			}
-		}
-    return def;
-  },
+		});
+
+		return def.promise;
+	},
+
 	setTextDesc: function () {
     var html = '';
 		if(this.IDent == null) {
@@ -316,24 +323,25 @@ return djDeclare("artnum.reservation", [
 			html = '<div><span class="id">' + this.IDent + '</span>'; 	
 		}
 
-    if(this.dbContact) {
-			if(this.dbContact.freeform) {
-				html += ' - ' +  '<address>' + (this.dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
+		if(this.get('dbContact')) {
+			var dbContact = this.get('dbContact');
+			if(dbContact.freeform) {
+				html += ' - ' +  '<address>' + (dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
 			} else {
 				var x = ' - <address>';
-				if(this.dbContact.o) {
-					x += '<span class="o">' + this.dbContact.o + '</span>';
+				if(dbContact.o) {
+					x += '<span class="o">' + dbContact.o + '</span>';
 				}
 
-				if(this.dbContact.givenname || this.dbContact.sn) {
-					if(this.dbContact.o) { x += ', '; }
+				if(dbContact.givenname || dbContact.sn) {
+					if(dbContact.o) { x += ', '; }
 					var n = '';
-					if(this.dbContact.givenname) {
-						n += this.dbContact.givenname;
+					if(dbContact.givenname) {
+						n += dbContact.givenname;
 					}
-					if(this.dbContact.sn) {
-						if(this.dbContact.givenname) { n += ' '; }
-						n += this.dbContact.sn;
+					if(dbContact.sn) {
+						if(dbContact.givenname) { n += ' '; }
+						n += dbContact.sn;
 					}
 					x += '<span class="name">' + n + '</span>';
 				}
@@ -420,7 +428,6 @@ return djDeclare("artnum.reservation", [
 		f.set('address', this.get('address'));
 		f.set('locality', this.get('locality'));
 		f.set('comment', this.get('comment'));
-		f.set('contact', this.get('contact'));
 		f.set('equipment', this.get('equipment'));
 		f.set('reference', this.get('reference'));
 		f.show();	
@@ -546,7 +553,7 @@ return djDeclare("artnum.reservation", [
 				def.resolve();
 			}));
 		
-    return def;
+    return def.promise;
   }
 
 });});
