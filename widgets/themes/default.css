@@ -1,0 +1,13 @@
+/* dateentry */
+.dateentry > div {
+	width: 100% !important;
+	min-height: 1.2rem;
+}
+
+.dateentry .error {
+	text-align: center;
+	padding: 2px;
+	background-color: red;
+	color: white;
+	display: inline-block;
+}
