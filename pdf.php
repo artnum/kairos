@@ -322,11 +322,18 @@ if(isset($reservation['equipment'])) {
 $res = $JClient->search(array('search.reservation' => $reservation['id'], 'search.type' => '_machinist'), 'Association' );
 if($res['type'] == 'results' && count($res['data']) > 0) {
    $PDF->printTaggedLn(array('%cb', 'Machiniste'), array('underline' => true));
+   $x = false;
    foreach($res['data'] as $data) {
       $begin = new DateTime($data['begin']) ;
       $end = new DateTime($data['end']);
-      $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')));
-
+      $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+      if($x) {
+         $PDF->br();
+         $x = false;
+      } else {
+         $PDF->tab(2);
+         $x = true; 
+      }
    }
 }
 
