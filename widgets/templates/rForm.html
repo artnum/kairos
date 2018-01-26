@@ -44,6 +44,21 @@ Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attac
 </fieldset>
 </div>
 
+<div>
+
+<fieldset data-dojo-attach-point="nMachinistForm"><legend>Machiniste</legend>
+<!--  #Not used now# Personne : <input data-dojo-type="dijit/form/FilteringSelect" name="nMachinist" data-dojo-attach-point="nMachinist" /><br />//-->
+Début : <input data-dojo-type="dijit/form/DateTextBox" name="nMBeginDate" data-dojo-attach-point="nMBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMBeginTime" data-dojo-attach-point="nMBeginTime" /><br />
+Fin : <input data-dojo-type="dijit/form/DateTextBox" name="nMEndDate" data-dojo-attach-point="nMEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMEndTime" data-dojo-attach-point="nMEndTime" /><br />
+Remarque : <input data-dojo-type="dijit/form/TextBox" name="nMComment" data-dojo-attach-point="nMComment" /><br />
+
+<button data-dojo-type="dijit/form/Button" value="Ajouter"
+ type="button" data-dojo-attach-event="click:doAddMachinist" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
+</fieldset>
+
+<div data-dojo-attach-point="listMachinist"></div>
+</div>
+
 </div> <!-- // Flexbox base //-->
 
 <fieldset>

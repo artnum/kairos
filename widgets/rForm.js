@@ -19,6 +19,7 @@ define([
 	"dojo/dom-class",
 	"dojo/dom-form",
 	"dojo/request/xhr",
+	"dojo/store/Memory",
 
 	"dijit/form/Form",
 	"dijit/form/DateTextBox",
@@ -27,6 +28,7 @@ define([
 	"dijit/form/TextBox",
 	"dijit/form/Button",
 	"dijit/form/Select",
+	"dijit/form/FilteringSelect",
 	"dijit/form/CheckBox",
 	"dijit/Dialog",
 	"dijit/layout/TabContainer",
@@ -36,7 +38,8 @@ define([
 	"artnum/card",
 	"artnum/_Cluster",
 	"artnum/_Request",
-	"artnum/bitsfield"
+	"artnum/bitsfield",
+	"artnum/dateentry",
 
 
 ], function(
@@ -59,8 +62,9 @@ define([
   djDomStyle,
 	djDomClass,
 	djDomForm,
-
 	djXhr,
+	djMemory,
+
 	dtForm,
 	dtDateTextBox,
 	dtTimeTextBox,
@@ -68,6 +72,7 @@ define([
 	djTextBox,
 	dtButton,
 	dtSelect,
+	dtFilteringSelect,
 	dtCheckBox,
 	dtDialog,
 	dtTabContainer,
@@ -77,7 +82,8 @@ define([
 	card,
 	_Cluster,
 	request,
-	bitsfield
+	bitsfield,
+	dateentry
 ) {
 
 return djDeclare("artnum.rForm", [
@@ -163,10 +169,149 @@ return djDeclare("artnum.rForm", [
 		}	
 	},
 
+	getMachinist: function() {
+		var def = new djDeferred();
+		var that = this;
+		
+		request.get(locationConfig.store + '/Association', { query: { "search.reservation": this.reservation.get('id'), "search.type": '_machinist'}}).then( function (results) {
+			if(results['type'] == 'results') {
+				var m = results.whole();
+				var frag = document.createDocumentFragment();
+				
+				m.forEach( function (entry) {
+					var d = document.createElement('DIV');
+					d.setAttribute('class', 'machinist');
+					
+					var s = document.createElement('DIV');
+					s.setAttribute('class', 'delete icon');
+					s.setAttribute('data-artnum-id', entry.id);
+					s.appendChild(djDomConstruct.toDom('<i class="fa fa-trash-o" aria-hidden="true"> </i>'));
+					djOn(s, "click", djLang.hitch(that, that.doRemoveMachinist));
+					d.appendChild(s);
+
+					var begin = djDateStamp.fromISOString(entry.begin);
+					var end = djDateStamp.fromISOString(entry.end);
+
+					var x = document.createElement('DIV');
+					x.setAttribute('class', 'dates');
+
+					var s = document.createElement('SPAN');
+					s.appendChild(document.createTextNode('Du ' + begin.fullDate() + ' ' + begin.shortHour()));		
+					x.appendChild(s);
+					
+					var s = document.createElement('SPAN');
+					s.appendChild(document.createTextNode(' au ' + end.fullDate() + ' ' + end.shortHour()));	
+					x.appendChild(s);
+					
+					d.appendChild(x);
+
+					if(entry.comment) {
+						var s = document.createElement('DIV');
+						s.setAttribute('class', 'comment')
+						s.appendChild(document.createTextNode(entry.comment));
+						d.appendChild(s);		
+					}
+
+
+					frag.appendChild(d);
+				});
+				
+				for(var i = that.listMachinist.firstChild; i; i = that.listMachinist.firstChild) {
+					that.listMachinist.removeChild(i);
+				}	
+
+				that.listMachinist.appendChild(frag);
+			}
+		});
+
+		return def.promise;
+	},
+
+	doRemoveMachinist: function(event) {
+		var id = null;
+		var that = this;
+		for(var i = event.target; i; i = i.parentNode) {
+			if(i.getAttribute('data-artnum-id')) {
+				id = i.getAttribute('data-artnum-id');
+				break;	
+			}	
+		}
+
+		if(id != null) {
+			request.del(locationConfig.store + '/Association/' + id).then( function() {
+				that.getMachinist();
+			});
+		}
+	},
+
+	loadMachinist: function() {
+		var def = new djDeferred();
+		request.get(locationConfig.extStore['Machinist']).then( function (results) {
+			if(results.count()>0) {
+				def.resolve(results.whole());
+			}	else {
+				def.resolve([]);
+			}
+		});
+
+		return def.promise;
+	},
+
+	refreshMachinist: function() {
+		var that = this;
+
+		this.nMBeginDate.set('value', this.beginDate.get('value'));
+		this.nMBeginTime.set('value', this.beginTime.get('value'));
+		this.nMEndDate.set('value', this.endDate.get('value'));
+		this.nMEndTime.set('value', this.endTime.get('value'));
+
+		this.loadMachinist().then( function(res) {
+			var options = new djMemory();
+			res.forEach( function (entry) {
+				options.data.push({name: entry.commonName, id: locationConfig.extStore['Machinist'] + '/' + entry.id});
+			});	
+
+			that.nMachinist.set('store',options);
+		});
+	},
+
+	doAddMachinist: function () {
+		var that = this;
+		var f = djDomForm.toObject(this.nMachinistForm);
+
+		for (var i in [ 'nMachinist', 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime']) {
+			if(f[i] == '') {
+				this[i].set('state', 'Error');
+				return;		
+			}	
+		}
+
+		var begin = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
+		var end = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
+
+		request.post('/location/store/Association/', { query: {
+			'reservation': this.reservation.get('id'),
+			'target': null,
+			'type': '_machinist',
+			'begin': begin,
+			'end': end,
+			'comment': f.nMComment ? f.nMComment : '' 
+		}}).then(function () {
+			that.getMachinist();
+		});
+
+	},
+
 	postCreate: function () {
 		this.inherited(arguments);
 		var select = this.status;
 		var that = this;
+		
+		// Not used yet ... might be in the futur
+		//this.refreshMachinist();
+		this.getMachinist();
+
+
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0}}).then( function (results) {
 			if(results.type = "results") {
@@ -184,6 +329,7 @@ return djDeclare("artnum.rForm", [
 					select.set('value', def);
 				}
 			}	
+
 		});
 
 		this.dialog = new dtDialog({
@@ -221,9 +367,6 @@ return djDeclare("artnum.rForm", [
 				}));
 			}
 		}));
-
-		djOn(this.beginDate, "change", djLang.hitch(this, this.resizeBits));
-		djOn(this.endDate, "change", djLang.hitch(this, this.resizeBits));
   },
 
 	toggleDelivery: function () {
@@ -295,6 +438,11 @@ return djDeclare("artnum.rForm", [
 		if(show) {
 			this.nContactsContainer.selectChild(this.contacts[type]);
 		}
+
+		this.nMBeginDate.set('value', this.beginDate.get('value'));
+		this.nMBeginTime.set('value', this.beginTime.get('value'));
+		this.nMEndDate.set('value', this.endDate.get('value'));
+		this.nMEndTime.set('value', this.endTime.get('value'));
 	},
 
 	saveContact: function (id, options) {
@@ -350,6 +498,7 @@ return djDeclare("artnum.rForm", [
 
 	show: function () {
 		if(this.dialog) {
+			this.getMachinist();
 			this.dialog.show();	
 		}
 	},

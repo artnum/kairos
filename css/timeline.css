@@ -414,3 +414,12 @@ label.big {
 	padding-top: 8px;
 	padding-bottom: 8px;
 }
+
+.dates {
+	font-weight: bold;	
+}
+
+.machinist .delete {
+	float: right;
+	font-size: 1.4em;	
+}

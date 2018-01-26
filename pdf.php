@@ -286,7 +286,7 @@ $PDF->printTaggedLn(array('%c', 'Période facturée : '), array('break' => false
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
 $PDF->br();
 $PDF->br();
-$PDF->squaredFrame(96, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
+$PDF->squaredFrame(88, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
 
 /* On the grid */
 $PDF->vspace(2);
@@ -294,7 +294,7 @@ $PDF->setFontSize(5.6);
 $PDF->printTaggedLn(array('%cb', $reservation['target'], ' - ' . $machine['cn']), array('underline' => true));
 $PDF->resetFontSize();
 
-$PDF->vspace(96);
+$PDF->vspace(80);
 if(isset($reservation['equipment'])) {
    $equipment = array();
    $eq = explode("\n", $reservation['equipment']);
@@ -313,9 +313,23 @@ if(isset($reservation['equipment'])) {
       $txt .= $e;
    }
    if($txt != '') {
-      $PDF->printTaggedLn(array('%c', 'Équipement : ', '%cb', $txt));
+      $PDF->printTaggedLn(array('%cb', 'Équipement'), array('underline' => true));
+      $PDF->printTaggedLn(array('%c', $txt));
+      $PDF->vspace(2);
    }
 }
+
+$res = $JClient->search(array('search.reservation' => $reservation['id'], 'search.type' => '_machinist'), 'Association' );
+if($res['type'] == 'results' && count($res['data']) > 0) {
+   $PDF->printTaggedLn(array('%cb', 'Machiniste'), array('underline' => true));
+   foreach($res['data'] as $data) {
+      $begin = new DateTime($data['begin']) ;
+      $end = new DateTime($data['end']);
+      $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')));
+
+   }
+}
+
 $PDF->vtab(4);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Plein d\'essence effectué'), array('break' => false));
 $PDF->tab(2);

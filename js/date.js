@@ -34,3 +34,18 @@ Date.prototype.hours = function() {
 Date.prototype.shortDate = function() {
 	return this.getDate() + '.' + (this.getMonth() + 1);
 }
+
+Date.prototype.fullDate = function() {
+	var d = this.getDate(), m = this.getMonth() + 1, y = this.getFullYear();
+	if(d < 10) { d = '0' + d; }
+	if(m < 10) { m = '0' + m; }
+
+	return d + '.' + m + '.' + y;
+}
+
+Date.prototype.shortHour = function() {
+	var h = this.getHours(), m = this.getMinutes();
+	if(h < 10) { h = '0' + h; }
+	if(m < 10) { m = '0' + m; }
+	return h + ':' + m;
+}

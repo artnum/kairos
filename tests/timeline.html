@@ -4,6 +4,7 @@
 <title>Location</title>
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
+<link rel="stylesheet" href="/location/widgets/themes/default.css" />
 <link rel="stylesheet" href="/location/css/timeline.css" />
 <link rel="stylesheet" href="/location/font/fontawesome.css" />
 </head>
@@ -38,7 +39,10 @@ if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
 
 locationConfig = { 
 	servers : [ ],
-	store: '/location/store/', 
+	store: '/location/store/',
+	extStore : {
+		Machinist: '/horaire/Entity'
+	},	 
 	dlm: '/location/lock.php',
 	skipCache: true
 };
