@@ -415,6 +415,11 @@ label.big {
 	padding-bottom: 8px;
 }
 
+.machinist {
+	min-height: 1.8em;
+}
+
+
 .dates {
 	font-weight: bold;	
 }
