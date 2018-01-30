@@ -26,7 +26,8 @@ define([
 	"artnum/reservation",
 	"artnum/rForm",
 	"artnum/_Cluster",
-	"artnum/_Request"
+	"artnum/_Request",
+	"artnum/_Sleeper"
 
 ], function(
 	djDeclare,
@@ -56,7 +57,8 @@ define([
 	rForm,
 
 	_Cluster,
-	request
+	request,
+	_Sleeper
 
 ) {
 
@@ -77,6 +79,7 @@ return djDeclare("artnum.entry", [
 	originalHeight: 0,
 
 	constructor: function (args) {
+		_Sleeper.init();
 		this.waiters = 0;
 		this.childs = new Object();
 		this.power = true;
@@ -124,11 +127,11 @@ return djDeclare("artnum.entry", [
 		var that = this;
 		this.inherited(arguments);
 		
-		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
-		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
-		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
-		djOn(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
-		djOn(this.sup, "zoom", function(event) { djDomStyle.set(that.domNode, 'height', ''); that.originalHeight = djDomStyle.get(that.domNode, "height"); that.resize(); });
+		window.Sleeper.on(this.domNode, "click", djLang.hitch(this, this.eClick));
+		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
+		window.Sleeper.on(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+		window.Sleeper.on(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
+		window.Sleeper.on(this.sup, "zoom", function(event) { djDomStyle.set(that.domNode, 'height', ''); that.originalHeight = djDomStyle.get(that.domNode, "height"); that.resize(); });
 
 		this.originalHeight = djDomStyle.get(this.domNode, 'height');
 

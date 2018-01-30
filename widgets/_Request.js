@@ -137,6 +137,35 @@ return {
 				def.resolve(new result(r));
 			});
 			return def.promise;
+		},
+
+		head: function(url) {
+			var xhr = new XMLHttpRequest();
+			var def = new djDeferred();
+
+			window.setTimeout( function () {
+				xhr.onreadystatechange = function (event) {
+					if(this.readyState === XMLHttpRequest.DONE) {
+						if(this.status === 200) {
+							var r = /X-Artnum-([^\:]+)\:([^\r\n]*)/;
+							var headers = this.getAllResponseHeaders();
+							var result = new Object();
+							headers.split(/[\r\n]/).forEach( function (header) {
+								if(r.test(header)) {
+									var s = r.exec(header);
+									result[s[1]] = s[2];
+								}
+							});
+							def.resolve(result);	
+						}
+					}
+				}
+
+				xhr.open('HEAD', url, true);
+				xhr.send();
+			}, 0);
+
+			return def.promise;
 		}
 	};
 });

@@ -25,7 +25,8 @@ define([
 
 	"artnum/_Cluster",
 	"artnum/_Request",
-	"artnum/entry"
+	"artnum/entry",
+	"artnum/_Sleeper"
 
 ], function(
 	djDeclare,
@@ -53,7 +54,8 @@ define([
 
 	_Cluster,
 	request,
-	entry
+	entry,
+	_Sleeper
 
 ) {
 	
@@ -75,9 +77,11 @@ return djDeclare("artnum.timeline", [
 	lastClientXY: [0, 0],
 	logs: null,
 	lockEvents: null,
+	lastId: 0,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
+		this.lastId = 0;
 		this.verticals = new Array();
 		this.days = new Array();
 		this.weekNumber = new Array();
@@ -280,17 +284,17 @@ return djDeclare("artnum.timeline", [
 
 	postCreate: function () {
 		this.inherited(arguments);
+		_Sleeper.init();
 	
 		this.update();	
-		
-		djOn(this.moveright, "click", djLang.hitch(this, this.moveRight));
-		djOn(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
-    djOn(window, "keypress", djLang.hitch(this, this.eKeyEvent));
-    djOn(window, "resize", djLang.hitch(this, this.resize));
-		djOn(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
-		djOn(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
-		djOn(window, "scroll", djLang.hitch(this, this.update));
-		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+		window.Sleeper.on(this.moveright, "click", djLang.hitch(this, this.moveRight));
+		window.Sleeper.on(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
+    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.eKeyEvent));
+    window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
+		window.Sleeper.on(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
+		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
+		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
+		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.lockEvents = new EventSource('/location/lock.php?follow=1');
 		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
@@ -584,10 +588,18 @@ return djDeclare("artnum.timeline", [
 	},
 
 	refresh: function() {
-		if(new Date().getTime() - this.lastUpdate.getTime() > 5000) {
-			this.update();
-		}	
-		window.setTimeout(djLang.hitch(this, this.refresh), 250);	
+		var that = this;
+		if(window.Sleeper.awake(function () { that.refresh(); })) {
+			console.log('refresh');
+			request.head('/location/store/Reservation').then( function (result) { 
+				if(that.lastId != result['last-id']) {
+					that.update().then(function () {
+						that.lastId = result['last-id'];
+					});
+				}
+			});
+			window.setTimeout(djLang.hitch(that, that.refresh), 1200);	
+		}
 	},
 
 	run: function () {
