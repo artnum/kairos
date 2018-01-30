@@ -480,7 +480,7 @@ return djDeclare("artnum.entry", [
 			method = "PUT";
 			suffix = '/' + query.id;
 		}
-		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(function () { def.resolve() });
+		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(function (result) { def.resolve(result) });
 		return def.promise;
 	}, 
 
