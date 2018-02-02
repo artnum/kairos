@@ -319,21 +319,45 @@ if(isset($reservation['equipment'])) {
    }
 }
 
-$res = $JClient->search(array('search.reservation' => $reservation['id'], 'search.type' => '_machinist'), 'Association' );
+$res = $JClient->search(array('search.reservation' => $reservation['id']), 'Association' );
 if($res['type'] == 'results' && count($res['data']) > 0) {
-   $PDF->printTaggedLn(array('%cb', 'Machiniste'), array('underline' => true));
-   $x = false;
+   
+   $association = array();
    foreach($res['data'] as $data) {
-      $begin = new DateTime($data['begin']) ;
-      $end = new DateTime($data['end']);
-      $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
-      if($x) {
-         $PDF->br();
-         $x = false;
+      $url = parse_url($data['type']);
+      if(!isset($url['PHP_URL_HOST'])) {
+         $x = $JClient->direct('http://localhost/' . $data['type']);
       } else {
-         $PDF->tab(2);
-         $x = true; 
+         $x = $JClient->direct($data['type']);
       }
+
+      if($x && $x['type'] == 'results' && count($x['data']) > 0) {
+         if(isset($x['data'][0]['name'])) {
+           if(!isset($association[$x['data'][0]['name']])) {
+               $association[$x['data'][0]['name']] = array();
+           }
+
+           $association[$x['data'][0]['name']][] = $data;
+         }
+      }
+   }
+
+   foreach($association as $k => $v) {
+      $PDF->printTaggedLn(array('%cb', $k), array('underline'=>true) );
+      $x = false;
+      foreach($v as $data) {
+         $begin = new DateTime($data['begin']) ;
+         $end = new DateTime($data['end']);
+         $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+         if($x) {
+            $PDF->br();
+            $x = false;
+         } else {
+            $PDF->tab(2);
+            $x = true; 
+         }
+      }
+      $PDF->br();
    }
 }
 

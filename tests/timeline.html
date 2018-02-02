@@ -52,7 +52,8 @@ dojoConfig = {
 	isDebug: true,
 	locale: 'fr-ch',
 	packages: [
-		{ name: "artnum", location: "/location/widgets/"}
+		{ name: "location", location: "/location/widgets/"},
+		{ name: "artnum", location: 'https://artnum.ch/code/js/dojo/' }
 	]
 }
 </script>
@@ -68,11 +69,11 @@ dojoConfig = {
 <script>
 require([
 	"dojo/_base/lang",
-	"artnum/timeline",
-	"artnum/entry",
+	"location/timeline",
+	"location/entry",
 	"dojo/request/xhr",
 	"dijit/registry",
-	"artnum/_Request",
+	"location/_Request",
 	"dijit/Dialog",
 	"dojo/domReady!"
 ], function (djLang, timeline, entry, djXhr, dtRegistry, request, dtDialog) {

@@ -23,10 +23,10 @@ define([
 	"dojo/request/xhr",
 	"dijit/registry",
 
-	"artnum/_Cluster",
-	"artnum/_Request",
-	"artnum/entry",
-	"artnum/_Sleeper"
+	"location/_Cluster",
+	"location/_Request",
+	"location/entry",
+	"location/_Sleeper"
 
 ], function(
 	djDeclare,
@@ -59,7 +59,7 @@ define([
 
 ) {
 	
-return djDeclare("artnum.timeline", [
+return djDeclare("location.timeline", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 
 	center: null,

@@ -26,7 +26,7 @@ define([
 	djOn
 ) {
 
-return djDeclare("artnum.rForm", [
+return djDeclare("location.rForm", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "bitsfield",
 	bitClass: "fa bit ",

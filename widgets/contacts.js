@@ -29,8 +29,8 @@ define([
 	"dijit/form/Select",
 	"dijit/registry",
 
-	"artnum/card",
-	"artnum/_Request"
+	"location/card",
+	"location/_Request"
 
 
 ], function(
@@ -68,7 +68,7 @@ define([
 	request
 ) {
 
-return djDeclare("artnum.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+return djDeclare("location.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "contacts",
 	templateString: _template,
 	mapping: { firstname: [ 'givenname', ' '] , familyname: [ 'sn', ' '],

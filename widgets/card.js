@@ -46,7 +46,7 @@ define([
 	djXhr
 ) {
 
-return djDeclare("artnum.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+return djDeclare("location.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "card",
 	templateString: _template,
 	mapping: { firstname: [ 'givenname', ' '] , familyname: [ 'sn', ' '],

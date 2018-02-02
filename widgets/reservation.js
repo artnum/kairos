@@ -23,9 +23,9 @@ define([
 	"dijit/Tooltip",
 	"dijit/registry",
 
-	"artnum/rForm",
-	"artnum/_Mouse",
-	"artnum/_Request"
+	"location/rForm",
+	"location/_Mouse",
+	"location/_Request"
 
 ], function(
 	djDeclare,
@@ -59,7 +59,7 @@ define([
 
 ) {
 
-return djDeclare("artnum.reservation", [
+return djDeclare("location.reservation", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, Mouse], {
   events: [],	
 	baseClass: "reservation",

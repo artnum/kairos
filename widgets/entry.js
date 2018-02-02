@@ -23,11 +23,11 @@ define([
 	"dijit/Dialog",
 	"dijit/registry",
 
-	"artnum/reservation",
-	"artnum/rForm",
-	"artnum/_Cluster",
-	"artnum/_Request",
-	"artnum/_Sleeper"
+	"location/reservation",
+	"location/rForm",
+	"location/_Cluster",
+	"location/_Request",
+	"location/_Sleeper"
 
 ], function(
 	djDeclare,
@@ -62,7 +62,7 @@ define([
 
 ) {
 
-return djDeclare("artnum.entry", [
+return djDeclare("location.entry", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 	
 	baseClass: "entry",

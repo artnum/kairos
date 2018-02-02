@@ -2,7 +2,7 @@ define([
 	"dojo/_base/lang",
 	"dojo/Deferred",
 	"dojo/request/xhr",
-	"artnum/_Result"
+	"location/_Result"
 ], function(
 	djLang,
 	djDeferred,

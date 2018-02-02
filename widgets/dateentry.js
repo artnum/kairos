@@ -28,7 +28,7 @@ define([
 	djOn
 ) {
 
-return djDeclare("artnum.rForm", [
+return djDeclare("location.rForm", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 	baseClass: "dateentry",
 	templateString: _template,

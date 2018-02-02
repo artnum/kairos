@@ -20,6 +20,7 @@ define([
 	"dojo/dom-form",
 	"dojo/request/xhr",
 	"dojo/store/Memory",
+	"dojo/promise/all",
 
 	"dijit/form/Form",
 	"dijit/form/DateTextBox",
@@ -34,12 +35,14 @@ define([
 	"dijit/layout/TabContainer",
 	"dijit/layout/ContentPane",
 
-	"artnum/contacts",
-	"artnum/card",
-	"artnum/_Cluster",
-	"artnum/_Request",
-	"artnum/bitsfield",
-	"artnum/dateentry",
+	"location/contacts",
+	"location/card",
+	"location/_Cluster",
+	"location/_Request",
+	"location/bitsfield",
+	"location/dateentry",
+
+	"artnum/Request"
 
 
 ], function(
@@ -64,6 +67,7 @@ define([
 	djDomForm,
 	djXhr,
 	djMemory,
+	djAll,
 
 	dtForm,
 	dtDateTextBox,
@@ -83,10 +87,12 @@ define([
 	_Cluster,
 	request,
 	bitsfield,
-	dateentry
+	dateentry,
+
+	Req
 ) {
 
-return djDeclare("artnum.rForm", [
+return djDeclare("location.rForm", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
 	baseClass: "rForm",
 	templateString: _template,
@@ -169,18 +175,36 @@ return djDeclare("artnum.rForm", [
 		}	
 	},
 
-	getMachinist: function() {
+	associationEntries: function(entries) {
 		var def = new djDeferred();
 		var that = this;
-		
-		request.get(locationConfig.store + '/Association', { query: { "search.reservation": this.reservation.get('id'), "search.type": '_machinist'}}).then( function (results) {
-			if(results['type'] == 'results') {
-				var m = results.whole();
-				var frag = document.createDocumentFragment();
-				
-				m.forEach( function (entry) {
+
+		var frag = document.createDocumentFragment();
+		window.setTimeout(function() {
+			var promises = new Array();
+			entries.forEach( function (entry) {
+
+				var p = Req.get(entry.type);
+				promises.push(p);
+
+				p.then( function(value) {
+					console.log(value);
+
 					var d = document.createElement('DIV');
 					d.setAttribute('class', 'machinist');
+
+					if(value.data.length > 0) {
+						var name = document.createElement('DIV');
+						if(value.data[0].color) {
+							var i = document.createElement('I');
+							i.setAttribute('aria-hidden', 'true'), i.setAttribute('class', 'fa fa-square'); i.setAttribute('style', 'color: #' + value.data[0].color + ';');
+							name.appendChild(i); name.appendChild(document.createTextNode(' '));
+						}
+
+						name.appendChild(document.createTextNode(value.data[0].name));
+						d.appendChild(name);
+					}
+
 					
 					var s = document.createElement('DIV');
 					s.setAttribute('class', 'delete icon');
@@ -191,18 +215,18 @@ return djDeclare("artnum.rForm", [
 
 					var begin = djDateStamp.fromISOString(entry.begin);
 					var end = djDateStamp.fromISOString(entry.end);
-
+	
 					var x = document.createElement('DIV');
 					x.setAttribute('class', 'dates');
 
 					var s = document.createElement('SPAN');
 					s.appendChild(document.createTextNode('Du ' + begin.fullDate() + ' ' + begin.shortHour()));		
 					x.appendChild(s);
-					
+				
 					var s = document.createElement('SPAN');
 					s.appendChild(document.createTextNode(' au ' + end.fullDate() + ' ' + end.shortHour()));	
 					x.appendChild(s);
-					
+				
 					d.appendChild(x);
 
 					if(entry.comment) {
@@ -215,12 +239,28 @@ return djDeclare("artnum.rForm", [
 
 					frag.appendChild(d);
 				});
+			});
+
+			djAll(promises).then(function () { console.log(frag); def.resolve(frag); });
+		}, 0);
+
+		return def.promise;
+	},
+
+	getMachinist: function() {
+		var def = new djDeferred();
+		var that = this;
+		
+		request.get(locationConfig.store + '/Association', { query: { "search.reservation": this.reservation.get('id')}}).then( function (results) {
+			if(results['type'] == 'results') {
+				var m = results.whole();
 				
 				for(var i = that.listMachinist.firstChild; i; i = that.listMachinist.firstChild) {
 					that.listMachinist.removeChild(i);
 				}	
-
-				that.listMachinist.appendChild(frag);
+				that.associationEntries(results.whole()).then( function (frag) {
+					that.listMachinist.appendChild(frag);
+				});
 			}
 		});
 
@@ -292,7 +332,7 @@ return djDeclare("artnum.rForm", [
 		request.post('/location/store/Association/', { query: {
 			'reservation': this.reservation.get('id'),
 			'target': null,
-			'type': '_machinist',
+			'type': f.associationType,
 			'begin': begin,
 			'end': end,
 			'comment': f.nMComment ? f.nMComment : '' 
@@ -313,7 +353,7 @@ return djDeclare("artnum.rForm", [
 
 
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
-		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0}}).then( function (results) {
+		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }}).then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
 				results.data.forEach(function (d) {
@@ -328,8 +368,19 @@ return djDeclare("artnum.rForm", [
 				} else {
 					select.set('value', def);
 				}
-			}	
+			}
 
+		});
+
+		request.get(locationConfig.store + '/Status/', { query : { 'search.type': 1 }}).then( function (results) {
+			if(results.type = 'results') {
+				results.data.forEach(function (d) {
+					that.nAssociationType.addOption({
+						label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
+						value: locationConfig.store + '/Status/' + d.id 
+					});
+				});
+			}
 		});
 
 		this.dialog = new dtDialog({
