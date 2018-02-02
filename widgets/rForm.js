@@ -180,7 +180,6 @@ return djDeclare("location.rForm", [
 		var that = this;
 
 		var frag = document.createDocumentFragment();
-		window.setTimeout(function() {
 			var promises = new Array();
 			entries.forEach( function (entry) {
 
@@ -188,8 +187,6 @@ return djDeclare("location.rForm", [
 				promises.push(p);
 
 				p.then( function(value) {
-					console.log(value);
-
 					var d = document.createElement('DIV');
 					d.setAttribute('class', 'machinist');
 
@@ -239,9 +236,8 @@ return djDeclare("location.rForm", [
 
 					frag.appendChild(d);
 				});
-			});
 
-			djAll(promises).then(function () { console.log(frag); def.resolve(frag); });
+			djAll(promises).then(function () {  def.resolve(frag); });
 		}, 0);
 
 		return def.promise;
