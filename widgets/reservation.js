@@ -25,8 +25,9 @@ define([
 
 	"location/rForm",
 	"location/_Mouse",
-	"location/_Request"
+	"location/_Request",
 
+	"artnum/Request"
 ], function(
 	djDeclare,
 	djLang,
@@ -55,8 +56,9 @@ define([
 
 	rForm,
 	Mouse,
-	request
+	request,
 
+	Req
 ) {
 
 return djDeclare("location.reservation", [
@@ -471,6 +473,38 @@ return djDeclare("location.reservation", [
 	computeIntervalOffset: function ( date ) {
 		return this.sup.computeIntervalOffset(date);
 	},
+
+	drawComplement: function () {
+		var that = this;
+		var def = new djDeferred();
+
+		for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
+
+		Req.get(locationConfig.store + '/Association', { query: { "search.reservation": this.get('id')}}).then( function (results) {
+			if(results.type == 'results' && results.data && results.data.length > 0) {
+				results.data.forEach( function (assoc) {
+					Req.get(assoc.type).then(function (type) {
+						var color = 'FFF';
+	
+						if(type.type == 'results' && type.data && type.data.length > 0) {
+							if(type.data[0].color) { color = type.data[0].color; }
+						}
+
+						var begin = new Date(assoc.begin), end = new Date(assoc.end);
+						var width = Math.abs(djDate.difference(begin, end, 'day')) * that.get('blockSize');
+						var left = Math.abs(djDate.difference(that.get('trueBegin'), begin, 'day')) * that.get('blockSize');
+						var div = document.createElement('DIV');
+						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; height: 100%;');
+
+						window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); });
+					});
+				});
+			}
+		});
+
+		return def.Promise;
+	},
+
   resize: function() {
 		var that = this;
     var def = new djDeferred();
@@ -487,6 +521,8 @@ return djDeclare("location.reservation", [
 			if( ! this.sup) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 	
+			this.drawComplement();
+
 			/* Verify  if we keep this ourself */
 			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
 					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||

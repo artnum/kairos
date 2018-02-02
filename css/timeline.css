@@ -221,7 +221,6 @@ body, html { margin: 0; padding: 0; }
   display: block;
 }
 .entry .details {
-  background-color: white;
 	padding: 0 3px 0 3px;
 	height: 52px;
 }
@@ -238,10 +237,14 @@ body, html { margin: 0; padding: 0; }
 	height: 34px !important;	
 }
 
-.reservation.confirmed .details {
+.reservation {
+	background-color: white;
+}
+
+.reservation.confirmed {
 	background-color: #eef;
 }
-.reservation.selected .details { 
+.reservation.selected  { 
 	background-color: #FFDD44 !important;	
 }
 
@@ -308,7 +311,6 @@ body, html { margin: 0; padding: 0; }
 	-moz-user-select: none;
 	-webkit-user-select: none;
 	-ms-user-select: none;
-	background-color: #ccc;
 }
 
 .reservation .fa-angle-double-left {
