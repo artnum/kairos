@@ -92,6 +92,11 @@ return djDeclare("location.entry", [
 		this.originalHeight = 0;
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
+    if(dtRegistry.byId('location_entry_' + args["target"])) {
+      alert('La machine ' + args["target"] + ' existe à double dans la base de donnée !');
+    } else {
+      this.id ='location_entry_' + args["target"];
+    }
 	},
 	warn: function(txt, code) {
 		this.sup.warn(txt, code);	
@@ -436,6 +441,7 @@ return djDeclare("location.entry", [
 		this.runUpdate = Date.now();
 		var requests = new Array();
 		var that = this;
+    
 		qParamsS.forEach(function (	qParams ){ 
 			requests.push(request.get(that.getUrl(locationConfig.store + '/Reservation'), { query: qParams }));
 		});
@@ -614,6 +620,9 @@ return djDeclare("location.entry", [
 		});
 		var d = this.data, that = this;
 		window.requestAnimationFrame(function () { d.appendChild(frag); that.overlap(); that._stopWait();});
-	}
+	},
+  _getEntriesAttr: function() {
+    return this.sup.get('entries');
+  }
 
 });});

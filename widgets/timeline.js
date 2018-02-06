@@ -620,18 +620,19 @@ return djDeclare("location.timeline", [
 				whole.forEach( function ( machine ) {
 					var groupName = "group" + (inc % 2);
 					var name =  machine.description;
+          var label = machine.cn ? machine.cn : '';
 					if(name) {
 						if(machine.cn ) {
 							name += '<div class="name">' + machine.cn + '</div>'; 	
 						}
-						var e = new entry({name: name, sup: that, isParent: true, target: machine.description });
+						var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn });
 						djDomClass.add(e.domNode, groupName);
 						e.setServers(locationConfig.servers);
 						that.addEntry(e);
 						if(machine.airaltref && djLang.isArray(machine.airaltref)) {
 							machine.airaltref.forEach( function (altref ) {
 									var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
-									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim() });
+									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label });
 									djDomClass.add(e.domNode, groupName);
 							
 									e.setServers(locationConfig.servers);
@@ -639,7 +640,7 @@ return djDeclare("location.timeline", [
 								});
 							} else if(machine.airaltref) {
 								var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
-								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim() });
+								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label });
 								djDomClass.add(e.domNode, groupName);
 								e.setServers(locationConfig.servers);
 								that.addEntry(e);
@@ -684,6 +685,17 @@ return djDeclare("location.timeline", [
 				}
 			}	
 		})
-	}
+	},
+
+  _getEntriesAttr: function () {
+    entries = new Array();
+    dtRegistry.findWidgets(this.domEntries).forEach( function (widget) {
+      if(widget instanceof location.entry) {
+        entries.push(widget);
+      }
+    });
+
+    return entries;
+  }
 
 });});

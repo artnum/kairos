@@ -34,6 +34,7 @@ define([
 	"dijit/Dialog",
 	"dijit/layout/TabContainer",
 	"dijit/layout/ContentPane",
+	"dijit/registry",
 
 	"location/contacts",
 	"location/card",
@@ -81,6 +82,7 @@ define([
 	dtDialog,
 	dtTabContainer,
 	dtContentPane,
+	dtRegistry,
 
 	contacts,
 	card,
@@ -338,6 +340,50 @@ return djDeclare("location.rForm", [
 
 	},
 
+	doSelectMachine: function (value) {
+		if(this.reservation.get('target') != value) {
+			this.nChangeMachine.set('disabled', false);
+		} else {
+			this.nChangeMachine.set('disabled', true);
+		}
+	},
+	doChangeMachine: function (event) {
+		var newMachine = this.nMachineChange.get('value');
+		var oldMachine = this.reservation.get('target');
+		var that = this;
+
+		Req.get(locationConfig.store + '/Reservation/', { query: {
+			"search.target" : newMachine,
+			"search.begin": "<" + djDateStamp.toISOString(that.reservation.get('trueEnd')),
+			"search.end": ">" + djDateStamp.toISOString(that.reservation.get('trueBegin'))
+		}}).then(function (reservation) {
+			var change = true;
+			if(reservation && reservation.data.length > 0) {
+				change = confirm('La machine est occupée durant la période de réservation, changer quand même ?');
+			}
+
+			if(change) {
+				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: {
+					'id' : that.reservation.get('id'),
+					target: newMachine
+				}}).then( function ( res ) {
+					if(res && res.data && res.data.success) {
+						var id= that.reservation.get('id');
+						dtRegistry.byId(id).destroy();
+						dtRegistry.byId('location_entry_' + newMachine).update(true).then( function() {
+							that.dialog.destroy();
+							that.destroy();
+							if(dtRegistry.byId(id)) {
+								dtRegistry.byId(id).popMeUp();
+							}
+						});
+					}
+				});
+			}
+		});
+
+	},
+
 	postCreate: function () {
 		this.inherited(arguments);
 		var select = this.status;
@@ -347,6 +393,14 @@ return djDeclare("location.rForm", [
 		//this.refreshMachinist();
 		this.getMachinist();
 
+		this.reservation.get('entries').forEach( function (entry) {
+			that.nMachineChange.addOption({
+				label: entry.target + ' - ' + entry.label,
+				value: entry.target
+			});
+		});
+		this.nMachineChange.set('value', this.reservation.get('target'));
+		this.nChangeMachine.set('disabled', true);
 
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }}).then( function (results) {
@@ -365,7 +419,6 @@ return djDeclare("location.rForm", [
 					select.set('value', def);
 				}
 			}
-
 		});
 
 		request.get(locationConfig.store + '/Status/', { query : { 'search.type': 1 }}).then( function (results) {

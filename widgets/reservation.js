@@ -484,19 +484,35 @@ return djDeclare("location.reservation", [
 			if(results.type == 'results' && results.data && results.data.length > 0) {
 				results.data.forEach( function (assoc) {
 					Req.get(assoc.type).then(function (type) {
+						if(!that) { return; } /* Might vanish */
 						var color = 'FFF';
+						
 	
 						if(type.type == 'results' && type.data && type.data.length > 0) {
 							if(type.data[0].color) { color = type.data[0].color; }
 						}
 
 						var begin = new Date(assoc.begin), end = new Date(assoc.end);
-						var width = Math.abs(djDate.difference(begin, end, 'day')) * that.get('blockSize');
-						var left = Math.abs(djDate.difference(that.get('trueBegin'), begin, 'day')) * that.get('blockSize');
-						var div = document.createElement('DIV');
-						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; height: 100%;');
+						var width = Math.abs(djDate.difference(begin, end, 'day'));
+						if(width == 0) {
+							width = 1;
+						}
+						var offset = djDate.difference(that.get('dateRange').begin, begin);
+						if(offset <= 0) { left = 0; width += offset; }
+						else { 
+							left = Math.abs(djDate.difference(begin, that.get('trueBegin'), 'day'));
+						}
 
-						window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); });
+					
+						if(width > 0) {	
+							left *= that.get('blockSize');
+							width *= that.get('blockSize');
+
+							var div = document.createElement('DIV');
+							div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; height: 100%;');
+
+							window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); });
+						}
 					});
 				});
 			}
@@ -590,6 +606,9 @@ return djDeclare("location.reservation", [
 			}));
 		
     return def.promise;
+  },
+  _getEntriesAttr: function() {
+    return this.sup.get('entries');
   }
 
 });});
