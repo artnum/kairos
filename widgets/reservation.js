@@ -621,22 +621,24 @@ return djDeclare("location.reservation", [
 				djDomStyle.set(that.main, 'left', startPoint);
 				djDomStyle.set(that.main, 'position', 'absolute');
 
-				that.tools.setAttribute('style', 'background-color:' + bgcolor + '; border-top: 1px solid ' + bgcolor + '; border-bottom: 1px solid ' + bgcolor ); 
+				that.tools.setAttribute('style', 'background-color:' + bgcolor );
 
 				for(var i = that.tools.firstChild; i; i = that.tools.firstChild) {
 					that.tools.removeChild(i);
 				}
 				if(toolsOffsetBegin > 0) {
 					var div = document.createElement('DIV');
-					div.setAttribute('style', 'float: left; height: 100%;  background-color: white; width: ' + toolsOffsetBegin + 'px');
+					div.setAttribute('class', 'delivery');
+					div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px');
 					that.tools.appendChild(div);
+					div.appendChild(i);
 				}
 
 				if(toolsOffsetEnd > 0) {
 					var div = document.createElement('DIV');
-					div.setAttribute('style', 'float: right; height: 100%;  background-color: white; width: ' + toolsOffsetEnd + 'px');
+					div.setAttribute('class', 'delivery');
+					div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px');
 					that.tools.appendChild(div);
-
 				}
 			
 				def.resolve();

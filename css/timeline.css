@@ -217,16 +217,19 @@ body, html { margin: 0; padding: 0; }
 }
 
 
+.tools .delivery {
+	background-color: rgba(255, 255, 255, 0.9);
+}
 .entry .details, .entry .tools {
   display: block;
 }
 .entry .details {
 	padding: 0 3px 0 3px;
-	height: 52px;
+	height: 54px;
 }
 
 .x3 .details {
-	height: 72px !important;	
+	height: 68px !important;	
 }
 
 .x1 .reservation {
@@ -234,7 +237,7 @@ body, html { margin: 0; padding: 0; }
 }
 
 .x1 .details {
-	height: 34px !important;	
+	height: 32px !important;	
 }
 
 .reservation {
@@ -248,11 +251,18 @@ body, html { margin: 0; padding: 0; }
 	background-color: #FFDD44 !important;	
 }
 
-
-
-
 .entry .tools {
   height: 8px;
+	position: relative;
+	bottom: 0;
+}
+
+.x1 .entry .tools {
+	height: 6px;
+}
+
+.x3 .entry .tools {
+	height: 10px;
 }
 
 .headerContainer {
