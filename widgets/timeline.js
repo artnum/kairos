@@ -21,12 +21,17 @@ define([
 	"dojo/dom-geometry",
 	"dojo/throttle",
 	"dojo/request/xhr",
+	"dojo/window",
 	"dijit/registry",
+	"dijit/form/NumberTextBox",
+	"dijit/form/Button",
 
 	"location/_Cluster",
 	"location/_Request",
 	"location/entry",
-	"location/_Sleeper"
+	"location/_Sleeper",
+
+	"artnum/Request"
 
 ], function(
 	djDeclare,
@@ -50,12 +55,16 @@ define([
 	djDomGeo,
 	djThrottle,
 	djXhr,
+	djWindow,
 	dtRegistry,
+	dtNumberTextBox,
+	dtButton,
 
 	_Cluster,
 	request,
 	entry,
-	_Sleeper
+	_Sleeper,
+	Req
 
 ) {
 	
@@ -78,6 +87,7 @@ return djDeclare("location.timeline", [
 	logs: null,
 	lockEvents: null,
 	lastId: 0,
+	inputString: '',
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -99,6 +109,7 @@ return djDeclare("location.timeline", [
 		var verticals = new Array();
 		this.lastClientXY = new Array(0,0);
 		this.logs = new Array();
+		this.inputString = '';
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -395,6 +406,27 @@ return djDeclare("location.timeline", [
 	},
 
   eKeyEvent: function (event) {
+
+		if(event.keyCode == 0) {
+			this.inputString += event.key;
+			console.log(this.inputString);
+			if(this.inputString == 'loic') {
+				/* put ee here */
+			}
+			if(this.inputString.length >= 4) {
+				this.inputString = '';
+			}
+			switch(event.key) {
+				case 'l': case 'L':
+					this.nLocationNumber.focus();
+					break;
+				case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+					this.nLocationNumber.focus();
+					this.nLocationNumber.set('value', event.key);
+					break;
+			}
+		}
+
 		if(event.ctrlKey) {
 			switch(event.key) {
 				case 'ArrowLeft': 
@@ -590,7 +622,6 @@ return djDeclare("location.timeline", [
 	refresh: function() {
 		var that = this;
 		if(window.Sleeper.awake(function () { that.refresh(); })) {
-			console.log('refresh');
 			request.head('/location/store/Reservation').then( function (result) { 
 				if(that.lastId != result['last-id']) {
 					that.update().then(function () {
@@ -696,6 +727,51 @@ return djDeclare("location.timeline", [
     });
 
     return entries;
-  }
+  },
+
+	highlight: function (domNode) {
+		var that = this;
+		window.requestAnimationFrame(function () {
+			djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
+			window.setTimeout(function() {
+				djDomStyle.set(domNode, 'box-shadow', '');
+			}, 5000);
+		});
+	},
+
+	doSearchLocation: function (event) {
+		if(event && event.preventDefault) {
+			event.preventDefault();
+		}
+		var that = this;
+		var loc = this.nLocationNumber.get('value');
+		var middle =  window.innerHeight / 2;
+		
+		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
+			if(result && result.data && result.data.length > 0) {
+				data = result.data[0];
+				
+				that.center  = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
+				that.update().then( function () {
+					var widget = dtRegistry.byId('location_entry_' + data['target']);
+					if(widget) {
+						var pos = djDomGeo.position(widget.domNode, true);
+						window.scroll(0, pos.y - middle);
+
+						widget.update(true).then(function () {
+							var pos = djDomGeo.position(widget.domNode, true);
+							window.scroll(0, pos.y - middle);
+							window.setTimeout(function() {
+								widget = dtRegistry.byId(data['id']);
+								if(widget) {
+									that.highlight(widget.domNode);
+								}
+							}, 250);
+						});
+					}
+				});
+			}
+		});
+	}
 
 });});

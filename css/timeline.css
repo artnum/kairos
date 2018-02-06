@@ -6,6 +6,7 @@ body, html { margin: 0; padding: 0; }
 	font-family: 'Questrial', sans-serif;
 	font-size: 16px !important;
 	cursor: grab;
+	margin-bottom: 60px;
 }
 
 .timeline .header .tools {
@@ -19,6 +20,15 @@ body, html { margin: 0; padding: 0; }
 
 .header {
 	max-height: 20px;
+}
+
+#searchbox {
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	height: 60px;
+	background-color: white;
+	z-index: 1800;
 }
 
 .weekNumber, .monthName {

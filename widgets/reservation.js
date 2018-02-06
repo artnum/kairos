@@ -648,5 +648,4 @@ return djDeclare("location.reservation", [
   _getEntriesAttr: function() {
     return this.sup.get('entries');
   }
-
 });});
