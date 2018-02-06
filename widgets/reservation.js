@@ -585,6 +585,28 @@ return djDeclare("location.reservation", [
 			startPoint += d;
 			stopPoint -= d;
 			stopPoint += this.computeIntervalOffset(end);
+
+
+			var toolsOffsetBegin = 0;
+			if(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') != 0) {
+				toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'));
+			}
+			if(djDate.compare(this.get('begin'), this.get('dateRange').begin)<=0) { toolsOffsetBegin = 0; }
+			if(djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin) < 0) {
+				toolsOffsetBegin -= Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, 'hour'));
+			}
+			toolsOffsetBegin *= this.get('blockSize') / 24;
+
+			var toolsOffsetEnd = 0;
+			if(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') != 0) {
+				toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
+
+			}
+			if(djDate.compare(this.get('end'), this.get('dateRange').end)>=0) { toolsOffsetEnd = 0; }
+			if(djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) > 0) {
+				toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
+			}
+			toolsOffsetEnd *= this.get('blockSize') / 24;
 			
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
@@ -599,8 +621,23 @@ return djDeclare("location.reservation", [
 				djDomStyle.set(that.main, 'left', startPoint);
 				djDomStyle.set(that.main, 'position', 'absolute');
 
-				//that.tools.setAttribute('style', 'position: relative; width:' + ( this.get('stop')  - this.get('start')  - dSDiff - dEDiff) + 'px; left: ' + dSDiff + 'px; background-color:' + bgcolor); 
-				that.tools.setAttribute('style', 'background-color:' + bgcolor); 
+				that.tools.setAttribute('style', 'background-color:' + bgcolor + '; border-top: 1px solid ' + bgcolor + '; border-bottom: 1px solid ' + bgcolor ); 
+
+				for(var i = that.tools.firstChild; i; i = that.tools.firstChild) {
+					that.tools.removeChild(i);
+				}
+				if(toolsOffsetBegin > 0) {
+					var div = document.createElement('DIV');
+					div.setAttribute('style', 'float: left; height: 100%;  background-color: white; width: ' + toolsOffsetBegin + 'px');
+					that.tools.appendChild(div);
+				}
+
+				if(toolsOffsetEnd > 0) {
+					var div = document.createElement('DIV');
+					div.setAttribute('style', 'float: right; height: 100%;  background-color: white; width: ' + toolsOffsetEnd + 'px');
+					that.tools.appendChild(div);
+
+				}
 			
 				def.resolve();
 			}));
