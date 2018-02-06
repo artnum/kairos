@@ -508,6 +508,7 @@ return djDeclare("location.reservation", [
 							left *= that.get('blockSize');
 							width *= that.get('blockSize');
 
+							left -= that.computeIntervalOffset(begin);
 							var div = document.createElement('DIV');
 							div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; height: 100%;');
 
@@ -600,10 +601,9 @@ return djDeclare("location.reservation", [
 			var toolsOffsetEnd = 0;
 			if(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') != 0) {
 				toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
-
 			}
 			if(djDate.compare(this.get('end'), this.get('dateRange').end)>=0) { toolsOffsetEnd = 0; }
-			if(djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) > 0) {
+			if(djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) >  0) {
 				toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
 			}
 			toolsOffsetEnd *= this.get('blockSize') / 24;
@@ -631,7 +631,6 @@ return djDeclare("location.reservation", [
 					div.setAttribute('class', 'delivery');
 					div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px');
 					that.tools.appendChild(div);
-					div.appendChild(i);
 				}
 
 				if(toolsOffsetEnd > 0) {
