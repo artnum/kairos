@@ -87,6 +87,7 @@ return djDeclare("location.timeline", [
 	logs: null,
 	lockEvents: null,
 	lastId: 0,
+	lastMod: 0,
 	inputString: '',
 
 	constructor: function (args) {
@@ -110,6 +111,8 @@ return djDeclare("location.timeline", [
 		this.lastClientXY = new Array(0,0);
 		this.logs = new Array();
 		this.inputString = '';
+		this.lastMod = '';
+		this.lastId = '';
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -623,11 +626,19 @@ return djDeclare("location.timeline", [
 		var that = this;
 		if(window.Sleeper.awake(function () { that.refresh(); })) {
 			request.head('/location/store/Reservation').then( function (result) { 
-				if(that.lastId != result['last-id']) {
-					that.update().then(function () {
+				if(that.lastMod != result['last-modification']) {
+					that.update(true).then(function () {
+						console.log(that.lastMod);
+						that.lastMod = result['last-modification'];
 						that.lastId = result['last-id'];
 					});
-				}
+				} else if(that.lastId != result['last-id']) {
+					that.update().then(function () {
+						that.lastMod = result['last-modification'];
+						that.lastId = result['last-id'];
+					});
+				} 
+				
 			});
 			window.setTimeout(djLang.hitch(that, that.refresh), 1200);	
 		}
