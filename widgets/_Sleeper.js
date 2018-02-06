@@ -30,6 +30,7 @@ return {
 	lastEvent: null,
 	sleepTime: 120000,
 	caughtCall: null,
+	reloadTimeout: null,
 
 	init: function() {
 		if(!window.Sleeper) {
@@ -73,8 +74,11 @@ return {
 	},
 
 	wake: function() {
-		console.log('wake');
 		var that = window.Sleeper;
+		if(that.reloadTimeout) {
+			window.clearTimeout(that.reloadTimeout);
+			that.reloadTimeout = null;
+		}
 		if( that.isSleeping()) {
 			var funcs = that.caughtCall;
 			that.caughtCall = new Array();
@@ -97,7 +101,9 @@ return {
 	/* If nothing is happening */
 	sleep: function() {
 		var that = window.Sleeper;
+		
 		if( ! that.isSleeping()) {
+			that.reloadTimeout = window.setTimeout( function () { window.location.reload(true); }, that.sleepTime);
 			window.requestAnimationFrame(function () {
 				var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
 				var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
