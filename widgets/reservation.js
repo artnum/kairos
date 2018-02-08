@@ -496,22 +496,23 @@ return djDeclare("location.reservation", [
 				if(djDate.compare(that.get('begin'), that.get('dateRange').begin, 'date') < 0) {
 					Rb = djDate.add(that.get('dateRange').begin, 'day', 1);
 				}
-				var width = djDate.difference(begin, end) + 1; /* always full day */
+				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
 				if(djDate.compare(end, Rb, 'date') < 0) {
 					width = 0;
 				}
 				if(djDate.compare(begin, Rb, 'date') < 0) {
-					width -= djDate.difference(Rb, begin);
+					width -= djDate.difference(Rb, begin, 'day');
 				}
 
-				left = djDate.difference(Rb, begin) - 1;
+				left = djDate.difference(Rb, begin, 'day') - 1;
 				if(left < 0) { left = 0; }
 
 				if(width > 0) {
 					left *= that.get('blockSize');
 					width *= that.get('blockSize');
 
-					left -= that.computeIntervalOffset(begin);
+					width -= that.computeIntervalOffset(that.get('begin')); 
+
 					var div = document.createElement('DIV');
 					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
 					frag.appendChild(div);

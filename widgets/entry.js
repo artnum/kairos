@@ -91,7 +91,7 @@ return djDeclare("location.entry", [
 		this.runUpdate = 0;
 		this.originalHeight = 0;
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
-		this.intervalZoomFactors = new Array( [ 7, 17, 10 ]);
+		this.intervalZoomFactors = new Array( [ 7, 17, 70 ]);
     if(dtRegistry.byId('location_entry_' + args["target"])) {
       alert('La machine ' + args["target"] + ' existe à double dans la base de donnée !');
     } else {
@@ -108,25 +108,14 @@ return djDeclare("location.entry", [
 		this.sup.info(txt, code);	
 	},
 	computeIntervalOffset: function ( date ) {
-		var hour = date.hours ? date.hours() : date.getHours();
-		var px_h = this.get('blockSize') / 24;
-		var virtual_hour = 24;
-		var c_hour = 24 - hour;
+		var hour = date.getHours(); 
+		var h = (17 - 7) * 3.8 + (24 - (17 - 7)) * 1;
+		var bs = this.get('blockSize') / h;
+		
+		if(hour <= 7) { return bs * hour; }
+		if(hour > 7 && hour <= 17) { return (7 * bs) + ((hour - 7) * 3.8 * bs); }
+		return (7 * bs) + ((17 -7) * 3.8 * bs) + ((hour - 17) * bs);
 
-		if(hour == 0)  { return 0; }
-		if(hour > 23.9833 ) { return this.get('blockSize'); }
-	
-		this.intervalZoomFactors.forEach( function ( izf ) {
-			var x = Math.abs(izf[1] - izf[0]);
-			virtual_hour += (x * izf[2]) - x;
-			if(hour >= izf[1]) {
-				c_hour += (x * izf[2]) - x;
-			} else if(hour < izf[1] && hour > izf[0]) {
-				c_hour += ((hour - izf[0]) * izf[2]) - (hour - izf[0]);
-			}
-		});
-		var px_h = this.get('blockSize') / virtual_hour;
-		return c_hour * px_h;
 	},
 	postCreate: function () {
 		var that = this;
