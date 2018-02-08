@@ -504,7 +504,8 @@ return djDeclare("location.reservation", [
 					width -= djDate.difference(Rb, begin);
 				}
 
-				left = djDate.difference(Rb, begin);
+				left = djDate.difference(Rb, begin) - 1;
+				if(left < 0) { left = 0; }
 
 				if(width > 0) {
 					left *= that.get('blockSize');
@@ -521,6 +522,7 @@ return djDeclare("location.reservation", [
 			window.requestAnimationFrame(function () {
 				for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
 				if(appendFrag) {
+					that.own(frag);
 					that.nStabilo.appendChild(frag);
 				}
 				def.resolve();
@@ -636,6 +638,7 @@ return djDeclare("location.reservation", [
 				}
 				if(toolsOffsetBegin > 0) {
 					var div = document.createElement('DIV');
+					that.own(div);
 					div.setAttribute('class', 'delivery');
 					div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px');
 					that.tools.appendChild(div);
@@ -643,6 +646,7 @@ return djDeclare("location.reservation", [
 
 				if(toolsOffsetEnd > 0) {
 					var div = document.createElement('DIV');
+					that.own(div);
 					div.setAttribute('class', 'delivery');
 					div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px');
 					that.tools.appendChild(div);
