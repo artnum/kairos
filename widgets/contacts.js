@@ -116,6 +116,7 @@ return djDeclare("location.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidget
 									"search._givenname": 'or'
 								} }).then(djLang.hitch(this, function (res) {
 			var frag = document.createDocumentFragment();
+			this.own(frag);
 			res.data.forEach(djLang.hitch(this, function (entry) {
 				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
 				

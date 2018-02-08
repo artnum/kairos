@@ -118,7 +118,8 @@ return djDeclare("location.card", [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInT
 		}
   },
   raw: function(txt) {
-    var e = document.createElement('P'), first = true;
+    var e = document.createElement('P'), first = true; 
+		this.own(e);
     txt.split(/(?:\r\n|\r|\n)/g).forEach(function(line){
 			if(!first) { e.appendChild(document.createElement('BR')); }
 			e.appendChild(document.createTextNode(line));

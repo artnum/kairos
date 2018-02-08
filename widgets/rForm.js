@@ -231,7 +231,7 @@ return djDeclare("location.rForm", [
 
 			frag.appendChild(d); 
 		}
-
+		this.own(frag);
 		return frag;
 	},
 

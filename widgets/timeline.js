@@ -115,6 +115,7 @@ return djDeclare("location.timeline", [
 		this.lastId = '';
 
 		this.zoomCss = document.createElement('style');
+		this.own(this.zoomCss);
 		document.body.appendChild(this.zoomCss);
     var sStore = window.sessionStorage;
 
@@ -473,6 +474,7 @@ return djDeclare("location.timeline", [
 
 	beginDraw: function() {
 		this.newBuffer = document.createDocumentFragment();
+		this.own(this.newBuffer);
 	},
 
 	endDraw: function() {
@@ -529,8 +531,11 @@ return djDeclare("location.timeline", [
 			}
 
 			var docFrag = document.createDocumentFragment();
+			this.own(docFrag);
 			var hFrag = document.createDocumentFragment();
+			this.own(hFrag);
 			var shFrag = document.createDocumentFragment();
+			this.own(hFrag);
 
 			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
 			for(var day = this.firstDay, i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
