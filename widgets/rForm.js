@@ -319,6 +319,7 @@ return djDeclare("location.rForm", [
 			'comment': f.nMComment ? f.nMComment : '' 
 		}}).then(function () {
 			that.getMachinist();
+			that.reservation.resize();
 		});
 
 	},
