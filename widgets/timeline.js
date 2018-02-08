@@ -628,7 +628,6 @@ return djDeclare("location.timeline", [
 			request.head('/location/store/Reservation').then( function (result) { 
 				if(that.lastMod != result['last-modification']) {
 					that.update(true).then(function () {
-						console.log(that.lastMod);
 						that.lastMod = result['last-modification'];
 						that.lastId = result['last-id'];
 					});
