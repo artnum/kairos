@@ -27,7 +27,8 @@ define([
 	"location/_Mouse",
 	"location/_Request",
 
-	"artnum/Request"
+	"artnum/Request",
+	"artnum/Join"
 ], function(
 	djDeclare,
 	djLang,
@@ -58,7 +59,8 @@ define([
 	Mouse,
 	request,
 
-	Req
+	Req,
+	Join
 ) {
 
 return djDeclare("location.reservation", [
@@ -480,44 +482,42 @@ return djDeclare("location.reservation", [
 
 		for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
 
-		Req.get(locationConfig.store + '/Association', { query: { "search.reservation": this.get('id')}}).then( function (results) {
-			if(results.type == 'results' && results.data && results.data.length > 0) {
-				results.data.forEach( function (assoc) {
-					Req.get(assoc.type).then(function (type) {
-						if(!that) { return; } /* Might vanish */
-						var color = 'FFF';
-						
-	
-						if(type.type == 'results' && type.data && type.data.length > 0) {
-							if(type.data[0].color) { color = type.data[0].color; }
-						}
+		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
+			entries.forEach( function ( entry ) {
 
-						var begin = new Date(assoc.begin), end = new Date(assoc.end);
-						var width = Math.abs(djDate.difference(begin, end, 'day'));
-						if(width == 0) {
-							width = 1;
-						}
-						var offset = djDate.difference(that.get('dateRange').begin, begin);
-						if(offset <= 0) { left = 0; width += offset; }
-						else { 
-							left = Math.abs(djDate.difference(begin, that.get('trueBegin'), 'day'));
-						}
+				var color = 'FFF';
+				if(entry.type && entry.type.color) {
+					color = entry.type.color;
+				}
+			
+				var left = 0;
+				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('begin');
+				if(djDate.compare(that.get('begin'), that.get('dateRange').begin, 'date') < 0) {
+					Rb = djDate.add(that.get('dateRange').begin, 'day', 1);
+				}
+				var width = djDate.difference(begin, end) + 1; /* always full day */
+				if(djDate.compare(end, Rb, 'date') < 0) {
+					width = 0;
+				}
+				if(djDate.compare(begin, Rb, 'date') < 0) {
+					width -= djDate.difference(Rb, begin);
+				}
 
-					
-						if(width > 0) {	
-							left *= that.get('blockSize');
-							width *= that.get('blockSize');
+				left = djDate.difference(Rb, begin);
 
-							left -= that.computeIntervalOffset(begin);
-							var div = document.createElement('DIV');
-							div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; height: 100%;');
+				if(width > 0) {
+					left *= that.get('blockSize');
+					width *= that.get('blockSize');
 
-							window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); });
-						}
-					});
-				});
-			}
-		});
+					left -= that.computeIntervalOffset(begin);
+					var div = document.createElement('DIV');
+					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
+
+					window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); def.resolve(); });
+				}
+		
+			});
+		})
 
 		return def.Promise;
 	},
