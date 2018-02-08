@@ -480,9 +480,10 @@ return djDeclare("location.reservation", [
 		var that = this;
 		var def = new djDeferred();
 
-		for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
 
 		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
+			var frag = document.createDocumentFragment();
+			var appendFrag = false;
 			entries.forEach( function ( entry ) {
 
 				var color = 'FFF';
@@ -512,10 +513,17 @@ return djDeclare("location.reservation", [
 					left -= that.computeIntervalOffset(begin);
 					var div = document.createElement('DIV');
 					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
-
-					window.requestAnimationFrame(function () { that.nStabilo.appendChild(div); def.resolve(); });
+					frag.appendChild(div);
+					appendFrag = true;
 				}
-		
+			});
+
+			window.requestAnimationFrame(function () {
+				for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
+				if(appendFrag) {
+					that.nStabilo.appendChild(frag);
+				}
+				def.resolve();
 			});
 		})
 
