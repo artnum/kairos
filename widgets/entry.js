@@ -530,8 +530,6 @@ return djDeclare("location.entry", [
 		
 		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
 			var o = false;
-		
-
 			if(!child.get('hidden')) { 
 				dates.forEach( function (d) {
 					if((
@@ -607,9 +605,9 @@ return djDeclare("location.entry", [
 				}
 			}
 		});
-		var d = this.data, that = this;
-		window.requestAnimationFrame(function () { d.appendChild(frag); that.overlap(); that._stopWait();});
+		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.overlap(); that._stopWait(); });
 	},
+
   _getEntriesAttr: function() {
     return this.sup.get('entries');
   }

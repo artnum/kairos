@@ -44,7 +44,6 @@ define([
 	dtContentPane,
 
 	_template,
-
 	djDate,
 	djDateStamp,
 	djDomConstruct,
@@ -65,7 +64,6 @@ define([
 	entry,
 	_Sleeper,
 	Req
-
 ) {
 	
 return djDeclare("location.timeline", [

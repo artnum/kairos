@@ -539,7 +539,6 @@ return djDeclare("location.reservation", [
 		var that = this;
 	
 			if(! intoYView(this.sup.domNode)) {
-				this.set('disable');
 				def.resolve(); return; 
 			} else {
 				this.set('enable');
