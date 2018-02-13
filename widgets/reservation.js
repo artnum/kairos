@@ -299,23 +299,23 @@ return djDeclare("location.reservation", [
 		var def = new djDeferred();
 		var that = this;
 		this.set('dbContact', null);
-		
-		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.get("IDent"), "search.comment": '_client', "limit": 1}}).then( function (res) {
-			if(res.whole().length>0) {
-				if(res.first().target == null) {
-					that._set('dbContact', res.first());
-					def.resolve(res.first(), true);
-				} else {
-					request.get(locationConfig.store + '/' + res.first().target).then( function (result){
-						if(result.whole().length>0) {
-							that._set('dbContact', result.first());
-							def.resolve(result.first(), true);
-						}
-					}); 
+		if(this.get('id')) {
+			request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.get("id"), "search.comment": '_client', "limit": 1}}).then( function (res) {
+				if(res.whole().length>0) {
+					if(res.first().target == null) {
+						that._set('dbContact', res.first());
+						def.resolve(res.first(), true);
+					} else {
+						request.get(locationConfig.store + '/' + res.first().target).then( function (result){
+							if(result.whole().length>0) {
+								that._set('dbContact', result.first());
+								def.resolve(result.first(), true);
+							}
+						}); 
+					}
 				}
-			}
-		});
-
+			});
+		}
 		return def.promise;
 	},
 
