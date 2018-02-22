@@ -477,7 +477,7 @@ return djDeclare("location.reservation", [
 	drawComplement: function () {
 		var that = this;
 		var def = new djDeferred();
-
+		var totalWidth = 0;
 
 		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
 			var frag = document.createDocumentFragment();
@@ -490,8 +490,8 @@ return djDeclare("location.reservation", [
 				}
 			
 				var left = 0;
-				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('begin');
-				if(djDate.compare(that.get('begin'), that.get('dateRange').begin, 'date') < 0) {
+				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('trueBegin');
+				if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
 					Rb = djDate.add(that.get('dateRange').begin, 'day', 1);
 				}
 				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
@@ -502,14 +502,17 @@ return djDeclare("location.reservation", [
 					width -= djDate.difference(Rb, begin, 'day');
 				}
 
-				left = djDate.difference(Rb, begin, 'day') - 1;
+				left = djDate.difference(Rb, begin, 'day');
 				if(left < 0) { left = 0; }
-
+				
 				if(width > 0) {
 					left *= that.get('blockSize');
 					width *= that.get('blockSize');
 
-					width -= that.computeIntervalOffset(that.get('begin')); 
+					width -= that.computeIntervalOffset(Rb);
+					/* Use of CSS relative position => the next element left position is pushed by previous element width */
+					left -= totalWidth;
+					totalWidth += width;
 
 					var div = document.createElement('DIV');
 					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
