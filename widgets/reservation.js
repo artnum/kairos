@@ -496,10 +496,8 @@ return djDeclare("location.reservation", [
 				if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
 					Rb = djDate.add(that.get('dateRange').begin, 'day', 1);
 				}
+
 				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
-				if(djDate.compare(end, Rb, 'date') < 0) {
-					width = 0;
-				}
 				if(djDate.compare(begin, Rb, 'date') < 0) {
 					width -= djDate.difference(Rb, begin, 'day');
 				}
@@ -507,11 +505,15 @@ return djDeclare("location.reservation", [
 				left = djDate.difference(Rb, begin, 'day');
 				if(left < 0) { left = 0; }
 				
+				if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
+					width = 0;
+				}
+
 				if(width > 0) {
 					left *= that.get('blockSize');
 					width *= that.get('blockSize');
 
-					width -= that.computeIntervalOffset(Rb);
+					left -= that.computeIntervalOffset(Rb);
 					/* Use of CSS relative position => the next element left position is pushed by previous element width */
 					left -= totalWidth;
 					totalWidth += width;
