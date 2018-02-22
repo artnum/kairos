@@ -416,7 +416,7 @@ return djDeclare("location.entry", [
 		var qParamsS = new Array();
 
 		for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
-			if(!d) { break; }
+			if(! d) { break; }
 			var m = d.getMonth();
 			if(months.indexOf(m) < 0) {
 				months.push(m);
