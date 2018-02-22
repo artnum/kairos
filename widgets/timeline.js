@@ -314,7 +314,6 @@ return djDeclare("location.timeline", [
 				if(result && result.data && result.data.length > 0) {
 					data = result.data[0];
 					var date = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
-					date = djDate.add(date, "day", - Math.round(680  / that.get('blockSize')));
 					that.goToReservation(data['target'], date).then(function (widget) {
 						that.highlight(widget.domNode);
 					});
@@ -791,6 +790,13 @@ return djDeclare("location.timeline", [
 		var that = this;
 		var middle =  window.innerHeight / 3;
 		var widget = dtRegistry.byId('location_entry_' + id);
+
+		var tContainer = dtRegistry.byId('tContainer');
+		if(djDomStyle.get(tContainer.domNode, "display") != 'none') {
+			var w = djDomStyle.get(tContainer.domNode, "width");
+			center = djDate.add(center, "day", Math.abs(w / this.get('blockSize')));	
+			console.log(center, w);
+		}
 
 		that.center = center;
 		that.update().then( function () {
