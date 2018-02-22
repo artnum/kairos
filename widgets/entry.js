@@ -416,6 +416,7 @@ return djDeclare("location.entry", [
 		var qParamsS = new Array();
 
 		for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
+			if(!d) { break; }
 			var m = d.getMonth();
 			if(months.indexOf(m) < 0) {
 				months.push(m);
@@ -606,6 +607,10 @@ return djDeclare("location.entry", [
 			}
 		});
 		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.overlap(); that._stopWait(); });
+	},
+
+	highlight: function (domNode) {
+		this.sup.highlight(domNode);
 	},
 
   _getEntriesAttr: function() {

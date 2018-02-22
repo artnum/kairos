@@ -5,6 +5,7 @@
 </div>
 <div data-dojo-attach-point="logline" class="fixed logline">&nbsp;</div>
 <div class="reservationContainer" data-dojo-attach-point="domEntries"></div>
+<div data-dojo-type="dijit/layout/TabContainer" style="position: fixed; width: 680px; top: 0; right: 0; bottom: 0; z-index: 600; background-color: white; display: none;" id="tContainer"></div>
 <div id="searchbox">
 <form data-dojo-type="dijit/form/Form" data-dojo-attach-event="submit:doSearchLocation">
 Location : <input data-dojo-type="dijit/form/NumberTextBox" data-dojo-attach-point="nLocationNumber" type="text" value="" placeholder="Numéro de location" /> <button type="submit" data-dojo-type="dijit/form/Button" value="Aller" data-dojo-attach-event="click:doSearchLocation" >Aller</button>

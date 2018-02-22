@@ -11,6 +11,7 @@ define([
 
 	"dojo/text!./templates/timeline.html",
 
+	"dojo/aspect",
 	"dojo/date",
 	"dojo/date/stamp",
 	"dojo/dom-construct",
@@ -44,6 +45,7 @@ define([
 	dtContentPane,
 
 	_template,
+	djAspect,
 	djDate,
 	djDateStamp,
 	djDomConstruct,
@@ -296,6 +298,38 @@ return djDeclare("location.timeline", [
 	},
 
 	postCreate: function () {
+		var that = this;
+		var tContainer = dtRegistry.byId('tContainer')
+		tContainer.startup();
+
+		djAspect.after(tContainer, 'addChild', function () {
+			if(this.hasChildren()) {
+				djDomStyle.set(this.domNode, 'display', 'block');
+			}
+			console.log(arguments);
+		}, true);
+		tContainer.watch('selectedChildWidget', function (method, prev, current) {
+			var rid = current.get('id').split('_')[2];
+			Req.get(locationConfig.store + '/Reservation/' + rid, { query: { 'search.delete': '-' }}).then(function (result) {
+				if(result && result.data && result.data.length > 0) {
+					data = result.data[0];
+					var date = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
+					date = djDate.add(date, "day", - Math.round(680  / that.get('blockSize')));
+					that.goToReservation(data['target'], date).then(function (widget) {
+						that.highlight(widget.domNode);
+					});
+				}
+			});
+	
+		
+		});
+		djAspect.after(tContainer, 'removeChild', function (child) {
+			if(! this.hasChildren()) {
+				djDomStyle.set(this.domNode, 'display', 'none');
+			}
+			console.log(arguments);
+		}, true);
+
 		this.inherited(arguments);
 		_Sleeper.init();
 	
@@ -374,7 +408,7 @@ return djDeclare("location.timeline", [
 			days.forEach( function (day) {
 				var pos = djDomGeo.position(day.domNode, day.computedStyle);
 				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
-					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 900; background-color: yellow; opacity: 0.2; pointer-events: none');	
+					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none');	
 					none = false;
 				}
 			});
@@ -752,36 +786,44 @@ return djDeclare("location.timeline", [
 		});
 	},
 
+	goToReservation: function(id, center) {
+		var def = new djDeferred();
+		var that = this;
+		var middle =  window.innerHeight / 3;
+		var widget = dtRegistry.byId('location_entry_' + id);
+
+		that.center = center;
+		that.update().then( function () {
+			if(widget) {
+				var pos = djDomGeo.position(widget.domNode, true);
+				window.scroll(0, pos.y - middle);
+
+				widget.update(true).then(function () {
+					var pos = djDomGeo.position(widget.domNode, true);
+					window.scroll(0, pos.y - middle);
+						widget = dtRegistry.byId(data['id']);
+						if(widget) {
+							def.resolve(widget);
+						}
+				});
+			}
+		});
+
+		return def.promise;
+	},
+
 	doSearchLocation: function (event) {
 		if(event && event.preventDefault) {
 			event.preventDefault();
 		}
 		var that = this;
 		var loc = this.nLocationNumber.get('value');
-		var middle =  window.innerHeight / 2;
 		
 		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
 			if(result && result.data && result.data.length > 0) {
 				data = result.data[0];
-				
-				that.center  = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
-				that.update().then( function () {
-					var widget = dtRegistry.byId('location_entry_' + data['target']);
-					if(widget) {
-						var pos = djDomGeo.position(widget.domNode, true);
-						window.scroll(0, pos.y - middle);
-
-						widget.update(true).then(function () {
-							var pos = djDomGeo.position(widget.domNode, true);
-							window.scroll(0, pos.y - middle);
-							window.setTimeout(function() {
-								widget = dtRegistry.byId(data['id']);
-								if(widget) {
-									that.highlight(widget.domNode);
-								}
-							}, 250);
-						});
-					}
+				that.goToReservation(data['target'], data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
+					that.highlight(widget.domNode);
 				});
 			}
 		});

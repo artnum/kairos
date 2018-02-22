@@ -19,7 +19,6 @@ define([
 	"dojo/dom-class",
 	"dojo/request/xhr",
 
-	"dijit/Dialog",
 	"dijit/Tooltip",
 	"dijit/registry",
 
@@ -51,7 +50,6 @@ define([
 
 	djXhr,
 
-	dtDialog,
 	dtTooltip,
 	dtRegistry,
 
@@ -657,6 +655,9 @@ return djDeclare("location.reservation", [
 		
     return def.promise;
   },
+	highlight: function () {
+		this.sup.highlight(this.domNode);
+	},
   _getEntriesAttr: function() {
     return this.sup.get('entries');
   }
