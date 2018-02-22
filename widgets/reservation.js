@@ -494,7 +494,7 @@ return djDeclare("location.reservation", [
 				var left = 0;
 				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('trueBegin');
 				if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
-					Rb = djDate.add(that.get('dateRange').begin, 'day', 1);
+					Rb = that.get('dateRange').begin;
 				}
 
 				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
