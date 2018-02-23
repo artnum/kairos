@@ -81,13 +81,24 @@ class TagsModel extends artnum\SQL {
 
    function write($data) {
       $insert = array();
+      $delete = array();
       foreach($data as $k => $v) {
          $_k = $this->DB->quote($k);
-         $current = $this->get($k)[$k];
+         array_push($delete, $_k);
+         if(!is_array($v)) { $v = array($v); }
          foreach($v as $_v) {
-            if( ! in_array($_v, $current)) {
-               array_push($insert, sprintf('( %s, %s )',$this->DB->quote($_v), $_k));
-            }
+            if(empty($_v)) { continue; }
+            array_push($insert, sprintf('( %s, %s )',$this->DB->quote($_v), $_k));
+         }
+      }
+
+      if(count($delete) > 0) {
+         try {
+            foreach($delete as $d) {
+               $this->DB->query(sprintf('DELETE FROM %s WHERE tags_target = %s', $this->Table, $d));
+            } 
+         } catch(\Exception $e) {
+            return false;
          }
       }
       if(count($insert) > 0) {

@@ -89,6 +89,7 @@ return djDeclare("location.timeline", [
 	lastId: 0,
 	lastMod: 0,
 	inputString: '',
+	eventStarted: null,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -113,6 +114,7 @@ return djDeclare("location.timeline", [
 		this.inputString = '';
 		this.lastMod = '';
 		this.lastId = '';
+		this.eventStarted = null;
 
 		this.zoomCss = document.createElement('style');
 		this.own(this.zoomCss);
@@ -349,6 +351,11 @@ return djDeclare("location.timeline", [
 	},
 
 	mouseUpDown: function(event) {
+		if(event.type=='mouseup') {
+			this.eventStarted = null;
+		} else {
+			this.eventStarted = event;
+		}
 		window.requestAnimationFrame(function() {
 			var domNode = document.getElementsByTagName('body')[0]
 			if(event.type=='mouseup') {
@@ -370,6 +377,8 @@ return djDeclare("location.timeline", [
 			var sel = window.getSelection();
 			sel.removeAllRanges();
 		}
+
+		if(event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return; }
 
 		/* Move, following mouse, timeline left/right and up/down when left button is held */
 		if(event.buttons == 1) {
@@ -702,14 +711,14 @@ return djDeclare("location.timeline", [
 						if(machine.cn ) {
 							name += '<div class="name">' + machine.cn + '</div>'; 	
 						}
-						var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn });
+						var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description });
 						djDomClass.add(e.domNode, groupName);
 						e.setServers(locationConfig.servers);
 						that.addEntry(e);
 						if(machine.airaltref && djLang.isArray(machine.airaltref)) {
 							machine.airaltref.forEach( function (altref ) {
 									var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
-									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label });
+									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim() });
 									djDomClass.add(e.domNode, groupName);
 							
 									e.setServers(locationConfig.servers);
@@ -717,7 +726,7 @@ return djDeclare("location.timeline", [
 								});
 							} else if(machine.airaltref) {
 								var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
-								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label });
+								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim() });
 								djDomClass.add(e.domNode, groupName);
 								e.setServers(locationConfig.servers);
 								that.addEntry(e);
