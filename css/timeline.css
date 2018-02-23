@@ -1,9 +1,9 @@
- @import url('https://fonts.googleapis.com/css?family=Questrial');
+ @import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
 
 body, html { margin: 0; padding: 0; }
 
 .timeline {
-	font-family: 'Questrial', sans-serif;
+	font-family: 'Roboto', sans-serif;
 	font-size: 16px !important;
 	cursor: grab;
 	margin-bottom: 60px;
@@ -90,14 +90,6 @@ body, html { margin: 0; padding: 0; }
 	visibility: hidden !important;
 }
 
-.group0.entry {
-	background-color: rgba(255,255,255, 0.5); 
-}
-
-.group1.entry {
-	background-color: rgba(180, 180, 160, 0.5);
-}
-
 .x1 {
 	font-size: 0.8em !important;
 }
@@ -110,24 +102,6 @@ body, html { margin: 0; padding: 0; }
 	font-size: 1.5em !important;
 }
 
-.entry {
-	border-top: 1px dashed rgba(80, 80, 80, 0.3);
-	padding-left: 5px;
-  height: 66px;
-  min-height: 66px;
-}
-
-.x1 .entry {
-	padding-left: 3px;
-  height: 42px;
-  min-height: 42px;
-}
-
-.x3 .entry {
-	padding-left: 7px;
-  height: 82px;
-  min-height: 82px;
-}
 
 .control {
 	font-size: 1em;	
@@ -207,12 +181,6 @@ body, html { margin: 0; padding: 0; }
 .entry.off .fa-power-off {
 	text-shadow: none !important;
 	color: black !important;
-}
-
-
-.entry .control {
-	cursor: pointer;
-	width: 110px;
 }
 
 .entry .error {

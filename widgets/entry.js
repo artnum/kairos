@@ -27,7 +27,9 @@ define([
 	"location/rForm",
 	"location/_Cluster",
 	"location/_Request",
-	"location/_Sleeper"
+	"location/_Sleeper", 
+
+	"artnum/Request"
 
 ], function(
 	djDeclare,
@@ -58,7 +60,9 @@ define([
 
 	_Cluster,
 	request,
-	_Sleeper
+	_Sleeper,
+
+	Req
 
 ) {
 
@@ -77,6 +81,7 @@ return djDeclare("location.entry", [
 	power: true,
 	waiters: 0, /* number of nested "waiting" func */
 	originalHeight: 0,
+	tags: [],
 
 	constructor: function (args) {
 		_Sleeper.init();
@@ -90,6 +95,7 @@ return djDeclare("location.entry", [
 		this.stores = {};
 		this.runUpdate = 0;
 		this.originalHeight = 0;
+		this.tags = [];
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 70 ]);
     if(dtRegistry.byId('location_entry_' + args["target"])) {
@@ -130,7 +136,97 @@ return djDeclare("location.entry", [
 		this.originalHeight = djDomStyle.get(this.domNode, 'height');
 
 		this.verifyLock();
+		Req.get(locationConfig.store + '/Tags/?!=' + this.url).then(function ( tags ) {
+			if(tags && tags.data) {
+				for( var i in tags.data ) {
+					tags.data[i].forEach(function (tag) {
+						that.tags.push(tag);
+					});
+				}
+			}
+
+			that.displayTags(that.tags);
+		});
+		
+		var frag = document.createDocumentFragment();
+		var s = document.createElement('SPAN');
+		s.setAttribute('class', 'reference');
+		s.appendChild(document.createTextNode(that.get('target')));
+		frag.appendChild(s);
+
+		s = document.createElement('SPAN');
+		s.setAttribute('class', 'commonName label');
+		s.appendChild(document.createTextNode(that.get('label')));
+		frag.appendChild(s);
+
+		window.requestAnimationFrame(function () { that.nameNode.appendChild(frag); });
 	},
+
+	displayTags: function (tags) {
+		var def = new djDeferred();
+
+		var notag = true;
+		var that = this;
+		var frag = document.createDocumentFragment();
+		if(tags.length > 0) {
+			tags.forEach( function ( tag ) {
+				if(tag != '') {
+					notag = false;
+					var s = document.createElement('SPAN');
+					s.setAttribute('class', 'tag');
+					s.appendChild(document.createTextNode(tag));
+					frag.appendChild(s);
+				}
+			});
+		}
+		if(notag) {
+			frag.appendChild(document.createTextNode('Ajouter ... '));
+		}
+		window.requestAnimationFrame(function () { that.nTags.appendChild(frag); djOn.once(that.nTags, 'dblclick', djLang.hitch(that, that.eEditTags)); def.resolve(); });
+
+		return def.promise;
+	},
+
+	clearTags: function () {
+		var def = new djDeferred();
+		var that = this;
+
+		window.requestAnimationFrame(function () {
+			while(that.nTags.firstChild) {
+				that.nTags.removeChild(that.nTags.firstChild);
+			}
+			def.resolve();
+		});
+
+		return def.promise;
+	},
+
+	eEditTags: function (event) {
+		var that = this;
+		
+		var form = document.createElement('FORM');
+		var input = document.createElement('INPUT');
+		form.appendChild(input);
+		input.setAttribute("value", this.tags.join(', '));
+
+		djOn.once(form, 'submit', function ( event ) {
+			event.preventDefault();
+
+			var tags = input.value.split(',');
+			for(var i in tags) {
+				tags[i] = tags[i].trim();
+			}
+			that.tags = tags;
+			var q = new Object(); q[that.url] = tags;
+			Req.post(locationConfig.store + "/Tags/?!=" + that.url, { query : q }).then(function () {
+				that.clearTags();
+				that.displayTags(tags);
+			});
+		});
+
+		window.requestAnimationFrame(function () { that.clearTags().then( function () { that.nTags.appendChild(form); input.focus(); }); });
+	},
+
 	cancelReservation: function() {
 		if(this.newReservation) {
 			var that = this;
@@ -150,6 +246,7 @@ return djDeclare("location.entry", [
 	},
 
 	evtDblClick: function(event) {
+		if(event.clientX <= 200) { return; }
 		var n = event.target;
 		while(n) {
 			if(n.getAttribute('widgetid')) { break; }
@@ -353,8 +450,6 @@ return djDeclare("location.entry", [
 		this.power = !this.power;
 	},
 
-	name: "undef",
-	_setNameAttr: {node: "nameNode", type: "innerHTML"},
 	_getBlockSizeAttr: function () {
 		return this.sup.get('blockSize');
 	},
