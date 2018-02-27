@@ -72,6 +72,7 @@ return djDeclare("location.reservation", [
 	hidden: true,
 	form: null,
 	dbContact: null,
+	complements: [],
 
 
 	constructor: function () {
@@ -81,6 +82,7 @@ return djDeclare("location.reservation", [
 		this.hidden = true;
 		this.form = null;
 		this.dbContact = null;
+		this.complements = new Array();
 	},
 	error: function(txt, code) {
 		this.sup.error(txt, code);
@@ -139,18 +141,18 @@ return djDeclare("location.reservation", [
 		this.loadDbContact().then( function () { that.setTextDesc(); });
   },
 	_setEnableAttr: function() {
-		var that = this;
 		this.hidden = false;
-		window.requestAnimationFrame(
+		djDomStyle.set(this.domNode, 'display', '');
+	/*	window.requestAnimationFrame(
 			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', ''); }
-		});
+		});*/
 	},
 	_setDisableAttr: function() {
-		var that = this;
 		this.hidden = true;
-		window.requestAnimationFrame(
+		djDomStyle.set(this.domNode, 'display', 'none'); 
+		/*window.requestAnimationFrame(
 			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }
-		});
+		});*/
 	},
 	_getEnabledAttr: function() {
 		return ! this.hidden;
@@ -474,15 +476,31 @@ return djDeclare("location.reservation", [
 		return this.sup.computeIntervalOffset(date);
 	},
 
+	/*queryComplement: function () {
+		var that = this;
+		var def = new djDeferred();
+
+		if(! this.complements.stamp || this.complements.stamp.getTime() + 60000 < (new Date()).getTime()) {
+			Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
+				that.complements.stamp = new Date();
+				that.complements.entries = entries;
+				def.resolve(entries);
+			});
+		} else {
+			def.resolve(this.complements.entries);
+		}
+
+		return def.promise;
+	},*/
+
 	drawComplement: function () {
 		var that = this;
 		var def = new djDeferred();
 		var totalWidth = 0;
 
-		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
-			var frag = document.createDocumentFragment();
-			var appendFrag = false;
-			entries.forEach( function ( entry ) {
+		var frag = document.createDocumentFragment();
+		var appendFrag = false;
+		var x = this.complements.forEach( function ( entry ) {
 
 				var color = 'FFF';
 				if(entry.type && entry.type.color) {
@@ -530,10 +548,9 @@ return djDeclare("location.reservation", [
 					that.nStabilo.appendChild(frag);
 				}
 				def.resolve();
-			});
 		})
 
-		return def.Promise;
+		return def.promise;
 	},
 
   resize: function() {
@@ -546,8 +563,7 @@ return djDeclare("location.reservation", [
 			} else {
 				this.set('enable');
 			}
-
-
+			
 			if( ! this.sup) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 	
@@ -620,7 +636,6 @@ return djDeclare("location.reservation", [
 				toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
 			}
 			toolsOffsetEnd *= this.get('blockSize') / 24;
-			
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
 				if(! that || ! that.main) { def.resolve(); return ; }
@@ -630,8 +645,15 @@ return djDeclare("location.reservation", [
 				} else {
 					djDomClass.remove(that.main, 'confirmed');
 				}
+
+				var supRect = getElementRect(that.sup.domNode);
+				var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
+				var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
+
 				djDomStyle.set(that.main, 'width', stopPoint);
 				djDomStyle.set(that.main, 'left', startPoint);
+				djDomStyle.set(that.main, 'top', supRect[1] + supTopBorder);
+				djDomStyle.set(that.main, 'height', that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder));
 				djDomStyle.set(that.main, 'position', 'absolute');
 
 				that.tools.setAttribute('style', 'background-color:' + bgcolor );

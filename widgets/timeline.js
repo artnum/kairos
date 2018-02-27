@@ -114,7 +114,7 @@ return djDeclare("location.timeline", [
 		this.inputString = '';
 		this.lastMod = '';
 		this.lastId = '';
-		this.eventStarted = null;
+		this.xDiff = 0;
 
 		this.zoomCss = document.createElement('style');
 		this.own(this.zoomCss);
@@ -347,7 +347,7 @@ return djDeclare("location.timeline", [
 		this.lockEvents = new EventSource('/location/lock.php?follow=1');
 		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
 
-		this.refresh();	
+		this.refresh();
 	},
 
 	mouseUpDown: function(event) {
@@ -386,18 +386,18 @@ return djDeclare("location.timeline", [
 			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
 
 			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
-				var diff = 0;
-				if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 48) {
-					diff = 1;	
-				} else if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 32) {
-					diff = 2;
-				} else if(xDiff > this.get('blockSize')) {
-					diff = Math.round(Math.abs(xDiff / this.get('blockSize') * 8)) + 1;
-				}
 				if(this.lastClientXY[0] - event.clientX > 0) {
-					this.moveXRight(diff);		
+					this.xDiff += xDiff;
 				}	else if(this.lastClientXY[0] - event.clientX < 0) {
-					this.moveXLeft(diff);		
+					this.xDiff += -xDiff;
+				}
+				if(Math.abs(this.xDiff) >= this.get('blockSize')) {
+					if(this.xDiff < 0) {
+						this.moveXLeft(1);
+					} else {
+						this.moveXRight(1);
+					}
+					this.xDiff = 0;
 				}
 			}
 
@@ -747,13 +747,27 @@ return djDeclare("location.timeline", [
 
 		this.drawTimeline().then(function () {
 			that.drawVerticalLine().then(function() {
-				that.entries.forEach( function ( entry ) {
+				/*that.entries.forEach( function ( entry ) {
 					if(intoYView(entry.domNode)) {
 						that.emit("update-" + entry.target);
 					}			
+				});*/
+				var inview = new Array(), outview = new Array();
+				dtRegistry.findWidgets(that.domNode).forEach( function (widget) {
+					if(widget.declaredClass == "location.entry" && widget.update) {
+						if(intoYView(widget.domNode)) {
+							inview.push(widget);
+						}	else {
+							outview.push(widget);
+						}
+				}});
+
+				inview.forEach( function ( widget ) {
+							window.requestAnimationFrame( function () {  widget.resize();  });
+							djThrottle(function() { widget.update(); console.log('Throttle'); }, 1000)();
 				});
 
-				def.resolve();		
+				def.resolve();
 			});
 		});
 		return def.promise;

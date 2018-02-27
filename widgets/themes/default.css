@@ -64,3 +64,27 @@
 .entry .reference:after {
 	content: "\0020";
 }
+
+.entry .details {
+	padding: 0 3px 0 3px;
+	height: 100%;
+}
+
+.entry .tools {
+  height: 8px;
+	position: relative;
+	top: -8px;	
+}
+
+.x1 .entry .tools {
+	height: 6px;
+	top: -6px;
+}
+
+.x3 .entry .tools {
+	height: 10px;
+	top: -10px;
+}
+
+
+
