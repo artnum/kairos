@@ -764,7 +764,7 @@ return djDeclare("location.timeline", [
 
 				inview.forEach( function ( widget ) {
 							window.requestAnimationFrame( function () {  widget.resize();  });
-							djThrottle(function() { widget.update(); console.log('Throttle'); }, 1000)();
+							djThrottle(function() { widget.update(); console.log('Throttle'); }, 100)();
 				});
 
 				def.resolve();

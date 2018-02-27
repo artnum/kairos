@@ -488,6 +488,7 @@ return djDeclare("location.entry", [
 		return def.promise;
 	},
 	update: function () {
+		var that = this;
 		var def = new djDeferred();
 		var force = false;
 		if(arguments[0]) {
@@ -498,8 +499,6 @@ return djDeclare("location.entry", [
 		this._resetError();
 		this._startWait();
 
-		var resizing = this.resize();
-
 		if(!force && (this.locked || this.runUpdate)) {
 			this._stopWait();
 			return;	
@@ -507,43 +506,22 @@ return djDeclare("location.entry", [
 
 		this.runUpdate = true;
 		var range = this.get('dateRange');
-		var months = new Array();
-		var qParamsS = new Array();
 
-		for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
-			if(! d) { break; }
-			var m = d.getMonth();
-			if(months.indexOf(m) < 0) {
-				months.push(m);
-				qParamsS.push({
-					"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
-					"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
-					"search.target" : this.get('target'),
-					"search.deleted" : '-'
+		startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
+		stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
+		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+			"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
+			"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
+			"search.target": this.get('target'), 
+			"search.deleted" : '-' }
+		}).then( function (results) {
+			if(results && results.data && results.data.length > 0) {
+				that.displayReservations(results.data);
+				that.resize().then(function() {
+					def.resolve();
+					that.runUpdate = false;
 				});
-			}	
-		}
-		this.runUpdate = Date.now();
-		var requests = new Array();
-		var that = this;
-    
-		qParamsS.forEach(function (	qParams ){ 
-			requests.push(request.get(that.getUrl(locationConfig.store + '/DeepReservation'), { query: qParams }));
-		});
-
-		requests.forEach(function (r) {
-			r.then(function (result) {
-				if(result.success()) {
-					that.displayReservations(result.whole());
-				}
-			});
-		});
-		djAll(requests).then(function(r) {
-			resizing.then(function() {
-				that.runUpdate = false;
-				that._stopWait();
-				def.resolve(); 
-			});
+			}
 		});
 
 		return def.promise;
@@ -678,37 +656,32 @@ return djDeclare("location.entry", [
 		var frag = document.createDocumentFragment();
 		var that = this;
 		reservations.forEach(function (reserv) {
-			/*if(	
-				djDate.compare(djDateStamp.fromISOString(reservation.begin), range.end, 'date') <= 0 ||
-				djDate.compare(djDateStamp.fromISOString(reservation.end), range.begin, 'date') > 0
-				) {*/
-				var r = { 
-					"sup": that,
-					"IDent" : reserv.id,
-					"id" : reserv.id,
-					"begin": djDateStamp.fromISOString(reserv.begin),
-					"end" : djDateStamp.fromISOString(reserv.end), 
-					"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
-					"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
-					"status": reserv.status,
-					"contact": reserv.contact,
-					"address": reserv.address,
-					"locality": reserv.locality,
-					"comment": reserv.comment,
-					"special": reserv.special,
-					"reference": reserv.reference,
-					"equipment": reserv.equipment,
-					"complements": reserv.complements ? reserv.complements : new Array()
-					};
-				if(r.end != null && r.begin != null) {
-					if(that.entries[r.id]) {
-						that.entries[r.id].resize();
-					} else {
-						that.entries[r.id] = new reservation(r);
-						frag.appendChild(that.entries[r.id].domNode);
-					}
+			var r = { 
+				"sup": that,
+				"IDent" : reserv.id,
+				"id" : reserv.id,
+				"begin": djDateStamp.fromISOString(reserv.begin),
+				"end" : djDateStamp.fromISOString(reserv.end), 
+				"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
+				"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
+				"status": reserv.status,
+				"contact": reserv.contact,
+				"address": reserv.address,
+				"locality": reserv.locality,
+				"comment": reserv.comment,
+				"special": reserv.special,
+				"reference": reserv.reference,
+				"equipment": reserv.equipment,
+				"complements": reserv.complements ? reserv.complements : new Array()
+			};
+			if(r.end != null && r.begin != null) {
+				if(that.entries[r.id]) {
+					that.entries[r.id].resize();
+				} else {
+					that.entries[r.id] = new reservation(r);
+					frag.appendChild(that.entries[r.id].domNode);
 				}
-			/*}*/
+			}
 		});
 		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); that._stopWait(); });
 	},
