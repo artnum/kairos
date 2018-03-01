@@ -49,3 +49,56 @@ Date.prototype.shortHour = function() {
 	if(m < 10) { m = '0' + m; }
 	return h + ':' + m;
 }
+
+var DateRange = function(begin, end) {
+	if(begin instanceof Date) {
+		this.begin = begin;
+	} else {
+		this.begin = new Date(begin);
+	}
+
+	if(end instanceof Date) {
+		this.end = end;
+	} else {
+		this.end = new Date(end);
+	}
+}
+
+DateRange.prototype.within = function(value) {
+	if(this.begin.getTime() <= value.getTime() && this.end.getTime() >= value.getTime()) {
+		return true;
+	}
+	return false;
+}
+
+DateRange.prototype.overlap = function(daterange) {
+	if(daterange instanceof DateRange) {
+		if(this.within(daterange.begin) || this.within(daterange.end) ||
+			daterange.within(this.begin) || daterange.within(this.end)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+DateRange.prototype.merge = function (daterange) {
+	var begin, end;
+	if(this.overlap(daterange)) {
+		if(this.begin.getTime() < daterange.begin.getTime()) {
+			begin = this.begin;
+		} else {
+			begin = daterange.begin;
+		}
+
+		if(this.end.getTime() > dateragne.end.getTime()) {
+			end = this.end;
+		} else {
+			end = daterange.end;
+		}
+
+		return new DateRange(begin, end);
+	}
+
+	return NaN;
+}
