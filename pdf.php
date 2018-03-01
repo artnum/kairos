@@ -100,10 +100,11 @@ $res = $JClient->get($_GET['id'], 'Reservation');
 if($res['type'] != 'results') {
    exit(0);
 }
-if(!isset($res['data'][0])) {
+
+if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
    exit(0);
 }
-$reservation = $res['data'][0];
+$reservation = isset($res['data'][0]) ? $res['data'][0] : $res['data'];
 
 if(!empty($reservation['deliveryBegin'])) {
    if($reservation['deliveryBegin'] != $reservation['begin']) {
