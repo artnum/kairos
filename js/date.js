@@ -91,7 +91,7 @@ DateRange.prototype.merge = function (daterange) {
 			begin = daterange.begin;
 		}
 
-		if(this.end.getTime() > dateragne.end.getTime()) {
+		if(this.end.getTime() > daterange.end.getTime()) {
 			end = this.end;
 		} else {
 			end = daterange.end;
@@ -100,5 +100,5 @@ DateRange.prototype.merge = function (daterange) {
 		return new DateRange(begin, end);
 	}
 
-	return NaN;
+	return null 
 }

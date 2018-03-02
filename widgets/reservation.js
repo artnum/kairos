@@ -476,70 +476,86 @@ return djDeclare("location.reservation", [
 		return this.sup.computeIntervalOffset(date);
 	},
 
-	/*queryComplement: function () {
-		var that = this;
-		var def = new djDeferred();
-
-		if(! this.complements.stamp || this.complements.stamp.getTime() + 60000 < (new Date()).getTime()) {
-			Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
-				that.complements.stamp = new Date();
-				that.complements.entries = entries;
-				def.resolve(entries);
-			});
-		} else {
-			def.resolve(this.complements.entries);
-		}
-
-		return def.promise;
-	},*/
-
 	drawComplement: function () {
 		var that = this;
 		var def = new djDeferred();
 		var totalWidth = 0;
+		var drawn = new Array();
 
 		var frag = document.createDocumentFragment();
 		var appendFrag = false;
-		var x = this.complements.forEach( function ( entry ) {
+		var x = this.complements;
+		var byType = new Object();
 
-				var color = 'FFF';
-				if(entry.type && entry.type.color) {
-					color = entry.type.color;
-				}
+		for(var i = 0; i < x.length; i++) {
+			x[i].range = new DateRange(x[i].begin, x[i].end);
+			if(!byType[x[i].type.color]) {
+				byType[x[i].type.color] = new Array();
+			} 
+			byType[x[i].type.color].push(x[i]);
 			
-				var left = 0;
-				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('trueBegin');
-				if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
-					Rb = that.get('dateRange').begin;
+			var overlap = true;
+			while(overlap) {
+				overlap = false;
+				var z = byType[x[i].type.color].pop();
+				for(var j = 0; j < byType[x[i].type.color].length; j++) {
+					var o = byType[x[i].type.color][j].range.merge(z.range);
+					if(o != null) {
+						byType[x[i].type.color][j].range = o;
+						overlap = true;
+						break;
+					}
 				}
-
-				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
-				if(djDate.compare(begin, Rb, 'date') < 0) {
-					width -= djDate.difference(Rb, begin, 'day');
+				if(!overlap) {
+					byType[x[i].type.color].push(z);
 				}
+			} 
+		}
 
-				left = djDate.difference(Rb, begin, 'day');
-				if(left < 0) { left = 0; }
+		var height = Math.round(100 / Object.keys(byType).length);
+
+		for(var i in byType) {
+			totalWidth = 0;
+			byType[i].forEach( function ( entry ) {
+					var begin = entry.range.begin, end = entry.range.end, Rb = that.get('trueBegin');
+					var color = 'FFF';
+					if(entry.type && entry.type.color) {
+						color = entry.type.color;
+					}
 				
-				if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
-					width = 0;
-				}
+					var left = 0;
+					if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
+						Rb = that.get('dateRange').begin;
+					}
 
-				if(width > 0) {
-					left *= that.get('blockSize');
-					width *= that.get('blockSize');
+					var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
+					if(djDate.compare(begin, Rb, 'date') < 0) {
+						width -= djDate.difference(Rb, begin, 'day');
+					}
 
-					left -= that.computeIntervalOffset(Rb);
-					/* Use of CSS relative position => the next element left position is pushed by previous element width */
-					left -= totalWidth;
-					totalWidth += width;
+					left = djDate.difference(Rb, begin, 'day');
+					if(left < 0) { left = 0; }
+					
+					if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
+						width = 0;
+					}
 
-					var div = document.createElement('DIV');
-					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
-					frag.appendChild(div);
-					appendFrag = true;
-				}
-			});
+					if(width > 0) {
+						left *= that.get('blockSize');
+						width *= that.get('blockSize');
+
+						left -= that.computeIntervalOffset(Rb);
+						/* Use of CSS relative position => the next element left position is pushed by previous element width */
+						left -= totalWidth;
+						totalWidth += width;
+
+						var div = document.createElement('DIV');
+						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%;');
+						frag.appendChild(div);
+						appendFrag = true;
+					}
+				});
+			}
 
 			window.requestAnimationFrame(function () {
 				for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
