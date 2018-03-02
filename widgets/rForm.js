@@ -239,6 +239,7 @@ return djDeclare("location.rForm", [
 		var def = new djDeferred();
 		var that = this;
 		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.reservation.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
+			console.log(entries);
 			for(var i = that.listMachinist.firstChild; i; i = that.listMachinist.firstChild) {
 				that.listMachinist.removeChild(i);
 			}	
@@ -375,7 +376,6 @@ return djDeclare("location.rForm", [
 		
 		// Not used yet ... might be in the futur
 		//this.refreshMachinist();
-		this.getMachinist();
 
 		this.reservation.get('entries').forEach( function (entry) {
 			that.nMachineChange.addOption({
@@ -468,6 +468,8 @@ return djDeclare("location.rForm", [
 				}));
 			}
 		}));
+		
+		this.getMachinist();
   },
 
 	toggleDelivery: function () {

@@ -344,8 +344,8 @@ return djDeclare("location.timeline", [
 		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
-		this.lockEvents = new EventSource('/location/lock.php?follow=1');
-		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
+		//this.lockEvents = new EventSource('/location/lock.php?follow=1');
+		//this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
 
 		this.refresh();
 	},
