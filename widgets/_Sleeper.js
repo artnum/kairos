@@ -103,7 +103,7 @@ return {
 		var that = window.Sleeper;
 		
 		if( ! that.isSleeping()) {
-			that.reloadTimeout = window.setTimeout( function () { window.location.reload(true); }, that.sleepTime);
+			//that.reloadTimeout = window.setTimeout( function () { window.location.reload(true); }, that.sleepTime);
 			window.requestAnimationFrame(function () {
 				var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
 				var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);

@@ -11,6 +11,7 @@ define([
 
 	"dojo/text!./templates/timeline.html",
 
+	"dojo/aspect",
 	"dojo/date",
 	"dojo/date/stamp",
 	"dojo/dom-construct",
@@ -44,6 +45,7 @@ define([
 	dtContentPane,
 
 	_template,
+	djAspect,
 	djDate,
 	djDateStamp,
 	djDomConstruct,
@@ -112,7 +114,7 @@ return djDeclare("location.timeline", [
 		this.inputString = '';
 		this.lastMod = '';
 		this.lastId = '';
-		this.eventStarted = null;
+		this.xDiff = 0;
 
 		this.zoomCss = document.createElement('style');
 		this.own(this.zoomCss);
@@ -298,6 +300,37 @@ return djDeclare("location.timeline", [
 	},
 
 	postCreate: function () {
+		var that = this;
+		var tContainer = dtRegistry.byId('tContainer')
+		tContainer.startup();
+
+		djAspect.after(tContainer, 'addChild', function () {
+			if(this.hasChildren()) {
+				djDomStyle.set(this.domNode, 'display', 'block');
+			}
+			console.log(arguments);
+		}, true);
+		tContainer.watch('selectedChildWidget', function (method, prev, current) {
+			var rid = current.get('id').split('_')[2];
+			Req.get(locationConfig.store + '/Reservation/' + rid, { query: { 'search.delete': '-' }}).then(function (result) {
+				if(result && result.data && result.data.length > 0) {
+					data = result.data[0];
+					var date = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
+					that.goToReservation(data['target'], date).then(function (widget) {
+						that.highlight(widget.domNode);
+					});
+				}
+			});
+	
+		
+		});
+		djAspect.after(tContainer, 'removeChild', function (child) {
+			if(! this.hasChildren()) {
+				djDomStyle.set(this.domNode, 'display', 'none');
+			}
+			console.log(arguments);
+		}, true);
+
 		this.inherited(arguments);
 		_Sleeper.init();
 	
@@ -311,10 +344,10 @@ return djDeclare("location.timeline", [
 		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
-		this.lockEvents = new EventSource('/location/lock.php?follow=1');
-		this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
+		//this.lockEvents = new EventSource('/location/lock.php?follow=1');
+		//this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
 
-		this.refresh();	
+		this.refresh();
 	},
 
 	mouseUpDown: function(event) {
@@ -353,18 +386,18 @@ return djDeclare("location.timeline", [
 			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
 
 			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
-				var diff = 0;
-				if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 48) {
-					diff = 1;	
-				} else if(xDiff < this.get('blockSize') && xDiff > this.get('blockSize') / 32) {
-					diff = 2;
-				} else if(xDiff > this.get('blockSize')) {
-					diff = Math.round(Math.abs(xDiff / this.get('blockSize') * 8)) + 1;
-				}
 				if(this.lastClientXY[0] - event.clientX > 0) {
-					this.moveXRight(diff);		
+					this.xDiff += xDiff;
 				}	else if(this.lastClientXY[0] - event.clientX < 0) {
-					this.moveXLeft(diff);		
+					this.xDiff += -xDiff;
+				}
+				if(Math.abs(this.xDiff) >= this.get('blockSize')) {
+					if(this.xDiff < 0) {
+						this.moveXLeft(1);
+					} else {
+						this.moveXRight(1);
+					}
+					this.xDiff = 0;
 				}
 			}
 
@@ -383,7 +416,7 @@ return djDeclare("location.timeline", [
 			days.forEach( function (day) {
 				var pos = djDomGeo.position(day.domNode, day.computedStyle);
 				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
-					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 900; background-color: yellow; opacity: 0.2; pointer-events: none');	
+					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none');	
 					none = false;
 				}
 			});
@@ -714,13 +747,27 @@ return djDeclare("location.timeline", [
 
 		this.drawTimeline().then(function () {
 			that.drawVerticalLine().then(function() {
-				that.entries.forEach( function ( entry ) {
+				/*that.entries.forEach( function ( entry ) {
 					if(intoYView(entry.domNode)) {
 						that.emit("update-" + entry.target);
 					}			
+				});*/
+				var inview = new Array(), outview = new Array();
+				dtRegistry.findWidgets(that.domNode).forEach( function (widget) {
+					if(widget.declaredClass == "location.entry" && widget.update) {
+						if(intoYView(widget.domNode)) {
+							inview.push(widget);
+						}	else {
+							outview.push(widget);
+						}
+				}});
+
+				inview.forEach( function ( widget ) {
+							window.requestAnimationFrame( function () {  widget.resize();  });
+							djThrottle(function() { widget.update(); console.log('Throttle'); }, 100)();
 				});
 
-				def.resolve();		
+				def.resolve();
 			});
 		});
 		return def.promise;
@@ -761,36 +808,51 @@ return djDeclare("location.timeline", [
 		});
 	},
 
+	goToReservation: function(id, center) {
+		var def = new djDeferred();
+		var that = this;
+		var middle =  window.innerHeight / 3;
+		var widget = dtRegistry.byId('location_entry_' + id);
+
+		var tContainer = dtRegistry.byId('tContainer');
+		if(djDomStyle.get(tContainer.domNode, "display") != 'none') {
+			var w = djDomStyle.get(tContainer.domNode, "width");
+			center = djDate.add(center, "day", Math.abs(w / this.get('blockSize')));	
+			console.log(center, w);
+		}
+
+		that.center = center;
+		that.update().then( function () {
+			if(widget) {
+				var pos = djDomGeo.position(widget.domNode, true);
+				window.scroll(0, pos.y - middle);
+
+				widget.update(true).then(function () {
+					var pos = djDomGeo.position(widget.domNode, true);
+					window.scroll(0, pos.y - middle);
+						widget = dtRegistry.byId(data['id']);
+						if(widget) {
+							def.resolve(widget);
+						}
+				});
+			}
+		});
+
+		return def.promise;
+	},
+
 	doSearchLocation: function (event) {
 		if(event && event.preventDefault) {
 			event.preventDefault();
 		}
 		var that = this;
 		var loc = this.nLocationNumber.get('value');
-		var middle =  window.innerHeight / 2;
 		
 		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
 			if(result && result.data && result.data.length > 0) {
 				data = result.data[0];
-				
-				that.center  = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
-				that.update().then( function () {
-					var widget = dtRegistry.byId('location_entry_' + data['target']);
-					if(widget) {
-						var pos = djDomGeo.position(widget.domNode, true);
-						window.scroll(0, pos.y - middle);
-
-						widget.update(true).then(function () {
-							var pos = djDomGeo.position(widget.domNode, true);
-							window.scroll(0, pos.y - middle);
-							window.setTimeout(function() {
-								widget = dtRegistry.byId(data['id']);
-								if(widget) {
-									that.highlight(widget.domNode);
-								}
-							}, 250);
-						});
-					}
+				that.goToReservation(data['target'], data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
+					that.highlight(widget.domNode);
 				});
 			}
 		});

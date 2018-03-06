@@ -82,6 +82,7 @@ return djDeclare("location.entry", [
 	waiters: 0, /* number of nested "waiting" func */
 	originalHeight: 0,
 	tags: [],
+	entries: {},
 
 	constructor: function (args) {
 		_Sleeper.init();
@@ -92,10 +93,12 @@ return djDeclare("location.entry", [
 		this.target = null;
 		this.isParent = false;
 		this.sup = null;
-		this.stores = {};
+		this.stores = new Object();
 		this.runUpdate = 0;
 		this.originalHeight = 0;
-		this.tags = [];
+		this.tags = new Array();
+		this.entries = new Object();
+
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 70 ]);
     if(dtRegistry.byId('location_entry_' + args["target"])) {
@@ -133,8 +136,7 @@ return djDeclare("location.entry", [
 		window.Sleeper.on(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
 		window.Sleeper.on(this.sup, "zoom", function(event) { djDomStyle.set(that.domNode, 'height', ''); that.originalHeight = djDomStyle.get(that.domNode, "height"); that.resize(); });
 
-		this.originalHeight = djDomStyle.get(this.domNode, 'height');
-
+		this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73; /* in chrome value here is 0, set default known value for now */
 		this.verifyLock();
 		Req.get(locationConfig.store + '/Tags/?!=' + this.url).then(function ( tags ) {
 			if(tags && tags.data) {
@@ -470,14 +472,13 @@ return djDeclare("location.entry", [
 		var def = new djDeferred();
 		var that = this;
 
-		window.requestAnimationFrame( function () {
+		async( function () {
 			if(intoYView(that.domNode)) {
 				that._startWait();
-				dtRegistry.findWidgets(that.domNode).forEach(function(child) {				
-					if(child.get('enabled')) {
-						child.resize();
-					}
-				});
+				for(var i in that.entries)  {
+					that.entries[i].resize();
+				}
+				that.overlap();
 				that._stopWait();
 			}
 
@@ -488,17 +489,16 @@ return djDeclare("location.entry", [
 		return def.promise;
 	},
 	update: function () {
+		var that = this;
+		var def = new djDeferred();
 		var force = false;
 		if(arguments[0]) {
 			force = true;
 		}
-		if(! this.power) { return; }
-		var def = new djDeferred();
+		if(! this.power) { def.resolve(); return def.promise; }
 	
 		this._resetError();
 		this._startWait();
-
-		var resizing = this.resize();
 
 		if(!force && (this.locked || this.runUpdate)) {
 			this._stopWait();
@@ -507,43 +507,21 @@ return djDeclare("location.entry", [
 
 		this.runUpdate = true;
 		var range = this.get('dateRange');
-		var months = new Array();
-		var qParamsS = new Array();
-
-		for(var d = range.begin; djDate.compare(d, range.end, "date") < 0; d = djDate.add(d, "day", 1)) {
-			if(! d) { break; }
-			var m = d.getMonth();
-			if(months.indexOf(m) < 0) {
-				months.push(m);
-				qParamsS.push({
-					"search.end": '>' + djDateStamp.toISOString(new Date(d.getFullYear(), m, 1), { selector: 'date'}),
-					"search.begin": '<' + djDateStamp.toISOString(new Date(d.getFullYear(), m + 1, 0), { selector: 'date'}),
-					"search.target" : this.get('target'),
-					"search.deleted" : '-'
+		startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
+		stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
+		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+			"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
+			"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
+			"search.target": this.get('target'), 
+			"search.deleted" : '-' }
+		}).then( function (results) {
+			if(results && results.data && results.data.length > 0) {
+				that.displayReservations(results.data);
+				that.resize().then(function() {
+					def.resolve();
+					that.runUpdate = false;
 				});
-			}	
-		}
-		this.runUpdate = Date.now();
-		var requests = new Array();
-		var that = this;
-    
-		qParamsS.forEach(function (	qParams ){ 
-			requests.push(request.get(that.getUrl(locationConfig.store + '/Reservation'), { query: qParams }));
-		});
-
-		requests.forEach(function (r) {
-			r.then(function (result) {
-				if(result.success()) {
-					that.displayReservations(result.whole());
-				}
-			});
-		});
-		djAll(requests).then(function(r) {
-			resizing.then(function() {
-				that.runUpdate = false;
-				that._stopWait();
-				def.resolve(); 
-			});
+			}
 		});
 
 		return def.promise;
@@ -590,18 +568,19 @@ return djDeclare("location.entry", [
 	},
 
 	_startWait: function() {
-		var t = this.domNode;
+		/*var t = this.domNode;
 		this.waiters++;
-		window.requestAnimationFrame(function() { djDomClass.add(t, "refresh"); });	
+		window.requestAnimationFrame(function() { djDomClass.add(t, "refresh"); });	 */
 	},
 
 	_stopWait: function () {
+		/*
 		var t = this.domNode;
 		this.waiters--;
 		if(this.waiters <= 0) {
 			window.requestAnimationFrame(function() { djDomClass.remove(t, "refresh"); });
 			this.waiters = 0;
-		}
+		}*/
 	},
 
 	_setError: function() {
@@ -621,47 +600,54 @@ return djDeclare("location.entry", [
 
 	overlap: function () {
 		var that = this;
+		var def = new djDeferred();
 		var overlap = false;
 		var dates = new Array();
 		
-		dtRegistry.findWidgets(that.domNode).forEach(function(child) {
-			var o = false;
-			if(!child.get('hidden')) { 
-				dates.forEach( function (d) {
-					if((
-							(child.get('begin').getTime() >  d.begin  &&
-							child.get('begin').getTime() < d.end) ||
-							(child.get('end').getTime() > d.end &&
-							child.get('end').getTime() < d.end)
-						 ) ||
-						 (
-							(d.begin > child.get('begin').getTime() &&
-							d.end < child.get('begin').getTime()) ||
-							(d.end > child.get('end').getTime() &&
-							d.end < child.get('end').getTime())
-						 )
-						 ){
-						if(! d.overlap) {
-							var height = djDomStyle.get(child.domNode, "height"); 
-							djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
-						} else {
-							 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
+		async(function () {	
+			dtRegistry.findWidgets(that.domNode).forEach(function(child) {
+				var o = false;
+				if(!child.get('hidden')) { 
+					dates.forEach( function (d) {
+						if((
+								(child.get('begin').getTime() >  d.begin  &&
+								child.get('begin').getTime() < d.end) ||
+								(child.get('end').getTime() > d.end &&
+								child.get('end').getTime() < d.end)
+							 ) ||
+							 (
+								(d.begin > child.get('begin').getTime() &&
+								d.end < child.get('begin').getTime()) ||
+								(d.end > child.get('end').getTime() &&
+								d.end < child.get('end').getTime())
+							 )
+							 ){
+							if(! d.overlap) {
+								var height = djDomStyle.get(child.domNode, "height"); 
+								djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
+							} else {
+								 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
+							}
+							overlap = true;
 						}
-						overlap = true;
-					}
-				
-				});
-				dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+					
+					});
+					dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+				}
+			});
+		
+			if(overlap) {
+				djDomStyle.set(that.domNode, 'height', ''); 
+				var height = djDomStyle.get(that.domNode, "height"); 
+				djDomStyle.set(that.domNode, 'height', (height * 2) + "px");
+			} else {
+				djDomStyle.set(that.domNode, 'height', '');
 			}
+
+			def.resolve();
 		});
-	
-		if(overlap) {
-		 	djDomStyle.set(that.domNode, 'height', ''); 
-			var height = djDomStyle.get(that.domNode, "height"); 
-			djDomStyle.set(this.domNode, 'height', (height * 2) + "px");
-		} else {
-			djDomStyle.set(this.domNode, 'height', '');
-		}
+
+		return def.promise;
 	},
 
 	displayReservations: function ( reservations ) {
@@ -670,38 +656,38 @@ return djDeclare("location.entry", [
 		var frag = document.createDocumentFragment();
 		var that = this;
 		reservations.forEach(function (reserv) {
-			if(	
-				djDate.compare(djDateStamp.fromISOString(reservation.begin), range.end, 'date') <= 0 ||
-				djDate.compare(djDateStamp.fromISOString(reservation.end), range.begin, 'date') > 0
-				) {
-				var r = { 
-					"sup": that,
-					"IDent" : reserv.id,
-					"id" : reserv.id,
-					"begin": djDateStamp.fromISOString(reserv.begin),
-					"end" : djDateStamp.fromISOString(reserv.end), 
-					"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
-					"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
-					"status": reserv.status,
-					"contact": reserv.contact,
-					"address": reserv.address,
-					"locality": reserv.locality,
-					"comment": reserv.comment,
-					"special": reserv.special,
-					"reference": reserv.reference,
-					"equipment": reserv.equipment,
-					"withWorker": reserv.withWorker
-					};
-				if(r.end != null && r.begin != null) {
-					if(dtRegistry.byId(r.id)) {
-						dtRegistry.byId(r.id).resize();		
-					} else {
-						frag.appendChild(new reservation(r).domNode);
-					}
+			var r = { 
+				"sup": that,
+				"IDent" : reserv.id,
+				"id" : reserv.id,
+				"begin": djDateStamp.fromISOString(reserv.begin),
+				"end" : djDateStamp.fromISOString(reserv.end), 
+				"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
+				"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
+				"status": reserv.status,
+				"contact": reserv.contact,
+				"address": reserv.address,
+				"locality": reserv.locality,
+				"comment": reserv.comment,
+				"special": reserv.special,
+				"reference": reserv.reference,
+				"equipment": reserv.equipment,
+				"complements": reserv.complements ? reserv.complements : new Array()
+			};
+			if(r.end != null && r.begin != null) {
+				if(that.entries[r.id]) {
+					that.entries[r.id].resize();
+				} else {
+					that.entries[r.id] = new reservation(r);
+					frag.appendChild(that.entries[r.id].domNode);
 				}
 			}
 		});
-		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.overlap(); that._stopWait(); });
+		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); that._stopWait(); });
+	},
+
+	highlight: function (domNode) {
+		this.sup.highlight(domNode);
 	},
 
   _getEntriesAttr: function() {

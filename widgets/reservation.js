@@ -19,9 +19,9 @@ define([
 	"dojo/dom-class",
 	"dojo/request/xhr",
 
-	"dijit/Dialog",
 	"dijit/Tooltip",
 	"dijit/registry",
+	"dijit/layout/ContentPane",
 
 	"location/rForm",
 	"location/_Mouse",
@@ -51,9 +51,9 @@ define([
 
 	djXhr,
 
-	dtDialog,
 	dtTooltip,
 	dtRegistry,
+	dtContentPane,
 
 	rForm,
 	Mouse,
@@ -74,6 +74,7 @@ return djDeclare("location.reservation", [
 	hidden: true,
 	form: null,
 	dbContact: null,
+	complements: [],
 
 
 	constructor: function () {
@@ -83,6 +84,7 @@ return djDeclare("location.reservation", [
 		this.hidden = true;
 		this.form = null;
 		this.dbContact = null;
+		this.complements = new Array();
 	},
 	error: function(txt, code) {
 		this.sup.error(txt, code);
@@ -141,18 +143,18 @@ return djDeclare("location.reservation", [
 		this.loadDbContact().then( function () { that.setTextDesc(); });
   },
 	_setEnableAttr: function() {
-		var that = this;
 		this.hidden = false;
-		window.requestAnimationFrame(
+		djDomStyle.set(this.domNode, 'display', '');
+	/*	window.requestAnimationFrame(
 			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', ''); }
-		});
+		});*/
 	},
 	_setDisableAttr: function() {
-		var that = this;
 		this.hidden = true;
-		window.requestAnimationFrame(
+		djDomStyle.set(this.domNode, 'display', 'none'); 
+		/*window.requestAnimationFrame(
 			function () { if(that.domNode) { djDomStyle.set(that.domNode, 'display', 'none'); }
-		});
+		});*/
 	},
 	_getEnabledAttr: function() {
 		return ! this.hidden;
@@ -416,14 +418,34 @@ return djDeclare("location.reservation", [
 		this.popMeUp();
 	},
 	popMeUp: function() {
+		var tContainer = dtRegistry.byId('tContainer');
 		if(this.get('id') == null) { return; }
-		if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
-			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));			
+		if(dtRegistry.byId('ReservationTab_' + this.get('id'))) {
+			tContainer.selectChild('ReservationTab_' + this.get('id'));	
+			return;
+		}
+		/*if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
+			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));
+			this.form.destroy(); this.form = null;
 		}
 		if( ! this.form) {
 			this.form = new rForm({ reservation: this });
-		}
-		var f = this.form;
+		}*/
+
+	
+		var f = new rForm({ reservation: this });	
+		this.highlight();
+		
+		var cp = new dtContentPane({
+			title: 'Réservation ' + this.get('id'),
+			closable: true,
+			id: 'ReservationTab_' + this.get('id'),
+			content: f.domNode});
+		cp.own(f);
+		tContainer.addChild(cp);
+		tContainer.resize();
+		tContainer.selectChild(cp.id);
+
 		f.set('begin', this.get('begin'));
 		f.set('end', this.get('end'));
 		f.set('deliveryBegin', this.get('deliveryBegin'));
@@ -434,7 +456,7 @@ return djDeclare("location.reservation", [
 		f.set('comment', this.get('comment'));
 		f.set('equipment', this.get('equipment'));
 		f.set('reference', this.get('reference'));
-		f.show();	
+		//f.show();	
 	},
 	_getTargetAttr: function() {
 		return this.sup.get('target');
@@ -480,50 +502,84 @@ return djDeclare("location.reservation", [
 		var that = this;
 		var def = new djDeferred();
 		var totalWidth = 0;
+		var drawn = new Array();
 
-		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
-			var frag = document.createDocumentFragment();
-			var appendFrag = false;
-			entries.forEach( function ( entry ) {
+		var frag = document.createDocumentFragment();
+		var appendFrag = false;
+		var x = this.complements;
+		var byType = new Object();
 
-				var color = 'FFF';
-				if(entry.type && entry.type.color) {
-					color = entry.type.color;
-				}
+		for(var i = 0; i < x.length; i++) {
+			x[i].range = new DateRange(x[i].begin, x[i].end);
+			if(!byType[x[i].type.color]) {
+				byType[x[i].type.color] = new Array();
+			} 
+			byType[x[i].type.color].push(x[i]);
 			
-				var left = 0;
-				var begin = new Date(entry.begin), end = new Date(entry.end), Rb = that.get('trueBegin');
-				if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
-					Rb = that.get('dateRange').begin;
+			var overlap = true;
+			while(overlap) {
+				overlap = false;
+				var z = byType[x[i].type.color].pop();
+				for(var j = 0; j < byType[x[i].type.color].length; j++) {
+					var o = byType[x[i].type.color][j].range.merge(z.range);
+					if(o != null) {
+						byType[x[i].type.color][j].range = o;
+						overlap = true;
+						break;
+					}
 				}
-
-				var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
-				if(djDate.compare(begin, Rb, 'date') < 0) {
-					width -= djDate.difference(Rb, begin, 'day');
+				if(!overlap) {
+					byType[x[i].type.color].push(z);
 				}
+			} 
+		}
 
-				left = djDate.difference(Rb, begin, 'day');
-				if(left < 0) { left = 0; }
+		var height = Math.round(100 / Object.keys(byType).length);
+		var lineCount = 0;
+
+		for(var i in byType) {
+			totalWidth = 0;
+			byType[i].forEach( function ( entry ) {
+					var begin = entry.range.begin, end = entry.range.end, Rb = that.get('trueBegin');
+					var color = 'FFF';
+					if(entry.type && entry.type.color) {
+						color = entry.type.color;
+					}
 				
-				if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
-					width = 0;
-				}
+					var left = 0;
+					if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
+						Rb = that.get('dateRange').begin;
+					}
 
-				if(width > 0) {
-					left *= that.get('blockSize');
-					width *= that.get('blockSize');
+					var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
+					if(djDate.compare(begin, Rb, 'date') < 0) {
+						width -= djDate.difference(Rb, begin, 'day');
+					}
 
-					left -= that.computeIntervalOffset(Rb);
-					/* Use of CSS relative position => the next element left position is pushed by previous element width */
-					left -= totalWidth;
-					totalWidth += width;
+					left = djDate.difference(Rb, begin, 'day');
+					if(left < 0) { left = 0; }
+					
+					if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
+						width = 0;
+					}
 
-					var div = document.createElement('DIV');
-					div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: 100%;');
-					frag.appendChild(div);
-					appendFrag = true;
-				}
-			});
+					if(width > 0) {
+						left *= that.get('blockSize');
+						width *= that.get('blockSize');
+
+						left -= that.computeIntervalOffset(Rb);
+						/* Use of CSS relative position => the next element left position is pushed by previous element width */
+						left -= totalWidth;
+						totalWidth += width;
+
+						var div = document.createElement('DIV');
+						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%; clear: right;');
+						div.setAttribute('class', 'stabiloLine');
+						frag.appendChild(div);
+						appendFrag = true;
+					}
+				});
+			}
 
 			window.requestAnimationFrame(function () {
 				for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
@@ -532,10 +588,9 @@ return djDeclare("location.reservation", [
 					that.nStabilo.appendChild(frag);
 				}
 				def.resolve();
-			});
 		})
 
-		return def.Promise;
+		return def.promise;
 	},
 
   resize: function() {
@@ -548,8 +603,7 @@ return djDeclare("location.reservation", [
 			} else {
 				this.set('enable');
 			}
-
-
+			
 			if( ! this.sup) { def.resolve(); return; }
 			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 	
@@ -622,7 +676,6 @@ return djDeclare("location.reservation", [
 				toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
 			}
 			toolsOffsetEnd *= this.get('blockSize') / 24;
-			
 			window.requestAnimationFrame(djLang.hitch(this, function() {
 				/* might be destroyed async */
 				if(! that || ! that.main) { def.resolve(); return ; }
@@ -632,8 +685,15 @@ return djDeclare("location.reservation", [
 				} else {
 					djDomClass.remove(that.main, 'confirmed');
 				}
+
+				var supRect = getElementRect(that.sup.domNode);
+				var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
+				var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
+
 				djDomStyle.set(that.main, 'width', stopPoint);
 				djDomStyle.set(that.main, 'left', startPoint);
+				djDomStyle.set(that.main, 'top', supRect[1] + supTopBorder);
+				djDomStyle.set(that.main, 'height', that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder));
 				djDomStyle.set(that.main, 'position', 'absolute');
 
 				that.tools.setAttribute('style', 'background-color:' + bgcolor );
@@ -662,6 +722,9 @@ return djDeclare("location.reservation", [
 		
     return def.promise;
   },
+	highlight: function () {
+		this.sup.highlight(this.domNode);
+	},
   _getEntriesAttr: function() {
     return this.sup.get('entries');
   }
