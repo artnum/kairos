@@ -133,7 +133,7 @@ if($res['type'] == 'results') {
 
 
 $client = null;
-$res = $JClient->search(array('search.comment' => '_client'), 'ReservationContact');
+$res = $JClient->search(array('search.comment' => '_client', 'search.reservation' => $reservation['id']), 'ReservationContact');
 
 if($res['type'] == 'results' && count($res['data'])>0) {
    $contact = $res['data'][0];
