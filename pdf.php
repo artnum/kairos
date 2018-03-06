@@ -132,22 +132,7 @@ if($res['type'] == 'results') {
 }
 
 
-$client = null;
-$res = $JClient->search(array('search.comment' => '_client', 'search.reservation' => $reservation['id']), 'ReservationContact');
-
-if($res['type'] == 'results' && count($res['data'])>0) {
-   $contact = $res['data'][0];
-   if(!empty($contact['freeform'])) {
-      $client = array('type' => 'freeform', 'data' => $res['data'][0]);
-   } else {
-      $res = $JClient->get($contact['target'], 'Contacts');
-      if($res['type'] == 'results') {
-         $client = array('type' => 'db', 'data' => $res['data'][0]);
-      }
-   }
-}
-
-$addrs = array('responsable' => null, 'facturation' => null);
+$addrs = array('client' => null, 'responsable' => null, 'facturation' => null);
 foreach($addrs as $k => $v) {
    $res = $JClient->search(array('search.comment' => '_' . $k, 'search.reservation' => $reservation['id']), 'ReservationContact');
    if($res['type'] == 'results') {
@@ -163,10 +148,6 @@ foreach($addrs as $k => $v) {
          }
       }
    }
-}
-
-if(!is_null($client)) {
-   $client = format_address($client);
 }
 
 /* PDF Generation */
@@ -192,8 +173,8 @@ $PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
 $PDF->setFontSize(5);
 $PDF->hr();
 $PDF->printTaggedLn(array('%cb', 'Location ', $reservation['id'], '%c'), array('break' => false));
-if(! is_null($client)) {
-   $PDF->printLn(' pour ' . $client[0], array('break' => false));
+if(! is_null($addrs['client'])) {
+   $PDF->printLn(' pour ' . $addrs['client'][0], array('break' => false));
 }
 $PDF->br();
 $PDF->setFontSize(3.2);
@@ -219,10 +200,10 @@ if(is_null($reservation['deliveryBegin']) && is_null($reservation['deliveryEnd']
    }
 }
 
-if(!is_null($client)) {
+if(!is_null($addrs['client'])) {
    $PDF->vtab(2);
    $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
-   foreach($client as $c) {
+   foreach($addrs['client'] as $c) {
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
 } else {
@@ -363,10 +344,10 @@ $PDF->printTaggedLn(array('%c', 'Signature : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
 $PDF->br();
 
-if(is_null($client)) {
+if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
 } else {
-   $PDF->Output($reservation['id'] . ' @ ' . $client[0] . '.pdf', 'I'); 
+   $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
 
 }
 ?>
