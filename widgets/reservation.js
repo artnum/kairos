@@ -596,129 +596,127 @@ return djDeclare("location.reservation", [
   resize: function() {
 		var that = this;
     var def = new djDeferred();
-		var that = this;
 	
-			if(! intoYView(this.sup.domNode)) {
-				def.resolve(); return; 
-			} else {
-				this.set('enable');
-			}
-			
-			if( ! this.sup) { def.resolve(); return; }
-			if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
-	
-			this.drawComplement();
-
-			/* Verify  if we keep this ourself */
-			if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
-					djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
-					this.deleted) { 
-				this.set('disable');
-				def.resolve();
-				return; 
-			} 
-
-			/* Size calculation */
-			var dateRange = this.get('dateRange');
-			var currentWidth = this.get('blockSize');
-
-			/* Last day included */
-			var bgcolor = '#FFFFF';
-			var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
-			if(s && s.color) {
-				bgcolor = '#' + s.color;
-			}
-
-			var range = this.get('dateRange');	
-			var begin = this.get('trueBegin');
-			if(djDate.compare(range.begin, begin, 'date')>0) {
-				begin = range.begin;
-			}
-			var end = this.get('trueEnd');
-			if(djDate.compare(range.end, end, 'date')<0) {
-				end = range.end;
-			}
-
-			var t1, t2;
-			t1 = new Date(end.getTime()); t2 = new Date(begin.getTime()); 
-			t1.setHours(0,0); t2.setHours(0,0);
-			var width = Math.abs(djDate.difference(t1, t2, 'day'));
-			t1 = new Date(this.get('dateRange').begin.getTime()); t2 = new Date(begin.getTime()); 
-			t1.setHours(0, 0); t2.setHours(0, 0);
-			var bDay = djDate.difference(t1, t2, 'day');	
-			
-			if(bDay < 0) { bDay = 0; }
-			var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
-			var stopPoint = (this.get('blockSize') * width);
+		if(! intoYView(this.sup.domNode)) {
+			def.resolve(); return; 
+		}
 		
-			var d = this.computeIntervalOffset(begin);
-			startPoint += d;
-			stopPoint -= d;
-			stopPoint += this.computeIntervalOffset(end);
+		if( ! this.sup) { def.resolve(); return; }
+		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
+
+		this.drawComplement();
+
+		/* Verify  if we keep this ourself */
+		if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
+				djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||
+				this.deleted) { 
+			this.set('disable');
+			def.resolve();
+			return; 
+		} 
+
+		/* Size calculation */
+		var dateRange = this.get('dateRange');
+		var currentWidth = this.get('blockSize');
+
+		/* Last day included */
+		var bgcolor = '#FFFFF';
+		var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
+		if(s && s.color) {
+			bgcolor = '#' + s.color;
+		}
+
+		var range = this.get('dateRange');	
+		var begin = this.get('trueBegin');
+		if(djDate.compare(range.begin, begin, 'date')>0) {
+			begin = range.begin;
+		}
+		var end = this.get('trueEnd');
+		if(djDate.compare(range.end, end, 'date')<0) {
+			end = range.end;
+		}
+
+		var t1, t2;
+		t1 = new Date(end.getTime()); t2 = new Date(begin.getTime()); 
+		t1.setHours(0,0); t2.setHours(0,0);
+		var width = Math.abs(djDate.difference(t1, t2, 'day'));
+		t1 = new Date(this.get('dateRange').begin.getTime()); t2 = new Date(begin.getTime()); 
+		t1.setHours(0, 0); t2.setHours(0, 0);
+		var bDay = djDate.difference(t1, t2, 'day');	
+		
+		if(bDay < 0) { bDay = 0; }
+		var startPoint = this.get('offset') + (this.get('blockSize') * bDay);
+		var stopPoint = (this.get('blockSize') * width);
+	
+		var d = this.computeIntervalOffset(begin);
+		startPoint += d;
+		stopPoint -= d;
+		stopPoint += this.computeIntervalOffset(end);
 
 
-			var toolsOffsetBegin = 0;
-			if(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') != 0) {
-				toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'));
-			}
-			if(djDate.compare(this.get('begin'), this.get('dateRange').begin)<=0) { toolsOffsetBegin = 0; }
-			if(djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin) < 0) {
-				toolsOffsetBegin -= Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, 'hour'));
-			}
-			toolsOffsetBegin *= this.get('blockSize') / 24;
+		var toolsOffsetBegin = 0;
+		if(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') != 0) {
+			toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'));
+		}
+		if(djDate.compare(this.get('begin'), this.get('dateRange').begin)<=0) { toolsOffsetBegin = 0; }
+		if(djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin) < 0) {
+			toolsOffsetBegin -= Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, 'hour'));
+		}
+		toolsOffsetBegin *= this.get('blockSize') / 24;
 
-			var toolsOffsetEnd = 0;
-			if(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') != 0) {
-				toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
-			}
-			if(djDate.compare(this.get('end'), this.get('dateRange').end)>=0) { toolsOffsetEnd = 0; }
-			if(djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) >  0) {
-				toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
-			}
-			toolsOffsetEnd *= this.get('blockSize') / 24;
-			window.requestAnimationFrame(djLang.hitch(this, function() {
-				/* might be destroyed async */
-				if(! that || ! that.main) { def.resolve(); return ; }
-				
-				if(that.is('confirmed')) {
-					djDomClass.add(that.main, 'confirmed');
-				} else {
-					djDomClass.remove(that.main, 'confirmed');
-				}
-
-				var supRect = getElementRect(that.sup.domNode);
-				var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
-				var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
-
-				djDomStyle.set(that.main, 'width', stopPoint);
-				djDomStyle.set(that.main, 'left', startPoint);
-				djDomStyle.set(that.main, 'top', supRect[1] + supTopBorder);
-				djDomStyle.set(that.main, 'height', that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder));
-				djDomStyle.set(that.main, 'position', 'absolute');
-
-				that.tools.setAttribute('style', 'background-color:' + bgcolor );
-
-				for(var i = that.tools.firstChild; i; i = that.tools.firstChild) {
-					that.tools.removeChild(i);
-				}
-				if(toolsOffsetBegin > 0) {
-					var div = document.createElement('DIV');
-					that.own(div);
-					div.setAttribute('class', 'delivery');
-					div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px');
-					that.tools.appendChild(div);
-				}
-
-				if(toolsOffsetEnd > 0) {
-					var div = document.createElement('DIV');
-					that.own(div);
-					div.setAttribute('class', 'delivery');
-					div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px');
-					that.tools.appendChild(div);
-				}
+		var toolsOffsetEnd = 0;
+		if(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') != 0) {
+			toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'));
+		}
+		if(djDate.compare(this.get('end'), this.get('dateRange').end)>=0) { toolsOffsetEnd = 0; }
+		if(djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) >  0) {
+			toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'));
+		}
+		toolsOffsetEnd *= this.get('blockSize') / 24;
+		window.requestAnimationFrame(djLang.hitch(this, function() {
+			/* might be destroyed async */
+			if(! that || ! that.main) { def.resolve(); return ; }
 			
-				def.resolve();
-			}));
+			if(that.is('confirmed')) {
+				djDomClass.add(that.main, 'confirmed');
+			} else {
+				djDomClass.remove(that.main, 'confirmed');
+			}
+
+			var supRect = getElementRect(that.sup.domNode);
+			var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
+			var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
+
+			djDomStyle.set(that.main, 'width', stopPoint);
+			djDomStyle.set(that.main, 'left', startPoint);
+			djDomStyle.set(that.main, 'top', supRect[1] + supTopBorder);
+			djDomStyle.set(that.main, 'height', that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder));
+			djDomStyle.set(that.main, 'position', 'absolute');
+
+			that.tools.setAttribute('style', 'background-color:' + bgcolor );
+
+			for(var i = that.tools.firstChild; i; i = that.tools.firstChild) {
+				that.tools.removeChild(i);
+			}
+			if(toolsOffsetBegin > 0) {
+				var div = document.createElement('DIV');
+				that.own(div);
+				div.setAttribute('class', 'delivery');
+				div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px');
+				that.tools.appendChild(div);
+			}
+
+			if(toolsOffsetEnd > 0) {
+				var div = document.createElement('DIV');
+				that.own(div);
+				div.setAttribute('class', 'delivery');
+				div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px');
+				that.tools.appendChild(div);
+			}
+
+			that.set('enable');	
+			def.resolve();
+		}));
 		
     return def.promise;
   },
