@@ -96,7 +96,7 @@ function format_address($addr) {
 $JClient = new artnum\JRestClient('http://localhost/location/store');
 $Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
-$res = $JClient->get($_GET['id'], 'Reservation');
+$res = $JClient->get($_GET['id'], 'DeepReservation');
 if($res['type'] != 'results') {
    exit(0);
 }
@@ -319,27 +319,13 @@ if(isset($reservation['equipment'])) {
       $PDF->vspace(2);
    }
 }
-
-$res = $JClient->search(array('search.reservation' => $reservation['id']), 'Association' );
-if($res['type'] == 'results' && count($res['data']) > 0) {
-   
+if(is_array($reservation['complements']) && count($reservation['complements']) > 0) {
    $association = array();
-   foreach($res['data'] as $data) {
-      $url = parse_url($data['type']);
-      if(!isset($url['PHP_URL_HOST'])) {
-         $x = $JClient->direct('http://localhost/' . $data['type']);
+   foreach($reservation['complements'] as $complement) {
+      if($association[$complement['type']['name']]) {
+         $association[$complement['type']['name']][] = $complement;
       } else {
-         $x = $JClient->direct($data['type']);
-      }
-
-      if($x && $x['type'] == 'results' && count($x['data']) > 0) {
-         if(isset($x['data'][0]['name'])) {
-           if(!isset($association[$x['data'][0]['name']])) {
-               $association[$x['data'][0]['name']] = array();
-           }
-
-           $association[$x['data'][0]['name']][] = $data;
-         }
+         $association[$complement['type']['name']] = array($complement);
       }
    }
 
