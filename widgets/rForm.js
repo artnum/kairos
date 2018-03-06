@@ -197,6 +197,8 @@ return djDeclare("location.rForm", [
 
 				name.appendChild(document.createTextNode(value.name));
 				d.appendChild(name);
+			} else {
+				continue;
 			}
 			
 			var s = document.createElement('DIV');
@@ -231,22 +233,12 @@ return djDeclare("location.rForm", [
 
 			frag.appendChild(d); 
 		}
-		this.own(frag);
+		while(this.complements.firstChild) {
+			this.complements.removeChild(this.complements.firstChild);
+		}
+		this.complements.appendChild(frag);
+		this.reservation.drawComplement();
 		return frag;
-	},
-
-	getMachinist: function() {
-		var def = new djDeferred();
-		var that = this;
-		Join({ url: locationConfig.store + '/Association', options: { query: { "search.reservation": this.reservation.get('id')}}}, { attribute: 'type' }, function ( data ) { if(data && data.data && data.data.length > 0) { return data.data; } else { return new Array(); } }).then( function ( entries ) {
-			console.log(entries);
-			for(var i = that.listMachinist.firstChild; i; i = that.listMachinist.firstChild) {
-				that.listMachinist.removeChild(i);
-			}	
-			that.listMachinist.appendChild(that.associationEntries(entries));
-		});
-		
-		return def.promise;
 	},
 
 	doRemoveMachinist: function(event) {
@@ -261,52 +253,60 @@ return djDeclare("location.rForm", [
 
 		if(id != null) {
 			request.del(locationConfig.store + '/Association/' + id).then( function() {
-				that.getMachinist();
+				that.associationRefresh();
 			});
 		}
 	},
 
-	loadMachinist: function() {
-		var def = new djDeferred();
-		request.get(locationConfig.extStore['Machinist']).then( function (results) {
-			if(results.count()>0) {
-				def.resolve(results.whole());
-			}	else {
-				def.resolve([]);
+	associationRefresh: function () {
+		var that = this;
+		Req.get(locationConfig.store + '/Association/', { query: { "search.reservation": this.reservation.get('id') } }).then( function (results) {
+			console.log(results);
+			if(results && results.data && results.data.length > 0) {
+				var types = new Array();
+				results.data.forEach( function ( r ) {
+					if(types.indexOf(r.type) == -1) { types.push(r.type); }
+				});
+
+				var t = new Object();
+				types.forEach( function (type) {
+					if(type != '') {
+						t[type] = Req.get(type);	
+					}
+				});
+				var complements = new Array();
+				djAll(t).then( function (types) {
+					console.log(types);
+					for(var k in types) {
+						for(var i = 0; i < results.data.length; i++) {
+							if(results.data[i].type == k) {
+								if(types[k] && types[k].data ) {
+									results.data[i].type =	types[k].data;
+								}
+							}
+						}
+					}
+
+					that.reservation.complements = results.data;
+					that.associationEntries(that.reservation.complements);
+				});
+			} else {
+				that.reservation.complements = new Array();
+				that.associationEntries(new Array());
 			}
 		});
-
-		return def.promise;
 	},
 
-	refreshMachinist: function() {
-		var that = this;
-
-		this.nMBeginDate.set('value', this.beginDate.get('value'));
-		this.nMBeginTime.set('value', this.beginTime.get('value'));
-		this.nMEndDate.set('value', this.endDate.get('value'));
-		this.nMEndTime.set('value', this.endTime.get('value'));
-
-		this.loadMachinist().then( function(res) {
-			var options = new djMemory();
-			res.forEach( function (entry) {
-				options.data.push({name: entry.commonName, id: locationConfig.extStore['Machinist'] + '/' + entry.id});
-			});	
-
-			that.nMachinist.set('store',options);
-		});
-	},
-
-	doAddMachinist: function () {
+	doAddComplement: function () {
 		var that = this;
 		var f = djDomForm.toObject(this.nMachinistForm);
-
-		for (var i in [ 'nMachinist', 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime']) {
+		[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
+			console.log(f[i], i);
 			if(f[i] == '') {
-				this[i].set('state', 'Error');
+				that[i].set('state', 'Error');
 				return;		
 			}	
-		}
+		});
 
 		var begin = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
 		var end = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
@@ -319,8 +319,9 @@ return djDeclare("location.rForm", [
 			'end': end,
 			'comment': f.nMComment ? f.nMComment : '' 
 		}}).then(function () {
-			that.getMachinist();
+			console.log('asfd');
 			that.reservation.resize();
+			that.associationRefresh();
 		});
 
 	},
@@ -332,6 +333,7 @@ return djDeclare("location.rForm", [
 			this.nChangeMachine.set('disabled', true);
 		}
 	},
+
 	doChangeMachine: function (event) {
 		var newMachine = this.nMachineChange.get('value');
 		var oldMachine = this.reservation.get('target');
@@ -416,29 +418,17 @@ return djDeclare("location.rForm", [
 			}
 		});
 
-
-/*		this.dialog = new dtDialog({
-			title: 'Réservation ' + this.reservation.get('id') + ', machine ' + this.reservation.get('target'),
-			id: 'DIA_RES_' + this.reservation.get('id'),
-			content: this.domNode	
-		}); */
-
-		/*var div = document.createElement('DIV');
-		div.setAttribute('style', 'width: 40%; position: fixed; top: 0; right:0; bottom: 0; z-index: 4000; background-color: white;');
-		div.appendChild(this.domNode);
-	 	*/
-
-		var cp = new dtContentPane({
+/*		var cp = new dtContentPane({
 			title: 'Réservation ' + this.reservation.get('id'),
 			closable: true,
 			id: 'DIA_RES_' + this.reservation.get('id'),
 			content: this.domNode});
-		this.reservation.highlight();
+	//	this.reservation.highlight();
 		dtRegistry.byId('tContainer').addChild(cp);
 		dtRegistry.byId('tContainer').resize();
 		dtRegistry.byId('tContainer').selectChild(cp.id);
-		this.contentPane = cp;
-
+		//this.contentPane = cp;
+*/
 		if(this.reservation.is('confirmed')) {
 			this.nConfirmed.set('checked', true);
 		}
@@ -469,7 +459,7 @@ return djDeclare("location.rForm", [
 			}
 		}));
 		
-		this.getMachinist();
+		this.complements.appendChild(this.associationEntries(this.reservation.complements));
   },
 
 	toggleDelivery: function () {
@@ -601,7 +591,6 @@ return djDeclare("location.rForm", [
 
 	show: function () {
 		var that = this;
-		this.getMachinist();
 		window.requestAnimationFrame(function() { djDomStyle.set(that.domNode.parentNode, 'display', 'block'); });
 	},
 
@@ -732,6 +721,5 @@ return djDeclare("location.rForm", [
 		this.reservation.set('comment', f.nComments);
 		this.reservation.store();
 		this.reservation.resize();
-		this.hide();
 	}
 });});

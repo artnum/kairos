@@ -21,6 +21,7 @@ define([
 
 	"dijit/Tooltip",
 	"dijit/registry",
+	"dijit/layout/ContentPane",
 
 	"location/rForm",
 	"location/_Mouse",
@@ -52,6 +53,7 @@ define([
 
 	dtTooltip,
 	dtRegistry,
+	dtContentPane,
 
 	rForm,
 	Mouse,
@@ -416,14 +418,34 @@ return djDeclare("location.reservation", [
 		this.popMeUp();
 	},
 	popMeUp: function() {
+		var tContainer = dtRegistry.byId('tContainer');
 		if(this.get('id') == null) { return; }
-		if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
-			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));			
+		if(dtRegistry.byId('ReservationTab_' + this.get('id'))) {
+			tContainer.selectChild('ReservationTab_' + this.get('id'));	
+			return;
+		}
+		/*if(dtRegistry.byId('DIA_RES_' + this.get('id'))) {
+			this.form = dtRegistry.byId('DIA_RES_' + this.get('id'));
+			this.form.destroy(); this.form = null;
 		}
 		if( ! this.form) {
 			this.form = new rForm({ reservation: this });
-		}
-		var f = this.form;
+		}*/
+
+	
+		var f = new rForm({ reservation: this });	
+		this.highlight();
+		
+		var cp = new dtContentPane({
+			title: 'Réservation ' + this.get('id'),
+			closable: true,
+			id: 'ReservationTab_' + this.get('id'),
+			content: f.domNode});
+		cp.own(f);
+		tContainer.addChild(cp);
+		tContainer.resize();
+		tContainer.selectChild(cp.id);
+
 		f.set('begin', this.get('begin'));
 		f.set('end', this.get('end'));
 		f.set('deliveryBegin', this.get('deliveryBegin'));
@@ -434,7 +456,7 @@ return djDeclare("location.reservation", [
 		f.set('comment', this.get('comment'));
 		f.set('equipment', this.get('equipment'));
 		f.set('reference', this.get('reference'));
-		f.show();	
+		//f.show();	
 	},
 	_getTargetAttr: function() {
 		return this.sup.get('target');
@@ -513,6 +535,7 @@ return djDeclare("location.reservation", [
 		}
 
 		var height = Math.round(100 / Object.keys(byType).length);
+		var lineCount = 0;
 
 		for(var i in byType) {
 			totalWidth = 0;
@@ -550,7 +573,8 @@ return djDeclare("location.reservation", [
 						totalWidth += width;
 
 						var div = document.createElement('DIV');
-						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%;');
+						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%; clear: right;');
+						div.setAttribute('class', 'stabiloLine');
 						frag.appendChild(div);
 						appendFrag = true;
 					}
