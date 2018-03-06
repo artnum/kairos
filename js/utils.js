@@ -1,3 +1,3 @@
 function async(cb) {
-	window.setTimeout(cb, 0);
+	return new Promise( resolve => { resolve(cb()); } );
 }
