@@ -720,6 +720,7 @@ return djDeclare("location.rForm", [
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
 		this.reservation.store();
+		this.reservation.highlight();
 		this.reservation.resize();
 	}
 });});
