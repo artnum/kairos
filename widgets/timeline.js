@@ -119,6 +119,15 @@ return djDeclare("location.timeline", [
 		this.zoomCss = document.createElement('style');
 		this.own(this.zoomCss);
 		document.body.appendChild(this.zoomCss);
+
+		var sStore = window.sessionStorage;
+    djXhr.get(locationConfig.store + '/Status/', { handleAs: "json", query: { 'search.type': 0}}).then( function (results){
+			if(results && results.type == 'results') {
+				for(var i = 0; i < results.data.length; i++) {
+					sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]));
+				}
+			}
+		});
 	},
 
 	defaultStatus: function () {
