@@ -1,4 +1,21 @@
-<div data-dojo-attach-point="timeline" class="${baseClass}"><div class="fixed headerContainer" data-dojo-attach-point="fixedHeader">
+<div data-dojo-attach-point="timeline" class="${baseClass}">
+<div class="fixed headerContainer" data-dojo-attach-point="fixedHeader">
+
+<div data-dojo-type="dijit/MenuBar" data-dojo-attach-point="menu" id="AppMenu">
+	<div data-dojo-type="dijit/PopupMenuBarItem">
+		<label>Affichage</label>
+		<div data-dojo-type="dijit/DropDownMenu" id="displayMenu">
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.update(); }">Rafraîchir</div>
+			<div data-dojo-type="dijit/MenuSeparator">Vue</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', checked: true, onClick: function() { window.App.set('zoom', 'week'); }">Vue semaine</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: function() { window.App.set('zoom', 'month'); }">Vue mois</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: function() { window.App.set('zoom', 'quarter'); }">Vue trimestre</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: function() { window.App.set('zoom', 'semester'); }">Vue semestre</div>
+		</div>
+	</div>
+</div>
+
+
 <div data-dojo-attach-point="supHeader" class="header"><div class="tools">&nbsp;</div></div>
 <div data-dojo-attach-point="header" class="header"><div class="tools">&nbsp;</div></div>
 <div data-dojo-attach-point="moveleft" class="handle left"><i class="fa fa-angle-double-left" aria-hidden="true"></i></div><div data-dojo-attach-point="line" class="line"></div><div data-dojo-attach-point="moveright" class="handle right"><i class="fa fa-angle-double-right" aria-hidden="true"></i></div>

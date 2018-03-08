@@ -638,6 +638,7 @@ return djDeclare("location.entry", [
 				"special": reserv.special,
 				"reference": reserv.reference,
 				"equipment": reserv.equipment,
+        "color": reserv.color ? reserv.color : "FFF",
 				"complements": reserv.complements ? reserv.complements : new Array()
 			};
 			if(r.end != null && r.begin != null) {

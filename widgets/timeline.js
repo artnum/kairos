@@ -26,6 +26,14 @@ define([
 	"dijit/registry",
 	"dijit/form/NumberTextBox",
 	"dijit/form/Button",
+	"dijit/MenuBar",
+	"dijit/MenuBarItem",
+	"dijit/PopupMenuBarItem",
+	"dijit/DropDownMenu",
+	"dijit/MenuItem",
+	"dijit/MenuSeparator",
+	"dijit/CheckedMenuItem",
+	"dijit/RadioMenuItem",
 
 	"location/_Cluster",
 	"location/_Request",
@@ -60,6 +68,14 @@ define([
 	dtRegistry,
 	dtNumberTextBox,
 	dtButton,
+	dtMenuBar,
+	dtMenuBarItem,
+	dtPopupMenuBarItem,
+	dtDropDownMenu,
+	dtMenuItem,
+	dtMenuSeparator,
+	dtCheckedMenuItem,
+	dtCheckedMenuItem,
 
 	_Cluster,
 	request,
@@ -133,11 +149,11 @@ return djDeclare("location.timeline", [
 	},
 	
 	zoomStyle: function () {
-		var tl = this.timeline;
-		var blockSize = this.blockSize;
+		/*var tl = this.timeline;
+		var blockSize = this.get('blockSize');
 		
 		this.emit('zoom');
-
+/*
 		window.requestAnimationFrame(function () {
 			if(blockSize < 30) {
 				djDomAttr.set(tl, "class", "timeline x1");
@@ -146,7 +162,7 @@ return djDeclare("location.timeline", [
 			} else if(blockSize <= 120) {
 				djDomAttr.set(tl, "class", "timeline x3");
 			}
-		});
+		}); */
 	},
 
 	info: function(txt, code) {
@@ -184,6 +200,31 @@ return djDeclare("location.timeline", [
 				that.logline.setAttribute('class', 'logline');
 			})
 		}, 10000);
+	},
+
+	_setZoomAttr: function (zoomValue) {
+		var page = getPageRect();
+		var days = 1;
+		switch(zoomValue) {
+			default:
+			case 'month':
+				days = 30;
+				break;
+			case 'week':
+				days = 7 
+				break;
+			case 'quarter':
+				days = 90;
+				break;
+			case 'semester':
+				days = 180;
+				break;
+		}
+
+		this.set('blockSize', (page[2] - (this.get('offset') - 2)) / (days + 2));
+		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ';
+		this.zoomStyle();
+		this.update();
 	},
 
 	zoomIn: function () {
@@ -294,6 +335,7 @@ return djDeclare("location.timeline", [
 	postCreate: function () {
 		var that = this;
 		var tContainer = dtRegistry.byId('tContainer')
+		this.set('zoom', 'week');
 		tContainer.startup();
 
 		djAspect.after(tContainer, 'addChild', function () {
@@ -335,6 +377,7 @@ return djDeclare("location.timeline", [
 		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
+		this.menu.startup();
 		this.update();
 	},
 
@@ -425,14 +468,14 @@ return djDeclare("location.timeline", [
 			this.moveRight();
 		}
 
-		if(event.ctrlKey) {
+	/*	if(event.ctrlKey) {
 			event.preventDefault();
 			if(event.deltaY < 0) {
 				this.zoomOut();	
 			} else if(event.deltaY > 0) {
 				this.zoomIn();	
 			}		
-		}
+		}*/
 
 		this.wheelTo = null;
 	},
@@ -728,7 +771,7 @@ return djDeclare("location.timeline", [
 		});
 	},
 	
-	update: function () {
+	update: function (force = false) {
 		this.lastUpdate = new Date();
 		var def = new djDeferred();
 		var that = this;
@@ -747,7 +790,7 @@ return djDeclare("location.timeline", [
 
 				inview.forEach( function ( widget ) {
 							window.requestAnimationFrame( function () {  widget.resize();  });
-							djThrottle(function() { widget.update(); console.log('Throttle'); }, 100)();
+							if(! force) { djThrottle(function() { widget.update(); }, 100)(); } else { widget.update(); }
 				});
 
 				def.resolve();

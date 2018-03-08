@@ -620,10 +620,10 @@ return djDeclare("location.reservation", [
 		var currentWidth = this.get('blockSize');
 
 		/* Last day included */
-		var bgcolor = '#FFFFF';
-		var s = JSON.parse(window.sessionStorage.getItem('/Status/' + this.status));
-		if(s && s.color) {
-			bgcolor = '#' + s.color;
+		var bgcolor = '#FFFFFF';
+		console.log(this);
+		if(this.color) {
+			bgcolor = '#' + this.color;
 		}
 
 		var range = this.get('dateRange');	
