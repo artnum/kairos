@@ -12,6 +12,11 @@
 	display: inline-block;
 }
 
+/* tContainer */
+#tContainer .dijitContentPane {
+	overflow-y: auto !important;
+}
+
 /* entry */
 .entry {
 	border-top: 1px dashed rgba(80, 80, 80, 0.3);
