@@ -119,15 +119,6 @@ return djDeclare("location.timeline", [
 		this.zoomCss = document.createElement('style');
 		this.own(this.zoomCss);
 		document.body.appendChild(this.zoomCss);
-    var sStore = window.sessionStorage;
-
-		djXhr.get(locationConfig.store + '/Status/', { handleAs: "json", query: { 'search.type': 0}}).then( function (results){
-			if(results && results.type == 'results') {
-				for(var i = 0; i < results.data.length; i++) {
-					sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]));
-				}
-			}
-		});
 	},
 
 	defaultStatus: function () {
@@ -245,6 +236,7 @@ return djDeclare("location.timeline", [
 		this.entries.forEach(function (e) {
 			e.resize();	
 		});
+		this.update();
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -334,7 +326,6 @@ return djDeclare("location.timeline", [
 		this.inherited(arguments);
 		_Sleeper.init();
 	
-		this.update();	
 		window.Sleeper.on(this.moveright, "click", djLang.hitch(this, this.moveRight));
 		window.Sleeper.on(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
     window.Sleeper.on(window, "keypress", djLang.hitch(this, this.eKeyEvent));
@@ -344,10 +335,7 @@ return djDeclare("location.timeline", [
 		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
-		//this.lockEvents = new EventSource('/location/lock.php?follow=1');
-		//this.lockEvents.addEventListener('lock', djLang.hitch(this, this.lockChange));
-
-		this.refresh();
+		this.update();
 	},
 
 	mouseUpDown: function(event) {
@@ -747,11 +735,6 @@ return djDeclare("location.timeline", [
 
 		this.drawTimeline().then(function () {
 			that.drawVerticalLine().then(function() {
-				/*that.entries.forEach( function ( entry ) {
-					if(intoYView(entry.domNode)) {
-						that.emit("update-" + entry.target);
-					}			
-				});*/
 				var inview = new Array(), outview = new Array();
 				dtRegistry.findWidgets(that.domNode).forEach( function (widget) {
 					if(widget.declaredClass == "location.entry" && widget.update) {
@@ -771,20 +754,6 @@ return djDeclare("location.timeline", [
 			});
 		});
 		return def.promise;
-	},
-
-	lockChange: function (event) {
-		var that = this;
-		var data = JSON.parse(event.data);
-		this.entries.forEach( function (entry) {
-			if(entry.get('target') == data.target) {
-				if(data.status == "0") {
-					entry.setLocked(false);
-				}	else {
-					entry.setLocked(true);
-				}
-			}	
-		})
 	},
 
   _getEntriesAttr: function () {

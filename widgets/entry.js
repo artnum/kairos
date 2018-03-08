@@ -83,6 +83,7 @@ return djDeclare("location.entry", [
 	originalHeight: 0,
 	tags: [],
 	entries: {},
+	locked: false,
 
 	constructor: function (args) {
 		_Sleeper.init();
@@ -98,6 +99,7 @@ return djDeclare("location.entry", [
 		this.originalHeight = 0;
 		this.tags = new Array();
 		this.entries = new Object();
+		this.locked = false;
 
 		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 70 ]);
@@ -162,6 +164,7 @@ return djDeclare("location.entry", [
 		frag.appendChild(s);
 
 		window.requestAnimationFrame(function () { that.nameNode.appendChild(frag); });
+		this.update();
 	},
 
 	displayTags: function (tags) {
@@ -308,59 +311,22 @@ return djDeclare("location.entry", [
 	
 	lock: function() {
 		var def = new djDeferred();
-		var that = this;
-		djXhr.get(locationConfig.dlm,  { query: { lock: this.target }}).then(function ( r ) {
-			if(r == '1') {
-				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "mylock"); });	
-				that.myLock = true;
-				def.resolve(true);
-			} else {
-				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
-				def.resolve(false);
-			}
-		});
-
+		def.resolve(true);
 		return def.promise;
 	},
 
 	setLocked: function ( lock ) {
-		var that = this;
-		if(this.myLock) { return; }
-		if(lock) {
-				window.requestAnimationFrame(function() { djDomClass.add(that.domNode, "lock"); });	
-				that.locked = true;
-		}	else {
-				window.requestAnimationFrame(function() { djDomClass.remove(that.domNode, "lock"); });
-				that.update();
-				that.locked = false;
-		}
+		this.locked = false;
+		return false;
 	},
 
 	verifyLock: function() {
-		var that = this;
-		if(this.myLock) {
-			return;	
-		}
-		djXhr.get(locationConfig.dlm, { query : { "status": that.target}}).then( function ( r ) {
-			if(r == '0') {
-				that.setLocked(false);
-			} else {
-				that.setLocked(true);
-			}
-		}, function(err) {
-			that.warning("L'état du verrouillage n'a pas pu être déterminé correctement.", 201);
-		});
+		return;	
 	},
 	
 	unlock: function() {
-		var that = this;
 		var def = new djDeferred();
-		djXhr.get(locationConfig.dlm,  { query: { unlock: this.target }}).then(function () {
-			window.requestAnimationFrame(function() {
-				djDomClass.remove(that.domNode, "mylock"); 
-				def.resolve();});
-		});
-
+		def.resolve(true);	
 		return def.promise;
 	},
 
@@ -507,8 +473,8 @@ return djDeclare("location.entry", [
 
 		this.runUpdate = true;
 		var range = this.get('dateRange');
-		startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
-		stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
+		var startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
+		var stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
 		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
 			"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
 			"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
