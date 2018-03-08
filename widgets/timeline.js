@@ -206,9 +206,14 @@ return djDeclare("location.timeline", [
 	},
 
 	_setZoomAttr: function (zoomValue) {
+		var style = '';
 		var page = getPageRect();
 		var days = 1;
 		switch(zoomValue) {
+			case 'day':
+				days = 2;
+				style = ' #Sight { display: none; }';
+				break;
 			case 'month':
 				days = 30;
 				break;
@@ -227,8 +232,8 @@ return djDeclare("location.timeline", [
 		}
 
 		this.daysZoom = days;
-		this.set('blockSize', (page[2] - (this.get('offset') - 2)) / (days + 2));
-		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ';
+		this.set('blockSize', (page[2] - 240) / days);
+		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.zoomStyle();
 		this.update();
 	},
@@ -614,7 +619,7 @@ return djDeclare("location.timeline", [
 			var shFrag = document.createDocumentFragment();
 
 			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
-			for(var day = this.firstDay, i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
+			for(var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
 
 				if(djDate.compare(day, new Date(), "date") == 0) {
 					this.todayOffset = i;	

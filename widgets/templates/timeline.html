@@ -7,6 +7,7 @@
 		<div data-dojo-type="dijit/DropDownMenu" id="displayMenu">
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="iconClass: 'iconRefresh', onClick: () => { window.App.update(); }">Rafraîchir</div>
 			<div data-dojo-type="dijit/MenuSeparator"></div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view',  onClick: () => { window.App.set('zoom', 'day'); }">Vue jour</div>
 			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', checked: true, onClick: () => { window.App.set('zoom', 'week'); }">Vue semaine</div>
 			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'month'); }">Vue mois</div>
 			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'quarter'); }">Vue trimestre</div>
@@ -30,6 +31,6 @@
 Location : <input data-dojo-type="dijit/form/NumberTextBox" data-dojo-attach-point="nLocationNumber" type="text" value="" placeholder="Numéro de location" /> <button type="submit" data-dojo-type="dijit/form/Button" value="Aller" data-dojo-attach-event="click:doSearchLocation" >Aller</button>
 </form>
 </div>
-<div data-dojo-attach-point="sight">
+<div data-dojo-attach-point="sight" id="Sight">
 </div>
 </div>
