@@ -25,6 +25,16 @@
   min-height: 76px;
 }
 
+.compact .entry {
+	height: 24px !important; 
+	min-height: 24px !important;
+}
+
+.compact .entry .tags {
+	display: none;
+}
+
+
 .x1 .entry {
 	padding-left: 3px;
   height: 52px;

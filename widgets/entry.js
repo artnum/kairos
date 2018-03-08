@@ -659,6 +659,8 @@ return djDeclare("location.entry", [
 
   _getEntriesAttr: function() {
     return this.sup.get('entries');
-  }
-
+  },
+	_getCompactAttr: function() {
+		return this.sup.get('compact');
+	}
 });});

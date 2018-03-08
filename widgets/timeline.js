@@ -106,6 +106,8 @@ return djDeclare("location.timeline", [
 	lastMod: 0,
 	inputString: '',
 	eventStarted: null,
+	daysZoom: 0,
+	compact: false,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -131,9 +133,10 @@ return djDeclare("location.timeline", [
 		this.lastMod = '';
 		this.lastId = '';
 		this.xDiff = 0;
+		this.daysZoom = 30;
+		this.compact = false;
 
 		this.zoomCss = document.createElement('style');
-		this.own(this.zoomCss);
 		document.body.appendChild(this.zoomCss);
 	},
 
@@ -206,7 +209,6 @@ return djDeclare("location.timeline", [
 		var page = getPageRect();
 		var days = 1;
 		switch(zoomValue) {
-			default:
 			case 'month':
 				days = 30;
 				break;
@@ -219,38 +221,32 @@ return djDeclare("location.timeline", [
 			case 'semester':
 				days = 180;
 				break;
+			default: 
+				days = zoomValue;
+				break;
 		}
 
+		this.daysZoom = days;
 		this.set('blockSize', (page[2] - (this.get('offset') - 2)) / (days + 2));
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ';
 		this.zoomStyle();
 		this.update();
 	},
 
+	_getZoomAttr: function () {
+		return this.daysZoom;
+	},
+
 	zoomIn: function () {
-		if(this.blockSize > 14) {
-			this.blockSize = Math.ceil(this.blockSize / 1.3333);
-			var css = '.timeline .line span { width: '+ (this.blockSize-2) +'px !important;} ';
-			if(this.blockSize < 30) {
-				css += '.timeline .day { font-size: 0.8em !important }';	
-			} else if(this.get('blockSize') < 14) {
-				css += '.timeline .day { font-size: 0.6em !important }';	
-			}
-			this.zoomCss.innerHTML = css;
+		if(this.get('zoom') > 7) {
+			this.set('zoom', this.get('zoom') - 5);
 		}
-		this.zoomStyle();
-		this.update();
 	},
 
 	zoomOut: function () {
-		if(this.blockSize < 120) {
-			this.blockSize = Math.ceil(this.blockSize * 1.3333);
-			var css = '.timeline .line span { width: '+ (this.blockSize - 2) +'px !important;}';
-			
-			this.zoomCss.innerHTML = css;
+		if(this.get('zoom') < 180) {
+			this.set('zoom', this.get('zoom') + 5);
 		}
-		this.zoomStyle();
-		this.update();
 	},
 
 	isBefore: function ( a, b ) {
@@ -269,7 +265,6 @@ return djDeclare("location.timeline", [
 		domDay.setAttribute('data-artnum-day', dayStamp);
 		domDay.setAttribute('class', c);
 		domDay.innerHTML=txtDate;
-		this.own(domDay);
 		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) };
 	},
 
@@ -467,16 +462,6 @@ return djDeclare("location.timeline", [
 		} else if(event.deltaX > 0) { 
 			this.moveRight();
 		}
-
-	/*	if(event.ctrlKey) {
-			event.preventDefault();
-			if(event.deltaY < 0) {
-				this.zoomOut();	
-			} else if(event.deltaY > 0) {
-				this.zoomIn();	
-			}		
-		}*/
-
 		this.wheelTo = null;
 	},
 
@@ -545,7 +530,6 @@ return djDeclare("location.timeline", [
 
 	beginDraw: function() {
 		this.newBuffer = document.createDocumentFragment();
-		this.own(this.newBuffer);
 	},
 
 	endDraw: function() {
@@ -585,6 +569,30 @@ return djDeclare("location.timeline", [
 		this.update();
 	},
 
+	_getCompactAttr: function() {
+		return this.compact;
+	},
+
+	toggle: function(attr) {
+		switch(attr) {
+			case 'compact':
+				if(this.get('compact')) {
+					this.set('compact', !this.get('compact'));
+				} else {
+					this.set('compact', true);
+				}
+				
+				if(this.get('compact')) {
+					djDomClass.add(document.getElementsByTagName('body')[0], 'compact');
+				} else {
+					djDomClass.remove(document.getElementsByTagName('body')[0], 'compact');
+				}
+				this.emit('zoom');	
+				break;
+		}
+		this.update(true);
+	},
+	
 	drawTimeline: function() {
 		var def = new djDeferred();
 		window.requestAnimationFrame(djLang.hitch(this, function () {
@@ -602,11 +610,8 @@ return djDeclare("location.timeline", [
 			}
 
 			var docFrag = document.createDocumentFragment();
-			this.own(docFrag);
 			var hFrag = document.createDocumentFragment();
-			this.own(hFrag);
 			var shFrag = document.createDocumentFragment();
-			this.own(hFrag);
 
 			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
 			for(var day = this.firstDay, i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
@@ -640,7 +645,9 @@ return djDeclare("location.timeline", [
 				}
 				var d = this.makeDay(day);
 				this.days.push(d);
-				djDomConstruct.place(d.domNode, docFrag, "last");
+				if(this.get('blockSize') > 20) {
+					djDomConstruct.place(d.domNode, docFrag, "last");
+				}
 				day = djDate.add(day, "day", 1);
 				this.lastDay = day;
 				dayCount++; dayMonthCount++;

@@ -245,6 +245,9 @@ return djDeclare("location.reservation", [
 	_getEndAttr: function() {
 		return this.end;
 	},
+	_getCompactAttr: function() {
+		return this.sup.get('compact');
+	},
 	_getTrueBeginAttr: function() {
 		if(this.deliveryBegin) {
 			if(djDate.compare(this.begin, this.deliveryBegin) > 0) {
@@ -329,67 +332,70 @@ return djDeclare("location.reservation", [
 			html = '<div><span class="id">' + this.IDent + '</span>'; 	
 		}
 
-		if(this.get('dbContact')) {
-			var dbContact = this.get('dbContact');
-			if(dbContact.freeform) {
-				html += ' - ' +  '<address>' + (dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
-			} else {
-				var x = ' - <address>';
-				if(dbContact.o) {
-					x += '<span class="o">' + dbContact.o + '</span>';
-				}
-
-				if(dbContact.givenname || dbContact.sn) {
-					if(dbContact.o) { x += ', '; }
-					var n = '';
-					if(dbContact.givenname) {
-						n += dbContact.givenname;
+		if(!this.get('compact')) {
+			if(this.get('dbContact')) {
+				var dbContact = this.get('dbContact');
+				if(dbContact.freeform) {
+					html += ' - ' +  '<address>' + (dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
+				} else {
+					var x = ' - <address>';
+					if(dbContact.o) {
+						x += '<span class="o">' + dbContact.o + '</span>';
 					}
-					if(dbContact.sn) {
-						if(dbContact.givenname) { n += ' '; }
-						n += dbContact.sn;
+
+					if(dbContact.givenname || dbContact.sn) {
+						if(dbContact.o) { x += ', '; }
+						var n = '';
+						if(dbContact.givenname) {
+							n += dbContact.givenname;
+						}
+						if(dbContact.sn) {
+							if(dbContact.givenname) { n += ' '; }
+							n += dbContact.sn;
+						}
+						x += '<span class="name">' + n + '</span>';
 					}
-					x += '<span class="name">' + n + '</span>';
+					if(x != ' - <address>') {
+						html += x + '</address></div>';
+					}
 				}
-				if(x != ' - <address>') {
-					html += x + '</address></div>';
-				}
-			}
-    } else {
-			html += "</div>"	
-		}
-
-		html += "<div>"
-		if(this.get('trueBegin') && this.get('trueEnd')) {
-			if((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
-				html += '<span class="date">' + this.get('trueBegin').shortDate() + '</span>'; 
 			} else {
-				html += '<span class="date"><span>' + this.get('trueBegin').shortDate() + '</span>-'; 
-				html += '<span>' + this.get('trueEnd').shortDate() + '</span></span>'; 
+				html += "</div>"	
 			}
-		}
-    
-		if(this.locality || this.address) {
-      var x = " <address>";
-      if(this.address) {
-        x += this.address;
-      }
-      if(this.locality) {
-        if(this.address) { x += ", " }
-        x += this.locality;
-      }
-			if(x != ", <address>") {
-				html += x + "</address>";	
+
+			html += "<div>"
+			if(this.get('trueBegin') && this.get('trueEnd')) {
+				if((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
+					html += '<span class="date">' + this.get('trueBegin').shortDate() + '</span>'; 
+				} else {
+					html += '<span class="date"><span>' + this.get('trueBegin').shortDate() + '</span>-'; 
+					html += '<span>' + this.get('trueEnd').shortDate() + '</span></span>'; 
+				}
 			}
-    } 
+			
+			if(this.locality || this.address) {
+				var x = " <address>";
+				if(this.address) {
+					x += this.address;
+				}
+				if(this.locality) {
+					if(this.address) { x += ", " }
+					x += this.locality;
+				}
+				if(x != ", <address>") {
+					html += x + "</address>";	
+				}
+			} 
 
-		html += "</div>"
+			html += "</div>"
 
 
-		if(this.comment) {
-			html += '<div>' + this.comment + '</div>';	
+			if(this.comment) {
+				html += '<div>' + this.comment + '</div>';	
+			}
+		} else {
+			html += '</div>';
 		}
-
     if(this.txtDesc) { this.txtDesc.innerHTML = html; }
 		this.detailsHtml = html;
 	},
@@ -534,7 +540,8 @@ return djDeclare("location.reservation", [
 			} 
 		}
 
-		var height = Math.round(100 / Object.keys(byType).length);
+		var cent = 100 - djDomStyle.get(that.tools, 'height') * 100 / djDomStyle.get(that.main, 'height');		
+		var height = Math.round(cent / Object.keys(byType).length);
 		var lineCount = 0;
 
 		for(var i in byType) {
@@ -621,7 +628,6 @@ return djDeclare("location.reservation", [
 
 		/* Last day included */
 		var bgcolor = '#FFFFFF';
-		console.log(this);
 		if(this.color) {
 			bgcolor = '#' + this.color;
 		}
@@ -714,6 +720,7 @@ return djDeclare("location.reservation", [
 				that.tools.appendChild(div);
 			}
 
+			that.setTextDesc();
 			that.set('enable');	
 			def.resolve();
 		}));

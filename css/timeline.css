@@ -378,3 +378,9 @@ label.big {
 	float: right;
 	font-size: 1.4em;	
 }
+
+.iconRefresh:before {
+	font-size: 16px;
+	font-family: "FontAwesome";
+	content: "\f021";
+}
