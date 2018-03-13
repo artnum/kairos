@@ -39,6 +39,8 @@ define([
 	"location/_Request",
 	"location/entry",
 	"location/_Sleeper",
+	"location/timeline/popup",
+	"location/timeline/keys",
 
 	"artnum/Request"
 
@@ -75,17 +77,21 @@ define([
 	dtMenuItem,
 	dtMenuSeparator,
 	dtCheckedMenuItem,
-	dtCheckedMenuItem,
+	dtRadioMenuItem,
 
 	_Cluster,
 	request,
 	entry,
 	_Sleeper,
+	
+	tlPopup, tlKeys,
+
 	Req
 ) {
 	
 return djDeclare("location.timeline", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, 
+	tlPopup, tlKeys ], {
 
 	center: null,
 	offset: 220,
@@ -151,23 +157,6 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 	
-	zoomStyle: function () {
-		/*var tl = this.timeline;
-		var blockSize = this.get('blockSize');
-		
-		this.emit('zoom');
-/*
-		window.requestAnimationFrame(function () {
-			if(blockSize < 30) {
-				djDomAttr.set(tl, "class", "timeline x1");
-			} else if(blockSize < 60) {
-				djDomAttr.set(tl, "class", "timeline x2");
-			} else if(blockSize <= 120) {
-				djDomAttr.set(tl, "class", "timeline x3");
-			}
-		}); */
-	},
-
 	info: function(txt, code) {
 		this.log('info', txt, code);
 	},
@@ -234,7 +223,6 @@ return djDeclare("location.timeline", [
 		this.daysZoom = days;
 		this.set('blockSize', (page[2] - 240) / days);
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
-		this.zoomStyle();
 		this.update();
 	},
 
@@ -368,9 +356,7 @@ return djDeclare("location.timeline", [
 		this.inherited(arguments);
 		_Sleeper.init();
 	
-		window.Sleeper.on(this.moveright, "click", djLang.hitch(this, this.moveRight));
-		window.Sleeper.on(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
-    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.eKeyEvent));
+    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.keys));
     window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
 		window.Sleeper.on(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
 		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
@@ -470,52 +456,6 @@ return djDeclare("location.timeline", [
 		this.wheelTo = null;
 	},
 
-  eKeyEvent: function (event) {
-
-		if(event.keyCode == 0) {
-			this.inputString += event.key;
-			console.log(this.inputString);
-			if(this.inputString == 'loic') {
-				/* put ee here */
-			}
-			if(this.inputString.length >= 4) {
-				this.inputString = '';
-			}
-			switch(event.key) {
-				case 'l': case 'L':
-					this.nLocationNumber.focus();
-					break;
-				case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-					this.nLocationNumber.focus();
-					this.nLocationNumber.set('value', event.key);
-					break;
-			}
-		}
-
-		if(event.ctrlKey) {
-			switch(event.key) {
-				case 'ArrowLeft': 
-					this.moveLeft(); 
-					break;
-				case 'ArrowRight': 
-					this.moveRight();
-					break;
-				case 'ArrowUp': 
-					event.preventDefault(); 
-					this.zoomOut();
-					break;
-				case 'ArrowDown':
-					event.preventDefault(); 
-					this.zoomIn();
-					break;
-				case 'Escape':
-					event.preventDefault();
-					this.emit('cancel-reservation');
-					break;
-			}
-		}
-  },
-	
 	getDateRange: function () {
 		return { begin: this.firstDay, end: this.lastDay }
 
@@ -865,16 +805,12 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 
-	doSearchLocation: function (event) {
-		if(event && event.preventDefault) {
-			event.preventDefault();
-		}
+	doSearchLocation: function (loc) {
 		var that = this;
-		var loc = this.nLocationNumber.get('value');
 		
 		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
-			if(result && result.data && result.data.length > 0) {
-				data = result.data[0];
+			if(result && result.data) {
+				data = result.data;
 				that.goToReservation(data['target'], data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
 					that.highlight(widget.domNode);
 				});

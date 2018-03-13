@@ -17,6 +17,11 @@
 	overflow-y: auto !important;
 }
 
+
+.dijitMenuItemAccelKey {
+	color: #666 !important;
+}
+
 /* entry */
 .entry {
 	border-top: 1px dashed rgba(80, 80, 80, 0.3);

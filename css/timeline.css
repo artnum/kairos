@@ -58,8 +58,8 @@ body, html { margin: 0; padding: 0; }
 	display: inline-block;
 }
 
-.timeline .left {
-	margin-left: 202px;	
+.timeline .line {
+	margin-left: 220px;	
 }
 
 .day.weekend {
