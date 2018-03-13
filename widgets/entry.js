@@ -196,6 +196,7 @@ return djDeclare("location.entry", [
 		var def = new djDeferred();
 		var that = this;
 
+		that.nTags.setAttribute('class', 'tags');
 		window.requestAnimationFrame(function () {
 			while(that.nTags.firstChild) {
 				that.nTags.removeChild(that.nTags.firstChild);
@@ -208,10 +209,15 @@ return djDeclare("location.entry", [
 
 	eEditTags: function (event) {
 		var that = this;
+
 		
 		var form = document.createElement('FORM');
 		var input = document.createElement('INPUT');
 		form.appendChild(input);
+		var button = document.createElement('BUTTON');
+		button.setAttribute('type', 'submit'); button.appendChild(document.createTextNode('Ok'));
+		form.appendChild(button);
+
 		input.setAttribute("value", this.tags.join(', '));
 
 		djOn.once(form, 'submit', function ( event ) {
@@ -229,7 +235,7 @@ return djDeclare("location.entry", [
 			});
 		});
 
-		window.requestAnimationFrame(function () { that.clearTags().then( function () { that.nTags.appendChild(form); input.focus(); }); });
+		window.requestAnimationFrame(function () { that.clearTags().then( function () { that.nTags.setAttribute('class', 'tags edit'); that.nTags.appendChild(form); input.focus(); }); });
 	},
 
 	cancelReservation: function() {
