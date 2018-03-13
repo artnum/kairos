@@ -775,7 +775,7 @@ return djDeclare("location.timeline", [
 						}
 					});
 			}
-			djAll(loaded).then( function () { that.endDraw(); that.update(); });
+			djAll(loaded).then( function () { that.endDraw(); that.update(); that.refresh(); });
 		});
 	},
 
