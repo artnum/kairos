@@ -457,15 +457,6 @@ return djDeclare("location.timeline", [
 			if(this.inputString.length >= 4) {
 				this.inputString = '';
 			}
-			switch(event.key) {
-				case 'l': case 'L':
-					this.nLocationNumber.focus();
-					break;
-				case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-					this.nLocationNumber.focus();
-					this.nLocationNumber.set('value', event.key);
-					break;
-			}
 		}
 
 		if(event.ctrlKey) {
