@@ -26,11 +26,21 @@ define([
 	"dijit/registry",
 	"dijit/form/NumberTextBox",
 	"dijit/form/Button",
+	"dijit/MenuBar",
+	"dijit/MenuBarItem",
+	"dijit/PopupMenuBarItem",
+	"dijit/DropDownMenu",
+	"dijit/MenuItem",
+	"dijit/MenuSeparator",
+	"dijit/CheckedMenuItem",
+	"dijit/RadioMenuItem",
 
 	"location/_Cluster",
 	"location/_Request",
 	"location/entry",
 	"location/_Sleeper",
+	"location/timeline/popup",
+	"location/timeline/keys",
 
 	"artnum/Request"
 
@@ -60,16 +70,28 @@ define([
 	dtRegistry,
 	dtNumberTextBox,
 	dtButton,
+	dtMenuBar,
+	dtMenuBarItem,
+	dtPopupMenuBarItem,
+	dtDropDownMenu,
+	dtMenuItem,
+	dtMenuSeparator,
+	dtCheckedMenuItem,
+	dtRadioMenuItem,
 
 	_Cluster,
 	request,
 	entry,
 	_Sleeper,
+	
+	tlPopup, tlKeys,
+
 	Req
 ) {
 	
 return djDeclare("location.timeline", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, 
+	tlPopup, tlKeys ], {
 
 	center: null,
 	offset: 220,
@@ -90,6 +112,8 @@ return djDeclare("location.timeline", [
 	lastMod: 0,
 	inputString: '',
 	eventStarted: null,
+	daysZoom: 0,
+	compact: false,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -115,9 +139,10 @@ return djDeclare("location.timeline", [
 		this.lastMod = '';
 		this.lastId = '';
 		this.xDiff = 0;
+		this.daysZoom = 30;
+		this.compact = false;
 
 		this.zoomCss = document.createElement('style');
-		this.own(this.zoomCss);
 		document.body.appendChild(this.zoomCss);
 
 		var sStore = window.sessionStorage;
@@ -141,23 +166,6 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 	
-	zoomStyle: function () {
-		var tl = this.timeline;
-		var blockSize = this.blockSize;
-		
-		this.emit('zoom');
-
-		window.requestAnimationFrame(function () {
-			if(blockSize < 30) {
-				djDomAttr.set(tl, "class", "timeline x1");
-			} else if(blockSize < 60) {
-				djDomAttr.set(tl, "class", "timeline x2");
-			} else if(blockSize <= 120) {
-				djDomAttr.set(tl, "class", "timeline x3");
-			}
-		});
-	},
-
 	info: function(txt, code) {
 		this.log('info', txt, code);
 	},
@@ -195,30 +203,52 @@ return djDeclare("location.timeline", [
 		}, 10000);
 	},
 
-	zoomIn: function () {
-		if(this.blockSize > 14) {
-			this.blockSize = Math.ceil(this.blockSize / 1.3333);
-			var css = '.timeline .line span { width: '+ (this.blockSize-2) +'px !important;} ';
-			if(this.blockSize < 30) {
-				css += '.timeline .day { font-size: 0.8em !important }';	
-			} else if(this.get('blockSize') < 14) {
-				css += '.timeline .day { font-size: 0.6em !important }';	
-			}
-			this.zoomCss.innerHTML = css;
+	_setZoomAttr: function (zoomValue) {
+		var style = '';
+		var page = getPageRect();
+		var days = 1;
+		switch(zoomValue) {
+			case 'day':
+				days = 2;
+				style = ' #Sight { display: none; }';
+				break;
+			case 'month':
+				days = 30;
+				break;
+			case 'week':
+				days = 7 
+				break;
+			case 'quarter':
+				days = 90;
+				break;
+			case 'semester':
+				days = 180;
+				break;
+			default: 
+				days = zoomValue;
+				break;
 		}
-		this.zoomStyle();
+
+		this.daysZoom = days;
+		this.set('blockSize', (page[2] - 240) / days);
+		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.update();
 	},
 
-	zoomOut: function () {
-		if(this.blockSize < 120) {
-			this.blockSize = Math.ceil(this.blockSize * 1.3333);
-			var css = '.timeline .line span { width: '+ (this.blockSize - 2) +'px !important;}';
-			
-			this.zoomCss.innerHTML = css;
+	_getZoomAttr: function () {
+		return this.daysZoom;
+	},
+
+	zoomIn: function () {
+		if(this.get('zoom') > 7) {
+			this.set('zoom', this.get('zoom') - 5);
 		}
-		this.zoomStyle();
-		this.update();
+	},
+
+	zoomOut: function () {
+		if(this.get('zoom') < 180) {
+			this.set('zoom', this.get('zoom') + 5);
+		}
 	},
 
 	isBefore: function ( a, b ) {
@@ -237,7 +267,6 @@ return djDeclare("location.timeline", [
 		domDay.setAttribute('data-artnum-day', dayStamp);
 		domDay.setAttribute('class', c);
 		domDay.innerHTML=txtDate;
-		this.own(domDay);
 		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) };
 	},
 
@@ -303,6 +332,7 @@ return djDeclare("location.timeline", [
 	postCreate: function () {
 		var that = this;
 		var tContainer = dtRegistry.byId('tContainer')
+		this.set('zoom', 'week');
 		tContainer.startup();
 
 		djAspect.after(tContainer, 'addChild', function () {
@@ -335,15 +365,14 @@ return djDeclare("location.timeline", [
 		this.inherited(arguments);
 		_Sleeper.init();
 	
-		window.Sleeper.on(this.moveright, "click", djLang.hitch(this, this.moveRight));
-		window.Sleeper.on(this.moveleft, "click", djLang.hitch(this, this.moveLeft));
-    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.eKeyEvent));
+    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.keys));
     window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
 		window.Sleeper.on(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
 		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
 		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
+		this.menu.startup();
 		this.update();
 	},
 
@@ -433,56 +462,9 @@ return djDeclare("location.timeline", [
 		} else if(event.deltaX > 0) { 
 			this.moveRight();
 		}
-
-		if(event.ctrlKey) {
-			event.preventDefault();
-			if(event.deltaY < 0) {
-				this.zoomOut();	
-			} else if(event.deltaY > 0) {
-				this.zoomIn();	
-			}		
-		}
-
 		this.wheelTo = null;
 	},
 
-  eKeyEvent: function (event) {
-
-		if(event.keyCode == 0) {
-			this.inputString += event.key;
-			console.log(this.inputString);
-			if(this.inputString == 'loic') {
-				/* put ee here */
-			}
-			if(this.inputString.length >= 4) {
-				this.inputString = '';
-			}
-		}
-
-		if(event.ctrlKey) {
-			switch(event.key) {
-				case 'ArrowLeft': 
-					this.moveLeft(); 
-					break;
-				case 'ArrowRight': 
-					this.moveRight();
-					break;
-				case 'ArrowUp': 
-					event.preventDefault(); 
-					this.zoomOut();
-					break;
-				case 'ArrowDown':
-					event.preventDefault(); 
-					this.zoomIn();
-					break;
-				case 'Escape':
-					event.preventDefault();
-					this.emit('cancel-reservation');
-					break;
-			}
-		}
-  },
-	
 	getDateRange: function () {
 		return { begin: this.firstDay, end: this.lastDay }
 
@@ -502,7 +484,6 @@ return djDeclare("location.timeline", [
 
 	beginDraw: function() {
 		this.newBuffer = document.createDocumentFragment();
-		this.own(this.newBuffer);
 	},
 
 	endDraw: function() {
@@ -542,6 +523,30 @@ return djDeclare("location.timeline", [
 		this.update();
 	},
 
+	_getCompactAttr: function() {
+		return this.compact;
+	},
+
+	toggle: function(attr) {
+		switch(attr) {
+			case 'compact':
+				if(this.get('compact')) {
+					this.set('compact', !this.get('compact'));
+				} else {
+					this.set('compact', true);
+				}
+				
+				if(this.get('compact')) {
+					djDomClass.add(document.getElementsByTagName('body')[0], 'compact');
+				} else {
+					djDomClass.remove(document.getElementsByTagName('body')[0], 'compact');
+				}
+				this.emit('zoom');	
+				break;
+		}
+		this.update(true);
+	},
+	
 	drawTimeline: function() {
 		var def = new djDeferred();
 		window.requestAnimationFrame(djLang.hitch(this, function () {
@@ -559,14 +564,11 @@ return djDeclare("location.timeline", [
 			}
 
 			var docFrag = document.createDocumentFragment();
-			this.own(docFrag);
 			var hFrag = document.createDocumentFragment();
-			this.own(hFrag);
 			var shFrag = document.createDocumentFragment();
-			this.own(hFrag);
 
 			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
-			for(var day = this.firstDay, i = 0; i < Math.floor(avWidth / this.get('blockSize')); i++) {
+			for(var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
 
 				if(djDate.compare(day, new Date(), "date") == 0) {
 					this.todayOffset = i;	
@@ -597,7 +599,9 @@ return djDeclare("location.timeline", [
 				}
 				var d = this.makeDay(day);
 				this.days.push(d);
-				djDomConstruct.place(d.domNode, docFrag, "last");
+				if(this.get('blockSize') > 20) {
+					djDomConstruct.place(d.domNode, docFrag, "last");
+				}
 				day = djDate.add(day, "day", 1);
 				this.lastDay = day;
 				dayCount++; dayMonthCount++;
@@ -728,7 +732,7 @@ return djDeclare("location.timeline", [
 		});
 	},
 	
-	update: function () {
+	update: function (force = false) {
 		this.lastUpdate = new Date();
 		var def = new djDeferred();
 		var that = this;
@@ -747,7 +751,7 @@ return djDeclare("location.timeline", [
 
 				inview.forEach( function ( widget ) {
 							window.requestAnimationFrame( function () {  widget.resize();  });
-							djThrottle(function() { widget.update(); console.log('Throttle'); }, 100)();
+							if(! force) { djThrottle(function() { widget.update(); }, 100)(); } else { widget.update(); }
 				});
 
 				def.resolve();
@@ -810,16 +814,12 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 
-	doSearchLocation: function (event) {
-		if(event && event.preventDefault) {
-			event.preventDefault();
-		}
+	doSearchLocation: function (loc) {
 		var that = this;
-		var loc = this.nLocationNumber.get('value');
 		
 		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
-			if(result && result.data && result.data.length > 0) {
-				data = result.data[0];
+			if(result && result.data) {
+				data = result.data;
 				that.goToReservation(data['target'], data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
 					that.highlight(widget.domNode);
 				});

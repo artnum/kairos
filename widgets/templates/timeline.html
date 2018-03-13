@@ -1,16 +1,37 @@
-<div data-dojo-attach-point="timeline" class="${baseClass}"><div class="fixed headerContainer" data-dojo-attach-point="fixedHeader">
+<div data-dojo-attach-point="timeline" class="${baseClass}">
+<div class="fixed headerContainer" data-dojo-attach-point="fixedHeader">
+
+<div data-dojo-type="dijit/MenuBar" data-dojo-attach-point="menu" id="AppMenu">
+	<div data-dojo-type="dijit/PopupMenuBarItem">
+		<label><li class="fas fa-tv"></li> Affichage</label>
+		<div data-dojo-type="dijit/DropDownMenu" id="displayMenu">
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="accelKey: 'F5', iconClass: 'iconRefresh', onClick: () => { window.App.update(); }">Rafraîchir</div>
+			<div data-dojo-type="dijit/MenuSeparator"></div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view',  onClick: () => { window.App.set('zoom', 'day'); }">Vue jour</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', checked: true, onClick: () => { window.App.set('zoom', 'week'); }">Vue semaine</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'month'); }">Vue mois</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'quarter'); }">Vue trimestre</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'semester'); }">Vue semestre</div>
+			<div data-dojo-type="dijit/MenuSeparator"></div>
+			<div data-dojo-type="dijit/CheckedMenuItem" data-dojo-props="onClick: () => { window.App.toggle('compact'); }">Mode compacte</div>
+		</div>
+	</div>
+	<div data-dojo-type="dijit/PopupMenuBarItem">
+		<label><li class="far fa-compass"></li> Recherche</label>
+		<div data-dojo-type="dijit/DropDownMenu" id="searchMenu">
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="accelKey: 'Ctrl + L', onClick: () => { window.App.searchLoc(); }">Location</div>
+		</div>
+	</div>
+</div>
+
+
 <div data-dojo-attach-point="supHeader" class="header"><div class="tools">&nbsp;</div></div>
 <div data-dojo-attach-point="header" class="header"><div class="tools">&nbsp;</div></div>
-<div data-dojo-attach-point="moveleft" class="handle left"><i class="fa fa-angle-double-left" aria-hidden="true"></i></div><div data-dojo-attach-point="line" class="line"></div><div data-dojo-attach-point="moveright" class="handle right"><i class="fa fa-angle-double-right" aria-hidden="true"></i></div>
+<div data-dojo-attach-point="line" class="line"></div>
 </div>
 <div data-dojo-attach-point="logline" class="fixed logline">&nbsp;</div>
 <div class="reservationContainer" data-dojo-attach-point="domEntries"></div>
 <div data-dojo-type="dijit/layout/TabContainer" style="position: fixed; width: 680px; top: 0; right: 0; bottom: 0; z-index: 600; background-color: white; display: none;" id="tContainer"></div>
-<div id="searchbox">
-<form data-dojo-type="dijit/form/Form" data-dojo-attach-event="submit:doSearchLocation">
-Location : <input data-dojo-type="dijit/form/NumberTextBox" data-dojo-attach-point="nLocationNumber" type="text" value="" placeholder="Numéro de location" /> <button type="submit" data-dojo-type="dijit/form/Button" value="Aller" data-dojo-attach-event="click:doSearchLocation" >Aller</button>
-</form>
-</div>
-<div data-dojo-attach-point="sight">
+<div data-dojo-attach-point="sight" id="Sight">
 </div>
 </div>

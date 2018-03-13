@@ -10,7 +10,6 @@
 <link rel="stylesheet" href="/location/font/fontawesome.css" />
 </head>
 <body class="claro">
-
 <script>
 function storageAvailable(type) {
   try {
@@ -46,7 +45,7 @@ locationConfig = {
 };
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",
-	parseOnLoad: false,
+	parseOnLoad: true,
 	isDebug: true,
 	locale: 'fr-ch',
 	packages: [
@@ -77,9 +76,9 @@ require([
 	"dijit/Dialog",
 	"dojo/domReady!"
 ], function (djLang, timeline, entry, djXhr, dtRegistry, request, dtDialog) {
-	var tl = new timeline();
-	document.getElementsByTagName('body')[0].appendChild(tl.domNode);
-	tl.run();
+	window.App = new timeline();
+	document.getElementsByTagName('body')[0].appendChild(window.App.domNode);
+	window.App.run();
 });
 </script>
 </body>

@@ -20,6 +20,25 @@ class DeepReservationModel extends ReservationModel {
       return NULL;
    }
 
+   function get($id) {
+      $pre_statement = 'SELECT reservation.*, status.status_color FROM `reservation` JOIN status ON reservation.reservation_status = status.status_id WHERE reservation_id = :id';
+      try {
+         $st = $this->DB->prepare($pre_statement);
+         $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+         $st->bindParam(':id', $id, $bind_type);
+         if($st->execute()) {
+            $data = $st->fetch(\PDO::FETCH_ASSOC);
+            if($data != FALSE) {
+               return $data;
+            }
+         }
+      } catch (\Exception $e) {
+         return NULL;
+      }
+
+      return NULL;
+   }
+
    function read($id) {
       $entry = $this->get($id);
       if($entry) {

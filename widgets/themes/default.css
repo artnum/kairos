@@ -41,6 +41,9 @@
 
 .x3 .entry {
 	padding-left: 7px;
+
+.dijitMenuItemAccelKey {
+	color: #666 !important;
 }
 
 /* entry */
@@ -50,6 +53,16 @@
   height: 76px;
   min-height: 76px;
 }
+
+.compact .entry {
+	height: 24px !important; 
+	min-height: 24px !important;
+}
+
+.compact .entry .tags {
+	display: none;
+}
+
 
 .x1 .entry {
 	padding-left: 3px;
