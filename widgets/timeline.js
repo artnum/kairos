@@ -14,6 +14,7 @@ define([
 	"dojo/aspect",
 	"dojo/date",
 	"dojo/date/stamp",
+	"dojo/dom",
 	"dojo/dom-construct",
 	"dojo/on",
 	"dojo/dom-attr",
@@ -23,6 +24,7 @@ define([
 	"dojo/throttle",
 	"dojo/request/xhr",
 	"dojo/window",
+	"dojo/promise/all",
 	"dijit/registry",
 	"dijit/form/NumberTextBox",
 	"dijit/form/Button",
@@ -41,6 +43,7 @@ define([
 	"location/_Sleeper",
 	"location/timeline/popup",
 	"location/timeline/keys",
+	"location/update",
 
 	"artnum/Request"
 
@@ -58,6 +61,7 @@ define([
 	djAspect,
 	djDate,
 	djDateStamp,
+	djDom,
 	djDomConstruct,
 	djOn,
 	djDomAttr,
@@ -67,6 +71,7 @@ define([
 	djThrottle,
 	djXhr,
 	djWindow,
+	djAll,
 	dtRegistry,
 	dtNumberTextBox,
 	dtButton,
@@ -84,14 +89,14 @@ define([
 	entry,
 	_Sleeper,
 	
-	tlPopup, tlKeys,
+	tlPopup, tlKeys, update,
 
 	Req
 ) {
 	
 return djDeclare("location.timeline", [
 	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, 
-	tlPopup, tlKeys ], {
+	tlPopup, tlKeys, update ], {
 
 	center: null,
 	offset: 220,
@@ -232,7 +237,7 @@ return djDeclare("location.timeline", [
 		this.daysZoom = days;
 		this.set('blockSize', (page[2] - 240) / days);
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
-		this.update();
+		this.resize();
 	},
 
 	_getZoomAttr: function () {
@@ -271,10 +276,22 @@ return djDeclare("location.timeline", [
 	},
 
 	resize: function ( ) {
-		this.entries.forEach(function (e) {
-			e.resize();	
+		var def = new djDeferred();
+		var that = this;
+		this.drawTimeline().then(() => {
+			that.drawVerticalLine().then(() => {
+				that.entries.forEach(function (e) {
+					e.resizeChild();	
+				});
+				that.entries.forEach(function (e) {
+					e.resize();
+				});
+
+				def.resolve();
+			});
 		});
-		this.update();
+
+		return def.promise;
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -491,6 +508,23 @@ return djDeclare("location.timeline", [
 		var node = this.domEntries;
 		var newBuffer = this.newBuffer;
 		this.newBuffer = null;
+		var endNodes = new Array();
+
+		/* Reordre nodes according to placeAfter value */
+		this.entries.forEach( function ( widget ) {
+			if(widget.placeAfter) {
+				if(widget.placeAfter == "-1") { /* first */
+					newBuffer.removeChild(widget.domNode);
+					newBuffer.insertBefore(widget.domNode, newBuffer.firstChild);
+				} else {
+					var x = newBuffer.getElementById('location_entry_' + widget.placeAfter);
+					if(x) {
+						newBuffer.removeChild(x);
+						newBuffer.insertBefore(x, widget.domNode);				
+					}
+				}
+			}
+		});
 
 		window.requestAnimationFrame( function() {
 			while(node.firstChild) {
@@ -681,6 +715,7 @@ return djDeclare("location.timeline", [
 	},
 
 	run: function () {
+		var loaded = new Array();
 		var that = this;
 		request.get('https://aircluster.local.airnace.ch/store/Machine').then( function (response) {
 			that.setServers(locationConfig.servers);
@@ -707,6 +742,7 @@ return djDeclare("location.timeline", [
 						djDomClass.add(e.domNode, groupName);
 						e.setServers(locationConfig.servers);
 						that.addEntry(e);
+						loaded.push(e.loaded);
 						if(machine.airaltref && djLang.isArray(machine.airaltref)) {
 							machine.airaltref.forEach( function (altref ) {
 									var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
@@ -715,6 +751,7 @@ return djDeclare("location.timeline", [
 							
 									e.setServers(locationConfig.servers);
 									that.addEntry(e);
+									loaded.push(e.loaded);
 								});
 							} else if(machine.airaltref) {
 								var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
@@ -722,41 +759,26 @@ return djDeclare("location.timeline", [
 								djDomClass.add(e.domNode, groupName);
 								e.setServers(locationConfig.servers);
 								that.addEntry(e);
+								loaded.push(e.loaded);
 							}
 					
 							inc++;
 						}
 					});
 			}
-			that.endDraw();
+			djAll(loaded).then( function () { that.endDraw(); that.update(); });
 		});
 	},
-	
+
 	update: function (force = false) {
-		this.lastUpdate = new Date();
 		var def = new djDeferred();
 		var that = this;
 
-		this.drawTimeline().then(function () {
-			that.drawVerticalLine().then(function() {
-				var inview = new Array(), outview = new Array();
-				dtRegistry.findWidgets(that.domNode).forEach( function (widget) {
-					if(widget.declaredClass == "location.entry" && widget.update) {
-						if(intoYView(widget.domNode)) {
-							inview.push(widget);
-						}	else {
-							outview.push(widget);
-						}
-				}});
-
-				inview.forEach( function ( widget ) {
-							window.requestAnimationFrame( function () {  widget.resize();  });
-							if(! force) { djThrottle(function() { widget.update(); }, 100)(); } else { widget.update(); }
-				});
-
-				def.resolve();
-			});
+		this.entries.forEach( function (entry) {
+			entry.update();
 		});
+		this.resize().then( () => { def.resolve(); });
+
 		return def.promise;
 	},
 

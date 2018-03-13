@@ -19,6 +19,7 @@ define([
 	"dojo/dom-style",
 	"dojo/request/xhr",
 	"dojo/promise/all",
+	"dojo/throttle",
 
 	"dijit/Dialog",
 	"dijit/registry",
@@ -28,6 +29,7 @@ define([
 	"location/_Cluster",
 	"location/_Request",
 	"location/_Sleeper", 
+	"location/update",
 
 	"artnum/Request"
 
@@ -51,6 +53,7 @@ define([
 	djDomStyle,
 	djXhr,
 	djAll, 
+	djThrottle,
 
 	dtDialog,
 	dtRegistry,
@@ -61,13 +64,14 @@ define([
 	_Cluster,
 	request,
 	_Sleeper,
+	update,
 
 	Req
 
 ) {
 
 return djDeclare("location.entry", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
+	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, update ], {
 	
 	baseClass: "entry",
 	templateString: _template,
@@ -99,9 +103,10 @@ return djDeclare("location.entry", [
 		this.originalHeight = 0;
 		this.tags = new Array();
 		this.entries = new Object();
-		this.locked = false;
 
-		/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
+		var that = this;
+		this.loaded = new djDeferred();
+				/* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
 		this.intervalZoomFactors = new Array( [ 7, 17, 70 ]);
     if(dtRegistry.byId('location_entry_' + args["target"])) {
       alert('La machine ' + args["target"] + ' existe à double dans la base de donnée !');
@@ -151,6 +156,17 @@ return djDeclare("location.entry", [
 
 			that.displayTags(that.tags);
 		});
+	
+		Req.get(locationConfig.store + '/Entry/', { query: { 'search.ref': this.target }}).then( function (result) {
+			if(result && result.data) {
+				result.data.forEach( function ( attrs ) {
+					that[attrs.name] = attrs.value;
+				})
+			}
+			that.loaded.resolve();
+		});
+
+
 		
 		var frag = document.createDocumentFragment();
 		var s = document.createElement('SPAN');
@@ -440,61 +456,65 @@ return djDeclare("location.entry", [
 	_getDateRangeAttr: function() {
 		return this.sup.getDateRange();	
 	},
+
+	resizeChild: function() {
+		var def = new djDeferred();
+		var that = this;
+		async( () => {
+			if(intoYView(that.domNode)) {
+				for(var k in that.entries) {
+					that.entries[k].resize();
+				}
+			}
+
+			def.resolve();
+		});
+		return def.promise;
+	},
+
 	resize: function () {
 		var def = new djDeferred();
 		var that = this;
 
 		async( function () {
-			if(intoYView(that.domNode)) {
-				that._startWait();
-				for(var i in that.entries)  {
-					that.entries[i].resize();
-				}
+			that.resizeChild().then( () => {
 				that.overlap();
-				that._stopWait();
-			}
-
-			def.resolve();
+				def.resolve();
+			});
 		});
 
 
 		return def.promise;
 	},
-	update: function () {
+	_update: function () {
 		var that = this;
 		var def = new djDeferred();
 		var force = false;
 		if(arguments[0]) {
 			force = true;
 		}
-		if(! this.power) { def.resolve(); return def.promise; }
-	
-		this._resetError();
-		this._startWait();
-
-		if(!force && (this.locked || this.runUpdate)) {
-			this._stopWait();
-			return;	
-		}
 
 		this.runUpdate = true;
 		var range = this.get('dateRange');
 		var startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
 		var stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
-		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-			"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
-			"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
-			"search.target": this.get('target'), 
-			"search.deleted" : '-' }
-		}).then( function (results) {
-			if(results && results.data && results.data.length > 0) {
-				that.displayReservations(results.data);
-				that.resize().then(function() {
-					def.resolve();
-					that.runUpdate = false;
-				});
-			}
-		});
+		if(intoYView(this.domNode)) {
+			Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+				"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
+				"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
+				"search.target": this.get('target'), 
+				"search.deleted" : '-' }
+			}).then( function (results) {
+				if(results && results.data && results.data.length > 0) {
+					that.displayReservations(results.data);
+					that.resize().then(function() {
+						def.resolve();
+					});
+				}
+			});
+		} else {
+			def.resolve();
+		}
 
 		return def.promise;
 	},

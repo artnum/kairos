@@ -52,3 +52,9 @@ CREATE TABLE IF NOT EXISTS association		( association_id INTEGER PRIMARY KEY,
 CREATE TABLE IF NOT EXISTS tags 		( tags_value TEXT,
 						  tags_target TEXT
 						);
+
+CREATE TABLE IF NOT EXISTS entry		( entry_id INTEGER PRIMARY KEY,  
+						  entry_ref TEXT, 
+						  entry_name TEXT,
+						  entry_value TEXT
+						);
