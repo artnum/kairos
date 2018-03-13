@@ -495,7 +495,28 @@ return djDeclare("location.timeline", [
 		this.update();
 	},
 	moveRight: function () {
-		this.center = djDate.add(this.center, "day", Math.floor(this.days.length / 7));
+		var move = 1;
+		if(this.days.length > 7) {
+			move = Math.floor(this.days.length / 7);
+		}
+		this.center = djDate.add(this.center, "day", move);
+		this.update();
+	},
+	moveXLeft: function(x) {
+		this.center = djDate.add(this.center, "day", -Math.abs(x));
+		this.update();
+	},
+	moveOneLeft: function() {
+		this.center = djDate.add(this.center, "day", -1);
+		this.update();
+	},
+	moveLeft: function () {
+		var move = 1;
+		if(this.days.length > 7) {
+			move = Math.floor(this.days.length / 7);
+		}
+
+		this.center = djDate.add(this.center, "day", -move);
 		this.update();
 	},
 
@@ -544,19 +565,7 @@ return djDeclare("location.timeline", [
 		this.newBuffer.appendChild(widget.domNode);
 		this.entries.push(widget);
 	},
-	moveXLeft: function(x) {
-		this.center = djDate.add(this.center, "day", -Math.abs(x));
-		this.update();
-	},
-	moveOneLeft: function() {
-		this.center = djDate.add(this.center, "day", -1);
-		this.update();
-	},
-	moveLeft: function () {
-		this.center = djDate.add(this.center, "day", -Math.floor(this.days.length / 7));
-		this.update();
-	},
-
+	
 	_getCompactAttr: function() {
 		return this.compact;
 	},
