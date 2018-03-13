@@ -597,7 +597,8 @@ return djDeclare("location.entry", [
 		var dates = new Array();
 		
 		async(function () {	
-			dtRegistry.findWidgets(that.domNode).forEach(function(child) {
+			for(var k in that.entries) {
+				var child = that.entries[k];	
 				var o = false;
 				if(!child.get('hidden')) { 
 					dates.forEach( function (d) {
@@ -626,7 +627,7 @@ return djDeclare("location.entry", [
 					});
 					dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
 				}
-			});
+			}
 		
 			if(overlap) {
 				djDomStyle.set(that.domNode, 'height', ''); 
