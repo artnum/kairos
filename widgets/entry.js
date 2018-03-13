@@ -58,7 +58,7 @@ define([
 	dtDialog,
 	dtRegistry,
 
-	reservation,
+	Reservation,
 	rForm,
 
 	_Cluster,
@@ -302,7 +302,7 @@ return djDeclare("location.entry", [
 
 			that.defaultStatus().then(function(s) {
 				var r = { start: day,
-					o: new reservation({ sup: that, status: s, begin: day, end: end	})
+					o: new Reservation({ sup: that, status: s, begin: day, end: end	})
 				}
 			
 				that.store(r).then(function (result) {
@@ -310,15 +310,14 @@ return djDeclare("location.entry", [
 					if(result.type == 'error') {
 						that.error("Impossible d'enregistrer les données", 300);
 					} else {
+						r.o.fromJson(result.data);
+						dtRegistry.add(r.o);
+						that.entries[r.o.get('id')] = r.o;
+	
 						window.requestAnimationFrame(function() {
 							that.data.appendChild(r.o.domNode);
+							that.overlap();
 						});
-						var oldId = r.o.get('id');
-						dtRegistry.remove(oldId);
-						r.o.set('IDent', result.data.id);
-						dtRegistry.add(r.o);
-						r.o.domNode.setAttribute('widgetid', result.data.id);
-						r.o.domNode.setAttribute('id', result.data.id);
 						r.o.popMeUp();
 					}				
 				});
@@ -378,7 +377,7 @@ return djDeclare("location.entry", [
 						dBegin.setHours(8,0,0,0);
 						dEnd.setHours(17,0,0,0);
 						this.newReservation = {start :  dBegin };
-						this.newReservation.o = new reservation({  sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX });
+						this.newReservation.o = new Reservation({  sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX });
 
 						djOn.once(this.newReservation.o.domNode, "click", djLang.hitch(this, this.eClick));
 						djOn.once(this.newReservation.o.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
@@ -544,7 +543,11 @@ return djDeclare("location.entry", [
 			method = "PUT";
 			suffix = '/' + query.id;
 		}
-		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then(function (result) { def.resolve(result) });
+		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then((result) => { 
+			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then((result) => {
+				def.resolve(result)
+			});
+		});
 		return def.promise;
 	}, 
 
@@ -644,40 +647,21 @@ return djDeclare("location.entry", [
 	},
 
 	displayReservations: function ( reservations ) {
-		this._startWait();
 		var range = this.get('dateRange');
 		var frag = document.createDocumentFragment();
 		var that = this;
-		reservations.forEach(function (reserv) {
-			var r = { 
-				"sup": that,
-				"IDent" : reserv.id,
-				"id" : reserv.id,
-				"begin": djDateStamp.fromISOString(reserv.begin),
-				"end" : djDateStamp.fromISOString(reserv.end), 
-				"deliveryBegin": djDateStamp.fromISOString(reserv.deliveryBegin),
-				"deliveryEnd" : djDateStamp.fromISOString(reserv.deliveryEnd), 
-				"status": reserv.status,
-				"contact": reserv.contact,
-				"address": reserv.address,
-				"locality": reserv.locality,
-				"comment": reserv.comment,
-				"special": reserv.special,
-				"reference": reserv.reference,
-				"equipment": reserv.equipment,
-        "color": reserv.color ? reserv.color : "FFF",
-				"complements": reserv.complements ? reserv.complements : new Array()
-			};
-			if(r.end != null && r.begin != null) {
-				if(that.entries[r.id]) {
-					that.entries[r.id].resize();
+		reservations.forEach(function (reservation) {
+			if(reservation.end && reservation.begin) {
+				if(! that.entries[reservation.id]) {
+					that.entries[reservation.id] = new Reservation({ sup: that });
+					that.entries[reservation.id].fromJson(reservation);
+					frag.appendChild(that.entries[reservation.id].domNode); 
 				} else {
-					that.entries[r.id] = new reservation(r);
-					frag.appendChild(that.entries[r.id].domNode);
+					that.entries[reservation.id].fromJson(reservation);
 				}
 			}
 		});
-		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); that._stopWait(); });
+		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
 	},
 
 	highlight: function (domNode) {

@@ -86,6 +86,21 @@ return djDeclare("location.reservation", [
 		this.dbContact = null;
 		this.complements = new Array();
 	},
+
+	fromJson: function (json) {
+		var that = this;
+		djLang.mixin(this, json);
+		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( function (attr) {
+			if(that[attr]) {
+				that[attr] = djDateStamp.fromISOString(that[attr]);
+			}
+		});
+
+		if(! that.color ) { that.color =  "FFF"; }
+		if(! that.complements) { that.complements = new Array(); }
+		if(! that.IDent) { that.IDent = that.id; }
+	},
+
 	error: function(txt, code) {
 		this.sup.error(txt, code);
 	},
