@@ -638,7 +638,7 @@ return djDeclare("location.reservation", [
 			begin = range.begin;
 		}
 		var end = this.get('trueEnd');
-		if(djDate.compare(range.end, end, 'date')<0) {
+		if(djDate.compare(range.end, end, 'date')<=0) {
 			end = range.end;
 		}
 
