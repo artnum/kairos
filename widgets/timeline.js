@@ -356,7 +356,6 @@ return djDeclare("location.timeline", [
 			if(this.hasChildren()) {
 				djDomStyle.set(this.domNode, 'display', 'block');
 			}
-			console.log(arguments);
 		}, true);
 		tContainer.watch('selectedChildWidget', function (method, prev, current) {
 			var rid = current.get('id').split('_')[2];
@@ -376,7 +375,6 @@ return djDeclare("location.timeline", [
 			if(! this.hasChildren()) {
 				djDomStyle.set(this.domNode, 'display', 'none');
 			}
-			console.log(arguments);
 		}, true);
 
 		this.inherited(arguments);
@@ -664,41 +662,28 @@ return djDeclare("location.timeline", [
 	},
 
 	drawVerticalLine: function() {
+		var frag = document.createDocumentFragment();
 		var def = new djDeferred();
 		var that = this;
-
-	
-		var newCount = this.days.length - this.verticals.length;	
-		for(var i = 0; i < newCount; i++) {
+		
+		frag.appendChild(document.createElement('DIV'));	
+		for(var i = 0; i < this.days.length; i++) {
 			var node  = document.createElement('DIV');
-			node.setAttribute('class', 'vertical');	
+			if(i % 2) {
+				node.setAttribute('class', 'vertical even');	
+			} else {
+				node.setAttribute('class', 'vertical odd');	
+			}
 			node.setAttribute('style', 'height: 100%; position: fixed; top: 0; width: ' + 
-				this.get('blockSize') + 'px; display: none;');
-			this.domNode.appendChild(node);
-			this.verticals.push(node);	
+				this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
+			frag.firstChild.appendChild(node);
 		}
-		
-		var i = 0, blockSize = this.get('blockSize'), offset = this.get('offset');
-		window.requestAnimationFrame(function() {
-			for(i = 0; i < that.days.length; i++) {
-					var vertical = that.verticals[i];
-					djDomStyle.set(vertical, 'width',  blockSize + 'px');
-					djDomStyle.set(vertical, 'left',  (offset + (blockSize * i)) + 'px');
-					djDomStyle.set(vertical, 'display',  'block');
-					if(i % 2) {
-						vertical.setAttribute('class', 'vertical even');
-					} else {
-						vertical.setAttribute('class', 'vertical odd');
-					}
-			}
-			
-			for(; i < that.verticals.length; i++) {
-				var vertical = that.verticals[i];
-					djDomStyle.set(vertical, 'display',  'none');
-			}
-			def.resolve();
+
+		window.requestAnimationFrame( () => {
+			if(that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild); }
+			that.nVerticals.appendChild(frag);
 		});
-		
+		def.resolve();	
 		return def.promise;	
 	},
 
@@ -804,7 +789,6 @@ return djDeclare("location.timeline", [
 
 	highlight: function (domNode) {
 		var that = this;
-		console.log(domNode);
 		window.requestAnimationFrame(function () {
 			djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
 			window.setTimeout(function() {

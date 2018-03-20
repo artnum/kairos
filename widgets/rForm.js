@@ -261,7 +261,6 @@ return djDeclare("location.rForm", [
 	associationRefresh: function () {
 		var that = this;
 		Req.get(locationConfig.store + '/Association/', { query: { "search.reservation": this.reservation.get('id') } }).then( function (results) {
-			console.log(results);
 			if(results && results.data && results.data.length > 0) {
 				var types = new Array();
 				results.data.forEach( function ( r ) {
@@ -276,7 +275,6 @@ return djDeclare("location.rForm", [
 				});
 				var complements = new Array();
 				djAll(t).then( function (types) {
-					console.log(types);
 					for(var k in types) {
 						for(var i = 0; i < results.data.length; i++) {
 							if(results.data[i].type == k) {
@@ -301,7 +299,6 @@ return djDeclare("location.rForm", [
 		var that = this;
 		var f = djDomForm.toObject(this.nMachinistForm);
 		[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
-			console.log(f[i], i);
 			if(f[i] == '') {
 				that[i].set('state', 'Error');
 				return;		
@@ -319,7 +316,6 @@ return djDeclare("location.rForm", [
 			'end': end,
 			'comment': f.nMComment ? f.nMComment : '' 
 		}}).then(function () {
-			console.log('asfd');
 			that.reservation.resize();
 			that.associationRefresh();
 		});
@@ -355,14 +351,9 @@ return djDeclare("location.rForm", [
 					target: newMachine
 				}}).then( function ( res ) {
 					if(res && res.data && res.data.success) {
-						var id= that.reservation.get('id');
-						dtRegistry.byId(id).destroy();
+						that.destroyReservation(that.reservation);
 						dtRegistry.byId('location_entry_' + newMachine).update(true).then( function() {
 							that.hide();
-							that.destroy();
-							if(dtRegistry.byId(id)) {
-								dtRegistry.byId(id).popMeUp();
-							}
 						});
 					}
 				});
@@ -376,9 +367,6 @@ return djDeclare("location.rForm", [
 		var select = this.status;
 		var that = this;
 		
-		// Not used yet ... might be in the futur
-		//this.refreshMachinist();
-
 		this.reservation.get('entries').forEach( function (entry) {
 			that.nMachineChange.addOption({
 				label: entry.target + ' - ' + entry.label,
@@ -585,7 +573,7 @@ return djDeclare("location.rForm", [
 
 	hide: function() {
 		var that = this;
-		window.requestAnimationFrame(function() { dtRegistry.byId('tContainer').removeChild(that.contentPane); });
+		window.requestAnimationFrame(function() { dtRegistry.byId('tContainer').removeChild(dtRegistry.byId('ReservationTab_' + that.reservation.get('id'))); });
 	},
 
 	doPrint: function (event) {
@@ -660,16 +648,13 @@ return djDeclare("location.rForm", [
 
 	dropFile: function (event) {
 		event.preventDefault();
-		console.log(event);
 		var dt = event.dataTransfer;
 		if(dt.items) {
 			for(var i = 0; i < dt.items.length; i++) {
 				var f = dt.items[i].getAsFile();
-				console.log(f);
 			}
 		} else {
 			for(var i=0; i < dt.files.lenght; i++) {
-				console.log(dt.files[i]);
 			}
 		}
 
@@ -709,7 +694,15 @@ return djDeclare("location.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
-		this.reservation.store().then( () => { that.reservation.highlight(); });
+		this.reservation.store().then( () => { 
+			that.hide();
+			that.reservation.highlight();
+		});
 	
+	},
+
+	destroyReservation: function(reservation) {
+		this.reservation.destroyReservation(reservation);
 	}
+
 });});

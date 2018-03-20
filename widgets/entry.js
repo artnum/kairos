@@ -600,10 +600,6 @@ return djDeclare("location.entry", [
 		djOn(this.sup, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
 			
 	},
-	_setParentAttr: function ( parent ) {
-		console.log('This function is deprecated');
-		this.set('sup', parent);
-	},
 
 	_startWait: function() {
 		/*var t = this.domNode;
@@ -646,32 +642,35 @@ return djDeclare("location.entry", [
 			for(var k in that.entries) {
 				var child = that.entries[k];	
 				var o = false;
-				if(!child.get('hidden')) { 
-					dates.forEach( function (d) {
-						if((
-								(child.get('begin').getTime() >  d.begin  &&
-								child.get('begin').getTime() < d.end) ||
-								(child.get('end').getTime() > d.end &&
-								child.get('end').getTime() < d.end)
-							 ) ||
-							 (
-								(d.begin > child.get('begin').getTime() &&
-								d.end < child.get('begin').getTime()) ||
-								(d.end > child.get('end').getTime() &&
-								d.end < child.get('end').getTime())
-							 )
-							 ){
-							if(! d.overlap) {
-								var height = djDomStyle.get(child.domNode, "height"); 
-								djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
-							} else {
-								 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
+				if(!child.get('hidden')) {
+					var cEnd = child.get('end'), cBegin = child.get('begin');
+					if(cEnd && cBegin) {
+						dates.forEach( function (d) {
+							if((
+									(child.get('begin').getTime() >  d.begin  &&
+									child.get('begin').getTime() < d.end) ||
+									(child.get('end').getTime() > d.end &&
+									child.get('end').getTime() < d.end)
+								 ) ||
+								 (
+									(d.begin > child.get('begin').getTime() &&
+									d.end < child.get('begin').getTime()) ||
+									(d.end > child.get('end').getTime() &&
+									d.end < child.get('end').getTime())
+								 )
+								 ){
+								if(! d.overlap) {
+									var height = djDomStyle.get(child.domNode, "height"); 
+									djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
+								} else {
+									 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
+								}
+								overlap = true;
 							}
-							overlap = true;
-						}
-					
-					});
-					dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+						
+						});
+						dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
+					}
 				}
 			}
 		
@@ -705,6 +704,14 @@ return djDeclare("location.entry", [
 			}
 		});
 		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
+	},
+
+	destroyReservation: function (reservation) {
+		if(reservation) {
+			delete this.entries[reservation.id];
+			reservation.destroy();
+		}
+
 	},
 
 	highlight: function (domNode) {

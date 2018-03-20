@@ -122,7 +122,6 @@ return djDeclare("location.reservation", [
 		var def = new djDeferred();
 
 		Req.get(locationConfig.store + '/DeepReservation/' + this.id).then( (entry) => {
-			console.log(entry);
 			if(entry.data) {
 				that.fromJson(entry.data);
 				def.resolve();
@@ -256,10 +255,6 @@ return djDeclare("location.reservation", [
 	_setWithWorkerAttr: function(value) {
 		this.addAttr('withWorker');
 		this._set('withWorker', value);
-	},
-	_setMyParentAttr:function(value) {
-		console.log('This function is deprecated')
-		this.set('sup', value);
 	},
 	_getDeliveryBeginAttr: function () {
 		if(this.deliveryBegin) {
@@ -739,5 +734,9 @@ return djDeclare("location.reservation", [
 	},
   _getEntriesAttr: function() {
     return this.sup.get('entries');
-  }
+  },
+	destroyReservation: function(reservation) {
+		this.sup.destroyReservation(reservation);
+	}
+
 });});
