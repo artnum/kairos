@@ -88,6 +88,7 @@ return djDeclare("location.entry", [
 	tags: [],
 	entries: {},
 	locked: false,
+	currentLocation: '',
 
 	constructor: function (args) {
 		_Sleeper.init();
@@ -103,6 +104,7 @@ return djDeclare("location.entry", [
 		this.originalHeight = 0;
 		this.tags = new Array();
 		this.entries = new Object();
+		this.currentLocation = '';
 
 		var that = this;
 		this.loaded = new djDeferred();
@@ -164,6 +166,7 @@ return djDeclare("location.entry", [
 				})
 			}
 			that.loaded.resolve();
+			that.displayLocation();
 		});
 
 
@@ -225,8 +228,6 @@ return djDeclare("location.entry", [
 
 	eEditTags: function (event) {
 		var that = this;
-
-		
 		var form = document.createElement('FORM');
 		var input = document.createElement('INPUT');
 		form.appendChild(input);
@@ -236,7 +237,7 @@ return djDeclare("location.entry", [
 
 		input.setAttribute("value", this.tags.join(', '));
 
-		djOn.once(form, 'submit', function ( event ) {
+		djOn.once(form, 'submit', (event) => {
 			event.preventDefault();
 
 			var tags = input.value.split(',');
@@ -246,12 +247,54 @@ return djDeclare("location.entry", [
 			that.tags = tags;
 			var q = new Object(); q[that.url] = tags;
 			Req.post(locationConfig.store + "/Tags/?!=" + that.url, { query : q }).then(function () {
-				that.clearTags();
-				that.displayTags(tags);
+				that.clearTags().then( () => { that.displayTags(tags); });
 			});
 		});
 
 		window.requestAnimationFrame(function () { that.clearTags().then( function () { that.nTags.setAttribute('class', 'tags edit'); that.nTags.appendChild(form); input.focus(); }); });
+	},
+
+	displayLocation: function () {
+		var that = this, frag = document.createDocumentFragment(), i = document.createElement('I');
+		i.setAttribute('class', 'fas fa-warehouse'); frag.appendChild(i);
+		frag.appendChild(document.createTextNode(' ' + this.currentLocation));
+
+		window.requestAnimationFrame(() => {
+			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location');
+			djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation));
+		});
+	},
+
+	clearLocation: function () {
+		var def = new djDeferred();
+		var that = this;
+		window.requestAnimationFrame( () => {
+			while(that.nLocation.firstChild) {
+				that.nLocation.removeChild(that.nLocation.firstChild);
+			}
+
+			def.resolve();
+		});
+
+		return def.promise;
+	},
+
+	eEditLocation: function ( event ) {
+		var that = this, form = document.createElement('FORM'), input = document.createElement('INPUT'), button = document.createElement('BUTTON');
+		form.appendChild(input); form.appendChild(button);
+		button.appendChild(document.createTextNode('Ok'));
+		input.setAttribute("value", this.currentLocation);
+	
+		djOn.once(form, 'submit', (event) => {
+			event.preventDefault();
+
+			Req.post(locationConfig.store + '/Entry', { query : { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then( () => {
+				that.currentLocation = input.value;
+				that.clearLocation(); that.displayLocation();
+			});
+		});
+
+		that.clearLocation().then( () => { that.nLocation.setAttribute('class', 'location edit'); that.nLocation.appendChild(form); });
 	},
 
 	cancelReservation: function() {

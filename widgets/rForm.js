@@ -418,17 +418,6 @@ return djDeclare("location.rForm", [
 			}
 		});
 
-/*		var cp = new dtContentPane({
-			title: 'Réservation ' + this.reservation.get('id'),
-			closable: true,
-			id: 'DIA_RES_' + this.reservation.get('id'),
-			content: this.domNode});
-	//	this.reservation.highlight();
-		dtRegistry.byId('tContainer').addChild(cp);
-		dtRegistry.byId('tContainer').resize();
-		dtRegistry.byId('tContainer').selectChild(cp.id);
-		//this.contentPane = cp;
-*/
 		if(this.reservation.is('confirmed')) {
 			this.nConfirmed.set('checked', true);
 		}
@@ -439,7 +428,7 @@ return djDeclare("location.rForm", [
 		}
 		this.toggleDelivery();
 		
-		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('IDent') }}).then(djLang.hitch(this, function (res) {
+		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }}).then(djLang.hitch(this, function (res) {
 			if(res.success()) {
 				res.whole().forEach(djLang.hitch(this, function (contact) {
 					if(contact.freeform) {
@@ -547,25 +536,25 @@ return djDeclare("location.rForm", [
 	
 		if(id != null) {
 				request.get(locationConfig.store + '/ReservationContact/', { query: {
-						'search.reservation': this.reservation.get('IDent'),
+						'search.reservation': this.reservation.get('id'),
 						'search.target': id,
 						'search.comment': type
 					}}).then(djLang.hitch(this, function(results){
 						if(results.count() == 0) {
-							request.post(locationConfig.store + '/ReservationContact/', { method: 'post', query: { reservation: that.reservation.get('IDent'), comment: type, freeform: null, target: id }})
+							request.post(locationConfig.store + '/ReservationContact/', { method: 'post', query: { reservation: that.reservation.get('id'), comment: type, freeform: null, target: id }})
 								.then(djLang.hitch(this, function ( results) {
 										request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
 											var e = c.first();
 											e.linkId =  results.first().id;
 											that.createContact(e, type, true);
-											that.reservation.set('contact',''); 
+											that.reservation.refresh();
 										}));
 								}));
 						}
 					}));
 			} else {
 				request.get(locationConfig.store + '/ReservationContact', { query: {
-					'search.reservation': this.reservation.get('IDent'),
+					'search.reservation': this.reservation.get('id'),
 					'search.comment': type,
 					'search.freeform': options.freeform}}).then(djLang.hitch(this, function (results) {
 						if(results.count() == 0) {
@@ -574,7 +563,7 @@ return djDeclare("location.rForm", [
 									if(result.success()) {
 										options.linkId = result.first().id;
 										that.createContact(options, type, true);
-										that.reservation.set('contact',''); 
+										that.reservation.refresh();
 									}
 								});
 						}
@@ -688,6 +677,7 @@ return djDeclare("location.rForm", [
 
 	doSave: function (event) {
 		var now = new Date();
+		var that = this;
 
 		if(! this.validate()) { return; }
 
@@ -719,8 +709,7 @@ return djDeclare("location.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
-		this.reservation.store();
-		this.reservation.highlight();
-		this.reservation.resize();
+		this.reservation.store().then( () => { that.reservation.highlight(); });
+	
 	}
 });});

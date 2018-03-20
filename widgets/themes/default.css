@@ -18,12 +18,18 @@
 }
 
 /* Tags */
-.tags.edit button, .tags.edit input {
+.entry .edit button, .entry .edit input {
 	font-size: 1em;
 	padding: 2px;
 	border: 1px solid black;
 	margin: 1px;
 }
+
+/* reservation */
+.reservation {
+	border-radius: 8px;
+}
+
 
 /* entry */
 .entry {
@@ -60,10 +66,9 @@
 	min-height: 24px !important;
 }
 
-.compact .entry .tags {
+.compact .entry .tags, .compact .entry .location {
 	display: none;
 }
-
 
 .x1 .entry {
 	padding-left: 3px;
@@ -85,7 +90,7 @@
 	background-color: rgba(180, 180, 160, 0.5);
 }
 
-.entry .tags {
+.entry .tags, .entry .location {
 	width: 100%;
 	color: #888;
 }
@@ -130,3 +135,4 @@
 	height: 10px;
 	top: -10px;
 }
+

@@ -14,7 +14,7 @@ return djDeclare('location.update', [], {
 	lastUpdate: 0,
 
 	update: function () {
-		if(this.lastUpdate != 0) {
+		if(this.lastUpdate != 0 && ! arguments[0]) {
 			if((Date.now() - this.lastUpdate)  < 350) { return; }
 		}
 		this.lastUpdate = Date.now();

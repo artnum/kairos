@@ -68,6 +68,21 @@ class DeepReservationModel extends ReservationModel {
 
                $entry['complements'][] = $ux;
             }
+
+            $st = $this->DB->prepare('SELECT * FROM `contacts` WHERE `contacts_reservation` = :reservation');
+            $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
+            $st->execute();
+            $contacts = array();
+            foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
+               $contact = $this->unprefix($contact);
+               if(!isset($contacts[$contact['comment']])) {
+                  $contacts[$contact['comment']] = array($contact);
+               } else {
+                  $contacts[$contact['comment']][] = $contact;
+               }
+            }
+            
+            $entry['contacts'] = $contacts;
          } catch (\Exception $e) {
             /* nothing */
          }

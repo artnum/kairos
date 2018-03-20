@@ -784,7 +784,7 @@ return djDeclare("location.timeline", [
 		var that = this;
 
 		this.entries.forEach( function (entry) {
-			entry.update();
+			entry.update(force);
 		});
 		this.resize().then( () => { def.resolve(); });
 
@@ -804,6 +804,7 @@ return djDeclare("location.timeline", [
 
 	highlight: function (domNode) {
 		var that = this;
+		console.log(domNode);
 		window.requestAnimationFrame(function () {
 			djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
 			window.setTimeout(function() {
@@ -812,21 +813,20 @@ return djDeclare("location.timeline", [
 		});
 	},
 
-	goToReservation: function(id, center) {
+	goToReservation: function(data, center) {
 		var def = new djDeferred();
 		var that = this;
 		var middle =  window.innerHeight / 3;
-		var widget = dtRegistry.byId('location_entry_' + id);
+		var widget = dtRegistry.byId('location_entry_' + data['target']);
 
 		var tContainer = dtRegistry.byId('tContainer');
 		if(djDomStyle.get(tContainer.domNode, "display") != 'none') {
 			var w = djDomStyle.get(tContainer.domNode, "width");
 			center = djDate.add(center, "day", Math.abs(w / this.get('blockSize')));	
-			console.log(center, w);
 		}
 
 		that.center = center;
-		that.update().then( function () {
+		that.update(true).then( function () {
 			if(widget) {
 				var pos = djDomGeo.position(widget.domNode, true);
 				window.scroll(0, pos.y - middle);
@@ -851,7 +851,7 @@ return djDeclare("location.timeline", [
 		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
 			if(result && result.data) {
 				data = result.data;
-				that.goToReservation(data['target'], data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
+				that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
 					that.highlight(widget.domNode);
 				});
 			}
