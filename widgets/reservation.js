@@ -141,7 +141,6 @@ return djDeclare("location.reservation", [
 		this.sup.info(txt, code);	
 	},
 	postCreate: function () {
-		this.inherited(arguments);
 		this.originalTop = djDomStyle.get(this.domNode, 'top');
 	  this.resize();
   },

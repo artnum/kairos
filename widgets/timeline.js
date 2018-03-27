@@ -781,19 +781,33 @@ return djDeclare("location.timeline", [
 
 	highlight: function (domNode) {
 		var that = this;
-		window.requestAnimationFrame(function () {
-			djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
-			window.setTimeout(function() {
-				djDomStyle.set(domNode, 'box-shadow', '');
-			}, 5000);
-		});
+
+		if(this.Highlighting) {
+			djDomStyle.set(this.Highlighting[0], 'box-shadow', '');
+			window.clearTimeout(this.Highlighting[1]);
+		} else {
+			this.Highlighting = [];
+		}
+
+		djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
+		this.Highlighting[0] = domNode;
+		this.Highlighting[1] = window.setTimeout(function() {
+			djDomStyle.set(domNode, 'box-shadow', '');
+		}, 5000);
 	},
 
 	goToReservation: function(data, center) {
 		var def = new djDeferred();
 		var that = this;
 		var middle =  window.innerHeight / 3;
-		var widget = dtRegistry.byId('location_entry_' + data['target']);
+		var widget = null;
+		
+		for(var k in this.entries) {
+			if(this.entries[k].target == data['target']) {
+				widget = this.entries[k];
+				break;
+			}
+		}
 
 		var tContainer = dtRegistry.byId('tContainer');
 		if(djDomStyle.get(tContainer.domNode, "display") != 'none') {
@@ -810,9 +824,17 @@ return djDeclare("location.timeline", [
 				widget.update(true).then(function () {
 					var pos = djDomGeo.position(widget.domNode, true);
 					window.scroll(0, pos.y - middle);
-						widget = dtRegistry.byId(data['id']);
-						if(widget) {
-							def.resolve(widget);
+					var reservation = null;
+
+					for(var k in widget.entries) {
+						if(widget.entries[k].id == data.id) {
+							reservation = widget.entries[k];
+							break;
+						}
+					}
+						
+						if(reservation) {
+							def.resolve(reservation);
 						}
 				});
 			}
