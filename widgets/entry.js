@@ -137,17 +137,20 @@ return djDeclare("location.entry", [
 	},
 	postCreate: function () {
 		var that = this;
-		this.inherited(arguments);
-		
+	
 		window.Sleeper.on(this.domNode, "click", djLang.hitch(this, this.eClick));
 		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
 		window.Sleeper.on(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
 		window.Sleeper.on(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
-		window.Sleeper.on(this.sup, "zoom", function(event) { djDomStyle.set(that.domNode, 'height', ''); that.originalHeight = djDomStyle.get(that.domNode, "height"); that.resize(); });
+		window.Sleeper.on(this.sup, "zoom", () => { 
+			djDomStyle.set(that.domNode, 'height', ''); 
+			that.originalHeight = djDomStyle.get(that.domNode, "height"); 
+			that.resize(); 
+		});
 
 		this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73; /* in chrome value here is 0, set default known value for now */
 		this.verifyLock();
-		Req.get(locationConfig.store + '/Tags/?!=' + this.url).then(function ( tags ) {
+		Req.get(locationConfig.store + '/Tags/?!=' + this.url).then(( tags ) => {
 			if(tags && tags.data) {
 				for( var i in tags.data ) {
 					tags.data[i].forEach(function (tag) {
@@ -157,9 +160,10 @@ return djDeclare("location.entry", [
 			}
 
 			that.displayTags(that.tags);
+
 		});
 	
-		Req.get(locationConfig.store + '/Entry/', { query: { 'search.ref': this.target }}).then( function (result) {
+		Req.get(locationConfig.store + '/Entry/', { query: { 'search.ref': this.target }}).then( (result) => {
 			if(result && result.data) {
 				result.data.forEach( function ( attrs ) {
 					that[attrs.name] = attrs.value;
@@ -168,8 +172,6 @@ return djDeclare("location.entry", [
 			that.loaded.resolve();
 			that.displayLocation();
 		});
-
-
 		
 		var frag = document.createDocumentFragment();
 		var s = document.createElement('SPAN');
@@ -408,7 +410,6 @@ return djDeclare("location.entry", [
 			this.newReservation.o.animate(event.clientX);
 		}
 	},
-
 	eClick: function(event) {
 		var that = this;
 		if(event.clientX <= this.get("offset")) { return; }

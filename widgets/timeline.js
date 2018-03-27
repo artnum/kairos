@@ -119,6 +119,7 @@ return djDeclare("location.timeline", [
 	eventStarted: null,
 	daysZoom: 0,
 	compact: false,
+	currentVerticalLine: 0,
 
 	constructor: function (args) {
 		djLang.mixin(this, arguments);
@@ -146,6 +147,7 @@ return djDeclare("location.timeline", [
 		this.xDiff = 0;
 		this.daysZoom = 30;
 		this.compact = false;
+		this.currentVerticalLine = 0;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -276,22 +278,15 @@ return djDeclare("location.timeline", [
 	},
 
 	resize: function ( ) {
-		var def = new djDeferred();
 		var that = this;
-		this.drawTimeline().then(() => {
-			that.drawVerticalLine().then(() => {
-				that.entries.forEach(function (e) {
-					e.resizeChild();	
-				});
-				that.entries.forEach(function (e) {
-					e.resize();
-				});
-
-				def.resolve();
-			});
+		this.drawTimeline();
+		this.drawVerticalLine();
+		this.entries.forEach(function (e) {
+			e.resizeChild();	
 		});
-
-		return def.promise;
+		this.entries.forEach(function (e) {
+			e.resize();
+		});
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -589,102 +584,98 @@ return djDeclare("location.timeline", [
 	},
 	
 	drawTimeline: function() {
-		var def = new djDeferred();
+		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
+		var avWidth = box.w - this.get('offset') - this.get('blockSize');
+		var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
+		this.todayOffset = -1;
+		this.weekOffset = -1;
+		this.destroyWeekNumber();
+		this.destroyMonthName();
+		for(var x = this.days.pop(); x!=null; x = this.days.pop()) {
+			if(x.domNode.parentNode) {
+				x.domNode.parentNode.removeChild(x.domNode);
+			}
+		}
+
+		var docFrag = document.createDocumentFragment();
+		var hFrag = document.createDocumentFragment();
+		var shFrag = document.createDocumentFragment();
+
+		this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
+		for(var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
+
+			if(djDate.compare(day, new Date(), "date") == 0) {
+				this.todayOffset = i;	
+			}
+
+			if(currentWeek != day.getWeek()) {
+				if(currentWeek == 0) {
+					currentWeek = day.getWeek();	
+				} else {
+					if(this.weekOffset == -1) { this.weekOffset = i; }
+					this.createWeekNumber(currentWeek, dayCount, hFrag);
+					dayCount = 0;
+					currentWeek = day.getWeek();
+				}
+			}
+			if(currentMonth != day.getMonth()) {
+				if(currentMonth == -1) {
+					currentMonth = day.getMonth();
+					if(currentMonth % 2) { months.push(i); }
+					currentYear = day.getFullYear();
+				}	else {
+					this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
+					dayMonthCount = 0;	
+					currentMonth = day.getMonth();
+					if(currentMonth % 2) { months.push(i); }
+					currentYear = day.getFullYear();
+				}
+			}
+			var d = this.makeDay(day);
+			this.days.push(d);
+			if(this.get('blockSize') > 20) {
+				djDomConstruct.place(d.domNode, docFrag, "last");
+			}
+			day = djDate.add(day, "day", 1);
+			this.lastDay = day;
+			dayCount++; dayMonthCount++;
+		}
+		if(dayCount > 0) {
+			this.createWeekNumber(currentWeek, dayCount, hFrag);
+		}
+		if(dayMonthCount > 0) {
+			this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
+		}
 		window.requestAnimationFrame(djLang.hitch(this, function () {
-			var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
-			var avWidth = box.w - this.get('offset') - this.get('blockSize');
-			var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
-			this.todayOffset = -1;
-			this.weekOffset = -1;
-			this.destroyWeekNumber();
-			this.destroyMonthName();
-			for(var x = this.days.pop(); x!=null; x = this.days.pop()) {
-				if(x.domNode.parentNode) {
-					x.domNode.parentNode.removeChild(x.domNode);
-				}
-			}
-
-			var docFrag = document.createDocumentFragment();
-			var hFrag = document.createDocumentFragment();
-			var shFrag = document.createDocumentFragment();
-
-			this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
-			for(var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
-
-				if(djDate.compare(day, new Date(), "date") == 0) {
-					this.todayOffset = i;	
-				}
-
-				if(currentWeek != day.getWeek()) {
-					if(currentWeek == 0) {
-						currentWeek = day.getWeek();	
-					} else {
-						if(this.weekOffset == -1) { this.weekOffset = i; }
-						this.createWeekNumber(currentWeek, dayCount, hFrag);
-						dayCount = 0;
-						currentWeek = day.getWeek();
-					}
-				}
-				if(currentMonth != day.getMonth()) {
-					if(currentMonth == -1) {
-						currentMonth = day.getMonth();
-						if(currentMonth % 2) { months.push(i); }
-						currentYear = day.getFullYear();
-					}	else {
-						this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
-						dayMonthCount = 0;	
-						currentMonth = day.getMonth();
-						if(currentMonth % 2) { months.push(i); }
-						currentYear = day.getFullYear();
-					}
-				}
-				var d = this.makeDay(day);
-				this.days.push(d);
-				if(this.get('blockSize') > 20) {
-					djDomConstruct.place(d.domNode, docFrag, "last");
-				}
-				day = djDate.add(day, "day", 1);
-				this.lastDay = day;
-				dayCount++; dayMonthCount++;
-			}
-			if(dayCount > 0) {
-				this.createWeekNumber(currentWeek, dayCount, hFrag);
-			}
-			if(dayMonthCount > 0) {
-				this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
-			}
 			this.line.appendChild(docFrag);
 			this.header.appendChild(hFrag);
 			this.supHeader.appendChild(shFrag);
-			def.resolve();
 		}));
-		return def.promise;
 	},
 
 	drawVerticalLine: function() {
 		var frag = document.createDocumentFragment();
-		var def = new djDeferred();
 		var that = this;
-		
-		frag.appendChild(document.createElement('DIV'));	
-		for(var i = 0; i < this.days.length; i++) {
-			var node  = document.createElement('DIV');
-			if(i % 2) {
-				node.setAttribute('class', 'vertical even');	
-			} else {
-				node.setAttribute('class', 'vertical odd');	
+	
+		if(this.currentVerticalLine != this.get('blockSize')) {
+			frag.appendChild(document.createElement('DIV'));	
+			for(var i = 0; i < this.days.length; i++) {
+				var node  = document.createElement('DIV');
+				if(i % 2) {
+					node.setAttribute('class', 'vertical even');	
+				} else {
+					node.setAttribute('class', 'vertical odd');	
+				}
+				node.setAttribute('style', 'height: 100%; position: fixed; top: 0; width: ' + 
+					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
+				frag.firstChild.appendChild(node);
 			}
-			node.setAttribute('style', 'height: 100%; position: fixed; top: 0; width: ' + 
-				this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
-			frag.firstChild.appendChild(node);
-		}
 
-		window.requestAnimationFrame( () => {
-			if(that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild); }
-			that.nVerticals.appendChild(frag);
-		});
-		def.resolve();	
-		return def.promise;	
+			window.requestAnimationFrame( () => {
+				if(that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild); }
+				that.nVerticals.appendChild(frag);
+			});
+		}
 	},
 
 	refresh: function() {
@@ -771,8 +762,9 @@ return djDeclare("location.timeline", [
 		this.entries.forEach( function (entry) {
 			entry.update(force);
 		});
-		this.resize().then( () => { def.resolve(); });
+		this.resize();
 
+		def.resolve();
 		return def.promise;
 	},
 
