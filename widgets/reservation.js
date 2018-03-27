@@ -338,7 +338,7 @@ return djDeclare("location.reservation", [
 		if(this.IDent == null) {
 			html = '<div><span class="id">[Nouvelle réservation]</span>';	
 		} else {
-			html = '<div><span class="id">' + this.IDent + '</span>'; 	
+			html = '<div><span class="id"><a href="#' + this.IDent + '">' + this.IDent + '</a></span>'; 	
 		}
 
 		if(!this.get('compact')) {
