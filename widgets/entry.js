@@ -174,15 +174,21 @@ return djDeclare("location.entry", [
 		});
 		
 		var frag = document.createDocumentFragment();
+		
+		var a = document.createElement('A');
+		a.setAttribute('name', 'entry_' + this.get('target'));
+
 		var s = document.createElement('SPAN');
 		s.setAttribute('class', 'reference');
 		s.appendChild(document.createTextNode(that.get('target')));
-		frag.appendChild(s);
+		a.appendChild(s);
 
 		s = document.createElement('SPAN');
 		s.setAttribute('class', 'commonName label');
 		s.appendChild(document.createTextNode(that.get('label')));
-		frag.appendChild(s);
+		a.appendChild(s);
+
+		frag.appendChild(a);
 
 		window.requestAnimationFrame(function () { that.nameNode.appendChild(frag); });
 		this.update();
@@ -724,5 +730,5 @@ return djDeclare("location.entry", [
   },
 	_getCompactAttr: function() {
 		return this.sup.get('compact');
-	}
+	},
 });});

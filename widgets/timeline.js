@@ -384,6 +384,17 @@ return djDeclare("location.timeline", [
 
 		this.menu.startup();
 		this.update();
+
+		djOn(window, 'hashchange, load', djLang.hitch(this, () => {
+			var that = this;
+			window.setTimeout( () => { /* hack to work in google chrome */
+				if(window.location.hash) {
+					if(Number(window.location.hash.substr(1))) {
+						that.doSearchLocation(window.location.hash.substr(1));
+					}
+				}
+			}, 500);
+		}));
 	},
 
 	mouseUpDown: function(event) {

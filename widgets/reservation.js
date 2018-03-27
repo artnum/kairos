@@ -192,7 +192,6 @@ return djDeclare("location.reservation", [
 	_getEnabledAttr: function() {
 		return ! this.hidden;
 	},
-
 	animate: function (x) {
 		var that = this;
 		window.requestAnimationFrame(function() {
