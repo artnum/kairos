@@ -98,12 +98,8 @@ return djDeclare("location.reservation", [
 
 		if(that.contacts && that.contacts['_client']) {
 			if(that.contacts['_client'][0].target) {
-				Req.get(locationConfig.store + json.contacts['_client'][0].target).then( (entry) => {
-					if(entry.data && entry.data.length > 0) {
-						that.dbContact = entry.data[0];
-						that.setTextDesc();
-					}
-				});
+				that.dbContact = that.contacts['_client'][0].target;
+				that.setTextDesc();
 			} else {
 				that.dbContact = { freeform: that.contacts['_client'][0].freeform };
 				that.setTextDesc();

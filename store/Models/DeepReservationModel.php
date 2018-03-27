@@ -75,6 +75,16 @@ class DeepReservationModel extends ReservationModel {
             $contacts = array();
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
                $contact = $this->unprefix($contact);
+               
+               /* Request contact */ 
+               if($contact['target']) {
+                  $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
+                  $res = $jrc->direct($_SERVER['SERVER_NAME'] . '/location/store/' . $contact['target']);
+                  if($res['data'] && count($res['data']) > 0) {
+                     $contact['target'] = $res['data'][0];
+                  }
+               }
+
                if(!isset($contacts[$contact['comment']])) {
                   $contacts[$contact['comment']] = array($contact);
                } else {
