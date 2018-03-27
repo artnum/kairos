@@ -539,28 +539,48 @@ return djDeclare("location.entry", [
 		var that = this;
 		var def = new djDeferred();
 		var force = false;
+		var loaded = false;
+
 		if(arguments[0]) {
 			force = true;
 		}
 
 		this.runUpdate = true;
 		var range = this.get('dateRange');
-		var startM = new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0);
-		var stopM = new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0);
-		if(intoYView(this.domNode)) {
-			Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-				"search.begin": '<=' + djDateStamp.toISOString(stopM, { selector: 'date' }),
-				"search.end" : '>=' + djDateStamp.toISOString(startM, { selector: 'date' }),
-				"search.target": this.get('target'), 
-				"search.deleted" : '-' }
-			}).then( function (results) {
-				if(results && results.data && results.data.length > 0) {
-					that.displayReservations(results.data);
-					that.resize().then(function() {
-						def.resolve();
-					});
+		range = new DateRange(new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0), new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0));
+
+		if(!this.LoadedRange) {
+			this.LoadedRange =   { r: range, t: new Date() };
+		} else {
+			if(this.LoadedRange.r.contains(range)) {
+				loaded = true;
+				if(this.LoadedRange.t.getTime() < new Date().getTime() - 5000) {
+					loaded = false;
+					this.LoadedRange =   { r: range, t: new Date() };
 				}
-			});
+			} else {
+				this.LoadedRange = { r: range, t: new Date() };
+			}
+		}
+
+		if(! loaded) {
+			if(intoYView(this.domNode)) {
+				Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+					"search.begin": '<=' + djDateStamp.toISOString(range.end, { selector: 'date' }),
+					"search.end" : '>=' + djDateStamp.toISOString(range.begin, { selector: 'date' }),
+					"search.target": this.get('target'), 
+					"search.deleted" : '-' }
+				}).then( function (results) {
+					if(results && results.data && results.data.length > 0) {
+						that.displayReservations(results.data);
+						that.resize().then(function() {
+							def.resolve();
+						});
+					}
+				});
+			} else {
+				def.resolve();
+			}
 		} else {
 			def.resolve();
 		}
