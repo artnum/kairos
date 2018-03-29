@@ -334,7 +334,7 @@ return djDeclare("location.entry", [
 		if(n) {
 			var w = dtRegistry.byId(n.getAttribute('widgetid'));
 			if(w.baseClass == "reservation") {
-				w.popMeUp();
+	//			w.popMeUp();
 			} else if(w.baseClass == "entry") {
 				w.createReservation(this.dayFromX(event.clientX));	
 			}
