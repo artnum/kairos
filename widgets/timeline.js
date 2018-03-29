@@ -241,7 +241,19 @@ return djDeclare("location.timeline", [
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.resize();
 	},
-
+	_setFamilyAttr: function ( value ) {
+		for(var i = this.domEntries.firstChild; i; i = i.nextSibling) {
+			if(value == '') {
+				i.setAttribute('style', '');
+			} else {
+				if(djDomClass.contains(i, value)) {
+					i.setAttribute('style', '');
+				} else {
+					i.setAttribute('style', 'display: none;');
+				}
+			}
+		}
+	},
 	_getZoomAttr: function () {
 		return this.daysZoom;
 	},

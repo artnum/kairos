@@ -20,6 +20,14 @@
 		<label><li class="far fa-compass"></li> Recherche</label>
 		<div data-dojo-type="dijit/DropDownMenu" id="searchMenu">
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="accelKey: 'Ctrl + L', onClick: () => { window.App.searchLoc(); }">Location</div>
+			<div data-dojo-type="dijit/MenuSeparator"></div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', ''); }, checked: true">Tout</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'Nacelle52'); }">Nacelle</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'Grue80'); }">Grue / Minigrue</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'Chariottélescopique68'); }">Chariot élévateur</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'Verre65'); }">Verre</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'Appareildemanutention81'); }">Appareil de manutention</div>
+			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'family',  onClick: () => { window.App.set('family', 'AscenceurChantier'); }">Ascenseur de chantier</div>
 		</div>
 	</div>
 </div>
