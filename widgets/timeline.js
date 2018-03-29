@@ -525,21 +525,20 @@ return djDeclare("location.timeline", [
 	},
 
 	beginDraw: function() {
-		this.newBuffer = document.createDocumentFragment();
+		//this.newBuffer = document.createDocumentFragment();
 	},
 
 	endDraw: function() {
 		var that = this;
 		var node = this.domEntries;
-		var newBuffer = this.newBuffer;
-		this.newBuffer = null;
+		var newBuffer = document.createDocumentFragment(); 
 		var endNodes = new Array();
 
 		/* Reordre nodes according to placeAfter value */
-		this.entries.forEach( function ( widget ) {
+		/*this.entries.forEach( function ( widget ) {
 			if(widget.placeAfter) {
 				if(widget.placeAfter == "-1") { /* first */
-					newBuffer.removeChild(widget.domNode);
+			/*		newBuffer.removeChild(widget.domNode);
 					newBuffer.insertBefore(widget.domNode, newBuffer.firstChild);
 				} else {
 					var x = newBuffer.getElementById('location_entry_' + widget.placeAfter);
@@ -549,7 +548,36 @@ return djDeclare("location.timeline", [
 					}
 				}
 			}
-		});
+		});*/
+
+		for(var i = 0; i < this.entries.length; i++) {
+			if(this.entries[i].placeAfter && this.entries[i].placeAfter == -1) {
+				newBuffer.appendChild(this.entries[i].domNode);
+			}
+		}
+		for(var i = 0; i < this.entries.length; i++) {
+			if(!this.entries[i].placeAfter) {
+				newBuffer.appendChild(this.entries[i].domNode);
+			}
+		}
+		var rerun = false, c = 0;
+		do {
+			for(var i = 0; i < this.entries.length; i++) {
+				if(this.entries[i].placeAfter && this.entries[i].placeAfter != -1) {
+					var x = newBuffer.getElementById('location_entry_' + this.entries[i].placeAfter);
+					if(!x) {
+						rerun = true;
+					} else {
+						if(x.nextSibling) {
+							newBuffer.insertBefore(this.entries[i].domNode, x.nextSibling);
+						} else {
+							newBuffer.appendChild(this.entries[i].domNode);
+						}
+					}
+				}
+			}
+			c++;
+		} while(rerun && c < 5);
 
 		window.requestAnimationFrame( function() {
 			while(node.firstChild) {
@@ -560,13 +588,13 @@ return djDeclare("location.timeline", [
 	},
 
 	addEntry: function ( widget ) {
-		if(this.odd) {
-			djDomClass.add(widget.domNode, "odd");
-		} else {
-			djDomClass.add(widget.domNode, "even");
-		}
-		this.odd = !this.odd;
-		this.newBuffer.appendChild(widget.domNode);
+		//if(this.odd) {
+			//djDomClass.add(widget.domNode, "odd");
+		//} else {
+			//djDomClass.add(widget.domNode, "even");
+		//}
+		//this.odd = !this.odd;
+		//this.newBuffer.appendChild(widget.domNode);
 		this.entries.push(widget);
 	},
 	
