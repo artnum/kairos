@@ -356,7 +356,7 @@ return djDeclare("location.entry", [
 					o: new Reservation({ sup: that, status: s, begin: day, end: end	})
 				}
 			
-				that.store(r).then(function (result) {
+				r.o.save().then(function (result) {
 					that.unlock();
 					if(result.type == 'error') {
 						that.error("Impossible d'enregistrer les données", 300);
@@ -454,7 +454,7 @@ return djDeclare("location.entry", [
 				r.o.set('end', currentDay);
 			}
 			
-			this.store(r).then(djLang.hitch(this, function (result) {
+			r.o.save().then(djLang.hitch(this, function (result) {
 				if(result.type == "error") {
 					this.error("Impossible d'enregistrer les données", 300);
 					this.unlock();
@@ -590,34 +590,7 @@ return djDeclare("location.entry", [
 
 	store: function(reservation) {
 		var def = new djDeferred();
-		var method = "POST";
-		var suffix = '';
-		var query = { };
-
-		reservation.o.attrs.forEach( function (attr) {
-			query[attr] = reservation.o[attr];
-		});
-		
-		query.begin = djDateStamp.toISOString(reservation.o.begin);
-		query.end = djDateStamp.toISOString(reservation.o.end);
-		if(reservation.o.deliveryEnd) { 
-			query.deliveryEnd = djDateStamp.toISOString(reservation.o.deliveryEnd);
-		}
-		if(reservation.o.deliveryBegin) {
-			query.deliveryBegin = djDateStamp.toISOString(reservation.o.deliveryBegin);
-		}
-		query.target = this.target;
-
-		if(reservation.o.IDent != null) {
-			query.id = reservation.o.IDent;
-			method = "PUT";
-			suffix = '/' + query.id;
-		}
-		djXhr(locationConfig.store + "/Reservation" + suffix, { method: method, data: query, handleAs: "json"}).then((result) => { 
-			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then((result) => {
-				def.resolve(result)
-			});
-		});
+		reservation.o.save().then( (result) => { def.resolve(result); });
 		return def.promise;
 	}, 
 

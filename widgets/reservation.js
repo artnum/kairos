@@ -27,7 +27,7 @@ define([
 	"location/_Mouse",
 	"location/_Request",
 
-	"artnum/Request",
+	"artnumdev/Request",
 	"artnum/Join"
 ], function(
 	djDeclare,
@@ -318,6 +318,8 @@ return djDeclare("location.reservation", [
 	},
 
 	store: function () {
+		return this.save();
+		/*
 		var def = new djDeferred();
 
 		var that = this;
@@ -327,7 +329,7 @@ return djDeclare("location.reservation", [
 			def.resolve();
 		});
 
-		return def.promise;
+		return def.promise; */
 	},
 
 	setTextDesc: function () {
@@ -459,6 +461,7 @@ return djDeclare("location.reservation", [
 		f.set('comment', this.get('comment'));
 		f.set('equipment', this.get('equipment'));
 		f.set('reference', this.get('reference'));
+		f.set('_pane', [ cp, tContainer]);
 		//f.show();	
 	},
 	_getTargetAttr: function() {
@@ -732,6 +735,38 @@ return djDeclare("location.reservation", [
   },
 	destroyReservation: function(reservation) {
 		this.sup.destroyReservation(reservation);
-	}
+	},
 
+	save: function () {
+		var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred();
+
+		if(this.get('IDent') != null) {
+			method = 'put';
+			suffix = '/' + this.get('id');
+			query['id'] = this.get('id');
+		}
+
+		this.attrs.forEach( (attr) => {
+			query[attr] = that[attr];
+		});
+
+		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach( (attr) => {
+			if(that[attr]) {
+				query[attr] = djDateStamp.toISOString(that[attr]);
+			}
+		});
+		query['target'] = this.get('target');
+
+		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
+			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then( (result) => {
+				if(result && result.data) {
+					that.fromJson(result.data);
+					that.resize();
+				}
+				def.resolve(result);
+			});
+		});
+		
+		return def.promise;
+	}
 });});

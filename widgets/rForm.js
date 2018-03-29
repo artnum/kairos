@@ -572,8 +572,8 @@ return djDeclare("location.rForm", [
 	},
 
 	hide: function() {
-		var that = this;
-		window.requestAnimationFrame(function() { dtRegistry.byId('tContainer').removeChild(dtRegistry.byId('ReservationTab_' + that.reservation.get('id'))); });
+		this.get('_pane')[1].removeChild(this.get('_pane')[0]);	
+		this.get('_pane')[0].destroy();
 	},
 
 	doPrint: function (event) {
@@ -694,7 +694,8 @@ return djDeclare("location.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
-		this.reservation.store().then( () => { 
+
+		this.reservation.save().then( () => { 
 			that.hide();
 			that.reservation.highlight();
 		});
