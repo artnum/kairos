@@ -702,6 +702,11 @@ return djDeclare("location.rForm", [
 	
 	},
 
+	doCopy: function (event) {
+		var that = this;
+		var reservation = this.reservation.copy().then( (o) => { o.popMeUp(); that.hide(); });
+	},
+
 	destroyReservation: function(reservation) {
 		this.reservation.destroyReservation(reservation);
 	}

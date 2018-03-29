@@ -742,8 +742,8 @@ return djDeclare("location.reservation", [
 
 		if(this.get('IDent') != null) {
 			method = 'put';
-			suffix = '/' + this.get('id');
-			query['id'] = this.get('id');
+			suffix = '/' + this.get('IDent');
+			query['id'] = this.get('IDent');
 		}
 
 		this.attrs.forEach( (attr) => {
@@ -756,7 +756,7 @@ return djDeclare("location.reservation", [
 			}
 		});
 		query['target'] = this.get('target');
-
+		
 		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
 			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then( (result) => {
 				if(result && result.data) {

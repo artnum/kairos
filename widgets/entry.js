@@ -353,7 +353,7 @@ return djDeclare("location.entry", [
 
 			that.defaultStatus().then(function(s) {
 				var r = { start: day,
-					o: new Reservation({ sup: that, status: s, begin: day, end: end	})
+					o: new Reservation({ sup: that, status: s, begin: day, end: end })
 				}
 			
 				r.o.save().then(function (result) {
@@ -362,7 +362,7 @@ return djDeclare("location.entry", [
 						that.error("Impossible d'enregistrer les données", 300);
 					} else {
 						r.o.fromJson(result.data);
-						dtRegistry.add(r.o);
+						console.log(result);
 						that.entries[r.o.get('id')] = r.o;
 	
 						window.requestAnimationFrame(function() {
