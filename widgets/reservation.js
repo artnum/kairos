@@ -27,7 +27,7 @@ define([
 	"location/_Mouse",
 	"location/_Request",
 
-	"artnumdev/Request",
+	"artnum/Request",
 	"artnum/Join"
 ], function(
 	djDeclare,
