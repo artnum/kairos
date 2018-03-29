@@ -90,10 +90,12 @@
 	background-color: rgba(180, 180, 160, 0.5);
 }
 
-.entry .tags, .entry .location {
+.entry .tags, .entry .location, .entry .tags a {
 	width: 100%;
-	color: #888;
+	color: #888 !important;
+	text-decoration: none !important;
 }
+
 
 .entry .tags .tag:before {
 	font-family: "FontAwesome";

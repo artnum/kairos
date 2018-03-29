@@ -244,16 +244,36 @@ return djDeclare("location.timeline", [
 	_setFamilyAttr: function ( value ) {
 		for(var i = this.domEntries.firstChild; i; i = i.nextSibling) {
 			if(value == '') {
-				i.setAttribute('style', '');
+				djDomStyle.set(i, 'display', '');
 			} else {
 				if(djDomClass.contains(i, value)) {
-					i.setAttribute('style', '');
+					djDomStyle.set(i, 'display', '');
 				} else {
-					i.setAttribute('style', 'display: none;');
+					djDomStyle.set(i, 'display', 'none');
 				}
 			}
 		}
 	},
+
+	_setFilterAttr: function (value) {
+		this.entries.forEach( (entry) => {
+			if(entry.tags.length > 0) {
+				if(entry.tags.find( (element) => {
+					if(element.toLowerCase() == value.toLowerCase()) {
+						return true;
+					}
+					return false;
+				})) {
+					djDomStyle.set(entry.domNode, 'display', '');
+				} else {
+					djDomStyle.set(entry.domNode, 'display', 'none');
+				}
+			} else {
+				djDomStyle.set(entry.domNode, 'display', 'none');
+			}
+		});
+	},
+
 	_getZoomAttr: function () {
 		return this.daysZoom;
 	},
@@ -403,6 +423,8 @@ return djDeclare("location.timeline", [
 				if(window.location.hash) {
 					if(Number(window.location.hash.substr(1))) {
 						that.doSearchLocation(window.location.hash.substr(1));
+					} else {
+						that.set('filter', decodeURI(window.location.hash.substr(1)));
 					}
 				}
 			}, 500);

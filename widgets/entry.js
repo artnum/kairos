@@ -204,8 +204,9 @@ return djDeclare("location.entry", [
 			tags.forEach( function ( tag ) {
 				if(tag != '') {
 					notag = false;
-					var s = document.createElement('SPAN');
+					var s = document.createElement('A');
 					s.setAttribute('class', 'tag');
+					s.setAttribute('href', '#' + tag.toLowerCase());
 					s.appendChild(document.createTextNode(tag));
 					frag.appendChild(s);
 				}
