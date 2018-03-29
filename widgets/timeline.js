@@ -534,22 +534,6 @@ return djDeclare("location.timeline", [
 		var newBuffer = document.createDocumentFragment(); 
 		var endNodes = new Array();
 
-		/* Reordre nodes according to placeAfter value */
-		/*this.entries.forEach( function ( widget ) {
-			if(widget.placeAfter) {
-				if(widget.placeAfter == "-1") { /* first */
-			/*		newBuffer.removeChild(widget.domNode);
-					newBuffer.insertBefore(widget.domNode, newBuffer.firstChild);
-				} else {
-					var x = newBuffer.getElementById('location_entry_' + widget.placeAfter);
-					if(x) {
-						newBuffer.removeChild(x);
-						newBuffer.insertBefore(x, widget.domNode);				
-					}
-				}
-			}
-		});*/
-
 		for(var i = 0; i < this.entries.length; i++) {
 			if(this.entries[i].placeAfter && this.entries[i].placeAfter == -1) {
 				newBuffer.appendChild(this.entries[i].domNode);
@@ -578,6 +562,12 @@ return djDeclare("location.timeline", [
 			}
 			c++;
 		} while(rerun && c < 5);
+	
+		var className = 'odd';
+		for(var i = newBuffer.firstChild; i; i = i.nextSibling) {
+			djDomClass.add(i, className);
+			className = className == 'odd' ? 'even' : 'odd';
+		}
 
 		window.requestAnimationFrame( function() {
 			while(node.firstChild) {
@@ -588,13 +578,6 @@ return djDeclare("location.timeline", [
 	},
 
 	addEntry: function ( widget ) {
-		//if(this.odd) {
-			//djDomClass.add(widget.domNode, "odd");
-		//} else {
-			//djDomClass.add(widget.domNode, "even");
-		//}
-		//this.odd = !this.odd;
-		//this.newBuffer.appendChild(widget.domNode);
 		this.entries.push(widget);
 	},
 	
@@ -758,6 +741,19 @@ return djDeclare("location.timeline", [
 					var groupName = "group" + (inc % 2);
 					var name =  machine.description;
           var label = machine.cn ? machine.cn : '';
+
+					if(machine.family) {
+						if(Array.isArray(machine.family)) {
+							groupName = [];
+							machine.family.forEach( (g) => {
+								groupName.push( g.replace(/(\s|\-)/g, ''));
+							});
+						} else {
+							groupName = [ machine.family.replace(/(\s|\-)/g, '') ];
+						}
+					}
+
+
 					if(name) {
 						if(machine.cn ) {
 							name += '<div class="name">' + machine.cn + '</div>'; 	

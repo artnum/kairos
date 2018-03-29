@@ -336,6 +336,10 @@ div.contact > div:first-child {
 	z-index: -1;
 }
 
+.entry.odd {
+	background-color: rgba( 230, 230, 230, 0.3);
+}
+
 .bitsfield {
 	text-align: center;	
 }
