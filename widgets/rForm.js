@@ -204,7 +204,7 @@ return djDeclare("location.rForm", [
 			var s = document.createElement('DIV');
 			s.setAttribute('class', 'delete icon');
 			s.setAttribute('data-artnum-id', entry.id);
-			s.appendChild(djDomConstruct.toDom('<i class="fa fa-trash-o" aria-hidden="true"> </i>'));
+			s.appendChild(djDomConstruct.toDom('<i class="far fa-trash-alt" aria-hidden="true"> </i>'));
 			djOn(s, "click", djLang.hitch(this, this.doRemoveMachinist));
 			d.appendChild(s);
 
