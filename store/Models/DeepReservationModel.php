@@ -52,12 +52,12 @@ class DeepReservationModel extends ReservationModel {
                $ux = $this->unprefix($complement);
                $pathType = explode('/', str_replace('//', '/', $ux['type']));
                $table = strtolower($pathType[count($pathType) - 2]);
-               $id = $pathType[count($pathType) - 1];
+               $subid = $pathType[count($pathType) - 1];
 
                $ux['type'] = array();
                try { 
                   $subst = $this->DB->prepare(sprintf('SELECT * FROM %s WHERE %s = :value', $table, $table . '_id'));
-                  $subst->bindParam(':value', $id, \PDO::PARAM_STR);
+                  $subst->bindParam(':value', $subid, \PDO::PARAM_STR);
                   $subst->execute();
                   if($type = $subst->fetchAll(\PDO::FETCH_ASSOC)[0]) {
                      $_ux = $this->unprefix($type);
