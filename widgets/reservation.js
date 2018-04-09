@@ -542,11 +542,15 @@ return djDeclare("location.reservation", [
 
 		var cent = 100 - djDomStyle.get(that.tools, 'height') * 100 / djDomStyle.get(that.main, 'height');		
 		var height = Math.round(cent / Object.keys(byType).length);
+		var maxWidth = djDomStyle.get(that.nStabilo, 'width');
 		var lineCount = 0;
+		var previous = 0;
 
 		for(var i in byType) {
 			totalWidth = 0;
+			var overflow = false;
 			byType[i].forEach( function ( entry ) {
+				if(!overflow) {
 					var begin = entry.range.begin, end = entry.range.end, Rb = that.get('trueBegin');
 					var color = 'FFF';
 					if(entry.type && entry.type.color) {
@@ -562,7 +566,7 @@ return djDeclare("location.reservation", [
 					if(djDate.compare(begin, Rb, 'date') < 0) {
 						width -= djDate.difference(Rb, begin, 'day');
 					}
-
+					
 					left = djDate.difference(Rb, begin, 'day');
 					if(left < 0) { left = 0; }
 					
@@ -574,10 +578,10 @@ return djDeclare("location.reservation", [
 						left *= that.get('blockSize');
 						width *= that.get('blockSize');
 
-						left -= that.computeIntervalOffset(Rb);
-						left += that.computeIntervalOffset(begin);
-						width -= that.computeIntervalOffset(end);
-						width -= that.computeIntervalOffset(begin);
+						if(totalWidth + width >= maxWidth) {
+							width = maxWidth - totalWidth;
+							overflow = true;
+						}
 
 						/* Use of CSS relative position => the next element left position is pushed by previous element width */
 						left -= totalWidth;
@@ -589,16 +593,17 @@ return djDeclare("location.reservation", [
 						frag.appendChild(div);
 						appendFrag = true;
 					}
-				});
-			}
-
-			window.requestAnimationFrame(function () {
-				for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
-				if(appendFrag) {
-					that.nStabilo.appendChild(frag);
 				}
-				def.resolve();
-		})
+			});
+		}
+
+		window.requestAnimationFrame(() => {
+			for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
+			if(appendFrag) {
+				that.nStabilo.appendChild(frag);
+			}
+			def.resolve();
+		});
 
 		return def.promise;
 	},
