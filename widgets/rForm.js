@@ -352,14 +352,13 @@ return djDeclare("location.rForm", [
 				}}).then( function ( res ) {
 					if(res && res.data && res.data.success) {
 						that.destroyReservation(that.reservation);
-						dtRegistry.byId('location_entry_' + newMachine).update(true).then( function() {
+						dtRegistry.byId('location_entry_' + newMachine)._update(true).then( function() {
 							that.hide();
 						});
 					}
 				});
 			}
 		});
-
 	},
 
 	postCreate: function () {

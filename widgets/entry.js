@@ -564,7 +564,7 @@ return djDeclare("location.entry", [
 			}
 		}
 
-		if(! loaded) {
+		if(! loaded || force) {
 			if(intoYView(this.domNode)) {
 				Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
 					"search.begin": '<=' + djDateStamp.toISOString(range.end, { selector: 'date' }),
