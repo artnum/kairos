@@ -575,6 +575,10 @@ return djDeclare("location.reservation", [
 						width *= that.get('blockSize');
 
 						left -= that.computeIntervalOffset(Rb);
+						left += that.computeIntervalOffset(begin);
+						width -= that.computeIntervalOffset(end);
+						width -= that.computeIntervalOffset(begin);
+
 						/* Use of CSS relative position => the next element left position is pushed by previous element width */
 						left -= totalWidth;
 						totalWidth += width;
