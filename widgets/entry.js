@@ -269,7 +269,7 @@ return djDeclare("location.entry", [
 		frag.appendChild(document.createTextNode(' ' + this.currentLocation));
 
 		window.requestAnimationFrame(() => {
-			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location');
+			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location ' + that.currentLocation.toLowerCase());
 			djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation));
 		});
 	},

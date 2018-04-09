@@ -92,7 +92,7 @@
 
 .entry .tags, .entry .location, .entry .tags a {
 	width: 100%;
-	color: #888 !important;
+	color: #888;
 	text-decoration: none !important;
 }
 
