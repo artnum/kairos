@@ -258,7 +258,8 @@ return djDeclare("location.timeline", [
 	},
 
 	_setFilterAttr: function (value) {
-		this.entries.forEach( (entry) => {
+		for(var i = 0; i < this.entries.length; i++) {
+			var entry = this.entries[i]; 
 			if(entry.tags.length > 0) {
 				if(entry.tags.find( (element) => {
 					if(element.toLowerCase() == value.toLowerCase()) {
@@ -266,14 +267,14 @@ return djDeclare("location.timeline", [
 					}
 					return false;
 				})) {
-					djDomStyle.set(entry.domNode, 'display', '');
+					entry.set('active', true);
 				} else {
-					djDomStyle.set(entry.domNode, 'display', 'none');
+					entry.set('active', false);
 				}
 			} else {
-				djDomStyle.set(entry.domNode, 'display', 'none');
+				entry.set('active', false);
 			}
-		});
+		}
 	},
 
 	_getZoomAttr: function () {
@@ -327,12 +328,10 @@ return djDeclare("location.timeline", [
 
 		this.drawTimeline();
 		this.drawVerticalLine();
-		this.entries.forEach(function (e) {
-			e.resizeChild();	
-		});
-		this.entries.forEach(function (e) {
-			e.resize();
-		});
+		for(var i = 0; i < this.entries.length; i++) {
+			this.entries[i].resizeChild();
+			this.entries[i].resize();
+		}
 	},
 
 	createMonthName: function (month, year, days, frag) {
@@ -479,59 +478,59 @@ return djDeclare("location.timeline", [
 
 	filterNone: function() {
 		this.searchMenu.filterNone.set('disabled', true);
-		this.entries.forEach( (entry) => {
-			entry.set('active', true);
-		});
+		for(var i = 0; i < this.entries.length; i++) {
+			this.entries[i].set('active', true);
+		}
 	},
 
 	filterStatus: function (event) {
 		var node = dtRegistry.byNode(event.selectorTarget);
 		this.searchMenu.filterNone.set('disabled', false);
-		this.entries.forEach( (entry) => {
+		for(var i = 0; i < this.entries.length; i++) {
+			var entry = this.entries[i];
 			var active = entry.get('activeReservations');
 			if(active.length <= 0) {
 				entry.set('active', false);
 			} else {
 				var count = 0;
-				active.forEach( (reservation) => {
-					if(reservation.status == node.value.id) {
-						count++;
+				for(var j = 0; j < active.length; j++) {
+					if(active[j].status == node.value.id) {
+						count++; break;
 					}
-				});
+				}
 				if(count > 0) {
 					entry.set('active', true);
 				} else {
 					entry.set('active', false);
 				}
 			}
-		})
+		}	
 	},
 
 	filterComplement: function (event) {
 		var node = dtRegistry.byNode(event.selectorTarget);
 		this.searchMenu.filterNone.set('disabled', false);
-		this.entries.forEach( (entry) => {
+		for(var i = 0; i < this.entries.length; i++) {
+			var entry = this.entries[i];
 			var active = entry.get('activeReservations');
 			if(active.length <= 0) {
 				entry.set('active', false);
 			} else {
 				var count = 0;
-				active.forEach( (reservation) => {
-					if(reservation.complements.length > 0) {
-						reservation.complements.forEach ( (c) => {
-							if(c.type.id == node.value.id) {
-								count++;
-							}
-						});
+				for(var j = 0; j < active.length; j++) {
+					for(var k = 0; k < active[j].complements.length; k++) {
+						if(active[j].complements[k].type.id == node.value.id) {
+							count++; break;
+						}
 					}
-				});
+				}
 				if(count > 0) {
 					entry.set('active', true);
 				} else {
 					entry.set('active', false);
 				}
 			}
-		});
+		}
 	},
 
 	mouseUpDown: function(event) {
@@ -597,13 +596,13 @@ return djDeclare("location.timeline", [
 
 		window.requestAnimationFrame(function() {
 			var none = true;
-			days.forEach( function (day) {
-				var pos = djDomGeo.position(day.domNode, day.computedStyle);
+			for(var i = 0; i < days.length; i++) {
+				var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle);
 				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
 					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none');	
 					none = false;
 				}
-			});
+			}
 			
 			if(none) {
 				sight.removeAttribute('style');	
@@ -881,15 +880,13 @@ return djDeclare("location.timeline", [
 		if(window.Sleeper.awake(function () { that.refresh(); })) {
 			request.head('/location/store/Reservation').then( function (result) { 
 				if(that.lastMod != result['last-modification']) {
-					that.update(true).then(function () {
-						that.lastMod = result['last-modification'];
-						that.lastId = result['last-id'];
-					});
+					that.update(true);
+					that.lastMod = result['last-modification'];
+					that.lastId = result['last-id'];
 				} else if(that.lastId != result['last-id']) {
-					that.update().then(function () {
-						that.lastMod = result['last-modification'];
-						that.lastId = result['last-id'];
-					});
+					that.update();
+					that.lastMod = result['last-modification'];
+					that.lastId = result['last-id'];
 				} 
 				
 			});
@@ -913,7 +910,8 @@ return djDeclare("location.timeline", [
 				
 
 				var inc = 0;
-				whole.forEach( function ( machine ) {
+				for(var i = 0; i < whole.length; i++) {
+					var machine = whole[i];
 					var groupName = "group" + (inc % 2);
 					var name =  machine.description;
           var label = machine.cn ? machine.cn : '';
@@ -960,37 +958,36 @@ return djDeclare("location.timeline", [
 					
 							inc++;
 						}
-					});
+					}
 			}
 			djAll(loaded).then( function () { that.endDraw(); that.update(); that.refresh(); });
 		});
 	},
 
 	update: function (force = false) {
-		var def = new djDeferred();
-		var that = this;
-
-		this.entries.forEach( function (entry) {
-			entry.update(force);
-		});
+		for(var i = 0; i < this.entries.length; i++) {
+			this.entries[i].update(force);
+		}
 		this.resize();
 
-		def.resolve();
-		return def.promise;
+		return null;
 	},
 
 	scroll: function() {
 		var hidden = new Array();
-		this.entries.forEach((entry) => {
-			if(entry.get('active')) {
-				if(intoYView(entry.domNode)) {
-					entry.update(true);
+		for(var i = 0; i < this.entries.length; i++) {
+			if(this.entries[i].get('active')) {
+				if(intoYView(this.entries[i].domNode)) {
+					this.entries[i].update(true);
 				} else {
-					hidden.push(entry);
+					hidden.push(this.entries[i]);
 				}
 			}
-		});
-		async(() => { hidden.forEach( (entry) => { entry.update(true); } ); });
+		}
+
+		for(var i = 0; i < hidden.length; i++) {
+			hidden[i].update(true); 
+		}
 	},
 
   _getEntriesAttr: function () {

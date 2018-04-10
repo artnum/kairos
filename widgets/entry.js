@@ -646,21 +646,21 @@ return djDeclare("location.entry", [
 				if(!child.get('hidden')) {
 					var cEnd = child.get('end'), cBegin = child.get('begin');
 					if(cEnd && cBegin) {
-						dates.forEach( function (d) {
+						for(var i = 0; i < dates.length; i++) {
 							if((
-									(child.get('begin').getTime() >  d.begin  &&
-									child.get('begin').getTime() < d.end) ||
-									(child.get('end').getTime() > d.end &&
-									child.get('end').getTime() < d.end)
+									(child.get('begin').getTime() >  dates[i].begin  &&
+									child.get('begin').getTime() < dates[i].end) ||
+									(child.get('end').getTime() > dates[i].end &&
+									child.get('end').getTime() < dates[i].end)
 								 ) ||
 								 (
-									(d.begin > child.get('begin').getTime() &&
-									d.end < child.get('begin').getTime()) ||
-									(d.end > child.get('end').getTime() &&
-									d.end < child.get('end').getTime())
+									(dates[i].begin > child.get('begin').getTime() &&
+									dates[i].end < child.get('begin').getTime()) ||
+									(dates[i].end > child.get('end').getTime() &&
+									dates[i].end < child.get('end').getTime())
 								 )
 								 ){
-								if(! d.overlap) {
+								if(! dates[i].overlap) {
 									var height = djDomStyle.get(child.domNode, "height"); 
 									djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
 								} else {
@@ -669,7 +669,7 @@ return djDeclare("location.entry", [
 								overlap = true;
 							}
 						
-						});
+						}
 						dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
 					}
 				}
@@ -693,17 +693,17 @@ return djDeclare("location.entry", [
 		var range = this.get('dateRange');
 		var frag = document.createDocumentFragment();
 		var that = this;
-		reservations.forEach(function (reservation) {
-			if(reservation.end && reservation.begin) {
-				if(! that.entries[reservation.id]) {
-					that.entries[reservation.id] = new Reservation({ sup: that });
-					that.entries[reservation.id].fromJson(reservation);
-					frag.appendChild(that.entries[reservation.id].domNode); 
+		for(var i = 0; i < reservations.length; i++) {
+			if(reservations[i].end && reservations[i].begin) {
+				if(! that.entries[reservations[i].id]) {
+					that.entries[reservations[i].id] = new Reservation({ sup: that });
+					that.entries[reservations[i].id].fromJson(reservations[i]);
+					frag.appendChild(that.entries[reservations[i].id].domNode); 
 				} else {
-					that.entries[reservation.id].fromJson(reservation);
+					that.entries[reservations[i].id].fromJson(reservations[i]);
 				}
 			}
-		});
+		}
 
 		/* delete removed entries */
 		for(var k in that.entries) {
