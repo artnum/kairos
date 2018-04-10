@@ -419,14 +419,13 @@ return djDeclare("location.timeline", [
 		}, true);
 
 		this.inherited(arguments);
-		_Sleeper.init();
 	
-    window.Sleeper.on(window, "keypress", djLang.hitch(this, this.keys));
-    window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
-		window.Sleeper.on(window, "wheel", djLang.hitch(this, this.eWheel));
-		window.Sleeper.on(window, "mousemove", djLang.hitch(this, this.mouseOver));
-		window.Sleeper.on(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 100));
-		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+    djOn(window, "keypress", djLang.hitch(this, this.keys));
+    djOn(window, "resize", djLang.hitch(this, this.resize));
+		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
+		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
+		djOn(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 100));
+		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.menu.startup();
 		this.update();
@@ -886,21 +885,19 @@ return djDeclare("location.timeline", [
 
 	refresh: function() {
 		var that = this;
-		if(window.Sleeper.awake(function () { that.refresh(); })) {
-			request.head('/location/store/Reservation').then( function (result) { 
-				if(that.lastMod != result['last-modification']) {
-					that.update(true);
-					that.lastMod = result['last-modification'];
-					that.lastId = result['last-id'];
-				} else if(that.lastId != result['last-id']) {
-					that.update();
-					that.lastMod = result['last-modification'];
-					that.lastId = result['last-id'];
-				} 
+		request.head('/location/store/Reservation').then( function (result) { 
+			if(that.lastMod != result['last-modification']) {
+				that.update(true);
+				that.lastMod = result['last-modification'];
+				that.lastId = result['last-id'];
+			} else if(that.lastId != result['last-id']) {
+				that.update();
+				that.lastMod = result['last-modification'];
+				that.lastId = result['last-id'];
+			} 
 				
-			});
 			window.setTimeout(djLang.hitch(that, that.refresh), 1200);	
-		}
+		});
 	},
 
 	run: function () {
@@ -983,6 +980,11 @@ return djDeclare("location.timeline", [
 	},
 
 	scroll: function() {
+		this.entries.sort( (a, b) => {
+			if(intoYView(a.domNode) && intoYView(b.domNode)) { return 0; }
+			if(!intoYView(a.domNode) && intoYView(b.domNode)) { return 1; }
+			if(intoYView(a.domNode) && !intoYView(b.domNode)) { return -1; }
+		});
 		for(var i = 0; i < this.entries.length; i++) {
 			this.entries[i].update(true);
 		}

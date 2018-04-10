@@ -607,6 +607,7 @@ return djDeclare("location.reservation", [
 		}
 
 		window.requestAnimationFrame(() => {
+			if(!that.nStabilo) { def.resolve(); return; }
 			for(var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i); }
 			if(appendFrag) {
 				that.nStabilo.appendChild(frag);
