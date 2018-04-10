@@ -731,6 +731,17 @@ return djDeclare("location.entry", [
 
 	},
 
+	_getActiveReservationsAttr: function() {
+		var active = new Array();
+		for(var k in this.entries) {
+			if(this.entries[k].get('active')) {
+				active.push(this.entries[k]);
+			}
+		}
+
+		return active;
+	},
+
 	highlight: function (domNode) {
 		this.sup.highlight(domNode);
 	},
@@ -741,4 +752,15 @@ return djDeclare("location.entry", [
 	_getCompactAttr: function() {
 		return this.sup.get('compact');
 	},
+
+	_setActiveAttr: function(active) {
+		this._set('active', active ? true : false);
+		if(this.get('active')) {
+			djDomStyle.set(this.domNode, 'display', '');
+			this.update();
+		} else {
+			djDomStyle.set(this.domNode, 'display', 'none');
+		}
+	}
+
 });});

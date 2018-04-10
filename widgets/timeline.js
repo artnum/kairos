@@ -36,6 +36,7 @@ define([
 	"dijit/MenuSeparator",
 	"dijit/CheckedMenuItem",
 	"dijit/RadioMenuItem",
+	"dijit/PopupMenuItem",
 
 	"location/_Cluster",
 	"location/_Request",
@@ -83,6 +84,7 @@ define([
 	dtMenuSeparator,
 	dtCheckedMenuItem,
 	dtRadioMenuItem,
+	dtPopupMenuItem,
 
 	_Cluster,
 	request,
@@ -321,6 +323,8 @@ return djDeclare("location.timeline", [
 
 	resize: function ( ) {
 		var that = this;
+		var opts = arguments[0] ? arguments[0] : {} ;
+
 		this.drawTimeline();
 		this.drawVerticalLine();
 		this.entries.forEach(function (e) {
@@ -419,13 +423,45 @@ return djDeclare("location.timeline", [
 	
     window.Sleeper.on(window, "keypress", djLang.hitch(this, this.keys));
     window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
-		window.Sleeper.on(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
-		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
+		window.Sleeper.on(window, "wheel", djLang.hitch(this, this.eWheel));
+		window.Sleeper.on(window, "mousemove", djLang.hitch(this, this.mouseOver));
 		window.Sleeper.on(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 100));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.menu.startup();
 		this.update();
+
+		Req.get(locationConfig.store + '/Status/').then((results) => {
+			if(results && results.data && results.data.length > 0) {
+
+				var item = new dtMenuItem({ label: 'Retirer le filtre', disabled: true});
+				djOn(item, 'click', djLang.hitch(that, that.filterNone));
+				that.searchMenu.addChild(item);
+				that.searchMenu.filterNone = item;
+
+				var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()});
+				results.data.forEach( (entry) => {
+					if(entry.type == 0) {
+						var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
+						var item = new dtMenuItem({label: html, value: entry});
+						djOn(item, 'click', djLang.hitch(that, that.filterStatus));
+						p.popup.addChild(item);
+					}
+				});
+				that.searchMenu.addChild(p);
+				
+				p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()});
+				results.data.forEach( (entry) => {
+					if(entry.type == 1) {
+						var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
+						var item = new dtMenuItem({ label: html, value: entry });
+						djOn(item, 'click', djLang.hitch(that, that.filterComplement));
+						p.popup.addChild(item);
+					}
+				});
+				that.searchMenu.addChild(p);
+			}
+		});
 
 		djOn(window, 'hashchange, load', djLang.hitch(this, () => {
 			var that = this;
@@ -439,6 +475,63 @@ return djDeclare("location.timeline", [
 				}
 			}, 500);
 		}));
+	},
+
+	filterNone: function() {
+		this.searchMenu.filterNone.set('disabled', true);
+		this.entries.forEach( (entry) => {
+			entry.set('active', true);
+		});
+	},
+
+	filterStatus: function (event) {
+		var node = dtRegistry.byNode(event.selectorTarget);
+		this.searchMenu.filterNone.set('disabled', false);
+		this.entries.forEach( (entry) => {
+			var active = entry.get('activeReservations');
+			if(active.length <= 0) {
+				entry.set('active', false);
+			} else {
+				var count = 0;
+				active.forEach( (reservation) => {
+					if(reservation.status == node.value.id) {
+						count++;
+					}
+				});
+				if(count > 0) {
+					entry.set('active', true);
+				} else {
+					entry.set('active', false);
+				}
+			}
+		})
+	},
+
+	filterComplement: function (event) {
+		var node = dtRegistry.byNode(event.selectorTarget);
+		this.searchMenu.filterNone.set('disabled', false);
+		this.entries.forEach( (entry) => {
+			var active = entry.get('activeReservations');
+			if(active.length <= 0) {
+				entry.set('active', false);
+			} else {
+				var count = 0;
+				active.forEach( (reservation) => {
+					if(reservation.complements.length > 0) {
+						reservation.complements.forEach ( (c) => {
+							if(c.type.id == node.value.id) {
+								count++;
+							}
+						});
+					}
+				});
+				if(count > 0) {
+					entry.set('active', true);
+				} else {
+					entry.set('active', false);
+				}
+			}
+		});
 	},
 
 	mouseUpDown: function(event) {
@@ -889,10 +982,12 @@ return djDeclare("location.timeline", [
 	scroll: function() {
 		var hidden = new Array();
 		this.entries.forEach((entry) => {
-			if(intoYView(entry.domNode)) {
-				entry.update(true);
-			} else {
-				hidden.push(entry);
+			if(entry.get('active')) {
+				if(intoYView(entry.domNode)) {
+					entry.update(true);
+				} else {
+					hidden.push(entry);
+				}
 			}
 		});
 		async(() => { hidden.forEach( (entry) => { entry.update(true); } ); });

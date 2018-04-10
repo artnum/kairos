@@ -138,6 +138,7 @@ return djDeclare("location.reservation", [
 	},
 	postCreate: function () {
 		this.originalTop = djDomStyle.get(this.domNode, 'top');
+		this.set('active', true);
 	  this.resize();
 		djOn(this.domNode, "dblclick", djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp(); }));
   },
@@ -180,10 +181,12 @@ return djDeclare("location.reservation", [
 	},                
 	_setEnableAttr: function() {
 		this.hidden = false;
+		this.set('active', true);
 		djDomStyle.set(this.domNode, 'display', '');
 	},
 	_setDisableAttr: function() {
 		this.hidden = true;
+		this.set('active', false);
 		djDomStyle.set(this.domNode, 'display', 'none'); 
 	},
 	_getEnabledAttr: function() {
