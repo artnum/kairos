@@ -222,16 +222,16 @@ return djDeclare("location.timeline", [
 				style = ' #Sight { display: none; }';
 				break;
 			case 'month':
-				days = 30;
+				days = 31;
 				break;
 			case 'week':
 				days = 7 
 				break;
 			case 'quarter':
-				days = 90;
+				days = 91;
 				break;
 			case 'semester':
-				days = 180;
+				days = 181;
 				break;
 			default: 
 				days = zoomValue;
@@ -864,7 +864,13 @@ return djDeclare("location.timeline", [
 				} else {
 					node.setAttribute('class', 'vertical odd');	
 				}
-				node.setAttribute('style', 'height: 100%; position: fixed; top: 0; width: ' + 
+				
+				var style = '';
+				if(i > (this.days.length / 2) - 1 && i < this.days.length / 2) {
+					style = 'background-color: rgba(0, 0, 0, 0.2);';
+				}
+
+				node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' + 
 					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
 				frag.firstChild.appendChild(node);
 			}
