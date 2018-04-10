@@ -242,6 +242,7 @@ return djDeclare("location.timeline", [
 		this.set('blockSize', (page[2] - 240) / days);
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.resize();
+		this.update(true);
 	},
 	_setFamilyAttr: function ( value ) {
 		for(var i = this.domEntries.firstChild; i; i = i.nextSibling) {
@@ -974,19 +975,8 @@ return djDeclare("location.timeline", [
 	},
 
 	scroll: function() {
-		var hidden = new Array();
 		for(var i = 0; i < this.entries.length; i++) {
-			if(this.entries[i].get('active')) {
-				if(intoYView(this.entries[i].domNode)) {
-					this.entries[i].update(true);
-				} else {
-					hidden.push(this.entries[i]);
-				}
-			}
-		}
-
-		for(var i = 0; i < hidden.length; i++) {
-			hidden[i].update(true); 
+			this.entries[i].update(true);
 		}
 	},
 

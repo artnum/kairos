@@ -180,14 +180,20 @@ return djDeclare("location.reservation", [
 		this.setTextDesc();
 	},                
 	_setEnableAttr: function() {
-		this.hidden = false;
 		this.set('active', true);
-		djDomStyle.set(this.domNode, 'display', '');
 	},
 	_setDisableAttr: function() {
-		this.hidden = true;
 		this.set('active', false);
-		djDomStyle.set(this.domNode, 'display', 'none'); 
+	},
+
+	_setActiveAttr: function (value) {
+		this._set('hidden', value ? true : false);
+		this._set('active', value ? true : false);
+		if(value) {
+			djDomStyle.set(this.domNode, 'display', '');
+		} else {
+			djDomStyle.set(this.domNode, 'display', 'none');
+		}
 	},
 	_getEnabledAttr: function() {
 		return ! this.hidden;

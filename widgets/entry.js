@@ -760,6 +760,9 @@ return djDeclare("location.entry", [
 			this.update();
 		} else {
 			djDomStyle.set(this.domNode, 'display', 'none');
+			for(var k in this.entries) {
+				this.entries[k].set('active', false);
+			}
 		}
 	}
 
