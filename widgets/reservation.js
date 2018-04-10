@@ -138,7 +138,7 @@ return djDeclare("location.reservation", [
 	},
 	postCreate: function () {
 		this.originalTop = djDomStyle.get(this.domNode, 'top');
-		this.set('active', true);
+		this.set('active', false);
 	  this.resize();
 		djOn(this.domNode, "dblclick", djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp(); }));
   },

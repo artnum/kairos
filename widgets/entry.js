@@ -511,11 +511,9 @@ return djDeclare("location.entry", [
 		var def = new djDeferred();
 		var that = this;
 		async( () => {
-			if(intoYView(that.domNode)) {
 				for(var k in that.entries) {
 					that.entries[k].resize();
 				}
-			}
 
 			def.resolve();
 		});
