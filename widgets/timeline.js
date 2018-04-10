@@ -411,7 +411,7 @@ return djDeclare("location.timeline", [
     window.Sleeper.on(window, "resize", djLang.hitch(this, this.resize));
 		window.Sleeper.on(this.domNode, "wheel", djLang.hitch(this, this.eWheel));
 		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.mouseOver));
-		window.Sleeper.on(window, "scroll", djLang.hitch(this, this.update));
+		window.Sleeper.on(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 100));
 		window.Sleeper.on(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.menu.startup();
@@ -874,6 +874,14 @@ return djDeclare("location.timeline", [
 
 		def.resolve();
 		return def.promise;
+	},
+
+	scroll: function() {
+			this.entries.forEach((entry) => {
+				if(intoYView(entry.domNode)) {
+					entry.update(true);
+				}
+			});
 	},
 
   _getEntriesAttr: function () {
