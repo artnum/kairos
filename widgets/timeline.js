@@ -301,7 +301,17 @@ return djDeclare("location.timeline", [
 		var dayStamp = djDateStamp.toISOString(newDay, {selector: "date"});
 		var c = "day";
 		if(newDay.getDay() == 0 || newDay.getDay() == 6) { c = "day weekend"}
-		txtDate = newDay.getDate();
+
+		switch(newDay.getDay()) {
+			case 0: txtDate = 'Dim ' + newDay.getDate(); break;
+			case 1: txtDate = 'Lun ' + newDay.getDate(); break;
+			case 2: txtDate = 'Mar ' + newDay.getDate(); break;
+			case 3: txtDate = 'Mer ' + newDay.getDate(); break;
+			case 4: txtDate = 'Jeu ' + newDay.getDate(); break;
+			case 5: txtDate = 'Ven ' + newDay.getDate(); break;
+			case 6: txtDate = 'Sam ' + newDay.getDate(); break;
+		}
+
 		var domDay = document.createElement('SPAN')
 		domDay.setAttribute('data-artnum-day', dayStamp);
 		domDay.setAttribute('class', c);
