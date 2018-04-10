@@ -506,6 +506,7 @@ return djDeclare("location.timeline", [
 				}
 			}
 		}	
+		this.resize();
 	},
 
 	filterComplement: function (event) {
@@ -532,6 +533,7 @@ return djDeclare("location.timeline", [
 				}
 			}
 		}
+		this.resize();
 	},
 
 	mouseUpDown: function(event) {
