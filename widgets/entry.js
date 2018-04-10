@@ -704,6 +704,22 @@ return djDeclare("location.entry", [
 				}
 			}
 		});
+
+		/* delete removed entries */
+		for(var k in that.entries) {
+			var found = false;
+			for(var i = 0; i < reservations.length; i++) {
+				if(reservations[i].id == k) {
+					found = true;
+					break;
+				}
+			}
+			if(! found) {
+				that.entries[k].destroy();
+				delete that.entries[k];
+			}
+		}
+
 		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
 	},
 
