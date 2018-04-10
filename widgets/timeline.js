@@ -562,48 +562,87 @@ return djDeclare("location.timeline", [
 		//this.newBuffer = document.createDocumentFragment();
 	},
 
+	/* insert into linked list */
+	_lli: function(root, node) {
+		node.set('nextNode', null);
+		for(var current = root; current; current = current.get('nextNode')) {
+			if(current.get('target') == node.get('placeAfter')) {
+				node.set('nextNode', current.get('nextNode'));
+				current.set('nextNode', node);
+				return true;
+			}
+		}
+
+		return false;
+	},
+
 	endDraw: function() {
-		var that = this;
-		var node = this.domEntries;
 		var newBuffer = document.createDocumentFragment(); 
-		var endNodes = new Array();
+	
+		/* Sort nodes following 'placeAfter' property */
+		var roots = new Array(), orphan = new Array();
+		for(var i = 0; i < this.entries.length; i++) {
+			if(! this.entries[i].get('placeAfter') || this.entries[i].get('placeAfter') == 0) {
+				this.entries[i].set('nextNode', null);
+				roots.push(this.entries[i]);
+			}
+		}
 
 		for(var i = 0; i < this.entries.length; i++) {
-			if(this.entries[i].placeAfter && this.entries[i].placeAfter == -1) {
-				newBuffer.appendChild(this.entries[i].domNode);
-			}
-		}
-		for(var i = 0; i < this.entries.length; i++) {
-			if(!this.entries[i].placeAfter) {
-				newBuffer.appendChild(this.entries[i].domNode);
-			}
-		}
-		var rerun = false, c = 0;
-		do {
-			for(var i = 0; i < this.entries.length; i++) {
-				if(this.entries[i].placeAfter && this.entries[i].placeAfter != -1) {
-					var x = newBuffer.getElementById('location_entry_' + this.entries[i].placeAfter);
-					if(!x) {
-						rerun = true;
-					} else {
-						if(x.nextSibling) {
-							newBuffer.insertBefore(this.entries[i].domNode, x.nextSibling);
-						} else {
-							newBuffer.appendChild(this.entries[i].domNode);
-						}
+			if(this.entries[i].get('placeAfter') && this.entries[i].get('placeAfter') != 0) {
+				var found = false;
+				for(var j = 0; j < roots.length; j++) {
+					if(this._lli(roots[j], this.entries[i])) {
+						found = true;
+						break;
 					}
 				}
+				if(! found) {
+						orphan.push(this.entries[i]);
+				}
 			}
-			c++;
-		} while(rerun && c < 5);
-	
+		}
+
+		/* Scan several time the orphan list until there's no node that find a place into the ordered list */
+		var insert = 0;
+		do {
+			insert = 0;
+			for(var i = orphan.length; i > 0; i--) {
+				var node = orphan.pop();
+				var found = false;
+				for(var j = 0; j < roots.length; j++) {
+					if(this._lli(roots[j], node)) {
+						found = true;
+						insert++;
+						break;
+					}
+				}
+				if( !found) {
+					orphan.unshift(node);
+				}
+			}
+		} while(insert != 0);
+
+		/* Add nodes followings each list */
+		for(var i = 0; i < roots.length; i++) {
+			for(var node = roots[i]; node; node = node.get('nextNode')) {
+				newBuffer.appendChild(node.domNode);
+			}
+		}
+
+		/* Add orphan node */
+		for(var i = 0; i < orphan.length; i++) {
+			newBuffer.appendChild(orphan[i].domNode);
+		}
+
 		var className = 'odd';
 		for(var i = newBuffer.firstChild; i; i = i.nextSibling) {
 			djDomClass.add(i, className);
 			className = className == 'odd' ? 'even' : 'odd';
 		}
 
-		window.requestAnimationFrame( function() {
+		var node = this.domEntries;
+		window.requestAnimationFrame( () => {
 			while(node.firstChild) {
 				node.removeChild(node.firstChild);
 			}
