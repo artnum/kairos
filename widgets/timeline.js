@@ -887,11 +887,15 @@ return djDeclare("location.timeline", [
 	},
 
 	scroll: function() {
-			this.entries.forEach((entry) => {
-				if(intoYView(entry.domNode)) {
-					entry.update(true);
-				}
-			});
+		var hidden = new Array();
+		this.entries.forEach((entry) => {
+			if(intoYView(entry.domNode)) {
+				entry.update(true);
+			} else {
+				hidden.push(entry);
+			}
+		});
+		async(() => { hidden.forEach( (entry) => { entry.update(true); } ); });
 	},
 
   _getEntriesAttr: function () {
