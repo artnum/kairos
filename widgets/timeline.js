@@ -999,10 +999,10 @@ return djDeclare("location.timeline", [
 					}
 				}
 			}
-
 			this.resize();
 		}));
 
+		this.resize();
 		return null;
 	},
 
