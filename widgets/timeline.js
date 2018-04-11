@@ -868,17 +868,19 @@ return djDeclare("location.timeline", [
 			frag.appendChild(document.createElement('DIV'));	
 			for(var i = 0; i < this.days.length; i++) {
 				var node  = document.createElement('DIV');
+				var nodeclass = '';
 				if(i % 2) {
-					node.setAttribute('class', 'vertical even');	
+					nodeclass = 'vertical even';
 				} else {
-					node.setAttribute('class', 'vertical odd');	
+					nodeclass = 'vertical odd';
 				}
 				
 				var style = '';
-				if(i > (this.days.length / 2) - 1 && i < this.days.length / 2) {
-					style = 'background-color: rgba(0, 0, 0, 0.2);';
-				}
 
+				if(djDate.compare(this.days[i]._date, new Date(), "date") == 0) {
+					nodeclass = nodeclass + ' today';
+				}
+				node.setAttribute('class', nodeclass);
 				node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' + 
 					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
 				frag.firstChild.appendChild(node);

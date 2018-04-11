@@ -339,12 +339,16 @@ div.contact > div:first-child {
 }
 .vertical {
 	pointer-events: none;
+	opacity: 0.2;
+}
+
+.vertical.today {
+	background-color: gray;
 }
 
 .vertical.odd {
 	border-left: 1px solid  black;
 	border-right: 1px solid black;
-	opacity: 0.2;	
 	z-index: -1;
 }
 
