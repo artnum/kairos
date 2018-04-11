@@ -150,6 +150,7 @@ return djDeclare("location.timeline", [
 		this.daysZoom = 30;
 		this.compact = false;
 		this.currentVerticalLine = 0;
+		this.displayOrder = new Array();
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -330,7 +331,6 @@ return djDeclare("location.timeline", [
 		this.drawTimeline();
 		this.drawVerticalLine();
 		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].resizeChild();
 			this.entries[i].resize();
 		}
 	},
@@ -424,12 +424,13 @@ return djDeclare("location.timeline", [
     djOn(window, "resize", djLang.hitch(this, this.resize));
 		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
 		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
-		djOn(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 100));
+		djOn(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 15));
 		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
 		this.menu.startup();
 		this.update();
 
+		/* Build menu */
 		Req.get(locationConfig.store + '/Status/').then((results) => {
 			if(results && results.data && results.data.length > 0) {
 
@@ -628,6 +629,9 @@ return djDeclare("location.timeline", [
 		return { begin: this.firstDay, end: this.lastDay }
 
 	},
+	_getDateRangeAttr: function() {
+		return this.getDateRange();
+	},
 	moveXRight: function(x) {
 		this.center = djDate.add(this.center, "day", Math.abs(x));
 		this.update();
@@ -727,16 +731,20 @@ return djDeclare("location.timeline", [
 			}
 		} while(insert != 0);
 
+
+		this.displayOrder = new Array();
 		/* Add nodes followings each list */
 		for(var i = 0; i < roots.length; i++) {
 			for(var node = roots[i]; node; node = node.get('nextNode')) {
 				newBuffer.appendChild(node.domNode);
+				this.displayOrder.push(node);
 			}
 		}
 
 		/* Add orphan node */
 		for(var i = 0; i < orphan.length; i++) {
 			newBuffer.appendChild(orphan[i].domNode);
+			this.displayOrder.push(orphan[i]);
 		}
 
 		var className = 'odd';
@@ -971,22 +979,42 @@ return djDeclare("location.timeline", [
 	},
 
 	update: function (force = false) {
-		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].update(force);
-		}
-		this.resize();
+		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+			"search.begin": '<=' + djDateStamp.toISOString(this.get('dateRange').end, { selector: 'date', zulu: true }),
+			"search.end" : '>=' + djDateStamp.toISOString(this.get('dateRange').begin, { selector: 'date', zulu: true }),
+			"search.deleted" : '-' }
+		}).then(djLang.hitch(this, (results) => {
+			if(results && results.data && results.data.length > 0) {
+				var byTarget = new Object();
+				for(var i = 0; i < results.data.length; i++) {
+					if( ! byTarget[results.data[i].target]) {
+						byTarget[results.data[i].target] = new Array();
+					}
+					byTarget[results.data[i].target].push(results.data[i]); 
+				}
+				for(var i = 0; i < this.entries.length; i++) {
+					if(byTarget[this.entries[i].get('target')]) {
+						this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
+						this.entries[i].update(true);
+					}
+				}
+			}
+
+			this.resize();
+		}));
 
 		return null;
 	},
 
 	scroll: function() {
-		this.entries.sort( (a, b) => {
-			if(intoYView(a.domNode) && intoYView(b.domNode)) { return 0; }
-			if(!intoYView(a.domNode) && intoYView(b.domNode)) { return 1; }
-			if(intoYView(a.domNode) && !intoYView(b.domNode)) { return -1; }
-		});
-		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].update(true);
+		var startAt = Math.round(window.scrollY / this.displayOrder.length) - 2;
+		if(startAt < 0) { startAt = 0; }
+
+		for(var i = startAt; i < this.displayOrder.length; i++) {
+			this.displayOrder[i].resize();
+		}
+		for(var i = startAt-1; i >= 0; i--) {
+			this.displayOrder[i].resize();
 		}
 	},
 
