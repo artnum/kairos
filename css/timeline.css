@@ -226,6 +226,7 @@ body, html { margin: 0; padding: 0; }
 	border-bottom: 2px solid black;
 }
 .logline {
+	display: none;
 	position: fixed;
 	z-index: 800;
 	background-color: rgba(255, 255, 255, 0.2);
@@ -253,7 +254,7 @@ body, html { margin: 0; padding: 0; }
 }
 
 .reservationContainer {
-	padding-top: 88px !important;	
+	padding-top: 120px !important;	
 }
 .reservation .reserved {
   background-color: #8B0025;
