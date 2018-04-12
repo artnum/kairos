@@ -245,19 +245,6 @@ return djDeclare("location.timeline", [
 		this.resize();
 		this.update(true);
 	},
-	_setFamilyAttr: function ( value ) {
-		for(var i = this.domEntries.firstChild; i; i = i.nextSibling) {
-			if(value == '') {
-				djDomStyle.set(i, 'display', '');
-			} else {
-				if(djDomClass.contains(i, value)) {
-					djDomStyle.set(i, 'display', '');
-				} else {
-					djDomStyle.set(i, 'display', 'none');
-				}
-			}
-		}
-	},
 
 	_setFilterAttr: function (value) {
 		for(var i = 0; i < this.entries.length; i++) {
@@ -427,41 +414,7 @@ return djDeclare("location.timeline", [
 		djOn(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 15));
 		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 
-		this.menu.startup();
 		this.update();
-
-		/* Build menu */
-		Req.get(locationConfig.store + '/Status/').then((results) => {
-			if(results && results.data && results.data.length > 0) {
-
-				var item = new dtMenuItem({ label: 'Retirer le filtre', disabled: true});
-				djOn(item, 'click', djLang.hitch(that, that.filterNone));
-				that.searchMenu.addChild(item);
-				that.searchMenu.filterNone = item;
-
-				var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()});
-				results.data.forEach( (entry) => {
-					if(entry.type == 0) {
-						var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
-						var item = new dtMenuItem({label: html, value: entry});
-						djOn(item, 'click', djLang.hitch(that, that.filterStatus));
-						p.popup.addChild(item);
-					}
-				});
-				that.searchMenu.addChild(p);
-				
-				p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()});
-				results.data.forEach( (entry) => {
-					if(entry.type == 1) {
-						var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
-						var item = new dtMenuItem({ label: html, value: entry });
-						djOn(item, 'click', djLang.hitch(that, that.filterComplement));
-						p.popup.addChild(item);
-					}
-				});
-				that.searchMenu.addChild(p);
-			}
-		});
 
 		djOn(window, 'hashchange, load', djLang.hitch(this, () => {
 			var that = this;
@@ -477,10 +430,97 @@ return djDeclare("location.timeline", [
 		}));
 	},
 
+	buildMenu: function() {
+		var that = this;
+		this.menu.startup();
+
+		var item = new dtMenuItem({ label: 'Tout', disabled: true});
+		djOn(item, 'click', djLang.hitch(that, that.filterNone));
+		that.searchMenu.addChild(item);
+		that.searchMenu.filterNone = item;
+		
+		that.searchMenu.addChild(new dtMenuSeparator());
+
+		Req.get('https://aircluster.local.airnace.ch/store/Category').then((response)  => {
+			if(response && response.data && response.data.length > 0) {
+				var names = new Object();
+				for(var i = 0; i < response.data.length; i++) {
+					names[response.data[i]['uniqueidentifier']] = response.data[i]['cn;lang-fr'];
+				}
+
+				for(var key in that.categories) {
+					if(names[key]) {
+						var item = new dtPopupMenuItem({ label: names[key], popup: new dtDropDownMenu()});
+						that.searchMenu.addChild(item);
+
+						var all = new dtMenuItem({ label: 'Tout', value: { name: key, content: new Array() } });
+						djOn(all, 'click', djLang.hitch(that, that.filterFamily));
+						item.popup.addChild(all);
+						item.popup.addChild(new dtMenuSeparator());
+
+						for(var subkey in that.categories[key]) {
+							if(names[subkey]) {
+								var subitem = new dtMenuItem({ label: names[subkey], value : { name: subkey, content: that.categories[key][subkey]} });
+								djOn(subitem, 'click', djLang.hitch(that, that.filterFamily));
+								all.value.content = all.value.content.concat(that.categories[key][subkey]);
+								item.popup.addChild(subitem);
+							}
+						}
+					}
+				}
+
+			}
+			
+			that.searchMenu.addChild(new dtMenuSeparator());
+
+			/* */
+
+			Req.get(locationConfig.store + '/Status/').then((results) => {
+				if(results && results.data && results.data.length > 0) {
+
+
+					var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()});
+					results.data.forEach( (entry) => {
+						if(entry.type == 0) {
+							var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
+							var item = new dtMenuItem({label: html, value: entry});
+							djOn(item, 'click', djLang.hitch(that, that.filterStatus));
+							p.popup.addChild(item);
+						}
+					});
+					that.searchMenu.addChild(p);
+					
+					p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()});
+					results.data.forEach( (entry) => {
+						if(entry.type == 1) {
+							var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
+							var item = new dtMenuItem({ label: html, value: entry });
+							djOn(item, 'click', djLang.hitch(that, that.filterComplement));
+							p.popup.addChild(item);
+						}
+					});
+					that.searchMenu.addChild(p);
+				}
+			});
+		});
+	},
+
 	filterNone: function() {
 		this.searchMenu.filterNone.set('disabled', true);
 		for(var i = 0; i < this.entries.length; i++) {
 			this.entries[i].set('active', true);
+		}
+	},
+
+	filterFamily: function(event) {
+		var node = dtRegistry.byNode(event.selectorTarget);
+		this.searchMenu.filterNone.set('disabled', false);
+		for(var i = 0; i < this.entries.length; i++) {
+			if(node.value.content.indexOf(this.entries[i].target) == -1) {
+				this.entries[i].set('active', false);
+			} else {
+				this.entries[i].set('active', true);
+			}
 		}
 	},
 
@@ -926,6 +966,7 @@ return djDeclare("location.timeline", [
 				
 
 				var inc = 0;
+				var category = new Object();
 				for(var i = 0; i < whole.length; i++) {
 					var machine = whole[i];
 					var groupName = "group" + (inc % 2);
@@ -943,12 +984,33 @@ return djDeclare("location.timeline", [
 						}
 					}
 
-
 					if(name) {
 						if(machine.cn ) {
 							name += '<div class="name">' + machine.cn + '</div>'; 	
 						}
 						var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description });
+
+						var families = new Array(), types = new Array();
+						if(machine.family && machine.type) {
+							families = String(machine.family).split(',');
+							types = String(machine.type).split(',');
+							if(! djLang.isArray(families)) { families = new Array( families ); }
+							if(! djLang.isArray(types)) { types = new Array( types ); }
+							
+							for(var j = 0; j < families.length; j++) {
+								if(! category[families[j]]) {
+									category[families[j]] = new Object();
+								}
+
+								for(var k = 0; k < types.length; k++) {
+									if(! category[families[j]][types[k]]) {
+										category[families[j]][types[k]] = new Array();
+									}
+									category[families[j]][types[k]].push(e.target);
+								}
+							}
+						}
+
 						djDomClass.add(e.domNode, groupName);
 						e.setServers(locationConfig.servers);
 						that.addEntry(e);
@@ -957,6 +1019,11 @@ return djDeclare("location.timeline", [
 							machine.airaltref.forEach( function (altref ) {
 									var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
 									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim() });
+									for(var j = 0; j < families.length; j++) {
+										for(var k = 0; k < types.length; k++) {
+											category[families[j]][types[k]].push(e.target);
+										}
+									}
 									djDomClass.add(e.domNode, groupName);
 							
 									e.setServers(locationConfig.servers);
@@ -966,6 +1033,12 @@ return djDeclare("location.timeline", [
 							} else if(machine.airaltref) {
 								var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
 								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim() });
+								for(var j = 0; j < families.length; j++) {
+									for(var k = 0; k < types.length; k++) {
+										category[families[j]][types[k]].push(e.target);
+									}
+								}
+								
 								djDomClass.add(e.domNode, groupName);
 								e.setServers(locationConfig.servers);
 								that.addEntry(e);
@@ -976,11 +1049,14 @@ return djDeclare("location.timeline", [
 						}
 					}
 			}
-			djAll(loaded).then( function () { that.endDraw(); that.update(); that.refresh(); });
+			that.categories = category;
+			djAll(loaded).then( function () { that.buildMenu(); that.endDraw(); that.update(); that.refresh(); });
 		});
 	},
 
 	update: function (force = false) {
+		var def = new djDeferred();
+
 		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
 			"search.begin": '<=' + djDateStamp.toISOString(this.get('dateRange').end, { selector: 'date', zulu: true }),
 			"search.end" : '>=' + djDateStamp.toISOString(this.get('dateRange').begin, { selector: 'date', zulu: true }),
@@ -1002,10 +1078,11 @@ return djDeclare("location.timeline", [
 				}
 			}
 			this.resize();
+			def.resolve();
 		}));
 
 		this.resize();
-		return null;
+		return def.promise;
 	},
 
 	scroll: function() {
@@ -1071,6 +1148,8 @@ return djDeclare("location.timeline", [
 		}
 
 		that.center = center;
+		that.resize();
+
 		that.update(true).then( function () {
 			if(widget) {
 				var pos = djDomGeo.position(widget.domNode, true);
@@ -1079,6 +1158,7 @@ return djDeclare("location.timeline", [
 				widget.update(true).then(function () {
 					var pos = djDomGeo.position(widget.domNode, true);
 					window.scroll(0, pos.y - middle);
+					that.scroll();
 					var reservation = null;
 
 					for(var k in widget.entries) {
