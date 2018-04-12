@@ -622,10 +622,6 @@ return djDeclare("location.reservation", [
 		var that = this;
     var def = new djDeferred();
 	
-		if(! intoYView(this.sup.domNode)) {
-			def.resolve(); return; 
-		}
-		
 		if( ! this.sup) { def.resolve(); return; }
 		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 
