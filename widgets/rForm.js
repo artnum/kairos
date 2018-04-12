@@ -366,12 +366,13 @@ return djDeclare("location.rForm", [
 		var select = this.status;
 		var that = this;
 		
-		this.reservation.get('entries').forEach( function (entry) {
-			that.nMachineChange.addOption({
-				label: entry.target + ' - ' + entry.label,
-				value: entry.target
+		var entries = this.reservation.get('entries');
+		for(var i = 0; i < entries.length; i++) {
+			this.nMachineChange.addOption({
+				label: entries[i].target + ' - ' + entries[i].label,
+				value: entries[i].target
 			});
-		});
+		}
 		this.nMachineChange.set('value', this.reservation.get('target'));
 		this.nChangeMachine.set('disabled', true);
 
@@ -440,7 +441,7 @@ return djDeclare("location.rForm", [
 
 	toggleDelivery: function () {
 		if(this.nDelivery.get('checked')) {
-			this.nDeliveryFields.style ='display: block;';
+			djDomStyle.set(this.nDeliveryFields, 'display', '');
 			
 			if(!this.deliveryBegin) {
 				this.nDeliveryBeginTime.set('value', this.beginTime.get('value'));
@@ -451,7 +452,8 @@ return djDeclare("location.rForm", [
 				this.nDeliveryEndDate.set('value', this.endDate.get('value'));
 			}
 		} else {
-			this.nDeliveryFields.style= 'display: none;';	
+			console.log(this.nDeliveryField);
+			djDomStyle.set(this.nDeliveryFields, 'display', 'none');
 		}
 	},
 

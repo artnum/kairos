@@ -138,10 +138,6 @@ body, html { margin: 0; padding: 0; }
 }
 
 
-.x3 .entry .reservation {
-}
-
-
 .x3 .control .fa {
 	font-size: 12px;
 }
@@ -206,13 +202,7 @@ body, html { margin: 0; padding: 0; }
 	height: 38px !important;
 }
 
-.reservation {
-	background-color: white;
-}
 
-.reservation.confirmed {
-	background-color: #eef;
-}
 .reservation.selected  { 
 	background-color: #FFDD44 !important;	
 }
