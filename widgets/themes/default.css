@@ -43,18 +43,6 @@ textarea {
 	background-color: white;
 }
 
-.reservation .id:before {
-	font-family: "Font Awesome 5 Free";
-	font-weight: 400;
-	content: "\f111\0020";
-}
-
-.reservation.confirmed .id:before {
-	font-family: "Font Awesome 5 Free";
-	font-weight: 400;
-	content: "\f058\0020";
-}
-
 .reservation .id {
 	padding: 0 0.2em 0 0.2em;
 }

@@ -355,9 +355,9 @@ return djDeclare("location.reservation", [
 	confirmedDom: function() {
 		var i = document.createElement('I');
 		if(this.is('confirmed')) {
-			i.setAttribute('class', 'far far-check-circle');
+			i.setAttribute('class', 'far fa-check-circle');
 		} else {
-			i.setAttribute('class', 'far far-circle');
+			i.setAttribute('class', 'far fa-circle');
 		}
 
 		djOn(i, 'click', djLang.hitch(this, this.doConfirm));
@@ -366,7 +366,12 @@ return djDeclare("location.reservation", [
 	},
 
 	doConfirm: function () {
-		console.log(arguments);
+		if(this.is('confirmed')) {
+			this.setIs('confirmed', false);
+		} else {
+			this.setIs('confirmed', true);
+		}
+		this.save();
 	},
 
 	contactDom: function () {
@@ -401,7 +406,9 @@ return djDeclare("location.reservation", [
 		var frag = document.createDocumentFragment();
 
 		frag.appendChild(document.createElement('DIV'));
-		frag.lastChild.appendChild(this.confirmedDom())
+		if(! this.get('compact')) {
+			frag.lastChild.appendChild(this.confirmedDom())
+		}
 			
 		var ident = document.createElement('SPAN');
 		ident.setAttribute('class', 'id');
