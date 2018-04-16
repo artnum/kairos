@@ -719,8 +719,12 @@ return djDeclare("location.rForm", [
 		this.reservation.set('comment', f.nComments);
 		this.reservation.set('folder', f.folder);
 		
-		if(f.title != "") { this.reservation.set('title', f.title); } else {
-			this.reservation.set('title', '');
+		if(f.title != "") {
+			this.reservation.set('title', f.title);
+		} else {
+			if(! this.get('originalTitle')) {
+				this.reservation.set('title', '');
+			}
 		}
 
 		this.reservation.save().then( () => { 
