@@ -364,7 +364,6 @@ return djDeclare("location.entry", [
 						that.error("Impossible d'enregistrer les données", 300);
 					} else {
 						r.o.fromJson(result.data);
-						console.log(result);
 						that.entries[r.o.get('id')] = r.o;
 	
 						window.requestAnimationFrame(function() {

@@ -731,7 +731,7 @@ return djDeclare("location.rForm", [
 		this.reservation.set('comment', f.nComments);
 		this.reservation.set('folder', f.folder);
 		this.reservation.set('gps', f.gps);
-console.log(f);		
+		
 		if(f.title != "") {
 			this.reservation.set('title', f.title);
 		} else {

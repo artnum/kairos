@@ -374,7 +374,7 @@ return djDeclare("location.reservation", [
 		var content = document.createDocumentFragment();
 		if(contact) {
 			if(contact.freeform) {
-				content.appendChild(document.createTextNode(String(dbContact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')));
+				content.appendChild(document.createTextNode(String(contact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')));
 			} else {
 				if(contact.o) {
 					content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names');
