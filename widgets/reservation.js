@@ -141,7 +141,16 @@ return djDeclare("location.reservation", [
 		this.set('active', false);
 	  this.resize();
 		djOn(this.domNode, "dblclick", djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp(); }));
+		djOn(this.domNode, "mousedown", djLang.hitch(this, (e) => { this.sizeMeUp(); }));
+		djOn(this.domNode, "mouseup", djLang.hitch(this, (e) => { this.sizeMeDown(); }));
   },
+
+	sizeMeUp: function (e) {
+	},
+
+	sizeMeDown: function (e) {
+	},
+
 	addAttr: function ( attr ) {
 		if(this.attrs.indexOf(attr) == -1) {
 			this.attrs.push(attr);	
@@ -171,6 +180,11 @@ return djDeclare("location.reservation", [
 	_setReferenceAttr: function(value) {
 		this.addAttr('reference');
     this._set('reference', value);
+	},
+	_setGpsAttr: function (value) {
+		this.addAttr('gps');
+		this._set('gps', value);
+		this.setTextDesc();
 	},
   _setAddressAttr: function(value) {
 		this.addAttr('address');
@@ -338,81 +352,127 @@ return djDeclare("location.reservation", [
 		return this.save();
 	},
 
-	setTextDesc: function () {
-    var html = '';
-		if(this.IDent == null) {
-			html = '<div><span class="id">[Nouvelle réservation]</span>';	
+	confirmedDom: function() {
+		var i = document.createElement('I');
+		if(this.is('confirmed')) {
+			i.setAttribute('class', 'far far-check-circle');
 		} else {
-			html = '<div><span class="id"><a href="#' + this.IDent + '">' + this.IDent + '</a></span>'; 	
+			i.setAttribute('class', 'far far-circle');
 		}
 
-		if(!this.get('compact')) {
-			if(this.get('dbContact')) {
-				var dbContact = this.get('dbContact');
-				if(dbContact.freeform) {
-					html += ' - ' +  '<address>' + (dbContact.freeform + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2') + '</address></div>';	
-				} else {
-					var x = ' - <address>';
-					if(dbContact.o) {
-						x += '<span class="o">' + dbContact.o + '</span>';
-					}
+		djOn(i, 'click', djLang.hitch(this, this.doConfirm));
 
-					if(dbContact.givenname || dbContact.sn) {
-						if(dbContact.o) { x += ', '; }
-						var n = '';
-						if(dbContact.givenname) {
-							n += dbContact.givenname;
-						}
-						if(dbContact.sn) {
-							if(dbContact.givenname) { n += ' '; }
-							n += dbContact.sn;
-						}
-						x += '<span class="name">' + n + '</span>';
-					}
-					if(x != ' - <address>') {
-						html += x + '</address></div>';
-					}
-				}
-			} else {
-				html += "</div>"	
-			}
-
-			html += "<div>"
-			if(this.get('trueBegin') && this.get('trueEnd')) {
-				if((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
-					html += '<span class="date">' + this.get('trueBegin').shortDate() + '</span>'; 
-				} else {
-					html += '<span class="date"><span>' + this.get('trueBegin').shortDate() + '</span>-'; 
-					html += '<span>' + this.get('trueEnd').shortDate() + '</span></span>'; 
-				}
-			}
-			
-			if(this.locality || this.address) {
-				var x = " <address>";
-				if(this.address) {
-					x += this.address;
-				}
-				if(this.locality) {
-					if(this.address) { x += ", " }
-					x += this.locality;
-				}
-				if(x != ", <address>") {
-					html += x + "</address>";	
-				}
-			} 
-
-			html += "</div>"
-
-
-			if(this.comment) {
-				html += '<div>' + this.comment + '</div>';	
-			}
-		} else {
-			html += '</div>';
-		}
-    if(this.txtDesc) { this.txtDesc.innerHTML = html; }
-		this.detailsHtml = html;
+		return i;
 	},
+
+	doConfirm: function () {
+		console.log(arguments);
+	},
+
+	contactDom: function () {
+		var contact = this.get('dbContact');
+		var content = document.createDocumentFragment();
+		if(contact) {
+			if(contact.freeform) {
+				content.appendChild(document.createTextNode(String(dbContact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')));
+			} else {
+				if(contact.o) {
+					content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names');
+					content.lastChild.appendChild(document.createTextNode(contact.o));
+				}
+
+				if(contact.givenname) {
+					content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'givenname names');
+					content.lastChild.appendChild(document.createTextNode(contact.givenname));
+				}
+
+				if(contact.sn) {
+					content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'sn names');
+					content.lastChild.appendChild(document.createTextNode(contact.sn));
+				}
+			}
+		}
+
+		return content;
+	},
+
+	setTextDesc: function () {
+		var html = '';
+		var frag = document.createDocumentFragment();
+
+		frag.appendChild(document.createElement('DIV'));
+		frag.lastChild.appendChild(this.confirmedDom())
+			
+		var ident = document.createElement('SPAN');
+		ident.setAttribute('class', 'id');
+		if(this.get('IDent')) {
+			ident.appendChild(document.createElement('A'));
+			ident.firstChild.setAttribute('href', '#' + this.get('IDent'));
+			ident.firstChild.appendChild(document.createTextNode(this.get('IDent')));
+		} else {
+			ident.appendChild(document.createTextNode('[Nouvelle réservation]'));
+		}
+		frag.lastChild.appendChild(ident);
+
+		frag.lastChild.appendChild(document.createElement('address'));
+		frag.lastChild.lastChild.appendChild(this.contactDom());
+
+		/* Second line */
+		frag.appendChild(document.createElement('DIV'));
+
+		if((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'date single begin');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortDate()));
+		} else {
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'date begin');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortDate()));
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'date end');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueEnd').shortDate()));
+		}
+
+		if(this.locality || this.address) {
+			var locality = frag.lastChild.appendChild(document.createElement('address'));
+			locality.setAttribute('class', 'location');
+			locality = frag.lastChild.lastChild;
+			if(this.gps) {
+				frag.lastChild.lastChild.appendChild(document.createElement('A'));
+				frag.lastChild.lastChild.lastChild.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.gps).replace(/\s/g, ''));
+				frag.lastChild.lastChild.lastChild.setAttribute('target', '_blank');
+				locality = frag.lastChild.lastChild.lastChild;
+			}
+
+			if(this.address) {
+				locality.appendChild(document.createElement('SPAN'));
+				locality.lastChild.setAttribute('class', 'address');
+				locality.lastChild.appendChild(document.createTextNode(this.address));
+			}
+
+			if(this.locality) {
+				locality.appendChild(document.createElement('SPAN'));
+				locality.lastChild.setAttribute('class', 'locality');
+				locality.lastChild.appendChild(document.createTextNode(this.locality));
+			}
+		}
+
+		if(this.comment) {
+			frag.appendChild(document.createElement('DIV'));
+			frag.lastChild.setAttribute('class', 'comment');
+			frag.lastChild.appendChild(document.createTextNode(this.comment));
+		}
+
+		var div = this.txtDesc;
+		window.requestAnimationFrame(() => {
+			if(div.firstChild) {
+				div.removeChild(div.firstChild);
+			}
+			div.appendChild(document.createElement('DIV'));
+			div.firstChild.appendChild(frag);
+		});
+	},
+
 	eDetails: function(event) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -765,7 +825,7 @@ return djDeclare("location.reservation", [
 			}
 		});
 		query['target'] = this.get('target');
-console.log(query);		
+
 		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
 			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then( (result) => {
 				if(result && result.data) {

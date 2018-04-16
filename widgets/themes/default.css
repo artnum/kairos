@@ -64,6 +64,52 @@ textarea {
 	text-decoration: none;
 }
 
+.reservation address {
+	color: black;
+	display: inline;
+	font-weight: bold;	
+}
+
+.reservation address.location , .reservation address.location a { 
+	font-weight: normal;
+	color: black;
+}
+
+.reservation address:before {
+	content: ' - ';
+}
+
+.reservation .names:before {
+	content: ', ';
+}
+
+.reservation .names:first-child:before {
+	content: '';
+}
+
+.reservation .date {
+	color: rgb(80,80,80);
+}
+
+.reservation .date:after {
+	content: ' ';
+}
+
+.reservation .date.end:before {
+	content: '- ';
+}
+
+.reservation .address:after {
+	content: ', ';
+}
+.reservation .address:last-child:after {
+	content. '';
+}
+
+.compact .reservation .names:first-child:before {
+	content: '';
+}
+
 /* entry */
 .entry {
 	border-top: 1px dashed rgba(80, 80, 80, 0.3);

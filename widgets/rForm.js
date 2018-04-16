@@ -399,6 +399,18 @@ return djDeclare("location.rForm", [
 			this.nFolder.domNode.parentNode.insertBefore(a, this.nFolder.domNode.nextSibling);
 			this.nFolder.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nFolder.domNode.nextSibling);
 		}	
+
+		if(this.reservation.get('gps')) {
+			this.nGps.set('value', this.reservation.get('gps'));
+			
+			var a = document.createElement('A');
+			a.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.reservation.get('gps')).replace(/\s/g, '')); a.setAttribute('target', '_blank');
+			a.appendChild(document.createElement('I'));
+			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
+			this.nGps.domNode.parentNode.insertBefore(a, this.nGps.domNode.nextSibling);
+			this.nGps.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nGps.domNode.nextSibling);
+		}
+
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }}).then( function (results) {
 			if(results.type = "results") {
@@ -718,7 +730,8 @@ return djDeclare("location.rForm", [
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
 		this.reservation.set('folder', f.folder);
-		
+		this.reservation.set('gps', f.gps);
+console.log(f);		
 		if(f.title != "") {
 			this.reservation.set('title', f.title);
 		} else {
