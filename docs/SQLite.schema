@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS reservation		( reservation_id INTEGER PRIMARY KEY AUT
 						  reservation_closed TIMESTAMP DEFAULT NULL,
 						  reservation_reference TEXT DEFAULT NULL,
 						  reservation_equipment TEXT DEFAULT NULL,
-						  reservation_modification DATETIME
+						  reservation_modification DATETIME,
+						  reservation_title TEXT DEFAULT NULL,
+						  reservation_folder TEXT DEFAULT NULL 
 						);
 
 CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY,
@@ -57,4 +59,10 @@ CREATE TABLE IF NOT EXISTS entry		( entry_id INTEGER PRIMARY KEY,
 						  entry_ref TEXT, 
 						  entry_name TEXT,
 						  entry_value TEXT
+						);
+
+CREATE TABLE IF NOT EXISTS extendedReservation	( extendedReservation_id INTEGER PRIMARY KEY,
+						  extendedReservation_reservation INTEGER,
+						  extendedReservation_name TEXT,
+						  extendedReservation_content TEXT
 						);

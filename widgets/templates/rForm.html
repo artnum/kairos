@@ -6,8 +6,10 @@
 <div style="width: 100%">
 <fieldset><legend>Machine</legend>
 <input data-dojo-type="dijit/form/Select" name="machine" data-dojo-attach-point="nMachineChange" data-dojo-attach-event="change:doSelectMachine" />
-<button type="button" data-dojo-type="dijit/form/Button" data-dojo-attach-point="nChangeMachine" data-dojo-attach-event="click:doChangeMachine">Changer</button>
+<button type="button" data-dojo-type="dijit/form/Button" data-dojo-attach-point="nChangeMachine" data-dojo-attach-event="click:doChangeMachine">Changer</button><br />
+Commandée : <input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" />
 </fieldset>
+</div>
 
 <div style="display: flex">
 <fieldset><legend>Location</legend>
@@ -29,6 +31,7 @@ Fin : <input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data
 <div style="width: 100%;"> 
 <fieldset><legend>Détails</legend>
 Référence : <input data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" /><br />
+Dossier : <input data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /><br />
 Adresse : <input data-dojo-type="dijit/form/Textarea" name="nAddress" data-dojo-attach-point="nAddress" /><br />
 Localité : <input data-dojo-type="dijit/form/TextBox" name="nLocality" data-dojo-attach-point="nLocality" /><br />
 Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="status" /><br />
@@ -53,13 +56,6 @@ Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attac
 <textarea data-dojo-type="dijit/form/Textarea" name="nComments" data-dojo-attach-point="nComments" style="min-height: 10ex;"></textarea>
 </fieldset>
 </div>
-
-<!--
-<div class="extendedReservation" style="width: 100%">
-	Machine commandée : <input data-dojo-type="dijit/form/TextBox" name="ext_orderedMachine"><br />
-	Dossier : <input data-dojo-type="dijit/form/TextBox" name="ext_projectFolder"><br />
-</div>
-//-->
 
 <div style="width: 100%">
 <fieldset data-dojo-attach-point="nMachinistForm"><legend>Complément</legend>

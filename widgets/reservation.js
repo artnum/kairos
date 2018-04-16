@@ -147,6 +147,14 @@ return djDeclare("location.reservation", [
 			this.attrs.push(attr);	
 		}
 	},
+	_setFolderAttr: function(value) {
+		this.addAttr('folder');
+		this._set('folder', value);
+	},
+	_setTitleAttr: function(value) {
+		this.addAttr('title');
+		this._set('title', value);
+	},
 	_setStatusAttr: function(value) {
 		this.addAttr('status');
 		this._set('status', value);
@@ -328,17 +336,6 @@ return djDeclare("location.reservation", [
 
 	store: function () {
 		return this.save();
-		/*
-		var def = new djDeferred();
-
-		var that = this;
-		this.sup.store({o: this}).then( (result) => {
-			that.fromJson(result);
-			that.resize();
-			def.resolve();
-		});
-
-		return def.promise; */
 	},
 
 	setTextDesc: function () {
@@ -768,7 +765,7 @@ return djDeclare("location.reservation", [
 			}
 		});
 		query['target'] = this.get('target');
-		
+console.log(query);		
 		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
 			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then( (result) => {
 				if(result && result.data) {

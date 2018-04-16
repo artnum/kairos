@@ -346,15 +346,15 @@ return djDeclare("location.rForm", [
 			}
 
 			if(change) {
-				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: {
-					'id' : that.reservation.get('id'),
-					target: newMachine
-				}}).then( function ( res ) {
+				var query = { id: that.reservation.get('id'), target: newMachine };
+				if(that.get('originalTitle')) {
+					query.title = that.get('originalTitle');
+				}
+
+				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: query}).then( function ( res ) {
 					if(res && res.data && res.data.success) {
-						that.destroyReservation(that.reservation);
-						dtRegistry.byId('location_entry_' + newMachine)._update(true).then( function() {
-							that.hide();
-						});
+						that.reservation.destroy();
+						that.hide();
 					}
 				});
 			}
@@ -376,6 +376,29 @@ return djDeclare("location.rForm", [
 		this.nMachineChange.set('value', this.reservation.get('target'));
 		this.nChangeMachine.set('disabled', true);
 
+		if(this.reservation.get('title') == null) {
+			this.nTitle.set('placeholder', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label);
+			this.set('originalTitle', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label);
+		} else {
+			this.nTitle.set('value', this.reservation.get('title'));
+			this.set('originalTitle', null);
+		}
+
+		if(this.reservation.get('folder')) {
+			var folder = this.reservation.get('folder');
+			this.nFolder.set('value', this.reservation.get('folder'));
+			var url = folder;
+			if(! folder.match(/^[a-zA-Z]*:\/\/.*/)) {
+				url = 'file://' + url;	
+			}
+
+			var a = document.createElement('A');
+			a.setAttribute('href', url); a.setAttribute('target', '_blank');
+			a.appendChild(document.createElement('I'));
+			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
+			this.nFolder.domNode.parentNode.insertBefore(a, this.nFolder.domNode.nextSibling);
+			this.nFolder.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nFolder.domNode.nextSibling);
+		}	
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }}).then( function (results) {
 			if(results.type = "results") {
@@ -452,7 +475,6 @@ return djDeclare("location.rForm", [
 				this.nDeliveryEndDate.set('value', this.endDate.get('value'));
 			}
 		} else {
-			console.log(this.nDeliveryField);
 			djDomStyle.set(this.nDeliveryFields, 'display', 'none');
 		}
 	},
@@ -695,6 +717,11 @@ return djDeclare("location.rForm", [
 		this.reservation.set('equipment', f.nEquipment);
 		this.reservation.set('locality', f.nLocality);
 		this.reservation.set('comment', f.nComments);
+		this.reservation.set('folder', f.folder);
+		
+		if(f.title != "") { this.reservation.set('title', f.title); } else {
+			this.reservation.set('title', '');
+		}
 
 		this.reservation.save().then( () => { 
 			that.hide();
