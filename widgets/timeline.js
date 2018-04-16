@@ -1058,8 +1058,8 @@ return djDeclare("location.timeline", [
 		var def = new djDeferred();
 
 		Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-			"search.begin": '<=' + djDateStamp.toISOString(this.get('dateRange').end, { selector: 'date', zulu: true }),
-			"search.end" : '>=' + djDateStamp.toISOString(this.get('dateRange').begin, { selector: 'date', zulu: true }),
+			"search.begin": '<' + djDateStamp.toISOString(djDate.add(this.get('dateRange').end, 'day', 2), { selector: 'date', zulu: true }),
+			"search.end" : '>' + djDateStamp.toISOString(djDate.add(this.get('dateRange').begin, 'day', -2), { selector: 'date', zulu: true }),
 			"search.deleted" : '-' }
 		}).then(djLang.hitch(this, (results) => {
 			if(results && results.data && results.data.length > 0) {

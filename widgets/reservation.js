@@ -678,12 +678,11 @@ return djDeclare("location.reservation", [
   resize: function() {
 		var that = this;
     var def = new djDeferred();
-	
+
 		if( ! this.sup) { def.resolve(); return; }
 		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
 
 		this.drawComplement();
-
 		/* Verify  if we keep this ourself */
 		if(djDate.compare(this.get('trueBegin'),this.get('dateRange').end, "date") >= 0 || 
 				djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, "date") < 0 ||

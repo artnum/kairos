@@ -2,24 +2,6 @@
 /* Extract all information needed for frontpage, read-only */ 
 class DeepReservationModel extends ReservationModel {
   
-   function listing($options) {
-      try {
-         $st = $this->DB->prepare($this->prepare_statement('SELECT reservation_id FROM reservation', $options));
-         $ret = array();
-         if($st->execute()) {
-            foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $v) {
-               $ret[] = $this->read($this->unprefix($v)['id']);
-            }
-         }
-
-         return $ret;
-      } catch (\Exception $e) {
-         return NULL;
-      }
-
-      return NULL;
-   }
-
    function get($id) {
       $pre_statement = 'SELECT reservation.*, status.status_color FROM `reservation` JOIN status ON reservation.reservation_status = status.status_id WHERE reservation_id = :id';
       try {
