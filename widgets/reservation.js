@@ -603,6 +603,9 @@ return djDeclare("location.reservation", [
 					var o = byType[x[i].type.color][j].range.merge(z.range);
 					if(o != null) {
 						byType[x[i].type.color][j].range = o;
+						if(z.number > byType[x[i].type.color][j].number) {
+							byType[x[i].type.color][j].number = z.number;
+						}
 						overlap = true;
 						break;
 					}
@@ -622,12 +625,12 @@ return djDeclare("location.reservation", [
 		for(var i in byType) {
 			totalWidth = 0;
 			var overflow = false;
+			var color = '#FFF';
 			byType[i].forEach( function ( entry ) {
-				if(!overflow) {
+				if(!overflow && entry.number > 0) {
 					var begin = entry.range.begin, end = entry.range.end, Rb = that.get('trueBegin');
-					var color = 'FFF';
 					if(entry.type && entry.type.color) {
-						color = entry.type.color;
+						color = '#' + entry.type.color;
 					}
 				
 					var left = 0;
@@ -661,8 +664,18 @@ return djDeclare("location.reservation", [
 						totalWidth += width;
 
 						var div = document.createElement('DIV');
-						div.setAttribute('style', 'position: relative; background-color: #' + (color) + '; width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%; clear: right;');
+						div.setAttribute('style', 'position: relative; background: linear-gradient(0.25turn, ' + pSBC(0.75, color) +', ' + (color) + ',' + pSBC(0.75, color) + '); width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%; clear: right;');
 						div.setAttribute('class', 'stabiloLine');
+						
+						var numDiv = document.createElement('DIV');
+						numDiv.setAttribute('class', 'number'); numDiv.setAttribute('style', 'color: ' + pSBC(-0.3, color));
+						for(var i = 0; i < entry.number; i++) {
+							var sym = document.createElement('I');
+							sym.setAttribute('class', 'fas fa-circle');
+							numDiv.appendChild(sym);
+						}
+						div.appendChild(numDiv);
+
 						frag.appendChild(div);
 						appendFrag = true;
 					}

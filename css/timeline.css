@@ -317,10 +317,6 @@ div.contact > div:first-child {
 		
 }
 
-.rForm .flex > div { 
-	width: 48%;
-}
-
 .dijitReadOnly {
 	background-color: #ccc !important;	
 }

@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS association		( association_id INTEGER PRIMARY KEY,
 						  association_begin DATETIME,
 						  association_end DATETIME,
 						  association_comment TEXT,
-						  association_type TEXT
+						  association_type TEXT,
+						  association_number INTEGER DEFAULT 1
 						);
 
 CREATE TABLE IF NOT EXISTS tags 		( tags_value TEXT,

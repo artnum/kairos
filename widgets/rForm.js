@@ -180,65 +180,94 @@ return djDeclare("location.rForm", [
 	},
 
 	associationEntries: function(entries) {
-		var frag = document.createDocumentFragment();
-		for(var i = 0; i < entries.length; i++) {	
-			var entry = entries[i];
-			var value = entries[i].type;
-			var d = document.createElement('DIV');
-			d.setAttribute('class', 'machinist');
+		var frag = document.createDocumentFragment(), byType = new Object();
 
-			if(value) {
-				var name = document.createElement('DIV');
-				if(value.color) {
-					var x = document.createElement('I');
-					x.setAttribute('aria-hidden', 'true'), x.setAttribute('class', 'fa fa-square'); x.setAttribute('style', 'color: #' + value.color + ';');
-					name.appendChild(x); name.appendChild(document.createTextNode(' '));
+		for(var i = 0; i < entries.length; i++) {
+			if(! byType[entries[i].type.id]) {
+				byType[entries[i].type.id] = new Array();
+			}
+			byType[entries[i].type.id].push(entries[i]);
+		}
+
+		for(var k in byType) {
+			var divType = document.createElement('DIV');
+			var color = '#FFFFFF';
+			if(byType[k][0].type.color) {
+				color = '#' + byType[k][0].type.color;
+			}
+			var name = byType[k][0].type.name;
+
+			divType.setAttribute('class', 'association type');
+			divType.setAttribute('data-association-type-id', k);
+			divType.appendChild(document.createElement('DIV'));
+			divType.lastChild.setAttribute('style', 'background: linear-gradient(0.25turn, ' + pSBC(0.75, color) +', ' + (color) + ',' + pSBC(0.75, color) + ');');
+			divType.lastChild.setAttribute('class', 'name');
+			divType.lastChild.appendChild(document.createTextNode(name));
+
+			for(var i = 0; i < byType[k].length; i++)  {
+				var divLine = document.createElement('DIV');
+				divLine.setAttribute('class', 'item');
+				
+				var begin = djDateStamp.fromISOString(byType[k][i].begin);
+				var end = djDateStamp.fromISOString(byType[k][i].end);
+
+				var line = document.createElement('DIV');
+				line.setAttribute('class', 'description');
+				
+				line.appendChild(document.createElement('SPAN'));
+				line.lastChild.setAttribute('class', 'number value');
+				line.lastChild.appendChild(document.createTextNode(byType[k][i].number));
+
+				line.appendChild(document.createElement('I'));
+				line.lastChild.setAttribute('class', 'fas fa-times');
+
+				line.appendChild(document.createElement('SPAN'));
+				line.lastChild.setAttribute('class', 'date begin value');
+				line.lastChild.appendChild(document.createTextNode(begin.fullDate()));
+
+				line.appendChild(document.createElement('SPAN'));
+				line.lastChild.setAttribute('class', 'hour begin value');
+				line.lastChild.appendChild(document.createTextNode(begin.shortHour()));
+				
+				line.appendChild(document.createElement('SPAN'));
+				line.lastChild.setAttribute('class', 'date end value');
+				line.lastChild.appendChild(document.createTextNode(end.fullDate()));
+
+				line.appendChild(document.createElement('SPAN'));
+				line.lastChild.setAttribute('class', 'hour end value');
+				line.lastChild.appendChild(document.createTextNode(end.shortHour()));
+
+				line.appendChild(document.createElement('DIV'));
+				line.lastChild.setAttribute('class', 'toolbox');
+
+				line.lastChild.appendChild(document.createElement('I'));
+				line.lastChild.lastChild.setAttribute('class', 'far fa-trash-alt');
+				line.lastChild.lastChild.setAttribute('data-artnum-id', byType[k][i].id);
+				djOn(line.lastChild.lastChild, 'click', djLang.hitch(this, this.doRemoveMachinist));
+
+				divLine.appendChild(line);
+
+				if(byType[k][i].comment != "") {
+					divLine.appendChild(document.createElement('DIV'));
+					divLine.lastChild.setAttribute('class', 'comment');
+					divLine.lastChild.appendChild(document.createTextNode(byType[k][i].comment));
 				}
 
-				name.appendChild(document.createTextNode(value.name));
-				d.appendChild(name);
-			} else {
-				continue;
-			}
-			
-			var s = document.createElement('DIV');
-			s.setAttribute('class', 'delete icon');
-			s.setAttribute('data-artnum-id', entry.id);
-			s.appendChild(djDomConstruct.toDom('<i class="far fa-trash-alt" aria-hidden="true"> </i>'));
-			djOn(s, "click", djLang.hitch(this, this.doRemoveMachinist));
-			d.appendChild(s);
-
-			var begin = djDateStamp.fromISOString(entry.begin);
-			var end = djDateStamp.fromISOString(entry.end);
-
-			var x = document.createElement('DIV');
-			x.setAttribute('class', 'dates');
-
-			var s = document.createElement('SPAN');
-			s.appendChild(document.createTextNode('Du ' + begin.fullDate() + ' ' + begin.shortHour()));		
-			x.appendChild(s);
-		
-			var s = document.createElement('SPAN');
-			s.appendChild(document.createTextNode(' au ' + end.fullDate() + ' ' + end.shortHour()));	
-			x.appendChild(s);
-		
-			d.appendChild(x);
-
-			if(entry.comment) {
-				var s = document.createElement('DIV');
-				s.setAttribute('class', 'comment')
-				s.appendChild(document.createTextNode(entry.comment));
-				d.appendChild(s);		
+				divType.appendChild(divLine);
 			}
 
-			frag.appendChild(d); 
+			frag.appendChild(divType);
 		}
-		while(this.complements.firstChild) {
-			this.complements.removeChild(this.complements.firstChild);
-		}
-		this.complements.appendChild(frag);
+
+		var complements = this.complements;
+		window.requestAnimationFrame( () => {
+			while(complements.firstChild) {
+				complements.removeChild(complements.firstChild);
+			}
+			complements.appendChild(frag);
+		});
+
 		this.reservation.drawComplement();
-		return frag;
 	},
 
 	doRemoveMachinist: function(event) {
@@ -297,16 +326,17 @@ return djDeclare("location.rForm", [
 
 	doAddComplement: function () {
 		var that = this;
-		var f = djDomForm.toObject(this.nMachinistForm);
+		var f = djDomForm.toObject(this.nComplementsForm);
 		[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
 			if(f[i] == '') {
 				that[i].set('state', 'Error');
 				return;		
 			}	
 		});
-
+		
 		var begin = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
 		var end = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
+		var number = f.number ? f.number : 1;
 
 		request.post('/location/store/Association/', { query: {
 			'reservation': this.reservation.get('id'),
@@ -314,7 +344,8 @@ return djDeclare("location.rForm", [
 			'type': f.associationType,
 			'begin': begin,
 			'end': end,
-			'comment': f.nMComment ? f.nMComment : '' 
+			'comment': f.nMComment ? f.nMComment : '',
+			'number': number
 		}}).then(function () {
 			that.reservation.resize();
 			that.associationRefresh();
@@ -471,7 +502,7 @@ return djDeclare("location.rForm", [
 			}
 		}));
 		
-		this.complements.appendChild(this.associationEntries(this.reservation.complements));
+		this.associationEntries(this.reservation.complements);
   },
 
 	toggleDelivery: function () {

@@ -3,38 +3,38 @@
 
 <div class="flex"> <!-- Flexbox base //-->
 
-<div style="width: 100%">
+<div class="group">
 <fieldset><legend>Machine</legend>
 <input data-dojo-type="dijit/form/Select" name="machine" data-dojo-attach-point="nMachineChange" data-dojo-attach-event="change:doSelectMachine" />
 <button type="button" data-dojo-type="dijit/form/Button" data-dojo-attach-point="nChangeMachine" data-dojo-attach-event="click:doChangeMachine">Changer</button><br />
-Commandée : <input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" />
+<label for="title" class="fixedSize">Commandée : </label><input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" />
 </fieldset>
 </div>
 
-<div style="display: flex">
+<div class="group twocol">
 <fieldset><legend>Location</legend>
 <input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente<br />
-Début : <input data-dojo-type="dijit/form/DateTextBox" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
-Fin : <input data-dojo-type="dijit/form/DateTextBox" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
+<label for="beginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
+<label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
 <br />
 <input data-dojo-type="dijit/form/CheckBox" name="confirmed" data-dojo-attach-point="nConfirmed" data-dojo-attach-event="click:toggleConfirmed"/> <label for="confirmed">Fin confirmée</label>
 </fieldset>
 
 
-<fieldset data-dojo-attach-point="nDeliveryFields" style="padding-left: 1em;"><legend>Livraison</legend>
+<fieldset data-dojo-attach-point="nDeliveryFields"><legend>Livraison</legend>
 <br />
-Début : <input data-dojo-type="dijit/form/DateTextBox" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /><br />
-Fin : <input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
+<label for="deliveryBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /><br />
+<label for="deliveryEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
 </fieldset>
 </div>
 
-<div style="width: 100%;"> 
+<div class="group"> 
 <fieldset><legend>Détails</legend>
-Référence : <input data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" /><br />
-Dossier : <input data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /><br />
-Adresse : <input data-dojo-type="dijit/form/Textarea" name="nAddress" data-dojo-attach-point="nAddress" /><br />
-Localité : <input data-dojo-type="dijit/form/TextBox" name="nLocality" data-dojo-attach-point="nLocality" /> | GPS : <input data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /><br />
-Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="status" /><br />
+	<span class="dualEntry"><label for="mReference" class="fixedSize">Référence : </label><input data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" />
+		<label for="status" class="fixedSize">Status : </label><input data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="status" /></span><br />
+	<label for="folde" class="fixedSize">Dossier : </label><input data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /><br />
+	<label for="nAddress" class="fixedSize">Adresse : </label><input data-dojo-type="dijit/form/Textarea" name="nAddress" data-dojo-attach-point="nAddress" /><br />
+	<span class="dualEntry"><label class="fixedSize" for="nLocality">Localité : </label><input data-dojo-type="dijit/form/TextBox" name="nLocality" data-dojo-attach-point="nLocality" /><label class="fixedSize" for="gp">GPS : </label><input data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /></span><br />
 </fieldset> 
 
 
@@ -47,7 +47,7 @@ Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attac
 </fieldset>
 </div>
 
-<div style="width: 100%;">
+<div class="group twocol">
 <fieldset><legend>Matériel</legend>
 <textarea data-dojo-type="dijit/form/Textarea" name="nEquipment" data-dojo-attach-point="nEquipment" style="min-height: 10ex;"></textarea>
 </fieldset>
@@ -57,26 +57,30 @@ Status : <input data-dojo-type="dijit/form/Select" name="status" data-dojo-attac
 </fieldset>
 </div>
 
-<div style="width: 100%">
-<fieldset data-dojo-attach-point="nMachinistForm"><legend>Complément</legend>
-	Type : <input data-dojo-type="dijit/form/Select" name="associationType" data-dojo-attach-point="nAssociationType" /><br />
-<!--  #Not used now# Personne : <input data-dojo-type="dijit/form/FilteringSelect" name="nMachinist" data-dojo-attach-point="nMachinist" /><br />//-->
-Début : <input data-dojo-type="dijit/form/DateTextBox" name="nMBeginDate" data-dojo-attach-point="nMBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMBeginTime" data-dojo-attach-point="nMBeginTime" /> 
-Fin : <input data-dojo-type="dijit/form/DateTextBox" name="nMEndDate" data-dojo-attach-point="nMEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMEndTime" data-dojo-attach-point="nMEndTime" /><br />
-Remarque : <input data-dojo-type="dijit/form/TextBox" name="nMComment" data-dojo-attach-point="nMComment" /><br />
+<div class="group">
+	<fieldset data-dojo-attach-point="nComplementsForm">
+	<legend>Complément</legend>
 
-<button data-dojo-type="dijit/form/Button" value="Ajouter"
- type="button" data-dojo-attach-event="click:doAddComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
+	<div data-dojo-attach-point="complements"></div>
+
+	<span class="dualEntry"><label for="associationType" class="fixedSize">Type : </label><input data-dojo-type="dijit/form/Select" name="associationType" data-dojo-attach-point="nAssociationType" />
+		<label for="number" class="fixedSize">Nombre : </label><input data-dojo-type="dijit/form/NumberTextBox" name="number" data-dojo-attach-point="nNumber" /></span>
+	<br />
+	<span class="dualEntry">
+		<label for="nMBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMBeginDate" data-dojo-attach-point="nMBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMBeginTime" data-dojo-attach-point="nMBeginTime" /> 
+		<label for=nMEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMEndDate" data-dojo-attach-point="nMEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMEndTime" data-dojo-attach-point="nMEndTime" />
+	</span>
+	<br />
+	<label for="nMComment" class="fixedSize">Remarque : </label><input data-dojo-type="dijit/form/TextBox" name="nMComment" data-dojo-attach-point="nMComment" /><br />
+
+	<button data-dojo-type="dijit/form/Button" value="Ajouter"
+ 	type="button" data-dojo-attach-event="click:doAddComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
 </fieldset>
 
-<div data-dojo-attach-point="complements"></div>
 </div>
+</div> 
 
-</div> <!-- // Flexbox base //-->
-<!--<div style="width: 100%;">
-<div style="height: 200px; border: 5px solid blue; width: 100px" data-dojo-attach-event="dragover:dropFile,dragend:dropFile,drop:dropFile"></div>
-</div>//-->
-<fieldset>
+<fieldset class="command">
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
  type="button" data-dojo-attach-event="click:doSave" ><i class="fa fa-floppy-o" aria-hidden="true"></i> Sauvegarder</button>
 <button data-dojo-type="dijit/form/Button" value="Imprimer"
