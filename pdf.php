@@ -251,6 +251,10 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
    }
 }
 
+if(!empty($reservation['gps'])) {
+   $PDF->printTaggedLn(array('%c', 'GPS : ', '%cb', $reservation['gps']));
+}
+
 if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
@@ -275,6 +279,9 @@ $PDF->vspace(2);
 $PDF->setFontSize(5.6);
 $PDF->printTaggedLn(array('%cb', $reservation['target'], ' - ' . $machine['cn']), array('underline' => true));
 $PDF->resetFontSize();
+if(!empty($reservation['title'])) {
+   $PDF->printTaggedLn(array('%c', 'Commandée : ', $reservation['title']));
+}
 
 $PDF->vspace(80);
 if(isset($reservation['equipment'])) {
@@ -316,7 +323,7 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
       foreach($v as $data) {
          $begin = new DateTime($data['begin']) ;
          $end = new DateTime($data['end']);
-         $PDF->printTaggedLn(array( '%c', 'Du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+         $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
          if($x) {
             $PDF->br();
             $x = false;
