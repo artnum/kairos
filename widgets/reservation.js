@@ -142,14 +142,40 @@ return djDeclare("location.reservation", [
 		this.set('active', false);
 	  this.resize();
 		djOn(this.domNode, "dblclick", djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp(); }));
-		djOn(this.domNode, "mousedown", djLang.hitch(this, (e) => { this.sizeMeUp(); }));
-		djOn(this.domNode, "mouseup", djLang.hitch(this, (e) => { this.sizeMeDown(); }));
+		djOn(this.domNode, "mousedown", djLang.hitch(this, this.isolateMe));
+		djOn(this.domNode, "mouseup", djLang.hitch(this, this.cancelIsolation));
   },
 
-	sizeMeUp: function (e) {
+	isolateMe: function (e) {
+		if(! this._isolated) {
+			this._isolation = window.setTimeout( djLang.hitch(this, () => {
+				var mask = document.createElement('DIV');
+				this._isolated = mask;
+				this.highlight();
+				djDomStyle.set(this.domNode, 'z-index', '99999999');
+				mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998');
+				djOn(mask, 'click', djLang.hitch(this, this.cancelIsolation));
+				djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation));
+				window.requestAnimationFrame( () => {
+					document.getElementsByTagName('BODY')[0].appendChild(mask);
+				});
+			}), 750);
+		}
 	},
 
-	sizeMeDown: function (e) {
+	cancelIsolation: function (e) {
+		console.log(e);
+		if(this._isolation) {
+			window.clearTimeout(this._isolation);
+		}
+
+		if(e.type != 'mouseup') {
+			if(this._isolated) {
+				djDomStyle.set(this.domNode, 'z-index', '');
+				this._isolated.parentNode.removeChild(this._isolated);
+				this._isolated = false;
+			}
+		}
 	},
 
 	addAttr: function ( attr ) {

@@ -1131,18 +1131,15 @@ return djDeclare("location.timeline", [
 
 		if(this.Highlighting) {
 			djDomStyle.set(this.Highlighting[0], 'box-shadow', '');
-			djDomStyle.set(domNode, 'z-index', '');
 			window.clearTimeout(this.Highlighting[1]);
 		} else {
 			this.Highlighting = [];
 		}
 
 		djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
-		djDomStyle.set(domNode, 'z-index', '599');
 		this.Highlighting[0] = domNode;
 		this.Highlighting[1] = window.setTimeout(function() {
 			djDomStyle.set(domNode, 'box-shadow', '');
-			djDomStyle.set(domNode, 'z-index', '');
 		}, 5000);
 	},
 
