@@ -2,6 +2,11 @@ html {
 	overflow-x: hidden;
 }
 
+/* Menu */
+#AppHeader {
+	z-index: 460;
+}
+
 /* dateentry */
 .dateentry > div {
 	width: 100% !important;

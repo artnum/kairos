@@ -214,6 +214,11 @@ return djDeclare("location.timeline", [
 		}, 10000);
 	},
 
+	_setCenterAttr: function (date) {
+		this.center = date;
+		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
+	},
+
 	_setZoomAttr: function (zoomValue) {
 		var style = '';
 		var page = getPageRect();
@@ -673,6 +678,13 @@ return djDeclare("location.timeline", [
 	_getDateRangeAttr: function() {
 		return this.getDateRange();
 	},
+
+	today: function () {
+		this.set('center', new Date());
+		this.resize();
+		this.update(true);
+	},
+
 	moveXRight: function(x) {
 		this.center = djDate.add(this.center, "day", Math.abs(x));
 		this.update();
@@ -1057,7 +1069,6 @@ return djDeclare("location.timeline", [
 
 	update: function (force = false) {
 		var def = new djDeferred();
-
 		var r = this.runningRequest; 
 		this.runningRequest = new Array();
 		for(var i = 0; i < r.length; i++) {
@@ -1162,7 +1173,7 @@ return djDeclare("location.timeline", [
 			center = djDate.add(center, "day", Math.abs(w / this.get('blockSize')));	
 		}
 
-		that.center = center;
+		that.set('center', center);
 		that.resize();
 
 		that.update(true).then( function () {

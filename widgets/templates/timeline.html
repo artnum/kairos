@@ -1,5 +1,5 @@
 <div data-dojo-attach-point="timeline" class="${baseClass}">
-<div class="fixed headerContainer" data-dojo-attach-point="fixedHeader">
+<div class="fixed headerContainer" data-dojo-attach-point="fixedHeader" id="AppHeader">
 
 <div data-dojo-type="dijit/MenuBar" data-dojo-attach-point="menu" id="AppMenu">
 	<div data-dojo-type="dijit/PopupMenuBarItem">
@@ -21,6 +21,12 @@
 		<div data-dojo-attach-point="searchMenu" data-dojo-type="dijit/DropDownMenu" id="searchMenu">
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="accelKey: 'Ctrl + L', onClick: () => { window.App.searchLoc(); }">Location</div>
 			<div data-dojo-type="dijit/MenuSeparator"></div>
+		</div>
+	</div>
+	<div data-dojo-type="dijit/PopupMenuBarItem">
+		<label><li class="far fa-calendar"></li> Dates</label>
+		<div data-dojo-type="dijit/DropDownMenu" id="gotoMenu">
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.today(); }">Aujourd'hui</div>
 		</div>
 	</div>
 </div>
