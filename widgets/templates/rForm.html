@@ -72,9 +72,9 @@
 	</span>
 	<br />
 	<label for="nMComment" class="fixedSize">Remarque : </label><input data-dojo-type="dijit/form/TextBox" name="nMComment" data-dojo-attach-point="nMComment" /><br />
-
-	<button data-dojo-type="dijit/form/Button" value="Ajouter"
- 	type="button" data-dojo-attach-event="click:doAddComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
+	<input type="hidden" value="" data-dojo-attach-point="nComplementId" name="idComplement" />
+	<button data-dojo-type="dijit/form/Button" value="Ajouter" data-dojo-attach-point="nAddEditComplementButton" type="button" data-dojo-attach-event="click:doAddEditComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
+	<button data-dojo-type="dijit/form/Button" value="Reset" type="button" data-dojo-attach-event="click:doResetComplement" ><i class="fas fa-eraser" aria-hidden="true"></i> Annuler</button>
 </fieldset>
 
 </div>

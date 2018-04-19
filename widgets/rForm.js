@@ -240,10 +240,17 @@ return djDeclare("location.rForm", [
 				line.appendChild(document.createElement('DIV'));
 				line.lastChild.setAttribute('class', 'toolbox');
 
+
+				line.lastChild.appendChild(document.createElement('I'));
+				line.lastChild.lastChild.setAttribute('class', 'far fa-edit');
+				line.lastChild.lastChild.setAttribute('data-artnum-id', byType[k][i].id);
+				djOn(line.lastChild.lastChild, 'click', djLang.hitch(this, this.doEditComplement));
+
 				line.lastChild.appendChild(document.createElement('I'));
 				line.lastChild.lastChild.setAttribute('class', 'far fa-trash-alt');
 				line.lastChild.lastChild.setAttribute('data-artnum-id', byType[k][i].id);
-				djOn(line.lastChild.lastChild, 'click', djLang.hitch(this, this.doRemoveMachinist));
+				djOn(line.lastChild.lastChild, 'click', djLang.hitch(this, this.doRemoveComplement));
+
 
 				divLine.appendChild(line);
 
@@ -270,11 +277,63 @@ return djDeclare("location.rForm", [
 		this.reservation.drawComplement();
 	},
 
-	doRemoveMachinist: function(event) {
+	doEditComplement: function (event) {
+		var id = null, that = this, node, c;
+		for(var i = event.target; i; i = i.parentNode) {
+			if(i.hasAttribute('data-artnum-id')) {
+				id = i.getAttribute('data-artnum-id');
+				break;
+			}
+		}
+		
+		if(id) {
+			for(var i = 0; i < this.reservation.complements.length; i++) {
+				if(this.reservation.complements[i].id == id) {
+					c = this.reservation.complements[i];
+					break;
+				}
+			}
+
+			this.nComplementId.value = id;
+			this.nAddEditComplementButton.set('label', '<i class="fas fa-edit"> </i> Éditer');
+			this.nNumber.set('value', c.number);
+			this.nMBeginDate.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'date'}));
+			this.nMBeginTime.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'time'}));
+			this.nMEndDate.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'date'}));
+			this.nMEndTime.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'time'}));
+			this.nMComment.set('value', c.comment);
+			this.nAssociationType.set('value', locationConfig.store + '/Status/' + c.type.id);
+
+			for(var i = event.target; i; i = i.parentNode) {
+				if(i.hasAttribute('class')) {
+					if(i.getAttribute('class') == 'item') {
+						node = i; break;
+					}
+				}
+			}
+
+			djDomStyle.set(node, 'color', 'grey');
+		}
+	},
+
+	doResetComplement: function (event) {
+		this.nComplementId.value = '';
+		this.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter');
+		this.nAssociationType.set('value', '');
+		this.nNumber.set('value', 1);
+		this.nMBeginDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'date'}));
+		this.nMBeginTime.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'time'}));
+		this.nMEndDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'date'}));
+		this.nMEndTime.set('value',  djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'time'}));
+		this.nMComment.set('value', '');
+		this.associationRefresh();
+	},
+
+	doRemoveComplement: function(event) {
 		var id = null;
 		var that = this;
 		for(var i = event.target; i; i = i.parentNode) {
-			if(i.getAttribute('data-artnum-id')) {
+			if(i.hasAttribute('data-artnum-id')) {
 				id = i.getAttribute('data-artnum-id');
 				break;	
 			}	
@@ -288,6 +347,7 @@ return djDeclare("location.rForm", [
 	},
 
 	associationRefresh: function () {
+		var def = new djDeferred();
 		var that = this;
 		Req.get(locationConfig.store + '/Association/', { query: { "search.reservation": this.reservation.get('id') } }).then( function (results) {
 			if(results && results.data && results.data.length > 0) {
@@ -316,16 +376,20 @@ return djDeclare("location.rForm", [
 
 					that.reservation.complements = results.data;
 					that.associationEntries(that.reservation.complements);
+					def.resolve();
 				});
 			} else {
 				that.reservation.complements = new Array();
 				that.associationEntries(new Array());
+				def.resolve();
 			}
 		});
+	
+		return def.promise;
 	},
 
-	doAddComplement: function () {
-		var that = this;
+	doAddEditComplement: function () {
+		var that = this, query = new Object();
 		var f = djDomForm.toObject(this.nComplementsForm);
 		[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
 			if(f[i] == '') {
@@ -334,23 +398,32 @@ return djDeclare("location.rForm", [
 			}	
 		});
 		
-		var begin = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
-		var end = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
-		var number = f.number ? f.number : 1;
+		query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
+		query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
+		query['number'] = f.number ? f.number : 1;
+		query['target'] = null;
+		query['comment'] = f.nMComment ? f.nMComment : '';
+		query['type'] = f.associationType;
+		query['reservation'] = this.reservation.get('id');
 
-		request.post('/location/store/Association/', { query: {
-			'reservation': this.reservation.get('id'),
-			'target': null,
-			'type': f.associationType,
-			'begin': begin,
-			'end': end,
-			'comment': f.nMComment ? f.nMComment : '',
-			'number': number
-		}}).then(function () {
-			that.reservation.resize();
-			that.associationRefresh();
-		});
+		if(this.nComplementId.value != '') {
+			query['id'] = this.nComplementId.value;
+		} else {
+			query['id'] = null;
+		}
 
+		if(query['id'] == null) {
+			request.post('/location/store/Association/', { query: query}).then(function () {
+				that.associationRefresh().then( () => { that.reservation.resize(); } );
+			});
+		} else {
+			request.put(locationConfig.store + '/Association/' + query['id'], { query: query }).then( () => {
+				that.associationRefresh().then( () => { that.reservation.resize(); } );
+
+				that.nComplementId.value = '';
+				that.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter');
+			});
+		}
 	},
 
 	doSelectMachine: function (value) {
@@ -394,8 +467,7 @@ return djDeclare("location.rForm", [
 
 	postCreate: function () {
 		this.inherited(arguments);
-		var select = this.status;
-		var that = this;
+		var select = this.status, that = this, initRequests = new Array(), r;
 		
 		var entries = this.reservation.get('entries');
 		for(var i = 0; i < entries.length; i++) {
@@ -443,7 +515,9 @@ return djDeclare("location.rForm", [
 		}
 
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
-		request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }}).then( function (results) {
+		r = request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }});
+		initRequests.push(r);
+		r.then( function (results) {
 			if(results.type = "results") {
 				let def = 0;
 				results.data.forEach(function (d) {
@@ -461,7 +535,9 @@ return djDeclare("location.rForm", [
 			}
 		});
 
-		request.get(locationConfig.store + '/Status/', { query : { 'search.type': 1 }}).then( function (results) {
+		r = request.get(locationConfig.store + '/Status/', { query : { 'search.type': 1 }});
+		initRequests.push(r);
+		r.then( function (results) {
 			if(results.type = 'results') {
 				results.data.forEach(function (d) {
 					that.nAssociationType.addOption({
@@ -482,7 +558,9 @@ return djDeclare("location.rForm", [
 		}
 		this.toggleDelivery();
 		
-		request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }}).then(djLang.hitch(this, function (res) {
+		r = request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }});
+		initRequests.push(r);
+		r.then(djLang.hitch(this, function (res) {
 			if(res.success()) {
 				res.whole().forEach(djLang.hitch(this, function (contact) {
 					if(contact.freeform) {
@@ -490,7 +568,9 @@ return djDeclare("location.rForm", [
 						this.createContact(contact, contact.comment);	
 					} else {
 						var linkId = contact.id, comment = contact.comment;
-						request.get(locationConfig.store + contact.target).then(djLang.hitch(this, function( entry ) {
+						r = request.get(locationConfig.store + contact.target);
+						initRequests.push(r);
+						r.then(djLang.hitch(this, function( entry ) {
 							if(entry.success()) {
 								var e = entry.first();
 								e.linkId = linkId;
@@ -502,7 +582,10 @@ return djDeclare("location.rForm", [
 			}
 		}));
 		
-		this.associationEntries(this.reservation.complements);
+		djAll(initRequests).then( () => {
+			that.doResetComplement();
+			that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'));
+		});
   },
 
 	toggleDelivery: function () {

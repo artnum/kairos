@@ -85,6 +85,7 @@ return djDeclare("location.reservation", [
 		this.form = null;
 		this.dbContact = null;
 		this.complements = new Array();
+		this.events = new Object();
 	},
 
 	fromJson: function (json) {
@@ -515,7 +516,7 @@ return djDeclare("location.reservation", [
 		this.highlight();
 		
 		var cp = new dtContentPane({
-			title: 'Réservation ' + this.get('id'),
+			title: '<i class="fas fa-spinner fa-spin"></i> Réservation ' + this.get('id'),
 			closable: true,
 			id: 'ReservationTab_' + this.get('id'),
 			content: f.domNode});
@@ -696,8 +697,7 @@ return djDeclare("location.reservation", [
 	},
 
   resize: function() {
-		var that = this;
-    var def = new djDeferred();
+		var that = this, def = new djDeferred();
 
 		if( ! this.sup) { def.resolve(); return; }
 		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
@@ -810,11 +810,13 @@ return djDeclare("location.reservation", [
 
 			that.setTextDesc();
 			that.set('enable');	
+
 			def.resolve();
 		}));
 		
     return def.promise;
   },
+
 	highlight: function () {
 		this.sup.highlight(this.domNode);
 	},
