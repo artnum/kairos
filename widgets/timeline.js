@@ -37,6 +37,8 @@ define([
 	"dijit/CheckedMenuItem",
 	"dijit/RadioMenuItem",
 	"dijit/PopupMenuItem",
+	"dijit/Calendar",
+	"dijit/Dialog",
 
 	"location/_Cluster",
 	"location/_Request",
@@ -85,6 +87,8 @@ define([
 	dtCheckedMenuItem,
 	dtRadioMenuItem,
 	dtPopupMenuItem,
+	dtCalendar,
+	dtDialog,
 
 	_Cluster,
 	request,
@@ -681,8 +685,22 @@ return djDeclare("location.timeline", [
 
 	today: function () {
 		this.set('center', new Date());
-		this.resize();
 		this.update(true);
+	},
+
+	chooseDay: function () {
+		var calendar = new dtCalendar({ value: this.center } );
+		var dialog = new dtDialog({ title: 'Choisir une date'});
+
+		dialog.addChild(calendar);
+		dialog.startup();
+		dialog.show();
+
+		djOn(calendar, 'change', djLang.hitch(this, (e) => {
+			this.set('center', e); 
+			this.update();
+			dialog.destroy();
+		}));
 	},
 
 	moveXRight: function(x) {
@@ -1068,8 +1086,10 @@ return djDeclare("location.timeline", [
 	},
 
 	update: function (force = false) {
-		var def = new djDeferred();
-		var r = this.runningRequest; 
+		var def = new djDeferred(), r = this.runningRequest; 
+		
+		this.resize();
+
 		this.runningRequest = new Array();
 		for(var i = 0; i < r.length; i++) {
 			if(!r[i].isFulfilled()) {
