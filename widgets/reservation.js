@@ -151,6 +151,7 @@ return djDeclare("location.reservation", [
 			this._isolation = window.setTimeout( djLang.hitch(this, () => {
 				var mask = document.createElement('DIV');
 				this._isolated = mask;
+				this._zindex = djDomStyle.get(this.domNode, 'z-index');
 				this.highlight();
 				djDomStyle.set(this.domNode, 'z-index', '99999999');
 				mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998');
@@ -171,7 +172,7 @@ return djDeclare("location.reservation", [
 
 		if(e.type != 'mouseup') {
 			if(this._isolated) {
-				djDomStyle.set(this.domNode, 'z-index', '');
+				djDomStyle.set(this.domNode, 'z-index', this._zindex);
 				this._isolated.parentNode.removeChild(this._isolated);
 				this._isolated = false;
 			}

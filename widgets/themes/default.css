@@ -52,6 +52,12 @@ html {
 	border-bottom-right-radius: 0px;
 }
 
+.reservation.overlap {
+	border-width: 2px;
+	border-color: black;
+	border-style: dashed;
+}
+
 .reservation .id {
 	padding: 0 0.2em 0 0.2em;
 }

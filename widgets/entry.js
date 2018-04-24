@@ -20,6 +20,7 @@ define([
 	"dojo/request/xhr",
 	"dojo/promise/all",
 	"dojo/throttle",
+	"dojo/dom-geometry",
 
 	"dijit/Dialog",
 	"dijit/registry",
@@ -54,6 +55,7 @@ define([
 	djXhr,
 	djAll, 
 	djThrottle,
+	djDomGeometry,
 
 	dtDialog,
 	dtRegistry,
@@ -626,55 +628,34 @@ return djDeclare("location.entry", [
 		var that = this;
 		var def = new djDeferred();
 		var overlap = false;
-		var dates = new Array();
-		
-		async(function () {	
-			for(var k in that.entries) {
-				var child = that.entries[k];	
-				var o = false;
-				if(!child.get('hidden')) {
-					var cEnd = child.get('end'), cBegin = child.get('begin');
-					if(cEnd && cBegin) {
-						for(var i = 0; i < dates.length; i++) {
-							if((
-									(child.get('begin').getTime() >  dates[i].begin  &&
-									child.get('begin').getTime() < dates[i].end) ||
-									(child.get('end').getTime() > dates[i].end &&
-									child.get('end').getTime() < dates[i].end)
-								 ) ||
-								 (
-									(dates[i].begin > child.get('begin').getTime() &&
-									dates[i].end < child.get('begin').getTime()) ||
-									(dates[i].end > child.get('end').getTime() &&
-									dates[i].end < child.get('end').getTime())
-								 )
-								 ){
-								if(! dates[i].overlap) {
-									var height = djDomStyle.get(child.domNode, "height"); 
-									djDomStyle.set(child.domNode, 'margin-top', height + "px"); o = true; 
-								} else {
-									 djDomStyle.set(child.domNode, 'margin-top', ''); o = true; 
-								}
-								overlap = true;
-							}
-						
+	
+		window.requestAnimationFrame( () => {
+			for(var j in that.entries){
+				var entry = that.entries[j];
+				if(! entry.get('active')) { continue; }
+				var pos1 = djDomGeometry.position(entry.main);
+				for(var k in that.entries) {
+					if(! that.entries[k].get('active')) { continue; }
+					if(k == j) { continue; }
+					var pos2 = djDomGeometry.position(that.entries[k].main);
+					if(
+						(pos1.x >= pos2.x && pos1.x <= pos2.x + pos2.w) ||
+						(pos2.x >= pos1.x && pos2.x <= pos1.x + pos1.w) 
+					) {
+						overlap = true;
+						if(pos2.w > pos1.w) {
+							djDomStyle.set(entry.main, 'z-index', 10);
+							djDomClass.add(entry.main, 'overlap');
+						} else {
+							djDomStyle.set(that.entries[k].main, 'z-index', 10);
+							djDomClass.add(that.entries[k].main, 'overlap');
 						}
-						dates.push({begin: child.get('begin').getTime(), end: child.get('end').getTime(), overlap: o, child: child});
 					}
 				}
-			}
-		
-			if(overlap) {
-				djDomStyle.set(that.domNode, 'height', ''); 
-				var height = djDomStyle.get(that.domNode, "height"); 
-				djDomStyle.set(that.domNode, 'height', (height * 2) + "px");
-			} else {
-				djDomStyle.set(that.domNode, 'height', '');
 			}
 
 			def.resolve();
 		});
-
 		return def.promise;
 	},
 
