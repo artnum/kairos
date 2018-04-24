@@ -897,6 +897,8 @@ return djDeclare("location.reservation", [
 		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach( (attr) => {
 			if(that[attr]) {
 				query[attr] = djDateStamp.toISOString(that[attr]);
+			} else {
+				query[attr] = '';
 			}
 		});
 		query['target'] = this.get('target');
