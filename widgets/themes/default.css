@@ -119,10 +119,16 @@ html {
 	padding: 2px 5px 2px 5px;
 }
 
+.reservation .stabiloLine .number i:only-child {
+	display: none;
+}
+
 .compact .reservation .stabiloLine .number {
 	padding: 0px 5px 0px 5px;
 	font-size: 6px;
 }
+
+
 /* entry */
 .entry {
 	border-top: 1px dashed rgba(80, 80, 80, 0.3);
