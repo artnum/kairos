@@ -607,9 +607,6 @@ return djDeclare("location.reservation", [
 	drawComplement: function () {
 		var that = this;
 		var def = new djDeferred();
-		var totalWidth = 0;
-		var drawn = new Array();
-
 		var frag = document.createDocumentFragment();
 		var appendFrag = false;
 		var x = this.complements;
@@ -645,53 +642,68 @@ return djDeclare("location.reservation", [
 
 		var cent = 100 - djDomStyle.get(that.tools, 'height') * 100 / djDomStyle.get(that.main, 'height');		
 		var height = Math.round(cent / Object.keys(byType).length);
-		var maxWidth = djDomStyle.get(that.nStabilo, 'width');
 		var lineCount = 0;
-		var previous = 0;
 
 		for(var i in byType) {
-			totalWidth = 0;
-			var overflow = false;
 			var color = '#FFF';
 			byType[i].forEach( function ( entry ) {
-				if(!overflow && entry.number > 0) {
-					var begin = entry.range.begin, end = entry.range.end, Rb = that.get('trueBegin');
+				var display = true;
+				if(entry.number > 0) {
+					var begin = entry.range.begin, end = entry.range.end;
 					if(entry.type && entry.type.color) {
 						color = '#' + entry.type.color;
 					}
-				
-					var left = 0;
-					if(djDate.compare(that.get('trueBegin'), that.get('dateRange').begin, 'date') < 0) {
-						Rb = that.get('dateRange').begin;
+			
+					/* Not in view as the end of this entry is after the beginning of the timeline */
+					if(djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
+						display = false;
+					}
+					/* Not in view as the entry begins after the timeline end */
+					if(djDate.compare(begin, that.get('dateRange').end, 'date') > 0) {
+						display = false;
 					}
 
-					var width = djDate.difference(begin, end, 'day') + 1; /* always full day */
-					if(djDate.compare(begin, Rb, 'date') < 0) {
-						width -= djDate.difference(Rb, begin, 'day');
-					}
-					
-					left = djDate.difference(Rb, begin, 'day');
-					if(left < 0) { left = 0; }
-					
-					if(djDate.compare(end, Rb, 'date') < 0 || djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
-						width = 0;
-					}
+					/* If for some reason the entry is bigger than its container, size it to the container size */
+					if(djDate.compare(begin, that.get('trueBegin'), 'datetime') < 0) { begin = that.get('trueBegin'); }
+					if(djDate.compare(end, that.get('trueEnd'), 'datetime') > 0) { end = that.get('trueEnd'); }
 
-					if(width > 0) {
-						left *= that.get('blockSize');
-						width *= that.get('blockSize');
+					if(display) {
+						var width = 0, left = 0, entryBegin = that.get('trueBegin'), entryEnd = that.get('trueEnd');
 
-						if(totalWidth + width >= maxWidth) {
-							width = maxWidth - totalWidth;
-							overflow = true;
+						if(djDate.compare(entryBegin, that.get('dateRange').begin, 'datetime') < 0) {
+							entryBegin = that.get('dateRange').begin;
+						}
+						if(djDate.compare(entryEnd, that.get('dateRange').end, 'datetime') > 0) {
+							entryEnd = that.get('dateRange').end;
 						}
 
-						/* Use of CSS relative position => the next element left position is pushed by previous element width */
-						left -= totalWidth;
-						totalWidth += width;
+						/* base width when fully displayed */
+						width = (Math.abs(djDate.difference(begin, end, 'day')) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(end); 
+						/* base left when fully displayed */
+						left = (Math.abs(djDate.difference(entryBegin, begin)) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(begin);
+
+
+						/* if it begin before the current timeline's begin */
+						if(djDate.compare(begin, that.get('dateRange').begin, 'date') < 0) {
+							width = width - (Math.abs(djDate.difference(begin, that.get('dateRange').begin)) * that.get('blockSize')) + that.computeIntervalOffset(entryBegin);
+							left = 0;
+						} else {
+							if(djDate.compare(begin, entryBegin, 'datetime') > 0) {
+								width -= that.computeIntervalOffset(begin) - that.computeIntervalOffset(entryBegin);
+							}
+						}
+
+						/* if it end after the current timeline's end */
+						if(djDate.compare(end, that.get('dateRange').end, 'date') >= 0) {
+							if(djDate.compare(end, that.get('dateRange').end, 'date') == 0) {
+								width = width - that.computeIntervalOffset(end);
+							} else {
+								width = width - (Math.abs(djDate.difference(end, that.get('dateRange').end) + 1) * that.get('blockSize')) - that.computeIntervalOffset(end);
+							}
+						}
 
 						var div = document.createElement('DIV');
-						div.setAttribute('style', 'position: relative; background: linear-gradient(0.25turn, ' + pSBC(0.75, color) +', ' + (color) + ',' + pSBC(0.75, color) + '); width: ' + width + 'px; left: ' + left + 'px; float: left; top: 0; height: ' + height + '%; clear: right;');
+						div.setAttribute('style', 'position: absolute; background: linear-gradient(0.25turn, ' + pSBC(0.75, color) +', ' + (color) + ',' + pSBC(0.75, color) + '); left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;');
 						div.setAttribute('class', 'stabiloLine');
 						
 						var numDiv = document.createElement('DIV');
@@ -708,6 +720,7 @@ return djDeclare("location.reservation", [
 					}
 				}
 			});
+			lineCount++;
 		}
 
 		window.requestAnimationFrame(() => {
@@ -736,7 +749,8 @@ return djDeclare("location.reservation", [
 			this.set('disable');
 			def.resolve();
 			return; 
-		} 
+		}
+		var nobegin = false, noend = false;
 
 		/* Size calculation */
 		var dateRange = this.get('dateRange');
@@ -752,10 +766,12 @@ return djDeclare("location.reservation", [
 		var begin = this.get('trueBegin');
 		if(djDate.compare(range.begin, begin, 'date')>0) {
 			begin = range.begin;
+			nobegin = true;
 		}
 		var end = this.get('trueEnd');
 		if(djDate.compare(range.end, end, 'date')<=0) {
 			end = range.end;
+			noend = true;	
 		}
 
 		var t1, t2;
@@ -798,7 +814,19 @@ return djDeclare("location.reservation", [
 		window.requestAnimationFrame(djLang.hitch(this, function() {
 			/* might be destroyed async */
 			if(! that || ! that.main) { def.resolve(); return ; }
-			
+	
+			if(nobegin) {
+				djDomClass.add(that.main, 'nobegin');
+			} else {
+				djDomClass.remove(that.main, 'nobegin');
+			}
+
+			if(noend) {
+				djDomClass.add(that.main, 'noend');
+			} else {
+				djDomClass.remove(that.main, 'noend');
+			}
+
 			if(that.is('confirmed')) {
 				djDomClass.add(that.main, 'confirmed');
 			} else {

@@ -36,8 +36,20 @@ html {
 
 /* reservation */
 .reservation {
-	border-radius: 8px;
+	border-radius: 12px;
 	background-color: white;
+}
+
+.reservation.nobegin {
+	border-left: 2px dotted grey;
+	border-top-left-radius: 0px;
+	border-bottom-left-radius: 0px;
+}
+
+.reservation.noend {
+	border-right: 2px dotted grey;
+	border-top-right-radius: 0px;
+	border-bottom-right-radius: 0px;
 }
 
 .reservation .id {
