@@ -370,7 +370,6 @@ return djDeclare("location.entry", [
 	
 						window.requestAnimationFrame(function() {
 							that.data.appendChild(r.o.domNode);
-							that.overlap();
 						});
 						r.o.popMeUp();
 					}				
@@ -528,7 +527,6 @@ return djDeclare("location.entry", [
 		
 		async( function () {
 			that.resizeChild().then( () => {
-				that.overlap();
 				def.resolve();
 			});
 		});
@@ -624,57 +622,11 @@ return djDeclare("location.entry", [
 		}
 	},
 
-	overlap: function () {
-		var that = this;
-		var def = new djDeferred();
-		var overlap = false;
-	
-		window.requestAnimationFrame( () => {
-			for(var j in that.entries){
-				var entry = that.entries[j];
-				if(! entry.get('active')) { continue; }
-				var pos1 = djDomGeometry.position(entry.main);
-				for(var k in that.entries) {
-					if(! that.entries[k].get('active')) { continue; }
-					if(k == j) { continue; }
-					var pos2 = djDomGeometry.position(that.entries[k].main);
-					if(
-						(pos1.x >= pos2.x && pos1.x <= pos2.x + pos2.w) ||
-						(pos2.x >= pos1.x && pos2.x <= pos1.x + pos1.w) 
-					) {
-						overlap = true;
-						if(pos2.w > pos1.w) {
-							djDomStyle.set(entry.main, 'z-index', 10);
-							djDomClass.add(entry.main, 'overlap');
-						} else {
-							djDomStyle.set(that.entries[k].main, 'z-index', 10);
-							djDomClass.add(that.entries[k].main, 'overlap');
-						}
-					}
-				}
-			}
-
-			def.resolve();
-		});
-		return def.promise;
-	},
-
 	displayReservations: function ( reservations ) {
 		var range = this.get('dateRange');
 		var frag = document.createDocumentFragment();
 		var that = this;
-		for(var i = 0; i < reservations.length; i++) {
-			if(reservations[i].end && reservations[i].begin) {
-				if(! that.entries[reservations[i].id]) {
-					that.entries[reservations[i].id] = new Reservation({ sup: that });
-					that.entries[reservations[i].id].fromJson(reservations[i]);
-					frag.appendChild(that.entries[reservations[i].id].domNode); 
-				} else {
-					that.entries[reservations[i].id].fromJson(reservations[i]);
-				}
-			}
-		}
-
+	
 		/* delete removed entries */
 		for(var k in that.entries) {
 			var found = false;
@@ -687,6 +639,55 @@ return djDeclare("location.entry", [
 			if(! found) {
 				that.entries[k].destroy();
 				delete that.entries[k];
+			}
+		}
+
+		var entries = new Array();
+		for(var i = 0; i < reservations.length; i++) {
+			if(reservations[i].end && reservations[i].begin) {
+				if(! that.entries[reservations[i].id]) {
+					that.entries[reservations[i].id] = new Reservation({ sup: that });
+					that.entries[reservations[i].id].fromJson(reservations[i]);
+					frag.appendChild(that.entries[reservations[i].id].domNode); 
+				} else {
+					that.entries[reservations[i].id].fromJson(reservations[i]);
+				}
+				entries.push(that.entries[reservations[i].id]);
+				that.entries[reservations[i].id].overlap = { elements: new Array(), level: 0, order: 0, do: false };
+			}
+		}
+
+		/* Overlap entries, good enough for now */
+		var overlapRoot = new Array();
+		for(var i = 0; i < entries.length; i++) {
+			var root = true;
+			entries[i].overlap.order = i;
+			for(var j = 0; j < overlapRoot.length; j++) {
+				if(overlapRoot[j].range.overlap(entries[i].range)) {
+					if(overlapRoot[j].duration > entries[i].duration) {
+						overlapRoot[j].overlap.elements.push(entries[i]);
+					} else {
+						entries[i].overlap.elements = overlapRoot[j].overlap.elements.slice();
+						entries[i].overlap.elements.push(overlapRoot[j]);
+						overlapRoot[j].elements = new Array();
+						overlapRoot[j] = entries[i];
+					}
+					root = false; break;
+				}
+			}
+			if(root) {
+				overlapRoot.push(entries[i]);
+			}
+		}
+
+		for(var i = 0; i < overlapRoot.length; i++) {
+			overlapRoot[i].overlap.order = 1;
+			overlapRoot[i].overlap.level = overlapRoot[i].overlap.elements.length + 1;
+			overlapRoot[i].overlap.do = true;
+			for(var j = 0; j < overlapRoot[i].overlap.elements.length; j++) {
+				overlapRoot[i].overlap.elements[j].overlap.order = j+2;
+				overlapRoot[i].overlap.elements[j].overlap.level = overlapRoot[i].overlap.elements.length + 1;
+				overlapRoot[i].overlap.elements[j].overlap.do = true;
 			}
 		}
 

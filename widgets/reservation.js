@@ -86,32 +86,37 @@ return djDeclare("location.reservation", [
 		this.dbContact = null;
 		this.complements = new Array();
 		this.events = new Object();
+		this.overlap = new Object();
+		this.duration = 0;
 	},
 
 	fromJson: function (json) {
-		var that = this;
 		djLang.mixin(this, json);
-		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( function (attr) {
-			if(that[attr]) {
-				that[attr] = djDateStamp.fromISOString(that[attr]);
+		
+		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( (attr) => {
+			if(json[attr]) {
+				this.set(attr, djDateStamp.fromISOString(json[attr]));
 			}
 		});
-
-		if(that.contacts && that.contacts['_client']) {
-			if(that.contacts['_client'][0].target) {
-				that.dbContact = that.contacts['_client'][0].target;
-				that.setTextDesc();
+		
+		if(this.contacts && this.contacts['_client']) {
+			if(this.contacts['_client'][0].target) {
+				this.dbContact = this.contacts['_client'][0].target;
+				this.setTextDesc();
 			} else {
-				that.dbContact = { freeform: that.contacts['_client'][0].freeform };
-				that.setTextDesc();
+				this.dbContact = { freeform: this.contacts['_client'][0].freeform };
+				this.setTextDesc();
 			}
 		} else {
-			that.dbContact = {} ;
-			that.setTextDesc();
+			this.dbContact = {} ;
+			this.setTextDesc();
 		}
-		if(! that.color ) { that.color =  "FFF"; }
-		if(! that.complements) { that.complements = new Array(); }
-		if(! that.IDent) { that.IDent = that.id; }
+		if(! this.color ) { this.color =  "FFF"; }
+		if(! this.complements) { this.complements = new Array(); }
+		if(! this.IDent) { this.IDent = this.id; }
+	
+		this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'));
+		this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime();
 	},
 
 	refresh: function () {
@@ -144,36 +149,40 @@ return djDeclare("location.reservation", [
 		djOn(this.domNode, "dblclick", djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp(); }));
 		djOn(this.domNode, "mousedown", djLang.hitch(this, this.isolateMe));
 		djOn(this.domNode, "mouseup", djLang.hitch(this, this.cancelIsolation));
+		djOn(this.domNode, "mousemove", djLang.hitch(this, this.cancelIsolation));
   },
 
 	isolateMe: function (e) {
 		if(! this._isolated) {
 			this._isolation = window.setTimeout( djLang.hitch(this, () => {
-				var mask = document.createElement('DIV');
-				this._isolated = mask;
+				this._isolated = true;
 				this._zindex = djDomStyle.get(this.domNode, 'z-index');
 				this.highlight();
 				djDomStyle.set(this.domNode, 'z-index', '99999999');
-				mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998');
-				djOn(mask, 'click', djLang.hitch(this, this.cancelIsolation));
+				if(this.overlap.do) {
+					var height = djDomStyle.get(this.main, 'height');
+					djDomStyle.set(this.main, 'height', height * this.getOverlapLevel());
+				}
+				this.drawComplement();
 				djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation));
-				window.requestAnimationFrame( () => {
-					document.getElementsByTagName('BODY')[0].appendChild(mask);
-				});
-			}), 750);
+				window.App.mask(true, djLang.hitch(this, this.cancelIsolation));
+			}), 250);
 		}
 	},
 
 	cancelIsolation: function (e) {
-		console.log(e);
 		if(this._isolation) {
 			window.clearTimeout(this._isolation);
 		}
 
-		if(e.type != 'mouseup') {
+		if(e.type != 'mouseup' && e.type != 'mousemove') {
 			if(this._isolated) {
+				if(this.overlap.do) {
+					var height = djDomStyle.get(this.main, 'height');
+					djDomStyle.set(this.main, 'height', height / this.getOverlapLevel());
+				}
 				djDomStyle.set(this.domNode, 'z-index', this._zindex);
-				this._isolated.parentNode.removeChild(this._isolated);
+				this.drawComplement();
 				this._isolated = false;
 			}
 		}
@@ -736,6 +745,21 @@ return djDeclare("location.reservation", [
 		return def.promise;
 	},
 
+	getOverlapLevel: function () {
+		if(this.overlap && this.overlap.level) {
+			return this.overlap.level;
+		}
+		return 0;	
+	},
+
+	getOverlapOrder: function() {
+		if(this.overlap && this.overlap.order) {
+			return this.overlap.order;
+		}
+
+		return 1;
+	},
+
   resize: function() {
 		var that = this, def = new djDeferred();
 
@@ -815,7 +839,12 @@ return djDeclare("location.reservation", [
 		window.requestAnimationFrame(djLang.hitch(this, function() {
 			/* might be destroyed async */
 			if(! that || ! that.main) { def.resolve(); return ; }
-	
+
+
+			if(that.overlap.do > 0) {
+				djDomClass.add(that.main, 'overlap');
+			}
+
 			if(nobegin) {
 				djDomClass.add(that.main, 'nobegin');
 			} else {
@@ -838,10 +867,18 @@ return djDeclare("location.reservation", [
 			var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
 			var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
 
+			var height = that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder);
+			var top = supRect[1] + supTopBorder;
+			if(that.overlap.do) {
+				var overlapLevel = that.getOverlapLevel();
+				height /= overlapLevel;
+				top += (height + myTopBorder) * (that.getOverlapOrder() - 1); 
+			}
+
 			djDomStyle.set(that.main, 'width', stopPoint);
 			djDomStyle.set(that.main, 'left', startPoint);
-			djDomStyle.set(that.main, 'top', supRect[1] + supTopBorder);
-			djDomStyle.set(that.main, 'height', that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder));
+			djDomStyle.set(that.main, 'top', top);
+			djDomStyle.set(that.main, 'height', height); 
 			djDomStyle.set(that.main, 'position', 'absolute');
 
 			that.tools.setAttribute('style', 'background-color:' + bgcolor );

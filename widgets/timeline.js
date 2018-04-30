@@ -440,6 +440,22 @@ return djDeclare("location.timeline", [
 		}));
 	},
 
+	mask: function(state, callback) {
+		if(state) {
+			var mask = document.createElement('DIV');
+			this._mask = true;
+			this._maskDom = mask;
+			mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998');
+			djOn(mask, 'click', (e) => { this.mask(false); callback(e); }); 
+			window.requestAnimationFrame( () => {
+				document.getElementsByTagName('BODY')[0].appendChild(mask);
+			});
+		} else {
+			this._mask = false;
+			this._maskDom.parentNode.removeChild(this._maskDom);
+		}
+	},
+
 	buildMenu: function() {
 		var that = this;
 		this.menu.startup();
@@ -603,6 +619,7 @@ return djDeclare("location.timeline", [
 	},
 
 	mouseOver: function (event) {
+		if(this._mask) { return; }
 		var nodeBox = djDomGeo.getContentBox(this.domNode);
 		var sight = this.sight;
 		var days = this.days;
@@ -667,6 +684,7 @@ return djDeclare("location.timeline", [
 	},
 
 	eWheel: function(event) {
+		if(this._mask) { return; }
 		if(event.deltaX < 0) {
 			this.moveLeft();
 		} else if(event.deltaX > 0) { 
