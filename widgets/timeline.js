@@ -48,7 +48,7 @@ define([
 	"location/timeline/keys",
 	"location/update",
 
-	"artnumdev/Request"
+	"artnum/Request"
 
 ], function(
 	djDeclare,
