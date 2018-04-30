@@ -48,7 +48,7 @@ define([
 	"location/timeline/keys",
 	"location/update",
 
-	"artnum/Request"
+	"artnumdev/Request"
 
 ], function(
 	djDeclare,
@@ -1104,20 +1104,24 @@ return djDeclare("location.timeline", [
 	},
 
 	update: function (force = false) {
-		var def = new djDeferred(), r = this.runningRequest, begin = new Date(), end = new Date();
+		var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date();
 		begin.setTime(this.get('dateRange').begin.getTime());
 		end.setTime(this.get('dateRange').end.getTime());
 		begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0,0,0);
 		end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0,0,0);
 		this.resize();
 
-		this.runningRequest = new Array();
-		for(var i = 0; i < r.length; i++) {
-			if(!r[i].isFulfilled()) {
-				this.runningRequest.push(r[i]);
+		for(var i = 0; i < this.runningRequest.length; i++) {
+			if(!this.runningRequest[i].req.isFulfilled()) {
+				if((now.getTime() - this.runningRequest[i].time) < 3500) {
+					r.push(this.runningRequest[i]);
+				} else {
+					this.runningRequest[i].req.cancel();
+				}
 			}
 		}
 
+		this.runningRequest = r.slice();
 		if(this.runningRequest.length < 5) {
 			var current = Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
 				"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
@@ -1125,7 +1129,7 @@ return djDeclare("location.timeline", [
 				"search.deleted" : '-' }
 			});
 
-			this.runningRequest.push(current);
+			this.runningRequest.push({ req: current, time: new Date().getTime() });
 
 			current.then(djLang.hitch(this, (results) => {
 				if(results && results.data && results.data.length > 0) {
