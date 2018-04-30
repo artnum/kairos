@@ -1104,8 +1104,11 @@ return djDeclare("location.timeline", [
 	},
 
 	update: function (force = false) {
-		var def = new djDeferred(), r = this.runningRequest; 
-		
+		var def = new djDeferred(), r = this.runningRequest, begin = new Date(), end = new Date();
+		begin.setTime(this.get('dateRange').begin.getTime());
+		end.setTime(this.get('dateRange').end.getTime());
+		begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0,0,0);
+		end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0,0,0);
 		this.resize();
 
 		this.runningRequest = new Array();
@@ -1117,8 +1120,8 @@ return djDeclare("location.timeline", [
 
 		if(this.runningRequest.length < 5) {
 			var current = Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-				"search.begin": '<' + djDateStamp.toISOString(djDate.add(this.get('dateRange').end, 'day', 2), { selector: 'date', zulu: true }),
-				"search.end" : '>' + djDateStamp.toISOString(djDate.add(this.get('dateRange').begin, 'day', -2), { selector: 'date', zulu: true }),
+				"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
+				"search.end" : '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
 				"search.deleted" : '-' }
 			});
 
