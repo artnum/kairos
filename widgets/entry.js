@@ -148,10 +148,12 @@ return djDeclare("location.entry", [
 		window.Sleeper.on(this.sup, "zoom", () => { 
 			djDomStyle.set(that.domNode, 'height', ''); 
 			that.originalHeight = djDomStyle.get(that.domNode, "height"); 
-			that.resize(); 
+			that.resize();
 		});
 
 		this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73; /* in chrome value here is 0, set default known value for now */
+
+		this.view = { rectangle: getElementRect(this.domNode) }
 		this.verifyLock();
 		Req.get(locationConfig.store + '/Tags/?!=' + this.url).then(( tags ) => {
 			if(tags && tags.data) {
@@ -509,30 +511,13 @@ return djDeclare("location.entry", [
 	},
 
 	resizeChild: function() {
-		var def = new djDeferred();
-		var that = this;
-		async( () => {
-				for(var k in that.entries) {
-					that.entries[k].resize();
-				}
-
-			def.resolve();
-		});
-		return def.promise;
+		for(var k in this.entries) {
+			this.entries[k].resize();
+		}
 	},
-
 	resize: function () {
-		var def = new djDeferred();
-		var that = this;
-		
-		async( function () {
-			that.resizeChild().then( () => {
-				def.resolve();
-			});
-		});
-
-
-		return def.promise;
+		this.view.rectangle = getElementRect(this.domNode);
+		this.resizeChild();
 	},
 	update: function () {
 		var that = this;

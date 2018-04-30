@@ -863,7 +863,7 @@ return djDeclare("location.reservation", [
 				djDomClass.remove(that.main, 'confirmed');
 			}
 
-			var supRect = getElementRect(that.sup.domNode);
+			var supRect = that.sup.view.rectangle;
 			var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'),  supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width');
 			var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width');
 

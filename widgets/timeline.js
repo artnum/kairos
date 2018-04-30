@@ -406,23 +406,20 @@ return djDeclare("location.timeline", [
 					});
 				}
 			});
-	
-		
 		});
+
 		djAspect.after(tContainer, 'removeChild', function (child) {
 			if(! this.hasChildren()) {
 				djDomStyle.set(this.domNode, 'display', 'none');
 			}
 		}, true);
 
-		this.inherited(arguments);
-	
     djOn(window, "keypress", djLang.hitch(this, this.keys));
-    djOn(window, "resize", djLang.hitch(this, this.resize));
-		djOn(window, "wheel", djLang.hitch(this, this.eWheel));
-		djOn(window, "mousemove", djLang.hitch(this, this.mouseOver));
-		djOn(window, "scroll", djThrottle(djLang.hitch(this, this.scroll), 15));
 		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
+		window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')); }, { passive: true});
+		window.addEventListener('wheel', djLang.hitch(this, this.eWheel), { passive: true });
+		window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true});
+		window.addEventListener('scroll', djThrottle(djLang.hitch(this, this.scroll), 15), { passive: true });
 
 		this.update();
 
@@ -880,8 +877,7 @@ return djDeclare("location.timeline", [
 	},
 	
 	drawTimeline: function() {
-		var box = djDomGeo.getContentBox(this.domNode, djDomStyle.getComputedStyle(this.domNode));
-		var avWidth = box.w - this.get('offset') - this.get('blockSize');
+		var avWidth = this.domNode.offsetWidth;
 		var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
 		this.todayOffset = -1;
 		this.weekOffset = -1;
@@ -1104,7 +1100,7 @@ return djDeclare("location.timeline", [
 	},
 
 	update: function (force = false) {
-		var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date();
+		var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date(), oldest = null;
 		begin.setTime(this.get('dateRange').begin.getTime());
 		end.setTime(this.get('dateRange').end.getTime());
 		begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0,0,0);
@@ -1113,62 +1109,67 @@ return djDeclare("location.timeline", [
 
 		for(var i = 0; i < this.runningRequest.length; i++) {
 			if(!this.runningRequest[i].req.isFulfilled()) {
-				if((now.getTime() - this.runningRequest[i].time) < 3500) {
-					r.push(this.runningRequest[i]);
+				if(oldest == null) {
+					oldest = i;
 				} else {
-					this.runningRequest[i].req.cancel();
+					if(this.runningRequest[oldest].time < this.runningRequest[i].time) {
+						oldest = i;
+					}
 				}
+				r.push(this.runningRequest[i]);
 			}
 		}
-
+		if(oldest != null) { this.runningRequest[oldest].req.cancel(); }
 		this.runningRequest = r.slice();
-		if(this.runningRequest.length < 5) {
-			var current = Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-				"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
-				"search.end" : '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
-				"search.deleted" : '-' }
-			});
 
+		var current = Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+			"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
+			"search.end" : '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
+			"search.deleted" : '-' }
+		});
+
+		if(oldest != null) {
+			this.runningRequest[oldest] = { req: current, time: new Date().getTime() };
+		} else {
 			this.runningRequest.push({ req: current, time: new Date().getTime() });
+		}
 
-			current.then(djLang.hitch(this, (results) => {
-				if(results && results.data && results.data.length > 0) {
-					var byTarget = new Object();
-					for(var i = 0; i < results.data.length; i++) {
-						if( ! byTarget[results.data[i].target]) {
-							byTarget[results.data[i].target] = new Array();
-						}
-						byTarget[results.data[i].target].push(results.data[i]); 
+		current.then(djLang.hitch(this, (results) => {
+			if(results && results.data && results.data.length > 0) {
+				var byTarget = new Object();
+				for(var i = 0; i < results.data.length; i++) {
+					if( ! byTarget[results.data[i].target]) {
+						byTarget[results.data[i].target] = new Array();
 					}
-					for(var i = 0; i < this.entries.length; i++) {
-						if(byTarget[this.entries[i].get('target')]) {
-							this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
-							this.entries[i].update(true);
-						}
+					byTarget[results.data[i].target].push(results.data[i]); 
+				}
+				for(var i = 0; i < this.entries.length; i++) {
+					if(byTarget[this.entries[i].get('target')]) {
+						this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
+						this.entries[i].update(true);
 					}
 				}
-				this.resize();
-				def.resolve();
-			}));
-		} else {
-			console.log('Avoid running too much request');
+			}
+			this.resize();
 			def.resolve();
-		}
+		}));
 
 		this.resize();
 		return def.promise;
 	},
 
 	scroll: function() {
-		var startAt = Math.round(window.scrollY / this.displayOrder.length) - 2;
-		if(startAt < 0) { startAt = 0; }
+		(async ()=> {	
+			var startAt = Math.round(window.scrollY / this.displayOrder.length) - 2;
+			if(startAt < 0) { startAt = 0; }
 
-		for(var i = startAt; i < this.displayOrder.length; i++) {
-			this.displayOrder[i].resize();
-		}
-		for(var i = startAt-1; i >= 0; i--) {
-			this.displayOrder[i].resize();
-		}
+			for(var i = startAt; i < this.displayOrder.length; i++) {
+				this.displayOrder[i].resize();
+			}
+			for(var i = startAt-1; i >= 0; i--) {
+				this.displayOrder[i].resize();
+			}
+		})();
 	},
 
   _getEntriesAttr: function () {
