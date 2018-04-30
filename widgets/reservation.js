@@ -713,11 +713,11 @@ return djDeclare("location.reservation", [
 						}
 
 						var div = document.createElement('DIV');
-						div.setAttribute('style', 'position: absolute; background: linear-gradient(0.25turn, ' + pSBC(0.75, color) +', ' + (color) + ',' + pSBC(0.75, color) + '); left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;');
+						div.setAttribute('style', 'position: absolute; background-color: ' + pSBC(0.75, color) + '; left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;');
 						div.setAttribute('class', 'stabiloLine');
 						
 						var numDiv = document.createElement('DIV');
-						numDiv.setAttribute('class', 'number'); numDiv.setAttribute('style', 'color: ' + pSBC(-0.3, color));
+						numDiv.setAttribute('class', 'number'); numDiv.setAttribute('style', 'color: ' + pSBC(0.1, color));
 						for(var i = 0; i < entry.number; i++) {
 							var sym = document.createElement('I');
 							sym.setAttribute('class', 'fas fa-circle');
