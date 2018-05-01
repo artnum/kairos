@@ -21,7 +21,7 @@ class DeepReservationModel extends ReservationModel {
    }
 
    function get($id) {
-      $pre_statement = 'SELECT reservation.*, status.status_color FROM `reservation` JOIN status ON reservation.reservation_status = status.status_id WHERE reservation_id = :id';
+      $pre_statement = 'SELECT * FROM reservation WHERE reservation_id = :id';
       try {
          $st = $this->DB->prepare($pre_statement);
          $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
@@ -29,6 +29,28 @@ class DeepReservationModel extends ReservationModel {
          if($st->execute()) {
             $data = $st->fetch(\PDO::FETCH_ASSOC);
             if($data != FALSE) {
+               if(!empty($data['reservation_status'])) {
+                  $pre_statement = 'SELECT status_color FROM status WHERE status_id = :id';
+                  try {
+                     $st = $this->DB->prepare($pre_statement);
+                     $bind_type = ctype_digit($data['reservation_status']) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+                     $st->bindParam(':id', $data['reservation_status'], $bind_type);
+                     if($st->execute()) {
+                        $status = $st->fetch();
+                        if($status) {
+                           $data['reservation_color'] = $status[0];
+                        } else {
+                           $data['reservation_color'] = 'FFFFFF';
+                        }
+                     } else {
+                        $data['reservation_color'] = 'FFFFFF';
+                     }
+                  } catch(\Exception $e) {
+                     $data['reservation_color'] = 'FFFFFF';
+                  }
+               } else {
+                  $data['reservation_color'] = 'FFFFFF';
+               }
                return $data;
             }
          }
