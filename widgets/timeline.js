@@ -524,6 +524,26 @@ return djDeclare("location.timeline", [
 					});
 					that.searchMenu.addChild(p);
 				}
+
+				that.searchMenu.addChild(new dtMenuSeparator());
+
+				var item = new dtMenuItem({ label: 'Commence demain' });
+				djOn(item, 'click', djLang.hitch(that, () => {
+					var now = new Date();
+					now = djDate.add(now, 'day', 1);
+					that.filterDate(now);
+				}));
+				that.searchMenu.addChild(item);
+				
+				var item = new dtMenuItem({ label: 'Termine demain' });
+				djOn(item, 'click', djLang.hitch(that, () => {
+					var now = new Date();
+					now = djDate.add(now, 'day', 1);
+					that.filterDate(now, 'trueEnd');
+				}));
+				that.searchMenu.addChild(item);
+
+
 			});
 		});
 	},
@@ -544,6 +564,27 @@ return djDeclare("location.timeline", [
 			} else {
 				this.entries[i].set('active', true);
 			}
+		}
+	},
+
+	filterDate: function() {
+		var date = new Date(), what = 'trueBegin';
+		this.searchMenu.filterNone.set('disabled', false);
+		if(arguments[0]) {
+			date = arguments[0];
+		}
+		if(arguments[1]) {
+			what = arguments[1];
+		}
+
+		for(var i = 0; i < this.entries.length; i++) {
+			var active = false;
+			for(var k in this.entries[i].entries) {
+				if(djDate.compare(this.entries[i].entries[k].get(what), date, "date") == 0) {
+					active = true; break;
+				}
+			}
+			this.entries[i].set('active', active);
 		}
 	},
 
