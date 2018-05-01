@@ -822,64 +822,19 @@ return djDeclare("location.timeline", [
 	endDraw: function() {
 		var newBuffer = document.createDocumentFragment(); 
 	
-		/* Sort nodes following 'placeAfter' property */
-		var roots = new Array(), orphan = new Array();
-		for(var i = 0; i < this.entries.length; i++) {
-			if(! this.entries[i].get('placeAfter') || this.entries[i].get('placeAfter') == 0) {
-				this.entries[i].set('nextNode', null);
-				roots.push(this.entries[i]);
-			}
-		}
+		this.displayOrder = this.entries.sort( function (a, b) {
+			var oa = a.get('order'), ob = b.get('order');
+			
+			if(oa && !ob) { return -1; }
+			if(!oa && ob) { return 1; }
 
-		for(var i = 0; i < this.entries.length; i++) {
-			if(this.entries[i].get('placeAfter') && this.entries[i].get('placeAfter') != 0) {
-				var found = false;
-				for(var j = 0; j < roots.length; j++) {
-					if(this._lli(roots[j], this.entries[i])) {
-						found = true;
-						break;
-					}
-				}
-				if(! found) {
-						orphan.push(this.entries[i]);
-				}
-			}
-		}
+			if(parseInt(oa) > parseInt(ob)) { return 1; }
+			if(parseInt(oa) < parseInt(ob)) { return -1; }
+			return 0;
+		});
 
-		/* Scan several time the orphan list until there's no node that find a place into the ordered list */
-		var insert = 0;
-		do {
-			insert = 0;
-			for(var i = orphan.length; i > 0; i--) {
-				var node = orphan.pop();
-				var found = false;
-				for(var j = 0; j < roots.length; j++) {
-					if(this._lli(roots[j], node)) {
-						found = true;
-						insert++;
-						break;
-					}
-				}
-				if( !found) {
-					orphan.unshift(node);
-				}
-			}
-		} while(insert != 0);
-
-
-		this.displayOrder = new Array();
-		/* Add nodes followings each list */
-		for(var i = 0; i < roots.length; i++) {
-			for(var node = roots[i]; node; node = node.get('nextNode')) {
-				newBuffer.appendChild(node.domNode);
-				this.displayOrder.push(node);
-			}
-		}
-
-		/* Add orphan node */
-		for(var i = 0; i < orphan.length; i++) {
-			newBuffer.appendChild(orphan[i].domNode);
-			this.displayOrder.push(orphan[i]);
+		for(var i = 0; i < this.displayOrder.length; i++) {
+			if(this.displayOrder[i]) { newBuffer.appendChild(this.displayOrder[i].domNode); }
 		}
 
 		var className = 'odd';
