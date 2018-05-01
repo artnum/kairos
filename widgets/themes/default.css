@@ -103,6 +103,18 @@ html {
 	content. '';
 }
 
+.reservation .hour {
+	display: none;
+}
+
+.day .reservation .hour:before {
+	content: ' ';
+}
+
+.day .reservation .hour {
+	display: initial;
+}
+
 .compact .reservation .names:first-child:before {
 	content: '';
 }

@@ -468,13 +468,27 @@ return djDeclare("location.reservation", [
 			frag.lastChild.appendChild(document.createElement('SPAN'));
 			frag.lastChild.lastChild.setAttribute('class', 'date single begin');
 			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortDate()));
+
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'hour date single begin');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortHour()));
 		} else {
 			frag.lastChild.appendChild(document.createElement('SPAN'));
 			frag.lastChild.lastChild.setAttribute('class', 'date begin');
 			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortDate()));
+	
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'hour date begin');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortHour()));
+
+
 			frag.lastChild.appendChild(document.createElement('SPAN'));
 			frag.lastChild.lastChild.setAttribute('class', 'date end');
 			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueEnd').shortDate()));
+			
+			frag.lastChild.appendChild(document.createElement('SPAN'));
+			frag.lastChild.lastChild.setAttribute('class', 'hour date end');
+			frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueEnd').shortHour()));
 		}
 
 		if(this.locality || this.address) {

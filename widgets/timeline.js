@@ -224,25 +224,30 @@ return djDeclare("location.timeline", [
 	},
 
 	_setZoomAttr: function (zoomValue) {
-		var style = '';
-		var page = getPageRect();
-		var days = 1;
+		var style = '', page = getPageRect(), days = 1, classname = '';
+		
+		djDomClass.remove(this.domNode, [ 'day', 'month', 'week', 'quarter', 'semseter' ]);
 		switch(zoomValue) {
 			case 'day':
 				days = 2;
+				classname = 'day';
 				style = ' #Sight { display: none; }';
 				break;
 			case 'month':
 				days = 31;
+				classname = 'month';
 				break;
 			case 'week':
-				days = 7 
+				days = 7;
+				classname = 'week';
 				break;
 			case 'quarter':
 				days = 91;
+				classname = 'quarter';
 				break;
 			case 'semester':
 				days = 181;
+				classname = 'semester';
 				break;
 			default: 
 				days = zoomValue;
@@ -250,6 +255,9 @@ return djDeclare("location.timeline", [
 		}
 
 		this.daysZoom = days;
+		if(classname != '') {
+			djDomClass.add(this.domNode, classname);
+		}
 		this.set('blockSize', (page[2] - 240) / days);
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.resize();
