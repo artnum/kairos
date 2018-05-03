@@ -105,13 +105,14 @@ if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
    exit(0);
 }
 $reservation = isset($res['data'][0]) ? $res['data'][0] : $res['data'];
-
 if(!empty($reservation['deliveryBegin'])) {
    if($reservation['deliveryBegin'] != $reservation['begin']) {
       $reservation['deliveryBegin'] = new DateTime($reservation['deliveryBegin']);
    } else {
       $reservation['deliveryBegin'] = null;
    }
+} else {
+   $reservation['deliveryBegin'] = null;
 }
 
 if(!empty($reservation['deliveryEnd'])) {
@@ -120,7 +121,10 @@ if(!empty($reservation['deliveryEnd'])) {
    } else {
       $reservation['deliveryEnd'] = null;
    }
+} else {
+   $reservation['deliveryEnd'] = null;
 }
+
 $reservation['begin'] = new DateTime($reservation['begin']);
 $reservation['end'] = new DateTime($reservation['end']);
 $reservation['created'] = new DateTime($reservation['created']);
