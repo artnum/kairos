@@ -274,7 +274,10 @@ return djDeclare("location.entry", [
 		frag.appendChild(document.createTextNode(' ' + this.currentLocation));
 
 		window.requestAnimationFrame(() => {
-			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location ' + that.currentLocation.toLowerCase());
+			if(that.get('currentLocation')) {
+				that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').toLowerCase());
+			}
+			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location');
 			djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation));
 		});
 	},
@@ -548,17 +551,8 @@ return djDeclare("location.entry", [
 			}
 		}
 		this.displayReservations(this.get('reservations'));
-		/*if(! loaded || force) {
-			if(intoYView(this.domNode)) {
-				t
-			} else {
-				def.resolve();
-			}
-		} else {
-			def.resolve();
-		}*/
-
-				window.setTimeout(() => { djDomStyle.set(that.domNode, 'background-color', ''); }, 250);
+		window.setTimeout(() => { djDomStyle.set(that.domNode, 'background-color', ''); }, 250);
+		
 		def.resolve();
 		return def.promise;
 	},

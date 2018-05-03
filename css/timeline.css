@@ -2,16 +2,28 @@
 
 body, html { margin: 0; padding: 0; }
 
-.montreux {
+.montreux .location {
 	color: green !important;
 }
 
-.nyon {
+.nyon .location {
 	color: blue !important;
 }
 
-.sion {
+.sion .location {
 	color: orange !important;
+}
+
+.compact .sion.control {
+	background-color: orange !important;
+}
+
+.compact .montreux.control {
+	background-color: green !important;
+}
+
+.compact .nyon.control {
+	background-color: blue !important;
 }
 
 .timeline {
