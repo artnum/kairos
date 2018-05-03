@@ -456,6 +456,13 @@ return djDeclare("location.reservation", [
 		} else {
 			ident.appendChild(document.createTextNode('[Nouvelle réservation]'));
 		}
+		
+		if(this.get('folder') != '') {
+			ident.appendChild(document.createTextNode(' '));
+			ident.appendChild(document.createElement('I'));
+			ident.lastChild.setAttribute('class', 'fas fa-folder');
+		};
+
 		frag.lastChild.appendChild(ident);
 
 		frag.lastChild.appendChild(document.createElement('address'));
