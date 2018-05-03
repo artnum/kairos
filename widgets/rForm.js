@@ -515,6 +515,7 @@ return djDeclare("location.rForm", [
 		}
 
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
+
 		r = request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }});
 		initRequests.push(r);
 		r.then( function (results) {
@@ -558,6 +559,8 @@ return djDeclare("location.rForm", [
 		}
 		this.toggleDelivery();
 		
+		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
+
 		r = request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }});
 		initRequests.push(r);
 		r.then(djLang.hitch(this, function (res) {
@@ -585,6 +588,7 @@ return djDeclare("location.rForm", [
 		djAll(initRequests).then( () => {
 			that.doResetComplement();
 			that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'));
+			window.App.info('Réservation ' + that.reservation.get('id') + ' chargée.');
 		});
   },
 
@@ -649,15 +653,6 @@ return djDeclare("location.rForm", [
 			});
 		
 		this.nContactsContainer.addChild(this.contacts[type]);
-		if(this.contacts['_client']) {
-			this.nContactsContainer.selectChild(this.contacts['_client']);
-		} else { 
-			this.nContactsContainer.selectChild(this.contacts[type]);
-		}
-		if(show) {
-			this.nContactsContainer.selectChild(this.contacts[type]);
-		}
-
 		this.nMBeginDate.set('value', this.beginDate.get('value'));
 		this.nMBeginTime.set('value', this.beginTime.get('value'));
 		this.nMEndDate.set('value', this.endDate.get('value'));
@@ -708,13 +703,6 @@ return djDeclare("location.rForm", [
 			}
 	},
 
-	doAddContact: function (event) {
-		var c = new contacts({ target: this });
-		var dialog = new dtDialog({title: "Ajout contact", style: "width: 600px; background-color: white;", content: c});
-		c.set('dialog', dialog);
-		dialog.show();		
-	},
-
 	show: function () {
 		var that = this;
 		window.requestAnimationFrame(function() { djDomStyle.set(that.domNode.parentNode, 'display', 'block'); });
@@ -755,6 +743,7 @@ return djDeclare("location.rForm", [
 		var end = f.endDate.join(f.endTime);
 		
 		if(djDate.compare(begin, end) >= 0) {
+			window.App.error('La fin de réservation est avant le début');
 			this.beginDate.set('state', 'Error');
 			this.endDate.set('state', 'Error');
 			return false;
@@ -768,6 +757,7 @@ return djDeclare("location.rForm", [
 			if(djDate.compare(deliveryBegin, deliveryEnd) >= 0) {
 				this.nDeliveryBeginDate.set('state', 'Error');
 				this.nDeliveryEndDate.set('state', 'Error');
+				window.App.error('La fin de la livraison est avant le début');
 				return false;	
 			}
 
@@ -782,12 +772,14 @@ return djDeclare("location.rForm", [
 			if(djDate.compare(deliveryBegin, begin) > 0) {
 				this.beginDate.set('state', 'Error');
 				this.nDeliveryBeginDate.set('state', 'Error');
+				window.App.error('La fin de la livraison est avant la fin de la location');
 				return false;
 			}
 
 			if(djDate.compare(deliveryEnd, end) < 0) {
 				this.nDeliveryEndDate.set('state', 'Error');
 				this.endDate.set('state', 'Error');
+				window.App.error('Début de livraison est après le début de la location')
 				return false;
 			}
 		}
@@ -831,6 +823,7 @@ return djDeclare("location.rForm", [
 			deliveryBegin = null;
 			deliveryEnd = null;	
 		}
+
 
 		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
 		this.reservation.set('status', f.status);

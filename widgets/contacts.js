@@ -88,18 +88,25 @@ return djDeclare("location.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidget
 		}
 	},
 	doAddFreeform: function(event) {
-		var f = djDomForm.toObject(this.form.domNode);
-		
+		var f = djDomForm.toObject(this.nForm.domNode);
 		if(f.freeform) {
 			this.sup.saveContact(null, { 
 				type: f.cType,
 				comment: f.details, 
 				freeform: f.freeform});
-				this.dialog.destroy();
 		}		
 	},
+	resetResults: function () {
+		djDomStyle.set(this.nFreeFormField, 'display', '');
+		for(var i = this.domNode.lastChild; i; i = i.previousSibling) {
+			if(i.nodeName == 'DIV' && i.getAttribute('class') == 'results') {
+				i.parentNode.removeChild(i);
+				break;
+			}
+		}
+	},
 	doSearch: function (event) {
-		var f = djDomForm.toObject(this.form.domNode);
+		var f = djDomForm.toObject(this.nForm.domNode);
 	
 		var terms = f.search.split(/\s+/);
 		for(var i = 0; i < terms.length; i++) {
@@ -116,28 +123,35 @@ return djDeclare("location.contacts", [ dtWidgetBase, dtTemplatedMixin, dtWidget
 									"search._givenname": 'or'
 								} }).then(djLang.hitch(this, function (res) {
 			var frag = document.createDocumentFragment();
-			this.own(frag);
-			res.data.forEach(djLang.hitch(this, function (entry) {
-				var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
-				
-				var c = new card('/Contacts/');
-				c.entry(entry);
-				
-				djOn(c.domNode, "click", djLang.hitch(this, function (event) {
-						/* get form once again it may have changed */
-						var f = djDomForm.toObject(this.form.domNode);
-						var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
-						if(id != null) {
-							this.sup.saveContact(id, { type: f.cType, comment: f.details });
-							this.dialog.destroy();
-						}
-					}));
-				frag.appendChild(c.domNode);
+			frag.appendChild(document.createElement('DIV'));
+			frag.lastChild.setAttribute('class', 'results');
+			if(res.data.length == 0) {
+				frag.lastChild.appendChild(document.createTextNode('Pas de résultats'));
+			} else {
+				res.data.forEach(djLang.hitch(this, function (entry) {
+					var x = '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ';
 
+					var c = new card('/Contacts/');
+					c.entry(entry);
+
+					djOn(c.domNode, "click", djLang.hitch(this, function (event) {
+							/* get form once again it may have changed */
+							var f = djDomForm.toObject(this.nForm.domNode);
+							var id = dtRegistry.getEnclosingWidget(event.target).get('identity');
+							if(id != null) {
+								this.sup.saveContact(id, { type: f.cType, comment: f.details });
+								this.resetResults();
+							}
+						}));
+					frag.lastChild.appendChild(c.domNode);
+
+				}));
+			}
+			window.requestAnimationFrame(djLang.hitch(this, () => {
+				this.resetResults();
+				djDomStyle.set(this.nFreeFormField, 'display', 'none');
+				this.domNode.appendChild(frag);
 			}));
-			var d = this.results;
-			var dialog = this.dialog;
-			window.requestAnimationFrame(function () { if(d) { d.set('content', frag); d.resize(); } ; if(dialog) { dialog.resize(); } });
 		}));
 		return false;
 	}

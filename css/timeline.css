@@ -227,25 +227,6 @@ body, html { margin: 0; padding: 0; }
 	max-width: 100%;
 	border-bottom: 2px solid black;
 }
-.logline {
-	display: none;
-	position: fixed;
-	z-index: 800;
-	background-color: rgba(255, 255, 255, 0.2);
-	text-align: right;
-	font-family: monospace;
-	font-size: 0.8em;
-	width: 100%;
-	top: 62px;
-}
-
-.logline.warning {
-	background-color: rgba(255, 127, 0, 0.2) !important;
-}
-.logline.error {
-	background-color: rgba(255, 0, 0, 0.2) !important;
-}
-
 
 .reservation .date {
 	color: rgb(80,80,80);
