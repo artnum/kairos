@@ -191,31 +191,43 @@ return djDeclare("location.timeline", [
 		this.log('error', txt, code);
 	},
 	log: function (level, txt, code) {
-		var entry = new Object({ level: level, message: txt, date: new Date(), code: code }), that = this;
-			
-		this.logs.push(entry);
+		var timeout = 10000;
+		var div = document.createElement('DIV');
 
-		window.requestAnimationFrame(function (){
-			if(that.logline.firstChild) {
-				that.logline.removeChild(that.logline.firstChild);
-			}
+		switch(level) {
+			case 'info': timeout = 3000; 
+				div.appendChild(document.createElement('I'));
+				div.lastChild.setAttribute('class', 'fas fa-info-circle');
+				break;
+			case 'error':
+				div.appendChild(document.createElement('I'));
+				div.lastChild.setAttribute('class', 'fas fa-times-circle');
+				break;
+			case 'warning':
+				div.appendChild(document.createElement('I'));
+				div.lastChild.setAttribute('class', 'fas fa-exclamation-circle');
+				break;
 
-			var frag = document.createDocumentFragment();
-			var span = document.createElement('SPAN');
-			span.setAttribute('class', entry.level);
-			span.appendChild(document.createTextNode(entry.message + ' (' + entry.code + ')'));
-			frag.appendChild(span);
-			that.logline.appendChild(frag);
-			that.logline.setAttribute('class', 'logline ' + entry.level);
+		}
+		
+		div.setAttribute('class', 'message ' + level);
+		div.appendChild(document.createTextNode(' ' + txt));
+
+
+		var timeout = window.setTimeout( () => {
+			window.requestAnimationFrame( () => {
+				div.parentNode.removeChild(div);
+			});
+		}, timeout);
+		
+		djOn(div, 'click', () => {
+			window.clearTimeout(timeout);
+			div.parentNode.removeChild(div);
 		});
-		window.setTimeout(function () {
-			window.requestAnimationFrame( function() {
-				if(that.logline.firstChild) {
-					that.logline.removeChild(that.logline.firstChild);
-				}
-				that.logline.setAttribute('class', 'logline');
-			})
-		}, 10000);
+
+		window.requestAnimationFrame( djLang.hitch( this, () => {
+			this.logline.appendChild(div);
+		}));
 	},
 
 	_setCenterAttr: function (date) {
@@ -403,18 +415,6 @@ return djDeclare("location.timeline", [
 				djDomStyle.set(this.domNode, 'display', 'block');
 			}
 		}, true);
-		tContainer.watch('selectedChildWidget', function (method, prev, current) {
-			var rid = current.get('id').split('_')[2];
-			Req.get(locationConfig.store + '/Reservation/' + rid, { query: { 'search.delete': '-' }}).then(function (result) {
-				if(result && result.data && result.data.length > 0) {
-					data = result.data[0];
-					var date = data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin);
-					that.goToReservation(data['target'], date).then(function (widget) {
-						that.highlight(widget.domNode);
-					});
-				}
-			});
-		});
 
 		djAspect.after(tContainer, 'removeChild', function (child) {
 			if(! this.hasChildren()) {
