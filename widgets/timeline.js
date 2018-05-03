@@ -537,17 +537,19 @@ return djDeclare("location.timeline", [
 
 				that.searchMenu.addChild(new dtMenuSeparator());
 				var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1));
-				var item = new dtMenuItem({ label: 'Comment le <input data-dojo-type="dijit/form/DateTextBox" id="menuStartDay" value="' + now + '" />' });
+				var item = new dtMenuItem({ label: 'Commence le <input data-dojo-type="dijit/form/DateTextBox" id="menuStartDay" value="' + now + '" />' });
 				djOn(item, 'click', djLang.hitch(that, (e) => {
 					that.filterDate(dtRegistry.byId('menuStartDay').get('value'));
 				}));
 				that.searchMenu.addChild(item);
+				item.startup()
 				
 				var item = new dtMenuItem({ label: 'Termine le <input data-dojo-type="dijit/form/DateTextBox" id="menuEndDay" value="' + now + '" />' });
 				djOn(item, 'click', djLang.hitch(that, () => {
 					that.filterDate(dtRegistry.byId('menuEndDay').get('value'), 'trueEnd');
 				}));
 				that.searchMenu.addChild(item);
+				item.startup()
 
 
 			});
