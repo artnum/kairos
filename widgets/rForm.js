@@ -711,6 +711,8 @@ return djDeclare("location.rForm", [
 	hide: function() {
 		this.get('_pane')[1].removeChild(this.get('_pane')[0]);	
 		this.get('_pane')[0].destroy();
+		this.reservation.myForm = null;
+		this.reservation.myContentPane = null;
 	},
 
 	doPrint: function (event) {

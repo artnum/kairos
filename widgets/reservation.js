@@ -582,19 +582,24 @@ return djDeclare("location.reservation", [
 		tContainer.resize();
 		tContainer.selectChild(cp.id);
 
-		f.set('begin', this.get('begin'));
-		f.set('end', this.get('end'));
-		f.set('deliveryBegin', this.get('deliveryBegin'));
-		f.set('deliveryEnd', this.get('deliveryEnd'));
-		f.set('status', this.get('status'));
-		f.set('address', this.get('address'));
-		f.set('locality', this.get('locality'));
-		f.set('comment', this.get('comment'));
-		f.set('equipment', this.get('equipment'));
-		f.set('reference', this.get('reference'));
+		this.myForm = f;
+		this.myContentPane = cp;
+		this.syncForm();
 		f.set('_pane', [ cp, tContainer]);
-		//f.show();	
 	},
+
+	syncForm: function () {
+		if(this.myForm) {
+			[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference' ].forEach(djLang.hitch(this, (e) => {
+				this.myForm.set(e, this.get(e));
+			}));
+		}
+
+		if(this.myContentPane) {
+			this.myContentPane.set('title', 'Réservation ' + this.get('id'));
+		}
+	},
+
 	_getTargetAttr: function() {
 		return this.sup.get('target');
 	},

@@ -352,7 +352,7 @@ return djDeclare("location.entry", [
 
 	createReservation: function(day) {
 		var that = this;
-		this.lock().then(function () {
+
 			if(!day) {
 				day = that.get('dateRange').begin;	
 			}
@@ -360,28 +360,27 @@ return djDeclare("location.entry", [
 			end.setHours(17,0,0,0);
 			day.setHours(8,0,0,0);
 
+			var r = { start: day,
+				o: new Reservation({ sup: that,  begin: day, end: end })
+			}
+			r.o.popMeUp();
+
 			that.defaultStatus().then(function(s) {
-				var r = { start: day,
-					o: new Reservation({ sup: that, status: s, begin: day, end: end })
-				}
-			
+				r.o.set('status', s);
 				r.o.save().then(function (result) {
-					that.unlock();
 					if(result.type == 'error') {
-						that.error("Impossible d'enregistrer les données", 300);
+						window.App.error("Impossible d'enregistrer les données");
 					} else {
+						window.App.info('Réservation ' + r.o.get('id') + ' correctement créée');
 						r.o.fromJson(result.data);
 						that.entries[r.o.get('id')] = r.o;
-	
+						r.o.syncForm();
 						window.requestAnimationFrame(function() {
 							that.data.appendChild(r.o.domNode);
 						});
-						r.o.popMeUp();
 					}				
 				});
 			});
-		});
-
 	},
 
 	_getOffsetAttr: function () {
