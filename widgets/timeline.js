@@ -26,6 +26,7 @@ define([
 	"dojo/window",
 	"dojo/promise/all",
 	"dijit/registry",
+	"dijit/form/DateTextBox",
 	"dijit/form/NumberTextBox",
 	"dijit/form/Button",
 	"dijit/MenuBar",
@@ -76,6 +77,7 @@ define([
 	djWindow,
 	djAll,
 	dtRegistry,
+	dtDateTextBox,
 	dtNumberTextBox,
 	dtButton,
 	dtMenuBar,
@@ -534,20 +536,16 @@ return djDeclare("location.timeline", [
 				}
 
 				that.searchMenu.addChild(new dtMenuSeparator());
-
-				var item = new dtMenuItem({ label: 'Commence demain' });
-				djOn(item, 'click', djLang.hitch(that, () => {
-					var now = new Date();
-					now = djDate.add(now, 'day', 1);
-					that.filterDate(now);
+				var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1));
+				var item = new dtMenuItem({ label: 'Comment le <input data-dojo-type="dijit/form/DateTextBox" id="menuStartDay" value="' + now + '" />' });
+				djOn(item, 'click', djLang.hitch(that, (e) => {
+					that.filterDate(dtRegistry.byId('menuStartDay').get('value'));
 				}));
 				that.searchMenu.addChild(item);
 				
-				var item = new dtMenuItem({ label: 'Termine demain' });
+				var item = new dtMenuItem({ label: 'Termine le <input data-dojo-type="dijit/form/DateTextBox" id="menuEndDay" value="' + now + '" />' });
 				djOn(item, 'click', djLang.hitch(that, () => {
-					var now = new Date();
-					now = djDate.add(now, 'day', 1);
-					that.filterDate(now, 'trueEnd');
+					that.filterDate(dtRegistry.byId('menuEndDay').get('value'), 'trueEnd');
 				}));
 				that.searchMenu.addChild(item);
 
