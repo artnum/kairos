@@ -590,6 +590,9 @@ return djDeclare("location.timeline", [
 			what = arguments[1];
 		}
 
+		this.center = date;
+		this.update();
+
 		for(var i = 0; i < this.entries.length; i++) {
 			var active = false;
 			for(var k in this.entries[i].entries) {
