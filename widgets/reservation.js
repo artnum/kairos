@@ -457,11 +457,16 @@ return djDeclare("location.reservation", [
 			ident.appendChild(document.createTextNode('[Nouvelle réservation]'));
 		}
 		
-		if(this.get('folder') != '') {
+		if(this.get('folder') != '' && this.get('folder') != null) {
 			ident.appendChild(document.createTextNode(' '));
 			ident.appendChild(document.createElement('I'));
 			ident.lastChild.setAttribute('class', 'fas fa-folder');
-		};
+		}
+		if(this.get('equipment') != '' && this.get('equipment') != null) {
+			ident.appendChild(document.createTextNode(' '));
+			ident.appendChild(document.createElement('I'));
+			ident.lastChild.setAttribute('class', 'fas fa-wrench');
+		}
 
 		frag.lastChild.appendChild(ident);
 
