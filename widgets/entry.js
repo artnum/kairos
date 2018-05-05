@@ -556,6 +556,23 @@ return djDeclare("location.entry", [
 		return def.promise;
 	},
 
+  addOrUpdateReservation: function (reservations) {
+    var found = false;
+    for(var i = 0; i < reservations.length; i++) {
+      found = false;
+      for(var j = 0; j < this.reservations.length; j++) {
+        if(Number(reservations[i].id) == Number(this.reservations[j].id)) {
+          this.reservations[j] = reservations[i];
+          found = true;
+          break;
+        }
+      }
+      if( !found) {
+        this.reservations.push(reservations[i]);
+      }
+    }
+  },
+
 	store: function(reservation) {
 		var def = new djDeferred();
 		reservation.o.save().then( (result) => { def.resolve(result); });

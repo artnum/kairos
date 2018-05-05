@@ -163,15 +163,30 @@ return djDeclare("location.timeline", [
 
 		this.Updater = new Worker('/location/js/ww/updater.js');
 		this.Updater.onmessage = djLang.hitch(this, function (e) {
+			var byTarget = new Object();
 			if(e.data) {
-				var byTarget = e.data;
-				for(var i = 0; i < this.entries.length; i++) {
-					if(byTarget[this.entries[i].get('target')]) {
-						this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
-						this.entries[i].update(true);
-					}
+				switch(e.data.type) {
+					case 'all': default:
+						byTarget = e.data.content;
+						for(var i = 0; i < this.entries.length; i++) {
+							if(byTarget[this.entries[i].get('target')]) {
+								this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
+								this.entries[i].update(true);
+							}
+						}
+						this.resize();
+
+						break;
+					case 'entry':
+						byTarget = e.data.content;
+						for(var i = 0; i < this.entries.length; i++) {
+							if(byTarget[this.entries[i].get('target')]) {
+								this.entries[i].addOrUpdateReservation(byTarget[this.entries[i].get('target')]);
+								this.entries[i].update(true);
+							}
+						}
+						break;
 				}
-				this.resize();
 			}
 		});
 
@@ -1122,7 +1137,7 @@ return djDeclare("location.timeline", [
 					}
 			}
 			that.categories = category;
-			djAll(loaded).then( function () { that.buildMenu(); that.endDraw(); that.update(); that.refresh(); });
+			djAll(loaded).then( function () { that.buildMenu(); that.endDraw(); that.update();  });
 		});
 	},
 
