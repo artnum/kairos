@@ -160,6 +160,21 @@ return djDeclare("location.timeline", [
 		this.runningRequest = new Array();
 
 		this.zoomCss = document.createElement('style');
+
+		this.Updater = new Worker('/location/js/ww/updater.js');
+		this.Updater.onmessage = djLang.hitch(this, function (e) {
+			if(e.data) {
+				var byTarget = e.data;
+				for(var i = 0; i < this.entries.length; i++) {
+					if(byTarget[this.entries[i].get('target')]) {
+						this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
+						this.entries[i].update(true);
+					}
+				}
+				this.resize();
+			}
+		});
+
 		document.body.appendChild(this.zoomCss);
 
 		var sStore = window.sessionStorage;
@@ -1119,54 +1134,13 @@ return djDeclare("location.timeline", [
 		end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0,0,0);
 		this.resize();
 
-		for(var i = 0; i < this.runningRequest.length; i++) {
-			if(!this.runningRequest[i].req.isFulfilled()) {
-				if(oldest == null) {
-					oldest = i;
-				} else {
-					if(this.runningRequest[oldest].time < this.runningRequest[i].time) {
-						oldest = i;
-					}
-				}
-				r.push(this.runningRequest[i]);
-			}
-		}
-		if(oldest != null) { this.runningRequest[oldest].req.cancel(); }
-		this.runningRequest = r.slice();
-
-		var current = Req.get(this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
+		this.Updater.postMessage([this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
 			"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
 			"search.end" : '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
 			"search.deleted" : '-' }
-		});
+		}]);
+		def.resolve();
 
-		if(oldest != null) {
-			this.runningRequest[oldest] = { req: current, time: new Date().getTime() };
-		} else {
-			this.runningRequest.push({ req: current, time: new Date().getTime() });
-		}
-
-		current.then(djLang.hitch(this, (results) => {
-			if(results && results.data && results.data.length > 0) {
-				var byTarget = new Object();
-				for(var i = 0; i < results.data.length; i++) {
-					if( ! byTarget[results.data[i].target]) {
-						byTarget[results.data[i].target] = new Array();
-					}
-					byTarget[results.data[i].target].push(results.data[i]); 
-				}
-				for(var i = 0; i < this.entries.length; i++) {
-					if(byTarget[this.entries[i].get('target')]) {
-						this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
-						this.entries[i].update(true);
-					}
-				}
-			}
-			this.resize();
-			def.resolve();
-		}));
-
-		this.resize();
 		return def.promise;
 	},
 
