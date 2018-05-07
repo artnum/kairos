@@ -365,6 +365,11 @@ html {
 .rForm .association .item .hour {
 	width: 4em;
 }
+
+.rForm .association .item .follow {
+	width: 20em;
+}
+
 .rForm .association .item .toolbox {
 	float: right;
 }

@@ -654,6 +654,10 @@ return djDeclare("location.reservation", [
 		var byType = new Object();
 
 		for(var i = 0; i < x.length; i++) {
+			/* Follow set end and begin at the value of the reservation */
+			if(Number(x[i].follow)) {
+				x[i].begin = this.get('trueBegin'); x[i].end = this.get('trueEnd');
+			}
 			x[i].range = new DateRange(x[i].begin, x[i].end);
 			if(!byType[x[i].type.color]) {
 				byType[x[i].type.color] = new Array();

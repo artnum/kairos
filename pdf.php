@@ -325,9 +325,13 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
       $PDF->printTaggedLn(array('%cb', $k), array('underline'=>true) );
       $x = false;
       foreach($v as $data) {
-         $begin = new DateTime($data['begin']) ;
-         $end = new DateTime($data['end']);
-         $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+         if( ! (int)$data['follow']) {
+            $begin = new DateTime($data['begin']) ;
+            $end = new DateTime($data['end']);
+            $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+         } else {
+            $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x durant toute la réservation'), array('break' => false));
+         }
          if($x) {
             $PDF->br();
             $x = false;

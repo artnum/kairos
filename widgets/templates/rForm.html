@@ -64,7 +64,8 @@
 	<span class="dualEntry"><label for="associationType" class="fixedSize">Type : </label><input data-dojo-type="dijit/form/Select" name="associationType" data-dojo-attach-point="nAssociationType" />
 		<label for="number" class="fixedSize">Nombre : </label><input data-dojo-type="dijit/form/NumberTextBox" name="number" data-dojo-attach-point="nNumber" /></span>
 	<br />
-	<span class="dualEntry">
+	<label for="nMFollow">Durant toute la résevation : </label><input data-dojo-type="dijit/form/CheckBox" name="nMFollow" data-dojo-attach-point="nMFollow" checked="true" /><br>
+	<span class="dualEntry" data-dojo-attach-point="nMFollowToggle" style="display: none">
 		<label for="nMBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMBeginDate" data-dojo-attach-point="nMBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMBeginTime" data-dojo-attach-point="nMBeginTime" /> 
 		<label for=nMEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMEndDate" data-dojo-attach-point="nMEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMEndTime" data-dojo-attach-point="nMEndTime" />
 	</span>
