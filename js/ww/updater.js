@@ -65,7 +65,9 @@ checker = function () {
 			params.push('search._rules=' + encodeURIComponent('modification OR id'));
 		}
 	}
+
 	if(params.length > 0) {
+		params.push('long=1');
 		parameters = params.join('&');
 	}
 	if(parameters != '') {
