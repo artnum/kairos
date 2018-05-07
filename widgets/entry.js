@@ -551,7 +551,7 @@ return djDeclare("location.entry", [
 		}
 		this.displayReservations(this.get('reservations'));
 		window.setTimeout(() => { djDomStyle.set(that.domNode, 'background-color', ''); }, 250);
-		
+
 		def.resolve();
 		return def.promise;
 	},

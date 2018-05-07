@@ -491,7 +491,8 @@ return djDeclare("location.rForm", [
 
 				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: query}).then( function ( res ) {
 					if(res && res.data && res.data.success) {
-						that.reservation.destroy();
+						window.App.info('Déplacement de machine correctement effectué');
+						that.reservation.destroyMe();
 						that.hide();
 					}
 				});

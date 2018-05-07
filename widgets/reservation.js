@@ -953,7 +953,9 @@ return djDeclare("location.reservation", [
 	destroyReservation: function(reservation) {
 		this.sup.destroyReservation(reservation);
 	},
-
+	destroyMe: function() {
+		this.destroyReservation(this);
+	},
 	save: function () {
 		var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred();
 
