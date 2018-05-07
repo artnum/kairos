@@ -110,6 +110,8 @@ return djDeclare("location.rForm", [
 	constructor: function(args) {
 		this.reservation = args.reservation;
 		this.contacts = new Object();
+		this.initRequests = new Array();
+		this.loaded = { status: false };
 	},
 
 	_setDescriptionAttr: function (value) {
@@ -467,8 +469,18 @@ return djDeclare("location.rForm", [
 
 	postCreate: function () {
 		this.inherited(arguments);
-		var select = this.status, that = this, initRequests = new Array(), r;
-		
+		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
+	},
+	
+	startup: function() {
+		this.inherited(arguments);
+		this.load();
+	},
+
+	load: function () {
+		this.initCancel();
+
+		var select = this.status, that = this,  r;
 		var entries = this.reservation.get('entries');
 		for(var i = 0; i < entries.length; i++) {
 			this.nMachineChange.addOption({
@@ -514,30 +526,30 @@ return djDeclare("location.rForm", [
 			this.nGps.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nGps.domNode.nextSibling);
 		}
 
-		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 
 		r = request.get(locationConfig.store + '/Status/', { query : {'search.type': 0 }});
-		initRequests.push(r);
-		r.then( function (results) {
-			if(results.type = "results") {
-				let def = 0;
-				results.data.forEach(function (d) {
-					if(d.default == '1') { def = d.id; }
-					select.addOption({
-						label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-						value: d.id
-					});
-				});
-				if(that.reservation.get('status')) {
-					select.set('value', that.reservation.get('status'));
-				} else {
-					select.set('value', def);
+		this.initRequests.push(r);
+	
+		if(! this.loaded.status) {
+			r.then( djLang.hitch(this, function (results) {
+				if(results.type = "results") {
+					var def;
+					for(var i = 0; i < results.data.length; i++) {
+						var d = results.data[i];
+						if(d.default == '1') { def = d.id; }
+						console.log(this, this.nStatus);
+						this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id });
+					}
 				}
-			}
-		});
+				if(def) {
+					this.nStatus.set('value', def);
+				}
+				this.loaded.status = true;
+			}));
+		}
 
 		r = request.get(locationConfig.store + '/Status/', { query : { 'search.type': 1 }});
-		initRequests.push(r);
+		this.initRequests.push(r);
 		r.then( function (results) {
 			if(results.type = 'results') {
 				results.data.forEach(function (d) {
@@ -562,7 +574,7 @@ return djDeclare("location.rForm", [
 		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
 
 		r = request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }});
-		initRequests.push(r);
+		this.initRequests.push(r);
 		r.then(djLang.hitch(this, function (res) {
 			if(res.success()) {
 				res.whole().forEach(djLang.hitch(this, function (contact) {
@@ -572,7 +584,7 @@ return djDeclare("location.rForm", [
 					} else {
 						var linkId = contact.id, comment = contact.comment;
 						r = request.get(locationConfig.store + contact.target);
-						initRequests.push(r);
+						this.initRequests.push(r);
 						r.then(djLang.hitch(this, function( entry ) {
 							if(entry.success()) {
 								var e = entry.first();
@@ -585,11 +597,16 @@ return djDeclare("location.rForm", [
 			}
 		}));
 		
-		djAll(initRequests).then( () => {
+		djAll(this.initRequests).then( djLang.hitch(this, () => {
+			if(this.reservation.get('status')) {
+				this.nStatus.set('value', this.reservation.get('status'));
+			}
+
 			that.doResetComplement();
 			that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'));
 			window.App.info('Réservation ' + that.reservation.get('id') + ' chargée.');
-		});
+			that.initRequests = new Array();
+		}));
   },
 
 	toggleDelivery: function () {
@@ -708,11 +725,26 @@ return djDeclare("location.rForm", [
 		window.requestAnimationFrame(function() { djDomStyle.set(that.domNode.parentNode, 'display', 'block'); });
 	},
 
+	initCancel: function() {
+		for(var i = 0; i < this.initRequests.length; i++) {
+			if(! this.initRequests[i].isFulfilled()) {
+				this.initRequests[i].cancel();
+			}
+		}
+		this.initRequests = new Array();
+	},
+
+	destroy: function() {
+		this.initCancel();
+		this.inherited(arguments);
+	},
+
 	hide: function() {
 		this.get('_pane')[1].removeChild(this.get('_pane')[0]);	
 		this.get('_pane')[0].destroy();
 		this.reservation.myForm = null;
 		this.reservation.myContentPane = null;
+		this.destroy();
 	},
 
 	doPrint: function (event) {

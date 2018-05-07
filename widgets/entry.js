@@ -560,10 +560,11 @@ return djDeclare("location.entry", [
     var found = false;
     for(var i = 0; i < reservations.length; i++) {
       found = false;
-      for(var j = 0; j < this.reservations.length; j++) {
+			for(var j = 0; j < this.reservations.length; j++) {
         if(Number(reservations[i].id) == Number(this.reservations[j].id)) {
           this.reservations[j] = reservations[i];
-          found = true;
+					this.entries[reservations[i].id].fromJson(reservations[i]);
+					found = true;
           break;
         }
       }

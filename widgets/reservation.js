@@ -92,7 +92,8 @@ return djDeclare("location.reservation", [
 
 	fromJson: function (json) {
 		djLang.mixin(this, json);
-		
+	
+		this.set('updated', true);
 		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( (attr) => {
 			if(json[attr]) {
 				this.set(attr, djDateStamp.fromISOString(json[attr]));
@@ -117,6 +118,7 @@ return djDeclare("location.reservation", [
 	
 		this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'));
 		this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime();
+		this.syncForm();
 	},
 
 	refresh: function () {
@@ -598,6 +600,7 @@ return djDeclare("location.reservation", [
 			[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference' ].forEach(djLang.hitch(this, (e) => {
 				this.myForm.set(e, this.get(e));
 			}));
+			this.myForm.load();
 		}
 
 		if(this.myContentPane) {
