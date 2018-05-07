@@ -535,7 +535,7 @@ return djDeclare("location.rForm", [
 			this.nFolder.set('value', this.reservation.get('folder'));
 			var url = folder;
 			if(! folder.match(/^[a-zA-Z]*:\/\/.*/)) {
-				url = 'file://' + url;	
+				url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C');
 			}
 
 			var a = document.createElement('A');
