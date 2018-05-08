@@ -448,14 +448,6 @@ return djDeclare("location.reservation", [
 		}
 			
 		var ident = document.createElement('SPAN');
-		ident.setAttribute('class', 'id');
-		if(this.get('IDent')) {
-			ident.appendChild(document.createElement('A'));
-			ident.firstChild.setAttribute('href', '#' + this.get('IDent'));
-			ident.firstChild.appendChild(document.createTextNode(this.get('IDent')));
-		} else {
-			ident.appendChild(document.createTextNode('[Nouvelle réservation]'));
-		}
 		
 		if(this.get('folder') != '' && this.get('folder') != null) {
 			ident.appendChild(document.createTextNode(' '));
