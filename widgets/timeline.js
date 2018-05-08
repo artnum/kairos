@@ -158,6 +158,7 @@ return djDeclare("location.timeline", [
 		this.currentVerticalLine = 0;
 		this.displayOrder = new Array();
 		this.runningRequest = new Array();
+		this.extension = false;
 
 		this.zoomCss = document.createElement('style');
 		document.body.appendChild(this.zoomCss);
@@ -878,11 +879,19 @@ return djDeclare("location.timeline", [
 				}
 				
 				if(this.get('compact')) {
-					djDomClass.add(document.getElementsByTagName('body')[0], 'compact');
+					djDomClass.add(window.App.domNode, 'compact');
 				} else {
-					djDomClass.remove(document.getElementsByTagName('body')[0], 'compact');
+					djDomClass.remove(window.App.domNode, 'compact');
 				}
 				this.emit('zoom');	
+				break;
+			case 'extension':
+				this.set('extension', !this.get('extension'));
+				if(this.get('extension')) {
+					djDomClass.remove(window.App.domNode, 'noextender');
+				} else {
+					djDomClass.add(window.App.domNode, 'noextender');
+				}
 				break;
 		}
 		this.update(true);

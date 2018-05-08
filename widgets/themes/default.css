@@ -75,6 +75,10 @@ html {
 
 }
 
+.noextender .reservation .extender {
+	display: none;
+}
+
 .reservation .extender >  div {
 	display: none;
 }
