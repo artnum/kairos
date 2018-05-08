@@ -100,11 +100,11 @@ html {
 	display: none;
 }
 
-.month .reservation .extender {
+.reservation .extender {
 	width: 20px;
 }
 
-.reservation .extender {
+.day .reservation .extender {
 	width: 60px;
 }
 
