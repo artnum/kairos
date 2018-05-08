@@ -473,6 +473,7 @@ return djDeclare("location.reservation", [
 		frag.lastChild.appendChild(document.createElement('address'));
 		frag.lastChild.lastChild.appendChild(this.contactDom());
 
+
 		/* Second line */
 		frag.appendChild(document.createElement('DIV'));
 
@@ -989,5 +990,25 @@ return djDeclare("location.reservation", [
 		});
 		
 		return def.promise;
+	},
+
+	extend7: function (e) {
+		this.extend(7);
+	},
+
+	extend: function(days) {
+		var newEnd = djDate.add(this.end, 'day', days);
+		if(newEnd) {
+			var newDEnd = '';
+			if(this.deliveryEnd != '') {
+				var newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')));
+			}
+
+			this.end = newEnd;
+			this.deliveryEnd = newDEnd;
+			this.save().then ( () => { window.App.info('Prolongation effectuée'); });
+		}
 	}
+
+
 });});
