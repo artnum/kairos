@@ -694,8 +694,14 @@ return djDeclare("location.rForm", [
 						}
 					})
 			});
-		
+
 		this.nContactsContainer.addChild(this.contacts[type]);
+		if(this.contacts['_client']) {
+			this.nContactsContainer.selectChild(this.contacts['_client']);
+		} else { 
+			this.nContactsContainer.selectChild(this.contacts[type]);
+		}
+		
 		this.nMBeginDate.set('value', this.beginDate.get('value'));
 		this.nMBeginTime.set('value', this.beginTime.get('value'));
 		this.nMEndDate.set('value', this.endDate.get('value'));
