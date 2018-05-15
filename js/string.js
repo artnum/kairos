@@ -96,3 +96,10 @@ String.prototype.toAscii = function () {
 	}
 	return str;
 };
+
+/* Convert utf8 string to a lower-case ascii transliterated alpha-numeric string */
+String.prototype.tagify = function () {
+	var str = this.toAscii();
+	str = str.toLowerCase();
+	return str.replace(/[^a-z0-9]/gm, '');
+}

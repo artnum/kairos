@@ -210,8 +210,8 @@ return djDeclare("location.entry", [
 				if(tag != '') {
 					notag = false;
 					var s = document.createElement('A');
-					s.setAttribute('class', 'tag');
-					s.setAttribute('href', '#' + tag.toLowerCase());
+					s.setAttribute('class', 'tag ' + tag.tagify());
+					s.setAttribute('href', '#' + tag.tagify());
 					s.appendChild(document.createTextNode(tag));
 					frag.appendChild(s);
 				}
@@ -283,7 +283,7 @@ return djDeclare("location.entry", [
 
 		window.requestAnimationFrame(() => {
 			if(that.get('currentLocation')) {
-				that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').toAscii().toLowerCase().replace(/[^a-z0-9]/gm, ''));
+				that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').tagify());
 			}
 			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location');
 			djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation));
