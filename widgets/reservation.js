@@ -18,6 +18,7 @@ define([
   "dojo/dom-style",
 	"dojo/dom-class",
 	"dojo/request/xhr",
+	"dojo/promise/all",
 
 	"dijit/Tooltip",
 	"dijit/registry",
@@ -50,6 +51,7 @@ define([
 	djDomClass,
 
 	djXhr,
+	djAll,
 
 	dtTooltip,
 	dtRegistry,
@@ -950,6 +952,7 @@ return djDeclare("location.reservation", [
 	destroyMe: function() {
 		this.destroyReservation(this);
 	},
+
 	save: function () {
 		var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred();
 
@@ -983,6 +986,41 @@ return djDeclare("location.reservation", [
 		});
 		
 		return def.promise;
+	},
+
+	copy: function ( ) {
+		var that = this;
+		var copy = Object.create(this);
+		djLang.mixin(copy, this);
+		copy.set('IDent', null);
+		copy.set('id', null);
+		copy.set('status', this.get('status'));
+		copy.save().then( () => {
+			var q = new Array();
+			Req.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+				if(res && res.data && res.data.length > 0) {
+					for(var i = 0; i < res.data.length; i++) {
+						res.data[i].id = null;
+						res.data[i].reservation = copy.get('IDent');
+						q.push(Req.post(locationConfig.store + '/ReservationContact/', { query: res.data[i] }));
+					}
+				}
+			});
+	
+			Req.get(locationConfig.store + '/Association', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+				if(res && res.data && res.data.length > 0) {
+					for(var i = 0; i < res.data.length; i++) {
+						res.data[i].id = null;
+						res.data[i].reservation = copy.get('IDent');
+						q.push(Req.post(locationConfig.store + '/Association', { query: res.data[i] }));
+					}
+				}
+			});
+
+			djAll(q).then( () => {
+				copy.popMeUp();
+			});
+		});
 	},
 
 	extend7: function (e) {

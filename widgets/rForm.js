@@ -45,8 +45,6 @@ define([
 
 	"artnum/Request",
 	"artnum/Join"
-
-
 ], function(
 	djDeclare,
 	djLang,
@@ -852,6 +850,10 @@ return djDeclare("location.rForm", [
 
 	},
 
+	doCopy: function (event) {
+		this.reservation.copy();
+	},
+
 	doSave: function (event) {
 		var now = new Date();
 		var that = this;
@@ -903,11 +905,6 @@ return djDeclare("location.rForm", [
 			that.reservation.highlight();
 		});
 	
-	},
-
-	doCopy: function (event) {
-		var that = this;
-		var reservation = this.reservation.copy().then( (o) => { o.popMeUp(); that.hide(); });
 	},
 
 	destroyReservation: function(reservation) {
