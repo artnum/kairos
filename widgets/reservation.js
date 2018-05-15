@@ -523,7 +523,8 @@ return djDeclare("location.reservation", [
 		if(this.comment) {
 			frag.appendChild(document.createElement('DIV'));
 			frag.lastChild.setAttribute('class', 'comment');
-			frag.lastChild.appendChild(document.createTextNode(this.comment));
+			var comment = String(this.comment).replace(/(\r\n|\n|\r)/gm, ' ; ');
+			frag.lastChild.appendChild(document.createTextNode(comment));
 		}
 
 		var div = this.txtDesc;
