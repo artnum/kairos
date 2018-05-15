@@ -5,6 +5,12 @@ html {
 /* Menu */
 #AppHeader {
 	z-index: 460;
+	max-height: 89px;
+	height: 89px;
+	background-color: white;
+	width: 100%;
+	max-width: 100%;
+	border-bottom: 2px solid black;
 }
 
 .logline {
@@ -55,6 +61,11 @@ html {
 }
 
 /* Tags */
+
+.entry.focus {
+	background-color: gray !important;
+}
+
 .entry .edit button, .entry .edit input {
 	font-size: 1em;
 	padding: 2px;
