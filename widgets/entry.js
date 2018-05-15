@@ -283,7 +283,7 @@ return djDeclare("location.entry", [
 
 		window.requestAnimationFrame(() => {
 			if(that.get('currentLocation')) {
-				that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').toLowerCase());
+				that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').toAscii().toLowerCase().replace(/[^a-z0-9]/gm, ''));
 			}
 			that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location');
 			djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation));
@@ -578,19 +578,9 @@ return djDeclare("location.entry", [
 	},
 
 	_startWait: function() {
-		/*var t = this.domNode;
-		this.waiters++;
-		window.requestAnimationFrame(function() { djDomClass.add(t, "refresh"); });	 */
 	},
 
 	_stopWait: function () {
-		/*
-		var t = this.domNode;
-		this.waiters--;
-		if(this.waiters <= 0) {
-			window.requestAnimationFrame(function() { djDomClass.remove(t, "refresh"); });
-			this.waiters = 0;
-		}*/
 	},
 
 	_setError: function() {
