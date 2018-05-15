@@ -158,6 +158,7 @@ return djDeclare("location.timeline", [
 		this.currentVerticalLine = 0;
 		this.displayOrder = new Array();
 		this.runningRequest = new Array();
+		this.extension = false;
 
 		this.zoomCss = document.createElement('style');
 
@@ -899,6 +900,7 @@ return djDeclare("location.timeline", [
 	},
 
 	toggle: function(attr) {
+		var targetNode = this.currentTopEntry(), delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1];
 		switch(attr) {
 			case 'compact':
 				if(this.get('compact')) {
@@ -908,14 +910,25 @@ return djDeclare("location.timeline", [
 				}
 				
 				if(this.get('compact')) {
-					djDomClass.add(document.getElementsByTagName('body')[0], 'compact');
+					djDomClass.add(window.App.domNode, 'compact');
 				} else {
-					djDomClass.remove(document.getElementsByTagName('body')[0], 'compact');
+					djDomClass.remove(window.App.domNode, 'compact');
 				}
 				this.emit('zoom');	
 				break;
+			case 'extension':
+				this.set('extension', !this.get('extension'));
+				if(this.get('extension')) {
+					djDomClass.remove(window.App.domNode, 'noextender');
+				} else {
+					djDomClass.add(window.App.domNode, 'noextender');
+				}
+				break;
 		}
-		this.update(true);
+		this.update(true).then( () => {
+			var pos = getElementRect(targetNode.domNode);
+			window.scroll(0, pos[1] - delta);
+		});
 	},
 	
 	drawTimeline: function() {
@@ -1249,6 +1262,23 @@ return djDeclare("location.timeline", [
 		});
 
 		return def.promise;
+	},
+
+	currentTopEntry: function () {
+		var current;
+		page = getPageRect(); 
+		for(var k in this.entries) {
+			var rect = getElementRect(this.entries[k].domNode);
+			if(! current && rect[1] >= page[1]) {
+				current = [ rect, this.entries[k] ];
+				continue;
+			}
+			
+			if(rect[1] >= page[1] && rect[1] < current[0][1]) {
+				current = [ rect, this.entries[k] ];
+			}
+		}
+		return current[1];
 	},
 
 	doSearchLocation: function (loc) {

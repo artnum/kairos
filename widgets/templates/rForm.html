@@ -64,7 +64,8 @@
 	<span class="dualEntry"><label for="associationType" class="fixedSize">Type : </label><input data-dojo-type="dijit/form/Select" name="associationType" data-dojo-attach-point="nAssociationType" />
 		<label for="number" class="fixedSize">Nombre : </label><input data-dojo-type="dijit/form/NumberTextBox" name="number" data-dojo-attach-point="nNumber" /></span>
 	<br />
-	<span class="dualEntry">
+	<label for="nMFollow">Durant toute la résevation : </label><input data-dojo-type="dijit/form/CheckBox" name="nMFollow" data-dojo-attach-point="nMFollow" checked="true" /><br>
+	<span class="dualEntry" data-dojo-attach-point="nMFollowToggle" style="display: none">
 		<label for="nMBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMBeginDate" data-dojo-attach-point="nMBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMBeginTime" data-dojo-attach-point="nMBeginTime" /> 
 		<label for=nMEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="nMEndDate" data-dojo-attach-point="nMEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="nMEndTime" data-dojo-attach-point="nMEndTime" />
 	</span>
@@ -80,9 +81,11 @@
 
 <fieldset class="command">
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
- type="button" data-dojo-attach-event="click:doSave" ><i class="fa fa-floppy-o" aria-hidden="true"></i> Sauvegarder</button>
+ type="button" data-dojo-attach-event="click:doSave" ><i class="far fa-floppy" aria-hidden="true"></i> Sauvegarder</button>
 <button data-dojo-type="dijit/form/Button" value="Imprimer"
  type="button" data-dojo-attach-event="click:doPrint" ><i class="fa fa-print" aria-hidden="true"></i> Imprimer</button>
+<button data-dojo-type="dijit/form/Button" value="Dupliquer"
+ type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
 <button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"
  type="button" data-dojo-attach-event="click:doDelete" ><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
  </fieldset>

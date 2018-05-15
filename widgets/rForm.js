@@ -45,8 +45,6 @@ define([
 
 	"artnum/Request",
 	"artnum/Join"
-
-
 ], function(
 	djDeclare,
 	djLang,
@@ -209,13 +207,13 @@ return djDeclare("location.rForm", [
 			for(var i = 0; i < byType[k].length; i++)  {
 				var divLine = document.createElement('DIV');
 				divLine.setAttribute('class', 'item');
-				
+
 				var begin = djDateStamp.fromISOString(byType[k][i].begin);
 				var end = djDateStamp.fromISOString(byType[k][i].end);
 
 				var line = document.createElement('DIV');
 				line.setAttribute('class', 'description');
-				
+
 				line.appendChild(document.createElement('SPAN'));
 				line.lastChild.setAttribute('class', 'number value');
 				line.lastChild.appendChild(document.createTextNode(byType[k][i].number));
@@ -223,22 +221,27 @@ return djDeclare("location.rForm", [
 				line.appendChild(document.createElement('I'));
 				line.lastChild.setAttribute('class', 'fas fa-times');
 
-				line.appendChild(document.createElement('SPAN'));
-				line.lastChild.setAttribute('class', 'date begin value');
-				line.lastChild.appendChild(document.createTextNode(begin.fullDate()));
+				if( ! Number(byType[k][i].follow)) {
+					line.appendChild(document.createElement('SPAN'));
+					line.lastChild.setAttribute('class', 'date begin value');
+					line.lastChild.appendChild(document.createTextNode(begin.fullDate()));
 
-				line.appendChild(document.createElement('SPAN'));
-				line.lastChild.setAttribute('class', 'hour begin value');
-				line.lastChild.appendChild(document.createTextNode(begin.shortHour()));
-				
-				line.appendChild(document.createElement('SPAN'));
-				line.lastChild.setAttribute('class', 'date end value');
-				line.lastChild.appendChild(document.createTextNode(end.fullDate()));
+					line.appendChild(document.createElement('SPAN'));
+					line.lastChild.setAttribute('class', 'hour begin value');
+					line.lastChild.appendChild(document.createTextNode(begin.shortHour()));
 
-				line.appendChild(document.createElement('SPAN'));
-				line.lastChild.setAttribute('class', 'hour end value');
-				line.lastChild.appendChild(document.createTextNode(end.shortHour()));
+					line.appendChild(document.createElement('SPAN'));
+					line.lastChild.setAttribute('class', 'date end value');
+					line.lastChild.appendChild(document.createTextNode(end.fullDate()));
 
+					line.appendChild(document.createElement('SPAN'));
+					line.lastChild.setAttribute('class', 'hour end value');
+					line.lastChild.appendChild(document.createTextNode(end.shortHour()));
+				} else {
+					line.appendChild(document.createElement('SPAN'));
+					line.lastChild.setAttribute('class', 'follow value');
+					line.lastChild.appendChild(document.createTextNode(' durant toute la réservation'));
+				}
 				line.appendChild(document.createElement('DIV'));
 				line.lastChild.setAttribute('class', 'toolbox');
 
@@ -287,7 +290,7 @@ return djDeclare("location.rForm", [
 				break;
 			}
 		}
-		
+
 		if(id) {
 			for(var i = 0; i < this.reservation.complements.length; i++) {
 				if(this.reservation.complements[i].id == id) {
@@ -299,10 +302,20 @@ return djDeclare("location.rForm", [
 			this.nComplementId.value = id;
 			this.nAddEditComplementButton.set('label', '<i class="fas fa-edit"> </i> Éditer');
 			this.nNumber.set('value', c.number);
-			this.nMBeginDate.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'date'}));
-			this.nMBeginTime.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'time'}));
-			this.nMEndDate.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'date'}));
-			this.nMEndTime.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'time'}));
+			if(! Number(c.follow)) {
+				this.nMFollow.set('value', false);
+				this.nMBeginDate.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'date'}));
+				this.nMBeginTime.set('value',  djDateStamp.toISOString(c.range.begin, { selector: 'time'}));
+				this.nMEndDate.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'date'}));
+				this.nMEndTime.set('value',  djDateStamp.toISOString(c.range.end, { selector: 'time'}));
+			} else {
+				this.nMBeginDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'date'}));
+				this.nMBeginTime.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'time'}));
+				this.nMEndDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'date'}));
+				this.nMEndTime.set('value',  djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'time'}));
+				this.nMFollow.set('value', 'on');
+			}
+
 			this.nMComment.set('value', c.comment);
 			this.nAssociationType.set('value', locationConfig.store + '/Status/' + c.type.id);
 
@@ -310,6 +323,15 @@ return djDeclare("location.rForm", [
 				if(i.hasAttribute('class')) {
 					if(i.getAttribute('class') == 'item') {
 						node = i; break;
+					}
+				}
+			}
+
+			/* reset selection display */
+			for(var i = this.complements.firstChild; i; i = i.nextSibling) {
+				for(var j = i.firstChild; j; j = j.nextSibling) {
+					if(j.hasAttribute('class') && j.getAttribute('class') == 'item') {
+						djDomStyle.set(j, 'color', '');
 					}
 				}
 			}
@@ -323,6 +345,7 @@ return djDeclare("location.rForm", [
 		this.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter');
 		this.nAssociationType.set('value', '');
 		this.nNumber.set('value', 1);
+		this.nMFollow.set('value', true);
 		this.nMBeginDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'date'}));
 		this.nMBeginTime.set('value',  djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'time'}));
 		this.nMEndDate.set('value',  djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'date'}));
@@ -393,15 +416,24 @@ return djDeclare("location.rForm", [
 	doAddEditComplement: function () {
 		var that = this, query = new Object();
 		var f = djDomForm.toObject(this.nComplementsForm);
-		[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
-			if(f[i] == '') {
-				that[i].set('state', 'Error');
-				return;		
-			}	
-		});
 		
-		query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
-		query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
+		if(! f.nMFollow) {
+			[ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach( function (i) {
+				if(f[i] == '') {
+					that[i].set('state', 'Error');
+					return;
+				}
+			});
+
+			query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true});
+			query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true});
+			query['follow'] = 0;
+		} else {
+			query['begin'] = '';
+			query['end'] = '';
+			query['follow'] = 1;
+
+		}
 		query['number'] = f.number ? f.number : 1;
 		query['target'] = null;
 		query['comment'] = f.nMComment ? f.nMComment : '';
@@ -459,7 +491,8 @@ return djDeclare("location.rForm", [
 
 				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: query}).then( function ( res ) {
 					if(res && res.data && res.data.success) {
-						that.reservation.destroy();
+						window.App.info('Déplacement de machine correctement effectué');
+						that.reservation.destroyMe();
 						that.hide();
 					}
 				});
@@ -504,7 +537,7 @@ return djDeclare("location.rForm", [
 			this.nFolder.set('value', this.reservation.get('folder'));
 			var url = folder;
 			if(! folder.match(/^[a-zA-Z]*:\/\/.*/)) {
-				url = 'file://' + url;	
+				url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C');
 			}
 
 			var a = document.createElement('A');
@@ -668,8 +701,14 @@ return djDeclare("location.rForm", [
 						}
 					})
 			});
-		
+
 		this.nContactsContainer.addChild(this.contacts[type]);
+		if(this.contacts['_client']) {
+			this.nContactsContainer.selectChild(this.contacts['_client']);
+		} else { 
+			this.nContactsContainer.selectChild(this.contacts[type]);
+		}
+		
 		this.nMBeginDate.set('value', this.beginDate.get('value'));
 		this.nMBeginTime.set('value', this.beginTime.get('value'));
 		this.nMEndDate.set('value', this.endDate.get('value'));
@@ -835,6 +874,10 @@ return djDeclare("location.rForm", [
 
 	},
 
+	doCopy: function (event) {
+		this.reservation.copy();
+	},
+
 	doSave: function (event) {
 		var now = new Date();
 		var that = this;
@@ -886,11 +929,6 @@ return djDeclare("location.rForm", [
 			that.reservation.highlight();
 		});
 	
-	},
-
-	doCopy: function (event) {
-		var that = this;
-		var reservation = this.reservation.copy().then( (o) => { o.popMeUp(); that.hide(); });
 	},
 
 	destroyReservation: function(reservation) {

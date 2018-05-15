@@ -1,4 +1,4 @@
-<div data-dojo-attach-point="timeline" class="${baseClass}">
+<div data-dojo-attach-point="timeline" class="${baseClass} noextender">
 <div class="fixed headerContainer" data-dojo-attach-point="fixedHeader" id="AppHeader">
 
 <div data-dojo-type="dijit/MenuBar" data-dojo-attach-point="menu" id="AppMenu">
@@ -14,6 +14,7 @@
 			<div data-dojo-type="dijit/RadioMenuItem" data-dojo-props="group: 'view', onClick: () => { window.App.set('zoom', 'semester'); }">Vue semestre</div>
 			<div data-dojo-type="dijit/MenuSeparator"></div>
 			<div data-dojo-type="dijit/CheckedMenuItem" data-dojo-props="onClick: () => { window.App.toggle('compact'); }">Mode compacte</div>
+			<div data-dojo-type="dijit/CheckedMenuItem" data-dojo-props="onClick: () => { window.App.toggle('extension'); }">Mode extension</div>
 		</div>
 	</div>
 	<div data-dojo-type="dijit/PopupMenuBarItem">

@@ -268,6 +268,14 @@ return djDeclare("location.entry", [
 		window.requestAnimationFrame(function () { that.clearTags().then( function () { that.nTags.setAttribute('class', 'tags edit'); that.nTags.appendChild(form); input.focus(); }); });
 	},
 
+	focus: function() {
+		djDomClass.add(this.domNode, 'focus');
+	},
+
+	blur: function() {
+		djDomClass.remove(this.domNode, 'focus');
+	},
+
 	displayLocation: function () {
 		var that = this, frag = document.createDocumentFragment(), i = document.createElement('I');
 		i.setAttribute('class', 'fas fa-warehouse'); frag.appendChild(i);
@@ -551,7 +559,7 @@ return djDeclare("location.entry", [
 		}
 		this.displayReservations(this.get('reservations'));
 		window.setTimeout(() => { djDomStyle.set(that.domNode, 'background-color', ''); }, 250);
-		
+
 		def.resolve();
 		return def.promise;
 	},

@@ -18,6 +18,7 @@ define([
   "dojo/dom-style",
 	"dojo/dom-class",
 	"dojo/request/xhr",
+	"dojo/promise/all",
 
 	"dijit/Tooltip",
 	"dijit/registry",
@@ -50,6 +51,7 @@ define([
 	djDomClass,
 
 	djXhr,
+	djAll,
 
 	dtTooltip,
 	dtRegistry,
@@ -450,14 +452,6 @@ return djDeclare("location.reservation", [
 		}
 			
 		var ident = document.createElement('SPAN');
-		ident.setAttribute('class', 'id');
-		if(this.get('IDent')) {
-			ident.appendChild(document.createElement('A'));
-			ident.firstChild.setAttribute('href', '#' + this.get('IDent'));
-			ident.firstChild.appendChild(document.createTextNode(this.get('IDent')));
-		} else {
-			ident.appendChild(document.createTextNode('[Nouvelle réservation]'));
-		}
 		
 		if(this.get('folder') != '' && this.get('folder') != null) {
 			ident.appendChild(document.createTextNode(' '));
@@ -474,6 +468,7 @@ return djDeclare("location.reservation", [
 
 		frag.lastChild.appendChild(document.createElement('address'));
 		frag.lastChild.lastChild.appendChild(this.contactDom());
+
 
 		/* Second line */
 		frag.appendChild(document.createElement('DIV'));
@@ -532,7 +527,8 @@ return djDeclare("location.reservation", [
 		if(this.comment) {
 			frag.appendChild(document.createElement('DIV'));
 			frag.lastChild.setAttribute('class', 'comment');
-			frag.lastChild.appendChild(document.createTextNode(this.comment));
+			var comment = String(this.comment).replace(/(\r\n|\n|\r)/gm, ' ; ');
+			frag.lastChild.appendChild(document.createTextNode(comment));
 		}
 
 		var div = this.txtDesc;
@@ -657,6 +653,10 @@ return djDeclare("location.reservation", [
 		var byType = new Object();
 
 		for(var i = 0; i < x.length; i++) {
+			/* Follow set end and begin at the value of the reservation */
+			if(Number(x[i].follow)) {
+				x[i].begin = this.get('trueBegin'); x[i].end = this.get('trueEnd');
+			}
 			x[i].range = new DateRange(x[i].begin, x[i].end);
 			if(!byType[x[i].type.color]) {
 				byType[x[i].type.color] = new Array();
@@ -952,6 +952,9 @@ return djDeclare("location.reservation", [
 	destroyReservation: function(reservation) {
 		this.sup.destroyReservation(reservation);
 	},
+	destroyMe: function() {
+		this.destroyReservation(this);
+	},
 
 	save: function () {
 		var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred();
@@ -986,5 +989,60 @@ return djDeclare("location.reservation", [
 		});
 		
 		return def.promise;
+	},
+
+	copy: function ( ) {
+		var that = this;
+		var copy = Object.create(this);
+		djLang.mixin(copy, this);
+		copy.set('IDent', null);
+		copy.set('id', null);
+		copy.set('status', this.get('status'));
+		copy.save().then( () => {
+			var q = new Array();
+			Req.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+				if(res && res.data && res.data.length > 0) {
+					for(var i = 0; i < res.data.length; i++) {
+						res.data[i].id = null;
+						res.data[i].reservation = copy.get('IDent');
+						q.push(Req.post(locationConfig.store + '/ReservationContact/', { query: res.data[i] }));
+					}
+				}
+			});
+	
+			Req.get(locationConfig.store + '/Association', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+				if(res && res.data && res.data.length > 0) {
+					for(var i = 0; i < res.data.length; i++) {
+						res.data[i].id = null;
+						res.data[i].reservation = copy.get('IDent');
+						q.push(Req.post(locationConfig.store + '/Association', { query: res.data[i] }));
+					}
+				}
+			});
+
+			djAll(q).then( () => {
+				copy.popMeUp();
+			});
+		});
+	},
+
+	extend7: function (e) {
+		this.extend(7);
+	},
+
+	extend: function(days) {
+		var newEnd = djDate.add(this.end, 'day', days);
+		if(newEnd) {
+			var newDEnd = '';
+			if(this.deliveryEnd != '') {
+				var newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')));
+			}
+
+			this.end = newEnd;
+			this.deliveryEnd = newDEnd;
+			this.save().then ( () => { window.App.info('Prolongation effectuée'); });
+		}
 	}
+
+
 });});
