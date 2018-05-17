@@ -994,10 +994,13 @@ return djDeclare("location.reservation", [
 		djLang.mixin(copy, this);
 		copy.set('IDent', null);
 		copy.set('id', null);
-		copy.set('status', this.get('status'));
+		[ 'address', 'comment', 'gps', 'folder', 'locality', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'equipment', 'reference', 'status' ].forEach( (e) => { copy.set(e, that.get(e)); });
 		copy.save().then( () => {
 			var q = new Array();
-			Req.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+
+			var x = Req.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation':  that.get('id')  } });
+			q.push(x);
+			x.then( ( res ) => {
 				if(res && res.data && res.data.length > 0) {
 					for(var i = 0; i < res.data.length; i++) {
 						res.data[i].id = null;
@@ -1007,7 +1010,9 @@ return djDeclare("location.reservation", [
 				}
 			});
 	
-			Req.get(locationConfig.store + '/Association', { query: { 'search.reservation':  that.get('id')  } }).then( ( res ) => {
+			x = Req.get(locationConfig.store + '/Association', { query: { 'search.reservation':  that.get('id')  } });
+			q.push(x);
+			x.then( ( res ) => {
 				if(res && res.data && res.data.length > 0) {
 					for(var i = 0; i < res.data.length; i++) {
 						res.data[i].id = null;
@@ -1019,6 +1024,7 @@ return djDeclare("location.reservation", [
 
 			djAll(q).then( () => {
 				copy.popMeUp();
+				that.sup.sup.update(true);
 			});
 		});
 	},
