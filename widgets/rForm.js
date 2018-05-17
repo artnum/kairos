@@ -765,6 +765,9 @@ return djDeclare("location.rForm", [
 	doPrint: function (event) {
 		window.open('pdf.php?id=' + this.reservation.get('IDent'));
 	},
+	doMission: function (event) {
+		window.open('pdfs/mission/' + this.reservation.get('IDent'));
+	},
 
 	doDelete: function (event) {
 		if(this.reservation.remove()) {
