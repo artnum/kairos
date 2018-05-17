@@ -187,7 +187,7 @@ if(is_null($reservation['deliveryBegin']) && is_null($reservation['deliveryEnd']
 
 $PDF->br();
 $PDF->br();
-$PDF->squaredFrame(148, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
+$PDF->squaredFrame(140, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
 
 /* On the grid */
 $PDF->vspace(2);
