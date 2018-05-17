@@ -69,6 +69,7 @@ $PDF->addVTab(50);
 $PDF->addVTab(88);
 $PDF->addVTab(240);
 $PDF->addVTab(244);
+$PDF->addVTab(40, 'collab');
 $PDF->addTab('right', 'right');
 $PDF->addTab('middle');
 $PDF->addTab(62);
@@ -89,11 +90,11 @@ if(! is_null($addrs['client'])) {
    $PDF->printTaggedLn(array('%c', ' pour ', '%cb', $addrs['client'][0]), array('break' => false));
 }
 $PDF->br();
-$PDF->SetFont('century-gothic');
 $PDF->hr();
-$PDF->br();
-
+$PDF->SetFont('century-gothic');
 $PDF->setFontSize(3.6);
+
+$PDF->vtab('collab');
 $PDF->printTaggedLn(array('%c', 'Collaborateur : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64, 0, 'dotted', array('color' => '#999') );
 $PDF->SetX(116);
@@ -102,6 +103,7 @@ $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64 , 0, 'dotted', array('co
 
 $PDF->setFontSize(3.2);
 
+$stopY = $PDF->GetY();
 $PDF->vtab(2); 
 $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
 if(!is_null($addrs['client'])) {
@@ -110,7 +112,10 @@ if(!is_null($addrs['client'])) {
    }  
 } else {
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 53, 'square' => 6));
+   if($stopY < 36 + $PDF->GetY()) { $stopY = 36 + $PDF->GetY(); }
 }
+
+if($PDF->GetY() > $stopY) { $stopY = $PDF->GetY(); }
 
 $PDF->vtab(2);
 $PDF->tab(3); 
@@ -123,6 +128,7 @@ if(!is_null($addrs['place'])) {
 } else {
    $PDF->tab(3);
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
+   if($stopY < 36 + $PDF->GetY()) { $stopY = 36 + $PDF->GetY(); }
 }
 
 
@@ -137,13 +143,13 @@ if(!is_null($addrs['responsable'])) {
 } else {
    $PDF->tab(4);
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
+   if($stopY < 36 + $PDF->GetY()) { $stopY = 36 + $PDF->GetY(); }
 }
+if($PDF->GetY() > $stopY) { $stopY = $PDF->GetY(); }
 
-$PDF->vtab(3);
+$PDF->SetY($stopY);
 $PDF->hr();
-
 $PDF->SetFontSize(3.4);
-$PDF->printTaggedLn(array('%c', 'Machine : ', '%cb', $reservation['target'], ' - ' . $machine['cn']));
 if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
@@ -166,38 +172,28 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
       $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
    }
 }
+$PDF->br();
 
 $txt = 'Début location date : ';
 if(is_null($reservation['deliveryBegin'])) {
    $txt =  'Rendez-vous date : ';
-}
-
-$PDF->printTaggedLn(array( '%c', 
-         $txt, '%cb', 
-         $reservation['begin']->format('d.m.Y'), '%c', ' / heure : ', '%cb', $reservation['begin']->format('H:i'), 
-         '%c'),
-      array('break' => true));
-
-if(is_null($reservation['deliveryBegin']) && is_null($reservation['deliveryEnd'])) {
-   $PDF->br();
 } else {
-   if(!is_null($reservation['deliveryBegin'])) {
       $PDF->printTaggedLn(array(
                '%c', 'Rendez-vous date : ', '%cb',
                $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' / heure : ', '%cb' ,
                $reservation['deliveryBegin']->format('H:i')
                ),
             array('break' => true));
-   }
 }
+$PDF->printTaggedLn(array( '%c', 
+         $txt, '%cb', 
+         $reservation['begin']->format('d.m.Y'), '%c', ' / heure : ', '%cb', $reservation['begin']->format('H:i'), 
+         '%c'),
+      array('break' => true));
 
-/* On the grid */
-$PDF->vspace(2);
-$PDF->setFontSize(5.6);
-$PDF->resetFontSize();
-if(!empty($reservation['title'])) {
-   $PDF->printTaggedLn(array('%c', 'Commandée : ', $reservation['title']));
-}
+$PDF->br();
+$PDF->printTaggedLn(array('%c', 'Machine : ', '%cb', $reservation['target'], ' - ' . $machine['cn']));
+$PDF->hr();
 
 if(isset($reservation['equipment'])) {
    $equipment = array();
@@ -212,26 +208,28 @@ if(isset($reservation['equipment'])) {
    }
    
    if(count($equipment) > 0) {
+      $PDF->br();
       $PDF->printTaggedLn(array('%cb', 'Matériel :'), array('underline' => true ));
       $XPos = ceil($PDF->GetX() / 4) * 4;
       foreach($equipment as $e) {
          $PDF->SetX($XPos);
          $PDF->printTaggedLn(array('%c', $e));
       }
+      $PDF->br();
    }
 }
 
-$remSize = 70;
-$col = array( 12, 8, 24, $remSize, 0);
-
-$PDF->printTaggedLn(array('%cb', 'Complément'), array('underline' => true, 'break' => false)); $col[0] += $PDF->GetX();  $PDF->SetX($col[0]);
-$PDF->printTaggedLn(array('%cb', 'Quantité'), array('underline' => true, 'break' => false)); $col[1] += $PDF->GetX(); $PDF->SetX($col[1]);
-$PDF->printTaggedLn(array('%cb', 'Durée'), array('underline' => true, 'break' => false)); $col[2] += $PDF->GetX(); $PDF->SetX($col[2]);
-$PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline' => true, 'break' => false)); $col[3] += $PDF->GetX(); $PDF->SetX($col[3]);
-$PDF->printTaggedLn(array('%cb', 'Chargé'), array('underline' => true, 'break' => false, 'align' => 'right')); $col[4] = $PDF->GetX() - ceil($PDF->GetStringWidth('Chargé') / 2);
-$PDF->br();
-
 if(is_array($reservation['complements']) && count($reservation['complements']) > 0) {
+   $remSize = 62;
+   $col = array( 'c' => 12, 'q' => 4,  'd' => 32, 'r' => $remSize, 'l' => 0);
+
+   $PDF->printTaggedLn(array('%cb', 'Complément'), array('underline' => true, 'break' => false)); $col['c'] += $PDF->GetX();  $PDF->SetX($col['c']);
+   $PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline' => true, 'break' => false)); $col['r'] += $PDF->GetX(); $PDF->SetX($col['r']);
+   $PDF->printTaggedLn(array('%cb', 'Quantité'), array('underline' => true, 'break' => false)); $col['q'] += $PDF->GetX(); $PDF->SetX($col['q']);
+   $PDF->printTaggedLn(array('%cb', 'Durée'), array('underline' => true, 'break' => false)); $col['d'] += $PDF->GetX(); $PDF->SetX($col['d']);
+   $PDF->printTaggedLn(array('%cb', 'Chargé'), array('underline' => true, 'break' => false, 'align' => 'right')); $col['l'] = $PDF->GetX() - ceil($PDF->GetStringWidth('Chargé') / 2);
+   $PDF->br();
+
    $association = array();
    foreach($reservation['complements'] as $complement) {
       if($association[$complement['type']['name']]) {
@@ -245,19 +243,7 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
       $startY = $PDF->GetY();
       $stopY = $startY;
       foreach($v as $data) {
-         $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col[0]);
-         $PDF->printTaggedLn(array('%c', $data['number']), array('break' => false)); $PDF->SetX($col[1]);
-
-         if( ! (int)$data['follow']) {
-            $begin = new DateTime($data['begin']) ;
-            $end = new DateTime($data['end']);
-            $PDF->printTaggedLn(array( '%c', 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col[1]);
-            $PDF->printTaggedLn(array('au ',  $end->format('d.m.Y H:i')), array('break' => false)); $PDF->SetX($col[2]);
-            $stopY = $PDF->GetY(); $PDF->SetY($startY);
-         } else {
-            $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col[2]);
-         }
-
+         $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col['c']);
 
          $comment = trim($data['comment']);
          if($remSize < $PDF->GetStringWidth($data['comment'])) {
@@ -278,19 +264,32 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
          }
          foreach(explode("\n", $comment) as $c) {
             if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); }
-            $PDF->printTaggedLn(array('%c', $c)); $PDF->SetX($col[2]);
+            $PDF->printTaggedLn(array('%c', $c)); $PDF->SetX($col['c']);
          }
-
          $PDF->SetY($startY);
-         $PDF->SetX($col[4]);
+
+         $PDF->SetX($col['r']);      
+         $PDF->printTaggedLn(array('%c', $data['number']), array('break' => false)); $PDF->SetX($col['q']);
+
+         if( ! (int)$data['follow']) {
+            $begin = new DateTime($data['begin']) ;
+            $end = new DateTime($data['end']);
+            $PDF->printTaggedLn(array( '%c', 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col['q']);
+            $PDF->printTaggedLn(array('au ',  $end->format('d.m.Y H:i')), array('break' => false));$PDF->SetX($col['d']);
+            if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); } $PDF->SetY($startY);
+         } else {
+            $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
+         }
+         $PDF->SetX($col['l']);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
-         $PDF->br();
       }
       $PDF->SetY($stopY);
       $PDF->br();
    }
+   $PDF->hr();
 }
 
+$PDF->br();
 $PDF->printTaggedLn(array('%cb', 'Remarque :'));
 $YPos = $PDF->GetY();
 $PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
