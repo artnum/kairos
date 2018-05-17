@@ -174,52 +174,29 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
 }
 $PDF->br();
 
-$txt = 'Début location date : ';
+$txt = 'Début location : date ';
 if(is_null($reservation['deliveryBegin'])) {
-   $txt =  'Rendez-vous date : ';
+   $txt =  'Rendez-vous : date ';
 } else {
       $PDF->printTaggedLn(array(
-               '%c', 'Rendez-vous date : ', '%cb',
-               $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' / heure : ', '%cb' ,
+               '%c', 'Rendez-vous : date ', '%cb',
+               $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' / heure ', '%cb' ,
                $reservation['deliveryBegin']->format('H:i')
                ),
             array('break' => true));
 }
 $PDF->printTaggedLn(array( '%c', 
          $txt, '%cb', 
-         $reservation['begin']->format('d.m.Y'), '%c', ' / heure : ', '%cb', $reservation['begin']->format('H:i'), 
+         $reservation['begin']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
       array('break' => true));
 
 $PDF->br();
 $PDF->printTaggedLn(array('%c', 'Machine : ', '%cb', $reservation['target'], ' - ' . $machine['cn']));
 $PDF->hr();
+$PDF->br();
 
-if(isset($reservation['equipment'])) {
-   $equipment = array();
-   $eq = explode("\n", $reservation['equipment']);
-   foreach($eq as $e) {
-      if(empty($e)) { continue; }
-      $_e = explode(',', $e);
-      foreach($_e as $__e) {
-         if(empty($__e)) { continue; }
-         $equipment[] = trim($__e);
-      }
-   }
-   
-   if(count($equipment) > 0) {
-      $PDF->br();
-      $PDF->printTaggedLn(array('%cb', 'Matériel :'), array('underline' => true ));
-      $XPos = ceil($PDF->GetX() / 4) * 4;
-      foreach($equipment as $e) {
-         $PDF->SetX($XPos);
-         $PDF->printTaggedLn(array('%c', $e));
-      }
-      $PDF->br();
-   }
-}
-
-if(is_array($reservation['complements']) && count($reservation['complements']) > 0) {
+if(isset($reservation['equipment']) || ( is_array($reservation['complements']) && count($reservation['complements']) > 0)) {
    $remSize = 62;
    $col = array( 'c' => 12, 'q' => 4,  'd' => 32, 'r' => $remSize, 'l' => 0);
 
@@ -229,7 +206,9 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
    $PDF->printTaggedLn(array('%cb', 'Durée'), array('underline' => true, 'break' => false)); $col['d'] += $PDF->GetX(); $PDF->SetX($col['d']);
    $PDF->printTaggedLn(array('%cb', 'Chargé'), array('underline' => true, 'break' => false, 'align' => 'right')); $col['l'] = $PDF->GetX() - ceil($PDF->GetStringWidth('Chargé') / 2);
    $PDF->br();
+}
 
+if( is_array($reservation['complements']) && count($reservation['complements']) > 0) {
    $association = array();
    foreach($reservation['complements'] as $complement) {
       if($association[$complement['type']['name']]) {
@@ -242,7 +221,18 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
    foreach($association as $k => $v) {
       $startY = $PDF->GetY();
       $stopY = $startY;
+      $first = true;
       foreach($v as $data) {
+         if(!$first) {
+            if($stopY == $startY) {
+               $PDF->br();
+               $startY = $PDF->GetY();
+               $stopY = $startY;
+            } else {
+               $PDF->SetY($stopY);
+               $startY = $stopY;
+            }
+         }
          $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col['c']);
 
          $comment = trim($data['comment']);
@@ -282,14 +272,44 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
          }
          $PDF->SetX($col['l']);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
+
+         $first = false;
       }
       $PDF->SetY($stopY);
+      $PDF->br();
+   }
+}
+
+if(isset($reservation['equipment'])) {
+   $equipment = array();
+   $eq = explode("\n", $reservation['equipment']);
+   foreach($eq as $e) {
+      if(empty($e)) { continue; }
+      $_e = explode(',', $e);
+      foreach($_e as $__e) {
+         if(empty($__e)) { continue; }
+         $equipment[] = trim($__e);
+      }
+   }
+   
+   if(count($equipment) > 0) {
+      $XPos = ceil($PDF->GetX() / 4) * 4;
+      foreach($equipment as $e) {
+         $PDF->SetX($XPos);
+         $PDF->printTaggedLn(array('%c', $e), array('break' => false));
+
+         $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), $col['l'] - ($PDF->GetX() + 3), 0, 'dotted', array('color' => 'gray') );
+         
+         $PDF->SetX($col['l']);
+         $PDF->printTaggedLn(array('%a', ''), array('break' => false));
+         $PDF->br();
+      }
       $PDF->br();
    }
    $PDF->hr();
 }
 
-$PDF->br();
+
 $PDF->printTaggedLn(array('%cb', 'Remarque :'));
 $YPos = $PDF->GetY();
 $PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
