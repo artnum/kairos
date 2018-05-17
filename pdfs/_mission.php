@@ -67,7 +67,7 @@ $PDF = new LocationPDF();
 $PDF->title = "Mission";
 $PDF->addVTab(19);
 $PDF->addVTab(50);
-$PDF->addVTab(85);
+$PDF->addVTab(88);
 $PDF->addVTab(240);
 $PDF->addVTab(244);
 $PDF->addTab('right', 'right');
@@ -103,8 +103,8 @@ $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 66 , 0, 'dotted', array('co
 
 
 $PDF->vtab(2); 
+$PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
 if(!is_null($addrs['client'])) {
-   $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
    foreach($addrs['client'] as $c) {
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
@@ -113,29 +113,29 @@ if(!is_null($addrs['client'])) {
 }
 
 $PDF->vtab(2);
+$PDF->tab(3); 
+$PDF->printTaggedLn(array('%cb', 'Contact s/place'), array('underline' => true));
 if(!is_null($addrs['place'])) {
-   $PDF->tab(3);
-   $PDF->printTaggedLn(array('%cb', 'Contact s/place'), array('underline' => true));
    foreach($addrs['place'] as $c) {
       $PDF->tab(3);
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
 } else {
-   $PDF->tab(3); 
+   $PDF->tab(3);
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
 }
 
 
 $PDF->vtab(2);
+$PDF->tab(4);
+$PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
 if(!is_null($addrs['responsable'])) {
-   $PDF->tab(4);
-   $PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
    foreach($addrs['responsable'] as $c) {
       $PDF->tab(4);
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
 } else {
-   $PDF->tab(4); 
+   $PDF->tab(4);
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
 }
 
