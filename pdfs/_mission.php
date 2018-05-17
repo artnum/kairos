@@ -64,7 +64,6 @@ foreach($addrs as $k => $v) {
 
 /* PDF Generation */
 $PDF = new LocationPDF();
-$PDF->title = "Mission";
 $PDF->addVTab(19);
 $PDF->addVTab(50);
 $PDF->addVTab(88);
@@ -81,26 +80,27 @@ $PDF->vtab(1);
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
 $PDF->tab(1);
-$PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
+$PDF->printLn('Réservation ' . $reservation['id'] . ', créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
          $reservation['created']->format('H:i'));
 $PDF->setFontSize(5);
 $PDF->hr();
-$PDF->printTaggedLn(array('%cb', $PDF->title . ' ', $reservation['id'], '%c'), array('break' => false));
+$PDF->printTaggedLn(array('%cb', $machine['cn']), array('break' => false));
 if(! is_null($addrs['client'])) {
-   $PDF->printLn(' pour ' . $addrs['client'][0], array('break' => false));
+   $PDF->printTaggedLn(array('%c', ' pour ', '%cb', $addrs['client'][0]), array('break' => false));
 }
 $PDF->br();
-$PDF->setFontSize(3.2);
 $PDF->SetFont('century-gothic');
 $PDF->hr();
 $PDF->br();
 
+$PDF->setFontSize(3.6);
 $PDF->printTaggedLn(array('%c', 'Collaborateur : '), array('break' => false));
-$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 66, 0, 'dotted', array('color' => '#999') );
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64, 0, 'dotted', array('color' => '#999') );
 $PDF->SetX(116);
 $PDF->printTaggedLn(array('%c', 'Véhicule : '), array('break' => false));
-$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 66 , 0, 'dotted', array('color' => '#999') );
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64 , 0, 'dotted', array('color' => '#999') );
 
+$PDF->setFontSize(3.2);
 
 $PDF->vtab(2); 
 $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
@@ -142,6 +142,8 @@ if(!is_null($addrs['responsable'])) {
 $PDF->vtab(3);
 $PDF->hr();
 
+$PDF->SetFontSize(3.4);
+$PDF->printTaggedLn(array('%c', 'Machine : ', '%cb', $reservation['target'], ' - ' . $machine['cn']));
 if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
@@ -165,9 +167,14 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
    }
 }
 
+$txt = 'Début location date : ';
+if(is_null($reservation['deliveryBegin'])) {
+   $txt =  'Rendez-vous date : ';
+}
+
 $PDF->printTaggedLn(array( '%c', 
-         'Location date : ', '%cb', 
-         $reservation['begin']->format('d.m.Y'), '%c', ' / heure :', '%cb', $reservation['begin']->format('H:i'), 
+         $txt, '%cb', 
+         $reservation['begin']->format('d.m.Y'), '%c', ' / heure : ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
       array('break' => true));
 
@@ -176,7 +183,7 @@ if(is_null($reservation['deliveryBegin']) && is_null($reservation['deliveryEnd']
 } else {
    if(!is_null($reservation['deliveryBegin'])) {
       $PDF->printTaggedLn(array(
-               '%c', 'Livraison date : ', '%cb',
+               '%c', 'Rendez-vous date : ', '%cb',
                $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' / heure : ', '%cb' ,
                $reservation['deliveryBegin']->format('H:i')
                ),
@@ -184,15 +191,9 @@ if(is_null($reservation['deliveryBegin']) && is_null($reservation['deliveryEnd']
    }
 }
 
-
-$PDF->br();
-$PDF->br();
-$PDF->squaredFrame(140, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
-
 /* On the grid */
 $PDF->vspace(2);
 $PDF->setFontSize(5.6);
-$PDF->printTaggedLn(array('%cb', $reservation['target'], ' - ' . $machine['cn']), array('underline' => true));
 $PDF->resetFontSize();
 if(!empty($reservation['title'])) {
    $PDF->printTaggedLn(array('%c', 'Commandée : ', $reservation['title']));
@@ -211,7 +212,7 @@ if(isset($reservation['equipment'])) {
    }
    
    if(count($equipment) > 0) {
-      $PDF->printTaggedLn(array('%cb', 'Matériel :'), array('break' => false ));
+      $PDF->printTaggedLn(array('%cb', 'Matériel :'), array('underline' => true ));
       $XPos = ceil($PDF->GetX() / 4) * 4;
       foreach($equipment as $e) {
          $PDF->SetX($XPos);
@@ -219,6 +220,17 @@ if(isset($reservation['equipment'])) {
       }
    }
 }
+
+$remSize = 70;
+$col = array( 12, 8, 24, $remSize, 0);
+
+$PDF->printTaggedLn(array('%cb', 'Complément'), array('underline' => true, 'break' => false)); $col[0] += $PDF->GetX();  $PDF->SetX($col[0]);
+$PDF->printTaggedLn(array('%cb', 'Quantité'), array('underline' => true, 'break' => false)); $col[1] += $PDF->GetX(); $PDF->SetX($col[1]);
+$PDF->printTaggedLn(array('%cb', 'Durée'), array('underline' => true, 'break' => false)); $col[2] += $PDF->GetX(); $PDF->SetX($col[2]);
+$PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline' => true, 'break' => false)); $col[3] += $PDF->GetX(); $PDF->SetX($col[3]);
+$PDF->printTaggedLn(array('%cb', 'Chargé'), array('underline' => true, 'break' => false, 'align' => 'right')); $col[4] = $PDF->GetX() - ceil($PDF->GetStringWidth('Chargé') / 2);
+$PDF->br();
+
 if(is_array($reservation['complements']) && count($reservation['complements']) > 0) {
    $association = array();
    foreach($reservation['complements'] as $complement) {
@@ -230,25 +242,65 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
    }
 
    foreach($association as $k => $v) {
-      $PDF->printTaggedLn(array('%cb', $k . ' : '), array('break' => false));
-      $XPos = ceil($PDF->GetX() / 4) * 4;
+      $startY = $PDF->GetY();
+      $stopY = $startY;
       foreach($v as $data) {
-         $PDF->SetX($XPos);
+         $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col[0]);
+         $PDF->printTaggedLn(array('%c', $data['number']), array('break' => false)); $PDF->SetX($col[1]);
+
          if( ! (int)$data['follow']) {
             $begin = new DateTime($data['begin']) ;
             $end = new DateTime($data['end']);
-            $PDF->printTaggedLn(array( '%c', $data['number'],  '%c', 'x du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
+            $PDF->printTaggedLn(array( '%c', 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col[1]);
+            $PDF->printTaggedLn(array('au ',  $end->format('d.m.Y H:i')), array('break' => false)); $PDF->SetX($col[2]);
+            $stopY = $PDF->GetY(); $PDF->SetY($startY);
          } else {
-            $PDF->printTaggedLn(array( '%c', $data['number'],  '%c', 'x durant toute la réservation'), array('break' => false));
+            $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col[2]);
          }
-         if($data['comment']) {
-            $PDF->br();
-            $PDF->SetX($XPos);
-            $PDF->printTaggedLn(array($data['comment'] ), array('break' => false));
+
+
+         $comment = trim($data['comment']);
+         if($remSize < $PDF->GetStringWidth($data['comment'])) {
+            $c = ''; $_c = '';
+            foreach(explode(' ', $comment) as $w) {
+               if($PDF->GetStringWidth($c . ' ' . $w) < $remSize) {
+                  if(empty($c)) {
+                     $c .= $w;
+                  } else {
+                     $c .= ' ' . $w;
+                  }
+               } else {
+                  $_c .= $c . "\n";
+                  $c = $w;
+               }
+            }
+            $comment = $_c . $c;;
          }
+         foreach(explode("\n", $comment) as $c) {
+            if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); }
+            $PDF->printTaggedLn(array('%c', $c)); $PDF->SetX($col[2]);
+         }
+
+         $PDF->SetY($startY);
+         $PDF->SetX($col[4]);
+         $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
+      $PDF->SetY($stopY);
       $PDF->br();
+   }
+}
+
+$PDF->printTaggedLn(array('%cb', 'Remarque :'));
+$YPos = $PDF->GetY();
+$PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
+if($reservation['comment']) {
+   $PDF->SetY($YPos + 1);
+
+   foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
+      $y = $PDF->GetY();
+      $PDF->printTaggedLn(array('%c', $line));
+      $PDF->SetY($y + 4);
    }
 }
 
