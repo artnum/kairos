@@ -13,6 +13,23 @@ html {
 	border-bottom: 2px solid black;
 }
 
+#scrollshow {
+	background-color: grey;
+	color: white;
+	z-index: 1100;
+	position: fixed;
+	top: 0px;
+	right: 0px;
+	font-size: 64px;
+	font-weight: bold;
+	padding: 1ex;
+	width: 6ex;
+	max-width: 6ex;
+	overflow: hidden;
+	display: none;
+	text-align: center;
+}
+
 .logline {
 	position: fixed;
 	bottom: 0;

@@ -440,6 +440,7 @@ return djDeclare("location.timeline", [
 	postCreate: function () {
 		var that = this;
 		var tContainer = dtRegistry.byId('tContainer')
+		this.view = new Object();
 		this.set('zoom', 'week');
 		tContainer.startup();
 
@@ -462,7 +463,9 @@ return djDeclare("location.timeline", [
 		window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true});
 		window.addEventListener('scroll', djThrottle(djLang.hitch(this, this.scroll), 15), { passive: true });
 
-		this.update();
+		this.update().then(djLang.hitch(this, () => {
+			this.view.rectangle = getPageRect();	
+		}));
 
 		djOn(window, 'hashchange, load', djLang.hitch(this, () => {
 			var that = this;
@@ -1053,6 +1056,8 @@ return djDeclare("location.timeline", [
 	run: function () {
 		var loaded = new Array();
 		var that = this;
+		this.currentPosition = 0;
+
 		request.get('https://aircluster.local.airnace.ch/store/Machine').then( function (response) {
 			that.setServers(locationConfig.servers);
 			if(response.success()) {
@@ -1071,7 +1076,7 @@ return djDeclare("location.timeline", [
 					var machine = whole[i];
 					var groupName = "group" + (inc % 2);
 					var name =  machine.description;
-          var label = machine.cn ? machine.cn : '';
+					var label = machine.cn ? machine.cn : '';
 
 					if(machine.family) {
 						if(Array.isArray(machine.family)) {
@@ -1172,7 +1177,26 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 
-	scroll: function() {
+	scroll: function(e) {
+		djDomStyle.set(this.nScrollShow, 'display', 'block');
+		if(this.scrollShowTimeout) {
+			window.clearTimeout(this.scrollShowTimeout);
+		}
+		
+		var s = this.nScrollShow;
+		window.requestAnimationFrame( djLang.hitch(this, () => {
+			var i =	Math.round((e.pageY + 120 + this.view.rectangle[3]) / (this.displayOrder[0].originalHeight + 1)) - 
+				Math.round(((this.view.rectangle[3] + 120) / (this.displayOrder[0].originalHeight + 1)))
+			if ( i < 0) { i = 0 ;}
+			var name = this.displayOrder[i].get('target');
+			if(s.firstChild) {
+				s.removeChild(s.firstChild);
+			}
+			s.appendChild(document.createTextNode(name));
+			this.scrollShowTimeout = window.setTimeout( () => { djDomStyle.set(s, 'display', ''); }, 1200);
+		}));
+
+
 		(async ()=> {	
 			var startAt = Math.round(window.scrollY / this.displayOrder.length) - 2;
 			if(startAt < 0) { startAt = 0; }
@@ -1268,17 +1292,17 @@ return djDeclare("location.timeline", [
 		var current;
 		page = getPageRect(); 
 		for(var k in this.entries) {
-			var rect = getElementRect(this.entries[k].domNode);
+			var rect = this.entries[k].view.rectangle;
 			if(! current && rect[1] >= page[1]) {
-				current = [ rect, this.entries[k] ];
+				current = this.entries[k];
 				continue;
 			}
 			
-			if(rect[1] >= page[1] && rect[1] < current[0][1]) {
-				current = [ rect, this.entries[k] ];
+			if(rect[1] >= page[1] && rect[1] < current.view.rectangle[1]) {
+				current = this.entries[k];
 			}
 		}
-		return current[1];
+		return current;
 	},
 
 	doSearchLocation: function (loc) {
