@@ -85,13 +85,15 @@ checker = function () {
 		}
 	}
 	cReq.open('get', url, true);
-	setTimeout(() => { cReq.send(null); }, 2000);
+	cReq.send(null);
 }
 
 checker();
 
 onmessage = function ( msg ) {
-	req.abort();
+	if(req && req.readyState > 0 && req.readyState < 4) {
+		req.abort();
+	}
 	var parameters = '';
 	var url = msg.data[0];
 	if(msg.data[1] && msg.data[1].query) {
