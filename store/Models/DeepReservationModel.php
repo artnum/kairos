@@ -1,7 +1,21 @@
 <?PHP
 /* Extract all information needed for frontpage, read-only */ 
 class DeepReservationModel extends ReservationModel {
-  
+
+   function __construct($dbs, $config) {
+      parent::__construct($dbs['sql'], $config);
+      $this->dbs = $dbs;
+   }
+
+   function set_db($dbs) {
+      $this->DB = $dbs['sql'];
+      $this->dbs = $dbs;
+   }
+
+   function dbtype() {
+      return array('sql', 'ldap');
+   }
+
    function listing($options) {
       try {
          $st = $this->DB->prepare($this->prepare_statement('SELECT reservation_id FROM reservation', $options));
@@ -94,16 +108,25 @@ class DeepReservationModel extends ReservationModel {
             $st = $this->DB->prepare('SELECT * FROM `contacts` WHERE `contacts_reservation` = :reservation');
             $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
             $st->execute();
+            $CModel = new ContactsModel($this->dbs['ldap'], null);
             $contacts = array();
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
                $contact = $this->unprefix($contact);
                
                /* Request contact */ 
                if($contact['target']) {
-                  $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
-                  $res = $jrc->direct($_SERVER['SERVER_NAME'] . '/location/store/' . $contact['target']);
-                  if($res['data'] && count($res['data']) > 0) {
-                     $contact['target'] = $res['data'][0];
+                  $target = $this->unstorify($contact['target']);
+                  if($target[0] == 'Contacts') {
+                     $c = $CModel->read($target[1]);
+                     if(count($c) > 0) {
+                        $contact['target'] = $c[0];
+                     }
+                  } else {
+                     $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
+                     $res = $jrc->direct($_SERVER['SERVER_NAME'] . '/location/store/' . $contact['target']);
+                     if($res['data'] && count($res['data']) > 0) {
+                        $contact['target'] = $res['data'][0];
+                     }
                   }
                }
 
@@ -122,7 +145,18 @@ class DeepReservationModel extends ReservationModel {
          return $entry;
       }
       return array();
-   }   
+   }
 
+   private function unstorify ( $str ) {
+      $col = ''; $item = '';
+
+      $ex = explode('/', $str);
+      for($i = array_shift($ex); !is_null($i); $i = array_shift($ex)) {
+         if(!empty($i) && empty($col)) { $col = $i; continue; }
+         if(!empty($i) && !empty($col)) { $item = $i; break; }
+      }
+
+      return array($col, $item);
+   }
 }
 ?>
