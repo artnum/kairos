@@ -74,6 +74,7 @@ $PDF->addTab('right', 'right');
 $PDF->addTab('middle');
 $PDF->addTab(62);
 $PDF->addTab(123);
+$PDF->addTab(40);
 
 $PDF->AddPage();
 $PDF->vtab(1);
@@ -192,8 +193,10 @@ $PDF->printTaggedLn(array( '%c',
       array('break' => true));
 
 $PDF->br();
-$PDF->printTaggedLn(array('%c', 'Machine : ', '%cb', $reservation['target'], ' - ' . $machine['cn']));
 $PDF->hr();
+$PDF->br();
+$PDF->printTaggedLn(array('%cb', 'Machine'), array('underline' => true));
+$PDF->printTaggedLn(array('%c', $reservation['target'], ' - ' . $machine['cn']));
 $PDF->br();
 
 if(isset($reservation['equipment']) || ( is_array($reservation['complements']) && count($reservation['complements']) > 0)) {
@@ -306,13 +309,40 @@ if(isset($reservation['equipment'])) {
       }
       $PDF->br();
    }
+   $PDF->br();
    $PDF->hr();
 }
 
+$PDF->br();
+$PDF->printTaggedLn(array('%cb', 'Tarifs'), array('underline'=>true));
 
-$PDF->printTaggedLn(array('%cb', 'Remarque :'));
+$PDF->printTaggedLn(array('%c', 'Déplacement : ', ), array('break' => false));
+$PDF->tab(5);
+$PDF->printTaggedLn(array('%a', ' ', '%c', 'Régie'), array('break' => false));
+$PDF->tab(2);
+$PDF->printTaggedLn(array('%a', ' ', '%c', 'Forfait : '), array('break' => false));
+$s = $PDF->GetX(); $PDF->SetX($s + 30);
+$PDF->printTaggedLn(array('H'), array('break' => false));
+$PDF->drawLine($s + 3, $PDF->GetY() + $PDF->GetFontSize(), 27, 0, 'dotted', array('color' => 'gray') );
+$PDF->br();
+
+$PDF->printTaggedLn(array('%c', 'Travail : ', ), array('break' => false));
+$PDF->tab(5);
+$PDF->printTaggedLn(array('%a', ' ', '%c', 'Régie'), array('break' => false));
+$PDF->tab(2);
+$PDF->printTaggedLn(array('%a', ' ', '%c', 'Forfait : '), array('break' => false));
+$s = $PDF->GetX(); $PDF->SetX($s + 30);
+$PDF->printTaggedLn(array('H'), array('break' => false));
+$PDF->drawLine($s + 3, $PDF->GetY() + $PDF->GetFontSize(), 27, 0, 'dotted', array('color' => 'gray') );
+
+$PDF->br();
+$PDF->br();
+$PDF->hr();
+$PDF->br();
+
+$PDF->printTaggedLn(array('%cb', 'Remarque'));
 $YPos = $PDF->GetY();
-$PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
+$PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.2, 'line-type' => 'dotted', 'border' => false, 'lined' => true));
 if($reservation['comment']) {
    $PDF->SetY($YPos + 1);
 
