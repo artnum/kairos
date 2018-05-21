@@ -1,0 +1,5 @@
+AddDefaultCharset utf-8
+RewriteEngine On
+RewriteBase /location/pdfs/
+
+RewriteRule ^([a-z]*)/([0-9]*)	_$1.php?id=$2 [L]

@@ -1292,6 +1292,10 @@ return djDeclare("location.timeline", [
 				});
 			}
 		});
+	},
+
+	print: function ( url ) {
+		window.open(url);
 	}
 
 });});

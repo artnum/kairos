@@ -787,7 +787,10 @@ return djDeclare("location.rForm", [
 	},
 
 	doPrint: function (event) {
-		window.open('pdf.php?id=' + this.reservation.get('IDent'));
+		window.App.print('pdfs/decompte/' + this.reservation.get('IDent'));
+	},
+	doMission: function (event) {
+		window.App.print('pdfs/mission/' + this.reservation.get('IDent'));
 	},
 
 	doDelete: function (event) {
