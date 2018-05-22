@@ -1,6 +1,8 @@
 <?PHP
 include('artnum/autoload.php');
 
+header('Cache-Control', 'no-cache, max-age=0');
+
 class LocationPDF extends artnum\PDF {
    function __construct() {
       parent::__construct();

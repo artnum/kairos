@@ -155,7 +155,7 @@ if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
 
-if(!empty($reservation['address']) || !empty($resevation['locality'])) {
+if(!empty($reservation['address']) || !empty($reservation['locality'])) {
    $line = '';
    if(!empty($reservation['address'])) {
       $l = explode("\n", $reservation['address']);
