@@ -502,6 +502,7 @@ return djDeclare("location.rForm", [
 
 	postCreate: function () {
 		this.inherited(arguments);
+		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 	},
 	
@@ -544,8 +545,10 @@ return djDeclare("location.rForm", [
 			a.setAttribute('href', url); a.setAttribute('target', '_blank');
 			a.appendChild(document.createElement('I'));
 			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
+			if(this.nFolder.domNode.nextSibling.nodeName == 'A') {
+				this.nFolder.domNode.parentNode.removeChild(this.nFolder.domNode.nextSibling);
+			}
 			this.nFolder.domNode.parentNode.insertBefore(a, this.nFolder.domNode.nextSibling);
-			this.nFolder.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nFolder.domNode.nextSibling);
 		}	
 
 		if(this.reservation.get('gps')) {
@@ -555,8 +558,10 @@ return djDeclare("location.rForm", [
 			a.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.reservation.get('gps')).replace(/\s/g, '')); a.setAttribute('target', '_blank');
 			a.appendChild(document.createElement('I'));
 			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
+			if(this.nFolder.domNode.nextSibling.nodeName == 'A') {
+				this.nFolder.domNode.parentNode.removeChild(this.nFolder.domNode.nextSibling);
+			}
 			this.nGps.domNode.parentNode.insertBefore(a, this.nGps.domNode.nextSibling);
-			this.nGps.domNode.parentNode.insertBefore(document.createTextNode(' '), this.nGps.domNode.nextSibling);
 		}
 
 
@@ -570,7 +575,6 @@ return djDeclare("location.rForm", [
 					for(var i = 0; i < results.data.length; i++) {
 						var d = results.data[i];
 						if(d.default == '1') { def = d.id; }
-						console.log(this, this.nStatus);
 						this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id });
 					}
 				}
@@ -604,7 +608,6 @@ return djDeclare("location.rForm", [
 		}
 		this.toggleDelivery();
 		
-		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
 
 		r = request.get(locationConfig.store + '/ReservationContact/', { query: { "search.reservation": this.reservation.get('id') }});
 		this.initRequests.push(r);
