@@ -503,6 +503,14 @@ return djDeclare("location.rForm", [
 	postCreate: function () {
 		this.inherited(arguments);
 
+		var entries = this.reservation.get('entries');
+		for(var i = 0; i < entries.length; i++) {
+			this.nMachineChange.addOption({
+				label: entries[i].target + ' - ' + entries[i].label,
+				value: entries[i].target
+			});
+		}
+
 		djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
 		if(this.nMFollow.get('value')) {
 			djDomStyle.set(this.nMFollowToggle, 'display', 'none');
@@ -523,13 +531,6 @@ return djDeclare("location.rForm", [
 		this.initCancel();
 
 		var select = this.status, that = this,  r;
-		var entries = this.reservation.get('entries');
-		for(var i = 0; i < entries.length; i++) {
-			this.nMachineChange.addOption({
-				label: entries[i].target + ' - ' + entries[i].label,
-				value: entries[i].target
-			});
-		}
 		this.nMachineChange.set('value', this.reservation.get('target'));
 		this.nChangeMachine.set('disabled', true);
 
