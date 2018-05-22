@@ -569,13 +569,13 @@ return djDeclare("location.entry", [
     for(var i = 0; i < reservations.length; i++) {
       found = false;
 			for(var j = 0; j < this.reservations.length; j++) {
-        if(Number(reservations[i].id) == Number(this.reservations[j].id)) {
+        if(reservations[i].id == this.reservations[j].id) {
           this.reservations[j] = reservations[i];
 					this.entries[reservations[i].id].fromJson(reservations[i]);
 					found = true;
           break;
         }
-      }
+			}
       if( !found) {
         this.reservations.push(reservations[i]);
       }
@@ -648,8 +648,10 @@ return djDeclare("location.entry", [
 				}
 				entries.push(that.entries[reservations[i].id]);
 				that.entries[reservations[i].id].overlap = { elements: new Array(), level: 0, order: 0, do: false };
+				that.entries[reservations[i].id].resize();
 			}
 		}
+
 
 		/* Overlap entries, good enough for now */
 		var overlapRoot = new Array();
@@ -691,6 +693,12 @@ return djDeclare("location.entry", [
 	destroyReservation: function (reservation) {
 		if(reservation) {
 			delete this.entries[reservation.id];
+			for(var i = 0; i < this.reservations.length; i++) {
+				if(this.reservations[i].id == reservation.id) {
+					this.reservations.splice(i, 1);
+					break;
+				}
+			}
 			reservation.destroy();
 		}
 
