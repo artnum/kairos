@@ -464,7 +464,7 @@ return djDeclare("location.reservation", [
 			ident.lastChild.setAttribute('class', 'fas fa-wrench');
 		}
 
-		if(this.get('title') != '') {
+		if(this.get('title') != '' && this.get('title') != null) {
 			ident.appendChild(document.createTextNode(' '));
 			ident.appendChild(document.createElement('I'));
 			ident.lastChild.setAttribute('class', 'fas fa-exchange-alt');
