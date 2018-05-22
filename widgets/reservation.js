@@ -464,6 +464,12 @@ return djDeclare("location.reservation", [
 			ident.lastChild.setAttribute('class', 'fas fa-wrench');
 		}
 
+		if(this.get('title') != '') {
+			ident.appendChild(document.createTextNode(' '));
+			ident.appendChild(document.createElement('I'));
+			ident.lastChild.setAttribute('class', 'fas fa-exchange-alt');
+		}
+
 		frag.lastChild.appendChild(ident);
 
 		frag.lastChild.appendChild(document.createElement('address'));
