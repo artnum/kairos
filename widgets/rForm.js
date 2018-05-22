@@ -502,6 +502,14 @@ return djDeclare("location.rForm", [
 
 	postCreate: function () {
 		this.inherited(arguments);
+
+		djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
+		if(this.nMFollow.get('value')) {
+			djDomStyle.set(this.nMFollowToggle, 'display', 'none');
+		} else {
+			djDomStyle.set(this.nMFollowToggle, 'display', '');
+		}}));
+
 		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
 	},
