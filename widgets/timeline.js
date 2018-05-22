@@ -176,7 +176,6 @@ return djDeclare("location.timeline", [
 							}
 						}
 						this.resize();
-
 						break;
 					case 'entry':
 						byTarget = e.data.content;
@@ -561,7 +560,15 @@ return djDeclare("location.timeline", [
 						if(entry.type == 1) {
 							var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
 							var item = new dtMenuItem({ label: html, value: entry });
-							djOn(item, 'click', djLang.hitch(that, that.filterComplement));
+							djOn(item, 'click', djLang.hitch(that, (e) => {
+								var node = dtRegistry.byNode(e.selectorTarget);
+								if(node.value && node.value.id) {
+									this.searchMenu.filterNone.set('disabled', false);
+									var out = that.filterComplement(this.entries, node.value.id);
+									this.filterApply(out);
+									this.resize();
+								}
+							}));
 							p.popup.addChild(item);
 						}
 					});
@@ -577,15 +584,39 @@ return djDeclare("location.timeline", [
 				item.containerNode.appendChild(x.domNode);
 				item.own(x);
 				djOn(item, 'click', djLang.hitch(that, (e) => {
-					that.filterDate(dtRegistry.byId('menuStartDay').get('value'));
+					this.filterReset();
+					var date = dtRegistry.byId('menuStartDay').get('value');
+					this.center = date;
+					this.update();
+					this.filterApply(this.filterDate(this.entries, date));
 				}));
 				that.searchMenu.addChild(item);
 				
 				var item = new dtMenuItem({ label: 'Termine le '});
 				djOn(item, 'click', djLang.hitch(that, () => {
-					that.filterDate(dtRegistry.byId('menuEndDay').get('value'), 'trueEnd');
+					this.filterReset();
+					var date = dtRegistry.byId('menuEndDay').get('value');
+					this.center = date;
+					this.update();
+					that.filterApply(this.filterDate(this.entries, date, 'trueEnd'));
 				}));
 				var x = new dtDateTextBox({ value: now, id: 'menuEndDay' });
+				item.containerNode.appendChild(x.domNode);
+				item.own(x);
+				that.searchMenu.addChild(item);
+
+				that.searchMenu.addChild(new dtMenuSeparator());
+
+				var item = new dtMenuItem({ label: 'À faire le '});
+				djOn(item, 'click', djLang.hitch(that, () => {
+					this.filterReset();
+					var date = dtRegistry.byId('menuTodoDay').get('value');
+					this.center = date;
+					this.update();
+					var out = this.filterDate(this.entries, date, 'trueBegin');
+					this.filterApply(out.concat(this.filterComplementDate( this.entries, date, 4)));
+				}));
+				var x = new dtDateTextBox({ value: now, id: 'menuTodoDay' });
 				item.containerNode.appendChild(x.domNode);
 				item.own(x);
 				that.searchMenu.addChild(item);
@@ -614,28 +645,28 @@ return djDeclare("location.timeline", [
 		}
 	},
 
-	filterDate: function() {
+	filterDate: function(entries) {
+		var out = new Array();
 		var date = new Date(), what = 'trueBegin';
 		this.searchMenu.filterNone.set('disabled', false);
-		if(arguments[0]) {
-			date = arguments[0];
-		}
 		if(arguments[1]) {
-			what = arguments[1];
+			date = arguments[1];
+		}
+		if(arguments[2]) {
+			what = arguments[2];
 		}
 
-		this.center = date;
-		this.update();
 
-		for(var i = 0; i < this.entries.length; i++) {
+		for(var i = 0; i < entries.length; i++) {
 			var active = false;
-			for(var k in this.entries[i].entries) {
-				if(djDate.compare(this.entries[i].entries[k].get(what), date, "date") == 0) {
-					active = true; break;
+			for(var k in  entries[i].entries) {
+				if(djDate.compare(entries[i].entries[k].get(what), date, "date") == 0) {
+					out.push(entries[i].get('id')); break;
 				}
 			}
-			this.entries[i].set('active', active);
 		}
+
+		return out;
 	},
 
 	filterStatus: function (event) {
@@ -663,31 +694,59 @@ return djDeclare("location.timeline", [
 		this.resize();
 	},
 
-	filterComplement: function (event) {
-		var node = dtRegistry.byNode(event.selectorTarget);
-		this.searchMenu.filterNone.set('disabled', false);
-		for(var i = 0; i < this.entries.length; i++) {
-			var entry = this.entries[i];
-			var active = entry.get('activeReservations');
-			if(active.length <= 0) {
-				entry.set('active', false);
-			} else {
-				var count = 0;
-				for(var j = 0; j < active.length; j++) {
-					for(var k = 0; k < active[j].complements.length; k++) {
-						if(active[j].complements[k].type.id == node.value.id) {
-							count++; break;
-						}
+	filterComplementDate: function( entries, date, complement ) {
+		var out = new Array();
+		for(var i = 0; i < entries.length; i++) {
+			var found = false;
+			var active = entries[i].get('activeReservations');
+			for(var j = 0; j < active.length; j++) {
+				for(var k = 0; k < active[j].complements.length; k++) {
+					if(active[j].complements[k].type.id == complement &&
+						active[j].complements[k].range.within(date)) {
+						out.push(entries[i].get('id')); found = true; break;
 					}
 				}
-				if(count > 0) {
-					entry.set('active', true);
-				} else {
-					entry.set('active', false);
+				if(found) { break; }
+			}
+		}
+		return out;
+	},
+
+	filterComplement: function (entries, value) {
+		var out = new Array();
+		for(var i = 0; i < entries.length; i++) {
+			var found = false;
+			var active = entries[i].get('activeReservations');
+			if(active.length > 0) {
+				for(var j = 0; j < active.length; j++) {
+					for(var k = 0; k < active[j].complements.length; k++) {
+						if(active[j].complements[k].type.id == value) {
+							out.push(entries[i].get('id'));
+							found = true; 
+							break;
+						}
+					}
+					if(found) { break; }
 				}
 			}
 		}
-		this.resize();
+		return out;
+	},
+
+	filterApply: function(entries) {
+		for(var i = 0; i < this.entries.length; i++) {
+			if(entries.indexOf(this.entries[i].get('id')) == -1) {
+				this.entries[i].set('active', false);
+			} else {
+				this.entries[i].set('active', true);
+			}
+		}
+	},
+	
+	filterReset: function () {
+		for(var i = 0; i < this.entries.length; i++) {
+			this.entries[i].set('active', true);
+		}
 	},
 
 	mouseUpDown: function(event) {
