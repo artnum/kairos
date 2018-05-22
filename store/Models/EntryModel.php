@@ -13,12 +13,17 @@ class EntryModel extends artnum\SQL {
          $st->bindParam(':ref', $data['ref'], \PDO::PARAM_STR);
          $st->bindParam(':name', $data['name'], \PDO::PARAM_STR);
          if($st->execute()) {
-            if($st->rowCount() > 0) {
-               $id = $st->fetchAll();
-
-               $data['id'] = $id[0];
+            $id = $st->fetchAll();
+            if($id != FALSE && !empty($id)) {
+               /* This is done to compensate of an old bug */
+               $lastid=-1;
+               foreach($id as $d) {
+                  if($d['entry_id'] > $lastid) {
+                     $lastid=$d['entry_id'];
+                  }
+               }
+               $data['id'] = $lastid;
             }
-
             return parent::write($data);
          }
       } catch(\Exception $e) {
