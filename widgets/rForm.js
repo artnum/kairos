@@ -520,6 +520,11 @@ return djDeclare("location.rForm", [
 
 		this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }));
 		djOn(this.nForm, "mousemove", function(event) { event.stopPropagation(); });
+
+		this.nMBeginDate.set('value', this.beginDate.get('value'));
+		this.nMBeginTime.set('value', this.beginTime.get('value'));
+		this.nMEndDate.set('value', this.endDate.get('value'));
+		this.nMEndTime.set('value', this.endTime.get('value'));
 	},
 	
 	startup: function() {
@@ -692,7 +697,7 @@ return djDeclare("location.rForm", [
 		c = new card('/Contacts/');
 		c.entry(entry);
 		
-		this.contacts[type] = new dtContentPane({
+		var contact = new dtContentPane({
 		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
 				content: c.domNode,
 				closable: true,
@@ -713,18 +718,20 @@ return djDeclare("location.rForm", [
 						}
 					})
 			});
-
-		this.nContactsContainer.addChild(this.contacts[type]);
-		if(this.contacts['_client']) {
-			this.nContactsContainer.selectChild(this.contacts['_client']);
-		} else { 
-			this.nContactsContainer.selectChild(this.contacts[type]);
+	
+		for(var k in this.contacts) {
+			if(this.contacts[k].contactLinkId == contact.contactLinkId) {
+				this.nContactsContainer.removeChild(this.contacts[k]);
+				this.contacts[k].destroy();
+				break;
+			}
+		}
+		this.contacts[type + contact.contactLinkId] = contact; 
+		this.nContactsContainer.addChild(this.contacts[type + contact.contactLinkId]);
+		if(type == '_client') {
+			this.nContactsContainer.selectChild(this.contacts[type + contact.contactLinkId]);
 		}
 		
-		this.nMBeginDate.set('value', this.beginDate.get('value'));
-		this.nMBeginTime.set('value', this.beginTime.get('value'));
-		this.nMEndDate.set('value', this.endDate.get('value'));
-		this.nMEndTime.set('value', this.endTime.get('value'));
 	},
 
 	saveContact: function (id, options) {
@@ -873,20 +880,6 @@ return djDeclare("location.rForm", [
 		}
 
 		return true;	
-	},
-
-	dropFile: function (event) {
-		event.preventDefault();
-		var dt = event.dataTransfer;
-		if(dt.items) {
-			for(var i = 0; i < dt.items.length; i++) {
-				var f = dt.items[i].getAsFile();
-			}
-		} else {
-			for(var i=0; i < dt.files.lenght; i++) {
-			}
-		}
-
 	},
 
 	doCopy: function (event) {
