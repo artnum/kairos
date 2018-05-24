@@ -125,7 +125,7 @@ return djDeclare("location.rForm", [
 		}
 
 	},
-
+	
 	_setEndAttr: function (value) {
 		this.endDate.set('value', value.toISOString());
 		this.endTime.set('value', value.toISOString());
@@ -461,43 +461,6 @@ return djDeclare("location.rForm", [
 	},
 
 	doSelectMachine: function (value) {
-		if(this.reservation.get('target') != value) {
-			this.nChangeMachine.set('disabled', false);
-		} else {
-			this.nChangeMachine.set('disabled', true);
-		}
-	},
-
-	doChangeMachine: function (event) {
-		var newMachine = this.nMachineChange.get('value');
-		var oldMachine = this.reservation.get('target');
-		var that = this;
-
-		Req.get(locationConfig.store + '/Reservation/', { query: {
-			"search.target" : newMachine,
-			"search.begin": "<" + djDateStamp.toISOString(that.reservation.get('trueEnd')),
-			"search.end": ">" + djDateStamp.toISOString(that.reservation.get('trueBegin'))
-		}}).then(function (reservation) {
-			var change = true;
-			if(reservation && reservation.data.length > 0) {
-				change = confirm('La machine est occupée durant la période de réservation, changer quand même ?');
-			}
-
-			if(change) {
-				var query = { id: that.reservation.get('id'), target: newMachine };
-				if(that.get('originalTitle')) {
-					query.title = that.get('originalTitle');
-				}
-
-				Req.put(locationConfig.store + '/Reservation/' + that.reservation.get('id'), { query: query}).then( function ( res ) {
-					if(res && res.data && res.data.success) {
-						window.App.info('Déplacement de machine correctement effectué');
-						that.reservation.destroyMe();
-						that.hide();
-					}
-				});
-			}
-		});
 	},
 
 	postCreate: function () {
@@ -537,7 +500,6 @@ return djDeclare("location.rForm", [
 
 		var select = this.status, that = this,  r;
 		this.nMachineChange.set('value', this.reservation.get('target'));
-		this.nChangeMachine.set('disabled', true);
 
 		if(this.reservation.get('title') == null) {
 			this.nTitle.set('placeholder', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label);
@@ -654,7 +616,6 @@ return djDeclare("location.rForm", [
 
 			that.doResetComplement();
 			that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'));
-			window.App.info('Réservation ' + that.reservation.get('id') + ' chargée.');
 			that.initRequests = new Array();
 		}));
   },
@@ -793,6 +754,7 @@ return djDeclare("location.rForm", [
 	},
 
 	destroy: function() {
+		this.reservation.closeForm();
 		this.initCancel();
 		this.inherited(arguments);
 	},
@@ -886,12 +848,27 @@ return djDeclare("location.rForm", [
 		this.reservation.copy();
 	},
 
+	doSaveAndQuit: function (event) {
+		this.doSave();
+		this.hide();
+	},
 	doSave: function (event) {
 		var now = new Date();
 		var that = this;
 
 		if(! this.validate()) { return; }
-
+		var changeMachine = false;
+		if(this.reservation.get('target') != this.nMachineChange.get('value')) {
+			var newEntry = window.App.getEntry(this.nMachineChange.get('value'));
+			if(newEntry == null) {
+				alert('Déplacement vers machine inexistante');
+				return;
+			}
+			changeMachine = this.reservation.get('target');
+			this.reservation.set('sup', newEntry);
+			this.reservation.set('target', this.nMachineChange.get('value'));
+			this.reservation.set('title', this.get('originalTitle'));
+		}
 
 		let f = this.nForm.get('value');
 		let begin = f.beginDate.join(f.beginTime);
@@ -908,7 +885,6 @@ return djDeclare("location.rForm", [
 			deliveryBegin = null;
 			deliveryEnd = null;	
 		}
-
 
 		this.reservation.setIs('confirmed', this.nConfirmed.get('checked'));
 		this.reservation.set('status', f.status);
@@ -932,11 +908,23 @@ return djDeclare("location.rForm", [
 			}
 		}
 
-		this.reservation.save().then( () => { 
-			that.hide();
-			that.reservation.highlight();
-		});
-	
+		var save = this.reservation.save();
+		var reservation = this.reservation;
+		if(changeMachine) {
+			save.then( (result) => {
+				var entry = window.App.getEntry(reservation.get('target'));
+				var oldEntry = window.App.getEntry(changeMachine);
+				if(entry) {
+					reservation.fromJson(result.data);
+					reservation.syncForm();
+					window.App.Reservation.set(reservation.get('id'), result.data);
+					window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée');
+					delete oldEntry.entries[reservation.get('id')];
+					entry.entries[reservation.get('id')] = reservation;
+					entry.show();
+				}
+			});
+		}
 	},
 
 	destroyReservation: function(reservation) {

@@ -166,27 +166,26 @@ return djDeclare("location.timeline", [
 		this.Updater.onmessage = djLang.hitch(this, function (e) {
 			var byTarget = new Object();
 			if(e.data) {
-				switch(e.data.type) {
-					case 'all': default:
-						byTarget = e.data.content;
-						for(var i = 0; i < this.entries.length; i++) {
-							if(byTarget[this.entries[i].get('target')]) {
-								this.entries[i].set('reservations', byTarget[this.entries[i].get('target')]);
-								this.entries[i].update(true);
-							}
-						}
-						this.resize();
-						break;
-					case 'entry':
-						byTarget = e.data.content;
-						for(var i = 0; i < this.entries.length; i++) {
-							if(byTarget[this.entries[i].get('target')]) {
-								this.entries[i].addOrUpdateReservation(byTarget[this.entries[i].get('target')]);
-								this.entries[i].update(true);
-							}
-						}
-						break;
+				for(var k in e.data.content) {
+					var entries = new Array();
+					for(var i = 0; i < e.data.content[k].length; i++) {
+						window.App.Reservation.set(e.data.content[k][i].id, e.data.content[k][i]);
+					}
 				}
+				
+				var update = 0,  entries = this.entries;;
+				(function doUpdate() {
+					if(entries[update]) {
+						if(e.data.content[entries[update].get('target')]) {
+							entries[update].addOrUpdateReservation(e.data.content[entries[update].get('target')]);
+						}
+						entries[update].update();
+					}
+					update++;
+					if(update < entries.length) {
+						window.setTimeout(doUpdate(), 5);
+					}
+				})();
 			}
 		});
 
@@ -734,6 +733,7 @@ return djDeclare("location.timeline", [
 	},
 
 	filterApply: function(entries) {
+		this.filterReset();
 		for(var i = 0; i < this.entries.length; i++) {
 			if(entries.indexOf(this.entries[i].get('id')) == -1) {
 				this.entries[i].set('active', false);
@@ -1214,7 +1214,11 @@ return djDeclare("location.timeline", [
 					}
 			}
 			that.categories = category;
-			djAll(loaded).then( function () { that.buildMenu(); that.endDraw(); that.update();  });
+			djAll(loaded).then( function () {
+				that.buildMenu();
+				that.endDraw();
+				that.update();  
+			});
 		});
 	},
 
@@ -1379,6 +1383,117 @@ return djDeclare("location.timeline", [
 
 	print: function ( url ) {
 		window.open(url);
-	}
+	},
 
+	getEntry: function( entry ) {
+		var e = null;
+		for(var i = 0; i < this.entries.length; i++) {
+			if(this.entries[i].get('target') == entry) {
+				e = this.entries[i];
+				break;
+			}
+		}
+
+		return e;
+	},
+
+	Reservation : {
+		_st: window.localStorage,
+
+		getAll: function () {
+			var list = JSON.parse(this._st.getItem('_entries'));
+			var entries = new Array();
+			if(list != null) {
+				for(var i = 0; i < list.length; i++) {
+					var item = JSON.parse(this._st.getItem(list[i]));
+					if(item) {
+						entries.push(item.value);
+					}
+				}
+			}
+
+			return entries;
+		},
+
+		get: function ( id ) {
+			var item = JSON.parse(this._st.getItem(id));
+			if(item) {
+				return item.value;
+			}
+			return null;
+		}, 
+
+		set: function ( id, object ) {
+			var entry = JSON.stringify({ time: new Date().getTime(), value: object });
+			try {
+				var list = JSON.parse(this._st.getItem('_entries'));
+				if(list == null) {
+					list = new Array();
+					list.push(id);
+				} else {
+					if(list.indexOf(id) == -1) {
+						list.push(id);
+					}
+				}
+				this._st.setItem('_entries', JSON.stringify(list));
+				this._st.setItem(id, entry);
+			} catch( e ) {
+				console.log(e);
+				if(!arguments[2]) {
+					this.clean();
+					return this.set(id, object, true);
+				} else {
+					return false;
+				}
+			}
+
+			return true;
+		},
+
+		remove: function ( id ) {
+			this._st.removeItem(id);
+			var list = JSON.parse(this._st.getItem('_entries'));
+			if(list != null) {
+				var found = -1;
+				found = list.indexOf(id);
+				if(found != -1) {
+					list.splice(found, 1);
+					this._st.setItem('_entries', JSON.stringify(list));
+				}
+			}
+		},
+
+		clean: function () {
+			var list = JSON.parse(this._st.getItem('entries'));
+			var newList = new Array();
+
+			if(list != null) {
+				var removed = 0, oldest = 0;
+				for(var i = 0; i < list.length; i++) {
+					var item = JSON.parse(this._st.getItem(list[i]));
+					if(item.time > oldest) { oldest = item.time; }
+					if(item.time + 60000 < new Date().getTime()) {
+						this._st.removeItem(list[i]);
+					} else {
+						newList.push(list[i]);
+					}
+					this._st.setItem('_entries', JSON.stringifiy(newList));
+				}
+			} else {
+				try {
+					this._st.setItem('_test', 'a');
+					this._st.removeItem('_test');
+				} catch (e) {
+					this._st.clear();
+					try {
+						this._st.setItem('_test', 'a');
+						this._st.removeItem('_test');
+					} catch (e) {
+						alert('Problème avec le navigateur');
+						console.log('Storage is not accessible');
+					}
+				}
+			}
+		}
+	},
 });});

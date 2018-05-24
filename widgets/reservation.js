@@ -94,14 +94,20 @@ return djDeclare("location.reservation", [
 
 	fromJson: function (json) {
 		djLang.mixin(this, json);
-	
+
 		this.set('updated', true);
-		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( (attr) => {
+		[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach ( djLang.hitch(this, (attr) => {
 			if(json[attr]) {
 				this.set(attr, djDateStamp.fromISOString(json[attr]));
 			}
-		});
+		}));
 		
+		[ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title' ].forEach(djLang.hitch(this, (attr) => {
+			if(json[attr]) {
+				this.set(attr, json[attr]);
+			}
+		}));
+
 		if(this.contacts && this.contacts['_client']) {
 			if(this.contacts['_client'][0].target) {
 				this.dbContact = this.contacts['_client'][0].target;
@@ -120,7 +126,6 @@ return djDeclare("location.reservation", [
 	
 		this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'));
 		this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime();
-		this.syncForm();
 	},
 
 	refresh: function () {
@@ -593,8 +598,18 @@ return djDeclare("location.reservation", [
 
 		this.myForm = f;
 		this.myContentPane = cp;
-		this.syncForm();
 		f.set('_pane', [ cp, tContainer]);
+		this.syncForm();
+	},
+
+	close: function () {
+		if(this.myForm) {
+			this.myForm.hide();
+		}
+		this.closeForm();
+	},
+	closeForm: function() {
+		this.myForm = null;
 	},
 
 	syncForm: function () {
@@ -985,19 +1000,15 @@ return djDeclare("location.reservation", [
 		query['target'] = this.get('target');
 
 		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
-			Req.get(locationConfig.store + "/DeepReservation/" + result.data.id).then( (result) => {
-				if(result && result.data) {
-					that.fromJson(result.data);
-					that.resize();
-				}
 				def.resolve(result);
-			});
 		});
 		
 		return def.promise;
 	},
 
 	copy: function ( ) {
+		this.sup.copy(this);
+		/*
 		var that = this;
 		var copy = Object.create(this);
 		djLang.mixin(copy, this);
@@ -1036,6 +1047,7 @@ return djDeclare("location.reservation", [
 				that.sup.sup.update(true);
 			});
 		});
+		*/
 	},
 
 	extend7: function (e) {

@@ -107,7 +107,6 @@ return djDeclare("location.entry", [
 		this.tags = new Array();
 		this.entries = new Object();
 		this.currentLocation = '';
-		this.reservations = new Array();
 
 		var that = this;
 		this.loaded = new djDeferred();
@@ -195,8 +194,12 @@ return djDeclare("location.entry", [
 
 		frag.appendChild(a);
 
+		var cached = window.localStorage.getItem('_entry_' + this.get('id'));
+		if(cached) {
+			this.addOrUpdateReservation(JSON.parse(cached));
+		}
+
 		window.requestAnimationFrame(function () { that.nameNode.appendChild(frag); });
-		this.update();
 	},
 
 	displayTags: function (tags) {
@@ -359,36 +362,80 @@ return djDeclare("location.entry", [
 	},
 
 	createReservation: function(day) {
+		if(!day) {
+			day = this.get('dateRange').begin;	
+		}
+		var end = new Date(day.getTime());
+		end.setHours(17,0,0,0);
+		day.setHours(8,0,0,0);
+
+		var r = { start: day,
+			o: new Reservation({ sup: this,  begin: day, end: end })
+		}
+		r.o.popMeUp();
+		this.defaultStatus().then( (s) => {
+			r.o.set('status', s);
+			this.store(r.o).then ( djLang.hitch( this, (id) => {
+				window.App.info('Réservation ' + id + ' correctement créée');
+			}));
+		});
+	},
+
+	copy: function ( original ) {
+		var copy = new Reservation({ sup: this });
+		console.log(original);
+		json = window.App.Reservation.get(original.get('id'));
+		if(json == null) {
+			/* TODO */
+		}
+		copy.fromJson(json);
+		copy.set('status', original.get('status'));
+		copy.set('color', original.get('color'));
+		copy.set('IDent', null);
+		copy.popMeUp();
+		this.store(copy).then ( djLang.hitch( this, (id) => {
+			var subRequests = new Array();
+			console.log(json);
+			for(var k in json.contacts) {
+				for(var i = 0; i < json.contacts[k].length; i++) {
+					var entry = json.contacts[k][i];
+					console.log(entry);
+					var q = { comment: entry.comment, reservation: id, freeform: entry.freeform };
+					if(entry.target != null) {
+						q.target = '/Contacts/' + entry.target.IDent;
+					}
+					subRequests.push(Req.post(locationConfig.store + '/ReservationContact/', { query:  q }));
+				}
+			}
+
+			for(var i = 0; i < json.complements.length; i++) {
+				var entry = json.complements[i];
+				var q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null };
+				if(entry.begin != '') { q.begin = djDateStamp.toISOString(entry.begin); }
+				if(entry.end != '') { q.end= djDateStamp.toISOString(entry.end); }
+				subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }));
+			}
+			djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close(); });
+		}));
+	},
+
+	store: function ( reservation ) {
+		var def = new djDeferred();
 		var that = this;
+		reservation.save().then(function (result) {
+			if(result.type == 'error') {
+				window.App.error("Impossible d'enregistrer les données");
+			} else {
+				reservation.fromJson(result.data);
+				reservation.syncForm();
+				window.App.Reservation.set(reservation.get('id'), result.data);
+				that.entries[reservation.get('id')] = reservation;
+				that.show();
+				def.resolve(reservation.get('id'));
+			}				
+		});
 
-			if(!day) {
-				day = that.get('dateRange').begin;	
-			}
-			var end = new Date(day.getTime());
-			end.setHours(17,0,0,0);
-			day.setHours(8,0,0,0);
-
-			var r = { start: day,
-				o: new Reservation({ sup: that,  begin: day, end: end })
-			}
-			r.o.popMeUp();
-
-			that.defaultStatus().then(function(s) {
-				r.o.set('status', s);
-				r.o.save().then(function (result) {
-					if(result.type == 'error') {
-						window.App.error("Impossible d'enregistrer les données");
-					} else {
-						window.App.info('Réservation ' + r.o.get('id') + ' correctement créée');
-						r.o.fromJson(result.data);
-						that.entries[r.o.get('id')] = r.o;
-						r.o.syncForm();
-						window.requestAnimationFrame(function() {
-							that.data.appendChild(r.o.domNode);
-						});
-					}				
-				});
-			});
+		return def.promise;
 	},
 
 	_getOffsetAttr: function () {
@@ -487,22 +534,6 @@ return djDeclare("location.entry", [
 			}));
 		}
 	},
-	eShutdown: function(event) {
-		window.requestAnimationFrame(djLang.hitch(this, function () {
-			if(!this.power) {
-				/*for(var i in this.childs) {
-					this.childs[i].destroy();	
-				}
-				this.childs = new Object(); */
-				djDomClass.add(this.domNode, "off");
-			} else {
-				this.update(); 
-				djDomClass.remove(this.domNode, "off");
-			}
-		}));
-		this.power = !this.power;
-	},
-
 	_getBlockSizeAttr: function () {
 		return this.sup.get('blockSize');
 	},
@@ -525,41 +556,28 @@ return djDeclare("location.entry", [
 			this.entries[k].resize();
 		}
 	},
+
 	resize: function () {
 		this.view.rectangle = getElementRect(this.domNode);
 		this.resizeChild();
 	},
+	
 	update: function () {
 		var that = this;
 		var def = new djDeferred();
 		var force = false;
 		var loaded = false;
 
-		djDomStyle.set(this.domNode, 'background-color', 'rgba(120, 225, 120, 0.1)');
-		if(arguments[0]) {
-			force = true;
-		}
-
-		this.runUpdate = true;
-		var range = this.get('dateRange');
-		range = new DateRange(new Date(range.begin.getFullYear(),  range.begin.getMonth(), 0), new Date(range.end.getFullYear(), range.end.getMonth() + 1, 0));
-
-		if(!this.LoadedRange) {
-			this.LoadedRange =   { r: range, t: new Date() };
-		} else {
-			if(this.LoadedRange.r.contains(range)) {
-				loaded = true;
-				if(this.LoadedRange.t.getTime() < new Date().getTime() - 5000) {
-					loaded = false;
-					this.LoadedRange =   { r: range, t: new Date() };
-				}
+		for(var k in this.entries) {
+			var entry = window.App.Reservation.get(this.entries[k].id);
+			if(entry) {
+				this.entries[k].fromJson(entry);
 			} else {
-				this.LoadedRange = { r: range, t: new Date() };
+				this.entries[k].destroy();
 			}
 		}
-		this.displayReservations(this.get('reservations'));
-		window.setTimeout(() => { djDomStyle.set(that.domNode, 'background-color', ''); }, 250);
 
+		this.resize();
 		def.resolve();
 		return def.promise;
 	},
@@ -567,32 +585,18 @@ return djDeclare("location.entry", [
   addOrUpdateReservation: function (reservations) {
     var found = false;
     for(var i = 0; i < reservations.length; i++) {
-      found = false;
-			for(var j = 0; j < this.reservations.length; j++) {
-        if(reservations[i].id == this.reservations[j].id) {
-          this.reservations[j] = reservations[i];
-					this.entries[reservations[i].id].fromJson(reservations[i]);
-					found = true;
-          break;
-        }
+			if( ! this.entries[reservations[i].id]) {
+				this.entries[reservations[i].id] = new Reservation({ sup : this });
 			}
-      if( !found) {
-        this.reservations.push(reservations[i]);
-      }
+			var json = window.App.Reservation.get(reservations[i].id);
+			if(json) { this.entries[reservations[i].id].fromJson(json); }
     }
-  },
 
-	store: function(reservation) {
-		var def = new djDeferred();
-		reservation.o.save().then( (result) => { def.resolve(result); });
-		return def.promise;
-	}, 
+		this.show();
+  },
 
 	_setSupAttr: function ( sup ) {
 		this.sup = sup;
-		djOn(this.sup, "update-" + this.target, djLang.hitch(this, this.update));
-		djOn(this.sup, "cancel-update", djLang.hitch(this, function () { if(this.to) { window.clearTimeout(this.to); this.to = null; } }));
-			
 	},
 
 	_startWait: function() {
@@ -610,52 +614,50 @@ return djDeclare("location.entry", [
 		window.requestAnimationFrame(function() { djDomClass.remove(e, "error"); });	
 	},
 
-	displayResults: function ( r ) {
-		if(r[this.target]) {
-			this.displayReservations(r[this.target]);
+	setCache: function ( list ) {
+		try {
+			window.localStorage.setItem('_entry_' + this.get('id'), JSON.stringify(list));
+		} catch( e ) {
+			console.log(e);
 		}
 	},
 
-	displayReservations: function ( reservations ) {
-		var range = this.get('dateRange');
+
+	show: function ( ) {
 		var frag = document.createDocumentFragment();
 		var that = this;
-	
-		/* delete removed entries */
-		for(var k in that.entries) {
-			var found = false;
-			for(var i = 0; i < reservations.length; i++) {
-				if(reservations[i].id == k) {
-					found = true;
-					break;
-				}
+		var entries = new Array(), toCache = new Array();
+
+		for(var k in this.entries) {
+			if( ! this.entries[k].get('displayed')) {
+				frag.appendChild(this.entries[k].domNode);
+				this.entries[k].set('displayed', true);
 			}
-			if(! found) {
-				that.entries[k].destroy();
-				delete that.entries[k];
-			}
+			this.entries[k].overlap = { elements: new Array(), level: 0, order: 0, do: false };
+			entries.push(this.entries[k]);
+			toCache.push(k);
 		}
 
-		var entries = new Array();
-		for(var i = 0; i < reservations.length; i++) {
-			if(reservations[i].end && reservations[i].begin) {
-				if(! that.entries[reservations[i].id]) {
-					that.entries[reservations[i].id] = new Reservation({ sup: that });
-					that.entries[reservations[i].id].fromJson(reservations[i]);
-					frag.appendChild(that.entries[reservations[i].id].domNode); 
-				} else {
-					that.entries[reservations[i].id].fromJson(reservations[i]);
-				}
-				entries.push(that.entries[reservations[i].id]);
-				that.entries[reservations[i].id].overlap = { elements: new Array(), level: 0, order: 0, do: false };
-				that.entries[reservations[i].id].resize();
+		this.overlap(entries);
+		this.setCache(toCache);
+
+		var that = this;
+		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
+	},
+
+	overlap: function() {
+		if(arguments[0]) { entries = arguments[0]; }
+		else { 
+			entries = new Array();
+			for (var k in this.entries) {
+				entries.push(this.entries[k]);
 			}
 		}
-
 
 		/* Overlap entries, good enough for now */
 		var overlapRoot = new Array();
 		for(var i = 0; i < entries.length; i++) {
+			if(entries[i].deleted) { continue; }
 			var root = true;
 			entries[i].overlap.order = i;
 			for(var j = 0; j < overlapRoot.length; j++) {
@@ -686,22 +688,14 @@ return djDeclare("location.entry", [
 				overlapRoot[i].overlap.elements[j].overlap.do = true;
 			}
 		}
-
-		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
 	},
 
 	destroyReservation: function (reservation) {
 		if(reservation) {
-			delete this.entries[reservation.id];
-			for(var i = 0; i < this.reservations.length; i++) {
-				if(this.reservations[i].id == reservation.id) {
-					this.reservations.splice(i, 1);
-					break;
-				}
-			}
 			reservation.destroy();
+			delete this.entries[reservation.id];
+			window.App.Reservation.remove(reservation.id);
 		}
-
 	},
 
 	_getActiveReservationsAttr: function() {
