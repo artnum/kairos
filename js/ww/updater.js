@@ -38,7 +38,7 @@ handleResults = function (txt) {
 	}
 	if(r && r.data && r.data.length > 0) {
 		var tx = DB.transaction('reservations', 'readwrite');
-		tx.oncomplete = function( e ) { postMessage({ type: 'entries', content: ids }); console.log(ids); };
+		tx.oncomplete = function( e ) { postMessage({ type: 'entries', content: ids }); };
 		var store = tx.objectStore('reservations');
 		for(var i = 0; i < r.data.length; i++) {
 			if(r.data[i].target) {
