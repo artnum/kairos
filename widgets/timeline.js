@@ -22,6 +22,7 @@ define([
 	"dojo/dom-style",
 	"dojo/dom-geometry",
 	"dojo/throttle",
+	"dojo/debounce",
 	"dojo/request/xhr",
 	"dojo/window",
 	"dojo/promise/all",
@@ -73,6 +74,7 @@ define([
 	djDomStyle,
 	djDomGeo,
 	djThrottle,
+	djDebounce,
 	djXhr,
 	djWindow,
 	djAll,
@@ -304,7 +306,6 @@ return djDeclare("location.timeline", [
 		this.set('blockSize', (page[2] - 240) / days);
 		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
 		this.resize();
-		this.update(true);
 	},
 
 	_setFilterAttr: function (value) {
@@ -342,6 +343,15 @@ return djDeclare("location.timeline", [
 			this.set('zoom', this.get('zoom') + 5);
 		}
 	},
+
+	zoomInN: function (n) {
+			this.set('zoom', this.get('zoom') - 7);
+	},
+
+	zoomOutN: function (n) {
+			this.set('zoom', this.get('zoom') + 7);
+	},
+
 
 	isBefore: function ( a, b ) {
 		if(djDate.compare(a, b, "date")<=0) {
@@ -831,6 +841,7 @@ return djDeclare("location.timeline", [
 	},
 
 	eWheel: function(event) {
+		event.preventDefault();
 		if(this._mask) { return; }
 		if(event.deltaX < 0) {
 			this.moveLeft();
@@ -838,6 +849,13 @@ return djDeclare("location.timeline", [
 			this.moveRight();
 		}
 		this.wheelTo = null;
+		if(event.shiftKey) {
+			if(event.deltaY < 0) {
+				this.zoomInN(event.deltaY);
+			} else {
+				this.zoomOutN(-event.deltaY);
+			}
+		}
 	},
 
 	getDateRange: function () {
