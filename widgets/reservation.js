@@ -202,6 +202,10 @@ return djDeclare("location.reservation", [
 			this.attrs.push(attr);	
 		}
 	},
+	_setCreatorAttr: function(value) {
+		this.addAttr('creator');
+		this._set('creator', value);
+	},
 	_setFolderAttr: function(value) {
 		this.addAttr('folder');
 		this._set('folder', value);
@@ -614,7 +618,7 @@ return djDeclare("location.reservation", [
 
 	syncForm: function () {
 		if(this.myForm) {
-			[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference' ].forEach(djLang.hitch(this, (e) => {
+			[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder' ].forEach(djLang.hitch(this, (e) => {
 				this.myForm.set(e, this.get(e));
 			}));
 			this.myForm.load();
@@ -1014,7 +1018,7 @@ return djDeclare("location.reservation", [
 		djLang.mixin(copy, this);
 		copy.set('IDent', null);
 		copy.set('id', null);
-		[ 'address', 'comment', 'gps', 'folder', 'locality', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'equipment', 'reference', 'status' ].forEach( (e) => { copy.set(e, that.get(e)); });
+		[ 'address', 'comment', 'gps', 'folder', 'locality', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'equipment', 'reference', 'status', 'creator' ].forEach( (e) => { copy.set(e, that.get(e)); });
 		copy.save().then( () => {
 			var q = new Array();
 
