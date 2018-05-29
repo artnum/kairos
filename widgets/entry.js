@@ -150,14 +150,13 @@ return djDeclare("location.entry", [
 				} else {
 					if(that.entries[cursor.value.id]._hash != cursor.value._hash) {
 						if(window.App.isOpen(cursor.value.id)) {
-							if(window.App.isModify(cursor.value.id)) {
-								window.App.unsetModify(cursor.value.id);
-							} else {
+							if(! window.App.isModify(cursor.value.id)) {
 								var n = new Notification('La réservation ' + cursor.value.id + ' a été modifiée par un autre utilisateur', { requireInteraction: true });
 								n.onclick = djLang.hitch(that.entries[cursor.value.id],function () {
 									this.syncForm();	
 								});
 							}
+							window.App.unsetModify(cursor.value.id);
 						}
 						that.entries[cursor.value.id].fromJson(cursor.value);
 					}
@@ -630,19 +629,10 @@ return djDeclare("location.entry", [
 		window.requestAnimationFrame(function() { djDomClass.remove(e, "error"); });	
 	},
 
-	setCache: function ( list ) {
-		try {
-			window.localStorage.setItem('_entry_' + this.get('id'), JSON.stringify(list));
-		} catch( e ) {
-			console.log(e);
-		}
-	},
-
-
 	show: function ( ) {
 		var frag = document.createDocumentFragment();
 		var that = this;
-		var entries = new Array(), toCache = new Array();
+		var entries = new Array();
 
 		for(var k in this.entries) {
 			if( ! this.entries[k].get('displayed')) {
@@ -651,12 +641,9 @@ return djDeclare("location.entry", [
 			}
 			this.entries[k].overlap = { elements: new Array(), level: 0, order: 0, do: false };
 			entries.push(this.entries[k]);
-			toCache.push(k);
 		}
 
 		this.overlap(entries);
-		this.setCache(toCache);
-
 		var that = this;
 		window.requestAnimationFrame(function() { that.data.appendChild(frag); that.resize(); });
 	},

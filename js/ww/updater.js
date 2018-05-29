@@ -1,6 +1,7 @@
 importScripts('../localdb.js');
 importScripts('../object-hash/dist/object_hash.js');
 var req = new XMLHttpRequest(), last = { 'modification': null, 'id': 0 };
+var firstLoad = true;
 wantdb( () => {  checker(); } );
 
 onmessage = function ( msg ) {
@@ -59,6 +60,7 @@ handleResults = function (txt) {
 				} else {
 					if(last.id < Number(r.data[i].id)) {
 						last.id = Number(r.data[i].id);
+						if(!firstLoad) { new Notification('Nouvelle réservation ' + r.data[i].id + ' a été créée'); }
 					}
 				}
 				if(ids.indexOf(r.data[i].target) == -1) {
@@ -111,7 +113,7 @@ checker = function () {
 	if(parameters != '') {
 		url += '?' + parameters;
 	}
-
+	firstLoad = false;
 	var cReq = new XMLHttpRequest();
 	cReq.onload = function(e) {
 		if(cReq.readyState === 4) {
