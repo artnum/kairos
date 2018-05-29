@@ -628,12 +628,11 @@ return djDeclare("location.timeline", [
 
 	filterNone: function() {
 		this.searchMenu.filterNone.set('disabled', true);
-		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].set('active', true);
-		}
+		this.filterReset();
 	},
 
 	filterFamily: function(event) {
+		this.filterReset();
 		var node = dtRegistry.byNode(event.selectorTarget);
 		this.searchMenu.filterNone.set('disabled', false);
 		for(var i = 0; i < this.entries.length; i++) {
@@ -646,6 +645,7 @@ return djDeclare("location.timeline", [
 	},
 
 	filterDate: function(entries) {
+		this.filterReset();
 		var out = new Array();
 		var date = new Date(), what = 'trueBegin';
 		this.searchMenu.filterNone.set('disabled', false);
@@ -670,6 +670,7 @@ return djDeclare("location.timeline", [
 	},
 
 	filterStatus: function (event) {
+		this.filterReset();
 		var node = dtRegistry.byNode(event.selectorTarget);
 		this.searchMenu.filterNone.set('disabled', false);
 		for(var i = 0; i < this.entries.length; i++) {
@@ -695,6 +696,7 @@ return djDeclare("location.timeline", [
 	},
 
 	filterComplementDate: function( entries, date, complement ) {
+		this.filterReset();
 		var out = new Array();
 		for(var i = 0; i < entries.length; i++) {
 			var found = false;
@@ -713,6 +715,7 @@ return djDeclare("location.timeline", [
 	},
 
 	filterComplement: function (entries, value) {
+		this.filterReset();
 		var out = new Array();
 		for(var i = 0; i < entries.length; i++) {
 			var found = false;
