@@ -997,7 +997,6 @@ return djDeclare("location.reservation", [
 
 	save: function () {
 		var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred();
-
 		if(this.get('IDent') != null) {
 			method = 'put';
 			suffix = '/' + this.get('IDent');

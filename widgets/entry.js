@@ -19,7 +19,6 @@ define([
 	"dojo/dom-style",
 	"dojo/request/xhr",
 	"dojo/promise/all",
-	"dojo/throttle",
 	"dojo/dom-geometry",
 
 	"dijit/Dialog",
@@ -54,7 +53,6 @@ define([
 	djDomStyle,
 	djXhr,
 	djAll, 
-	djThrottle,
 	djDomGeometry,
 
 	dtDialog,

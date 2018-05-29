@@ -466,7 +466,6 @@ return djDeclare("location.timeline", [
 		window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')); }, { passive: true});
 		window.addEventListener('wheel', djLang.hitch(this, this.eWheel));
 		window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true});
-		window.addEventListener('scroll', djThrottle(djLang.hitch(this, this.scroll), 15), { passive: true });
 
 		this.update().then(djLang.hitch(this, () => {
 			this.view.rectangle = getPageRect();	
@@ -749,15 +748,13 @@ return djDeclare("location.timeline", [
 				this.entries[i].set('active', false);
 			} else {
 				this.entries[i].set('active', true);
-				this.entries[i].update();
 			}
 		}
 	},
 	
-	filterReset: function () {
+	filterReset: function (prefilter = false) {
 		for(var i = 0; i < this.entries.length; i++) {
 			this.entries[i].set('active', true);
-			this.entries[i].update();
 		}
 	},
 
@@ -1260,41 +1257,7 @@ return djDeclare("location.timeline", [
 		return def.promise;
 	},
 
-	scroll: function(e) {
-		djDomStyle.set(this.nScrollShow, 'display', 'block');
-		if(this.scrollShowTimeout) {
-			window.clearTimeout(this.scrollShowTimeout);
-		}
-		
-		var s = this.nScrollShow;
-		window.requestAnimationFrame( djLang.hitch(this, () => {
-			var i =	Math.round((e.pageY + 120 + this.view.rectangle[3]) / (this.displayOrder[0].originalHeight + 1)) - 
-				Math.round(((this.view.rectangle[3] + 120) / (this.displayOrder[0].originalHeight + 1)))
-			if ( i < 0) { i = 0 ;}
-			if(! this.displayOrder[i]) { return; }
-			var name = this.displayOrder[i].get('target');
-			if(s.firstChild) {
-				s.removeChild(s.firstChild);
-			}
-			s.appendChild(document.createTextNode(name));
-			this.scrollShowTimeout = window.setTimeout( () => { djDomStyle.set(s, 'display', ''); }, 1200);
-		}));
-
-
-		(async ()=> {	
-			var startAt = Math.round(window.scrollY / this.displayOrder.length) - 2;
-			if(startAt < 0) { startAt = 0; }
-
-			for(var i = startAt; i < this.displayOrder.length; i++) {
-				this.displayOrder[i].resize();
-			}
-			for(var i = startAt-1; i >= 0; i--) {
-				this.displayOrder[i].resize();
-			}
-		})();
-	},
-
-  _getEntriesAttr: function () {
+	 _getEntriesAttr: function () {
     entries = new Array();
     dtRegistry.findWidgets(this.domEntries).forEach( function (widget) {
       if(widget instanceof location.entry) {
