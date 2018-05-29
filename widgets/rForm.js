@@ -539,6 +539,10 @@ return djDeclare("location.rForm", [
 		this.nMachineChange.set('value', this.reservation.get('target'));
 		this.nChangeMachine.set('disabled', true);
 
+		if(this.reservation.get('creator')) {
+			this.nCreator.set('value', this.reservation.get('creator'));
+		}
+
 		if(this.reservation.get('title') == null) {
 			this.nTitle.set('placeholder', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label);
 			this.set('originalTitle', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label);
@@ -557,12 +561,13 @@ return djDeclare("location.rForm", [
 
 			var a = document.createElement('A');
 			a.setAttribute('href', url); a.setAttribute('target', '_blank');
+			a.appendChild(document.createTextNode(' '));
 			a.appendChild(document.createElement('I'));
-			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
-			if(this.nFolder.domNode.nextSibling.nodeName == 'A') {
-				this.nFolder.domNode.parentNode.removeChild(this.nFolder.domNode.nextSibling);
+			a.lastChild.setAttribute('class', 'fas fa-external-link-alt');
+			if(this.fLink.previousSibling.nodeName == 'A') {
+				this.fLink.parentNode.removeChild(this.fLink.previousSibling);
 			}
-			this.nFolder.domNode.parentNode.insertBefore(a, this.nFolder.domNode.nextSibling);
+			this.fLink.parentNode.insertBefore(a, this.fLink);
 		}	
 
 		if(this.reservation.get('gps')) {
@@ -570,12 +575,13 @@ return djDeclare("location.rForm", [
 			
 			var a = document.createElement('A');
 			a.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.reservation.get('gps')).replace(/\s/g, '')); a.setAttribute('target', '_blank');
+			a.appendChild(document.createTextNode(' '));
 			a.appendChild(document.createElement('I'));
-			a.firstChild.setAttribute('class', 'fas fa-external-link-alt');
-			if(this.nFolder.domNode.nextSibling.nodeName == 'A') {
-				this.nFolder.domNode.parentNode.removeChild(this.nFolder.domNode.nextSibling);
+			a.lastChild.setAttribute('class', 'fas fa-external-link-alt');
+			if(this.gLink.previousSibling.nodeName == 'A') {
+				this.gLink.parentNode.removeChild(this.gLink.previousSibling);
 			}
-			this.nGps.domNode.parentNode.insertBefore(a, this.nGps.domNode.nextSibling);
+			this.gLink.parentNode.insertBefore(a, this.gLink);
 		}
 
 
@@ -923,6 +929,7 @@ return djDeclare("location.rForm", [
 		this.reservation.set('comment', f.nComments);
 		this.reservation.set('folder', f.folder);
 		this.reservation.set('gps', f.gps);
+		this.reservation.set('creator', f.creator);
 		
 		if(f.title != "") {
 			this.reservation.set('title', f.title);
