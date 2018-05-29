@@ -146,8 +146,22 @@ return djDeclare("location.entry", [
 				entries.push(cursor.value.id);
 				if(!that.entries[cursor.value.id]) {
 					that.entries[cursor.value.id] = new Reservation({ sup: that });
+					that.entries[cursor.value.id].fromJson(cursor.value);
+				} else {
+					if(that.entries[cursor.value.id]._hash != cursor.value._hash) {
+						if(window.App.isOpen(cursor.value.id)) {
+							if(window.App.isModify(cursor.value.id)) {
+								window.App.unsetModify(cursor.value.id);
+							} else {
+								var n = new Notification('La réservation ' + cursor.value.id + ' a été modifiée par un autre utilisateur', { requireInteraction: true });
+								n.onclick = djLang.hitch(that.entries[cursor.value.id],function () {
+									this.syncForm();	
+								});
+							}
+						}
+						that.entries[cursor.value.id].fromJson(cursor.value);
+					}
 				}
-				that.entries[cursor.value.id].fromJson(cursor.value);
 				cursor.continue();
 			} else {
 				for(var k in that.entries) {

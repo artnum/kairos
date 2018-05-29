@@ -1381,6 +1381,50 @@ return djDeclare("location.timeline", [
 		return e;
 	},
 
+	setOpen: function ( ident ) {
+		if(! this.Open ) { this.Open = new Array(); }
+		if(this.Open.indexOf(ident) == -1) { this.Open.push(ident); }
+	},
+
+	unsetOpen: function (ident) {
+		if( this.Open ) {
+			var idx = this.Open.indexOf(ident);
+			if(idx != -1) {
+				this.Open.splice(idx, 1);
+			}
+		}
+	},
+
+	isOpen: function ( ident ) {
+		if( this.Open ) {
+			if(this.Open.indexOf(ident) == -1) { return false; }
+			return true;
+		}
+		return false;
+	},
+
+	setModify: function ( ident ) {
+		if(! this.Mod ) { this.Mod = new Array(); }
+		if(this.Mod.indexOf(ident) == -1) { this.Mod.push(ident); }
+	},
+
+	unsetModify: function ( ident ) {
+		if( this.Mod ) {
+			var idx = this.Mod.indexOf(ident);
+			if(idx != -1) {
+				this.Mod.splice(idx, 1);
+			}
+		}
+	},
+
+	isModify: function ( ident ) {
+		if( this.Mod ) {
+			if(this.Mod.indexOf(ident) == -1) { return false; }
+			return true;
+		}
+		return false;
+	},
+
 	Reservation : {
 		_st: window.localStorage,
 

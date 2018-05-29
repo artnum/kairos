@@ -600,6 +600,7 @@ return djDeclare("location.reservation", [
 			tContainer.selectChild('ReservationTab_' + this.get('id'));	
 			return;
 		}
+		window.App.setOpen(this.get('IDent'));
 		var f = new rForm({ reservation: this });	
 		this.highlight();
 		
@@ -1016,6 +1017,7 @@ return djDeclare("location.reservation", [
 		});
 		query['target'] = this.get('target');
 
+		window.App.setModify(query['id']);
 		Req[method](locationConfig.store + "/Reservation" + suffix, { query: query }).then( (result) => {
 				def.resolve(result);
 		});

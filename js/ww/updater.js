@@ -1,4 +1,5 @@
 importScripts('../localdb.js');
+importScripts('../object-hash/dist/object_hash.js');
 var req = new XMLHttpRequest(), last = { 'modification': null, 'id': 0 };
 wantdb( () => {  checker(); } );
 
@@ -69,6 +70,7 @@ handleResults = function (txt) {
 						ids.push(r.data[i].previous);
 					}
 				}
+				r.data[i]._hash = objectHash.sha1(r.data[i]);
 				store.put(r.data[i]);
 			}
 		}

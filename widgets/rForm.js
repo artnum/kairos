@@ -765,7 +765,8 @@ return djDeclare("location.rForm", [
 		this.inherited(arguments);
 	},
 
-	hide: function() {
+	hide: function() {a
+		window.App.unsetOpen(this.reservation.get('IDent'));
 		this.get('_pane')[1].removeChild(this.get('_pane')[0]);	
 		this.get('_pane')[0].destroy();
 		this.reservation.myForm = null;
