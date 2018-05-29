@@ -402,41 +402,43 @@ return djDeclare("location.entry", [
 	},
 
 	copy: function ( original ) {
-		var copy = new Reservation({ sup: this });
-		console.log(original);
-		json = window.App.Reservation.get(original.get('id'));
-		if(json == null) {
-			/* TODO */
-		}
-		copy.fromJson(json);
-		copy.set('status', original.get('status'));
-		copy.set('color', original.get('color'));
-		copy.set('IDent', null);
-		copy.popMeUp();
-		this.store(copy).then ( djLang.hitch( this, (id) => {
-			var subRequests = new Array();
-			console.log(json);
-			for(var k in json.contacts) {
-				for(var i = 0; i < json.contacts[k].length; i++) {
-					var entry = json.contacts[k][i];
-					console.log(entry);
-					var q = { comment: entry.comment, reservation: id, freeform: entry.freeform };
-					if(entry.target != null) {
-						q.target = '/Contacts/' + entry.target.IDent;
+		var store = window.App.DB.transaction('reservations').objectStore('reservations');
+		var query = store.get(original.get('id'));
+		query.onsuccess = djLang.hitch(this, function ( e ) {
+			if(!e || !e.target || !e.target.result) { return; }
+			var json = e.target.result;
+			if(json == null) { return; }
+			var copy = new Reservation({ sup: this });
+			copy.fromJson(json);
+			copy.set('status', original.get('status'));
+			copy.set('color', original.get('color'));
+			copy.set('IDent', null);
+			copy.set('previous', null);
+			copy.popMeUp();
+			this.store(copy).then ( djLang.hitch( this, (id) => {
+				var subRequests = new Array();
+				for(var k in json.contacts) {
+					for(var i = 0; i < json.contacts[k].length; i++) {
+						var entry = json.contacts[k][i];
+						console.log(entry);
+						var q = { comment: entry.comment, reservation: id, freeform: entry.freeform };
+						if(entry.target != null) {
+							q.target = '/Contacts/' + entry.target.IDent;
+						}
+						subRequests.push(Req.post(locationConfig.store + '/ReservationContact/', { query:  q }));
 					}
-					subRequests.push(Req.post(locationConfig.store + '/ReservationContact/', { query:  q }));
 				}
-			}
 
-			for(var i = 0; i < json.complements.length; i++) {
-				var entry = json.complements[i];
-				var q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null };
-				if(entry.begin != '') { q.begin = djDateStamp.toISOString(entry.begin); }
-				if(entry.end != '') { q.end= djDateStamp.toISOString(entry.end); }
-				subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }));
-			}
-			djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close(); });
-		}));
+				for(var i = 0; i < json.complements.length; i++) {
+					var entry = json.complements[i];
+					var q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null };
+					if(entry.begin != '') { q.begin = djDateStamp.toISOString(entry.begin); }
+					if(entry.end != '') { q.end= djDateStamp.toISOString(entry.end); }
+					subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }));
+				}
+				djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close(); });
+			}));
+		});
 	},
 
 	store: function ( reservation ) {
