@@ -872,6 +872,7 @@ return djDeclare("location.rForm", [
 			}
 			changeMachine = this.reservation.get('target');
 			this.reservation.set('sup', newEntry);
+			this.reservation.set('previous', changeMachine);
 			this.reservation.set('target', this.nMachineChange.get('value'));
 			this.reservation.set('title', this.get('originalTitle'));
 		}

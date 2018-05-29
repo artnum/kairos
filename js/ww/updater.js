@@ -63,7 +63,12 @@ handleResults = function (txt) {
 				if(ids.indexOf(r.data[i].target) == -1) {
 					ids.push(r.data[i].target);
 				}
-			
+		
+				if(r.data[i].previous) {
+					if(ids.indexOf(r.data[i].previous) == -1) {
+						ids.push(r.data[i].previous);
+					}
+				}
 				store.put(r.data[i]);
 			}
 		}

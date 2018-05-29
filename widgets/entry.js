@@ -139,17 +139,25 @@ return djDeclare("location.entry", [
 	},
 	
 	update: function () {
+		var entries = new Array();
 		var that = this;
 		var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target');
 		idx.openCursor(this.target).onsuccess = function ( e ) {
 			var cursor = e.target.result;
 			if(cursor) {
+				entries.push(cursor.value.id);
 				if(!that.entries[cursor.value.id]) {
 					that.entries[cursor.value.id] = new Reservation({ sup: that });
 				}
 				that.entries[cursor.value.id].fromJson(cursor.value);
 				cursor.continue();
 			} else {
+				for(var k in that.entries) {
+					if(entries.indexOf(k) == -1) {
+						that.entries[k].destroy();
+						delete that.entries[k];
+					}
+				}
 				that.show();
 			}
 		};

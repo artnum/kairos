@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS reservation		( reservation_id INTEGER PRIMARY KEY AUT
 						  reservation_title TEXT DEFAULT NULL,
 						  reservation_folder TEXT DEFAULT NULL,
 						  reservation_gps TEXT DEFAULT NULL, 
-						  reservation_creator TEXT DEFAULT NULL 
+						  reservation_creator TEXT DEFAULT NULL,
+						  reservation_previous TEXT DEFAULT NULL 
 						);
 
 CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY,

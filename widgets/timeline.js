@@ -464,7 +464,7 @@ return djDeclare("location.timeline", [
     djOn(window, "keypress", djLang.hitch(this, this.keys));
 		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
 		window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')); }, { passive: true});
-		window.addEventListener('wheel', djLang.hitch(this, this.eWheel), { passive: true });
+		window.addEventListener('wheel', djLang.hitch(this, this.eWheel));
 		window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true});
 		window.addEventListener('scroll', djThrottle(djLang.hitch(this, this.scroll), 15), { passive: true });
 
@@ -749,6 +749,7 @@ return djDeclare("location.timeline", [
 				this.entries[i].set('active', false);
 			} else {
 				this.entries[i].set('active', true);
+				this.entries[i].update();
 			}
 		}
 	},
@@ -756,6 +757,7 @@ return djDeclare("location.timeline", [
 	filterReset: function () {
 		for(var i = 0; i < this.entries.length; i++) {
 			this.entries[i].set('active', true);
+			this.entries[i].update();
 		}
 	},
 
@@ -841,7 +843,6 @@ return djDeclare("location.timeline", [
 	},
 
 	eWheel: function(event) {
-		event.preventDefault();
 		if(this._mask) { return; }
 		if(event.deltaX < 0) {
 			this.moveLeft();
@@ -849,7 +850,8 @@ return djDeclare("location.timeline", [
 			this.moveRight();
 		}
 		this.wheelTo = null;
-		if(event.shiftKey) {
+		if(event.ctrlKey) {
+			event.preventDefault();
 			if(event.deltaY < 0) {
 				this.zoomInN(event.deltaY);
 			} else {
@@ -1269,6 +1271,7 @@ return djDeclare("location.timeline", [
 			var i =	Math.round((e.pageY + 120 + this.view.rectangle[3]) / (this.displayOrder[0].originalHeight + 1)) - 
 				Math.round(((this.view.rectangle[3] + 120) / (this.displayOrder[0].originalHeight + 1)))
 			if ( i < 0) { i = 0 ;}
+			if(! this.displayOrder[i]) { return; }
 			var name = this.displayOrder[i].get('target');
 			if(s.firstChild) {
 				s.removeChild(s.firstChild);

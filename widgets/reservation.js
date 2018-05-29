@@ -102,7 +102,7 @@ return djDeclare("location.reservation", [
 			}
 		}));
 		
-		[ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title' ].forEach(djLang.hitch(this, (attr) => {
+		[ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous' ].forEach(djLang.hitch(this, (attr) => {
 			if(json[attr]) {
 				this.set(attr, json[attr]);
 			}
@@ -210,6 +210,10 @@ return djDeclare("location.reservation", [
 		if(this.attrs.indexOf(attr) == -1) {
 			this.attrs.push(attr);	
 		}
+	},
+	_setPreviousAttr: function (value){
+		this.addAttr('previous');
+		this._set('previous', value);
 	},
 	_setCreatorAttr: function(value) {
 		this.addAttr('creator');
