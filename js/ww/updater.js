@@ -1,13 +1,45 @@
+importScripts('../localdb.js');
 var req = new XMLHttpRequest(), last = { 'modification': null, 'id': 0 };
+wantdb( () => {  checker(); } );
+
+onmessage = function ( msg ) {
+	if(! msg.data && ! msg.data.op) { 
+		console.warn('Web Worker Message is wrong', msg);
+	}
+	
+	switch( msg.data.type ) {
+		case 'move':
+			if(req && req.readyState > 0 && req.readyState < 4) {
+				req.abort();
+			}
+			var parameters = '';
+			var url = msg.data.content[0];
+			if(msg.data.content[1] && msg.data.content[1].query) {
+				var array = new Array();
+				for(var k in msg.data.content[1].query){
+					array.push(encodeURIComponent(k) + '=' + encodeURIComponent(msg.data.content[1].query[k]));
+				}
+				parameters = array.join('&');
+			}
+			if(parameters != '') { url += '?' + parameters; }
+			req.open('get', url, true);
+			req.send();
+			break;
+		}
+};
+
 
 handleResults = function (txt) {
-	var byTarget = new Object();
+	var ids = new Array();
 	try {
 		r = JSON.parse(txt);
 	} catch(e) {
 		return byTarget;
 	}
 	if(r && r.data && r.data.length > 0) {
+		var tx = DB.transaction('reservations', 'readwrite');
+		tx.oncomplete = function( e ) { postMessage({ type: 'entries', content: ids }); console.log(ids); };
+		var store = tx.objectStore('reservations');
 		for(var i = 0; i < r.data.length; i++) {
 			if(r.data[i].target) {
 				var mod = new Date();
@@ -28,21 +60,20 @@ handleResults = function (txt) {
 						last.id = Number(r.data[i].id);
 					}
 				}
-				if(! byTarget[r.data[i].target]) {
-					byTarget[r.data[i].target] = new Array();
+				if(ids.indexOf(r.data[i].target) == -1) {
+					ids.push(r.data[i].target);
 				}
-				byTarget[r.data[i].target].push(r.data[i]);
+			
+				store.put(r.data[i]);
 			}
 		}
 	}
-	return byTarget;
 }
 
 req.onload = function (e) {
 	if(req.readyState === 4) {
 		if(req.status === 200) {
-			var byTarget = handleResults(req.responseText);
-			postMessage({ type: 'all', content: byTarget });
+			handleResults(req.responseText);
 		}
 	}
 };
@@ -79,7 +110,6 @@ checker = function () {
 		if(cReq.readyState === 4) {
 			if(cReq.status === 200) {
 				var byTarget = handleResults(cReq.responseText);
-				postMessage({ type: 'entry', content: byTarget });
 			}
 			checker();
 		}
@@ -87,24 +117,3 @@ checker = function () {
 	cReq.open('get', url, true);
 	cReq.send(null);
 }
-
-checker();
-
-onmessage = function ( msg ) {
-	if(req && req.readyState > 0 && req.readyState < 4) {
-		req.abort();
-	}
-	var parameters = '';
-	var url = msg.data[0];
-	if(msg.data[1] && msg.data[1].query) {
-		var array = new Array();
-		for(var k in msg.data[1].query){
-			array.push(encodeURIComponent(k) + '=' + encodeURIComponent(msg.data[1].query[k]));
-		}
-		parameters = array.join('&');
-	}
-	if(parameters != '') { url += '?' + parameters; }
-
-	req.open('get', url, true);
-	req.send();
-};

@@ -137,14 +137,34 @@ return djDeclare("location.entry", [
 		return (7 * bs) + ((17 -7) * 3.8 * bs) + ((hour - 17) * bs);
 
 	},
+	
+	update: function () {
+		var that = this;
+		var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target');
+		idx.openCursor(this.target).onsuccess = function ( e ) {
+			var cursor = e.target.result;
+			if(cursor) {
+				if(!that.entries[cursor.value.id]) {
+					that.entries[cursor.value.id] = new Reservation({ sup: that });
+				}
+				that.entries[cursor.value.id].fromJson(cursor.value);
+				cursor.continue();
+			} else {
+				that.show();
+			}
+		};
+
+	},
+
 	postCreate: function () {
 		var that = this;
 	
-		window.Sleeper.on(this.domNode, "click", djLang.hitch(this, this.eClick));
-		window.Sleeper.on(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
-		window.Sleeper.on(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
-		window.Sleeper.on(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
-		window.Sleeper.on(this.sup, "zoom", () => { 
+		this.update();	
+		djOn(this.domNode, "click", djLang.hitch(this, this.eClick));
+		djOn(this.domNode, "mousemove", djLang.hitch(this, this.eMouseMove));
+		djOn(this.sup, "cancel-reservation", djLang.hitch(this, this.cancelReservation));
+		djOn(this.domNode, "dblclick", djLang.hitch(this, this.evtDblClick));
+		djOn(this.sup, "zoom", () => { 
 			djDomStyle.set(that.domNode, 'height', ''); 
 			that.originalHeight = djDomStyle.get(that.domNode, "height"); 
 			that.resize();
@@ -193,12 +213,6 @@ return djDeclare("location.entry", [
 		a.appendChild(s);
 
 		frag.appendChild(a);
-
-		var cached = window.localStorage.getItem('_entry_' + this.get('id'));
-		if(cached) {
-			this.addOrUpdateReservation(JSON.parse(cached));
-		}
-
 		window.requestAnimationFrame(function () { that.nameNode.appendChild(frag); });
 	},
 
@@ -562,26 +576,6 @@ return djDeclare("location.entry", [
 		this.resizeChild();
 	},
 	
-	update: function () {
-		var that = this;
-		var def = new djDeferred();
-		var force = false;
-		var loaded = false;
-
-		for(var k in this.entries) {
-			var entry = window.App.Reservation.get(this.entries[k].id);
-			if(entry) {
-				this.entries[k].fromJson(entry);
-			} else {
-				this.entries[k].destroy();
-			}
-		}
-
-		this.resize();
-		def.resolve();
-		return def.promise;
-	},
-
   addOrUpdateReservation: function (reservations) {
     var found = false;
     for(var i = 0; i < reservations.length; i++) {

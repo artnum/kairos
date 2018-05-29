@@ -928,7 +928,8 @@ return djDeclare("location.rForm", [
 					window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée');
 					delete oldEntry.entries[reservation.get('id')];
 					entry.entries[reservation.get('id')] = reservation;
-					entry.show();
+					entry.update();
+					oldEntry.update();
 				}
 			});
 		}

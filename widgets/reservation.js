@@ -129,15 +129,24 @@ return djDeclare("location.reservation", [
 	},
 
 	refresh: function () {
+		return this.update();
+	},
+	update: function () {
 		var that = this;
 		var def = new djDeferred();
 
-		Req.get(locationConfig.store + '/DeepReservation/' + this.id).then( (entry) => {
-			if(entry.data) {
-				that.fromJson(entry.data);
-				def.resolve();
+		var store = window.App.DB.transaction('reservations').objectStore('reservations');
+		var entry = store.get(this.get('id'));
+		entry.onsuccess = function ( e ) {
+			if(e.target && e.target.result) {
+				that.fromJson(e.target.result);
 			}
-		});
+			def.resolve();
+		}
+		entry.onerror = function ( e ) {
+			window.App.error('Erreur de chargement de la réservation ' + that.get('id'));
+			def.resolve();
+		}
 
 		return def.promise;
 	},
@@ -821,6 +830,7 @@ return djDeclare("location.reservation", [
 
   resize: function() {
 		var that = this, def = new djDeferred();
+		this.refresh();
 
 		if( ! this.sup) { def.resolve(); return; }
 		if(!this.get('begin') || !this.get('end')) { def.resolve(); return; }
