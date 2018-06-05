@@ -1,1446 +1,1435 @@
 define([
-	"dojo/_base/declare",
-	"dojo/_base/lang",
-	"dojo/Evented",
-	"dojo/Deferred",
+  'dojo/_base/declare',
+  'dojo/_base/lang',
+  'dojo/Evented',
+  'dojo/Deferred',
 
-	"dijit/_WidgetBase",
-	"dijit/_TemplatedMixin",
-	"dijit/_WidgetsInTemplateMixin",
-	"dijit/layout/ContentPane",
+  'dijit/_WidgetBase',
+  'dijit/_TemplatedMixin',
+  'dijit/_WidgetsInTemplateMixin',
+  'dijit/layout/ContentPane',
 
-	"dojo/text!./templates/timeline.html",
+  'dojo/text!./templates/timeline.html',
 
-	"dojo/aspect",
-	"dojo/date",
-	"dojo/date/stamp",
-	"dojo/dom",
-	"dojo/dom-construct",
-	"dojo/on",
-	"dojo/dom-attr",
-	"dojo/dom-class",
-	"dojo/dom-style",
-	"dojo/dom-geometry",
-	"dojo/throttle",
-	"dojo/debounce",
-	"dojo/request/xhr",
-	"dojo/window",
-	"dojo/promise/all",
-	"dijit/registry",
-	"dijit/form/DateTextBox",
-	"dijit/form/NumberTextBox",
-	"dijit/form/Button",
-	"dijit/MenuBar",
-	"dijit/MenuBarItem",
-	"dijit/PopupMenuBarItem",
-	"dijit/DropDownMenu",
-	"dijit/MenuItem",
-	"dijit/MenuSeparator",
-	"dijit/CheckedMenuItem",
-	"dijit/RadioMenuItem",
-	"dijit/PopupMenuItem",
-	"dijit/Calendar",
-	"dijit/Dialog",
+  'dojo/aspect',
+  'dojo/date',
+  'dojo/date/stamp',
+  'dojo/dom',
+  'dojo/dom-construct',
+  'dojo/on',
+  'dojo/dom-attr',
+  'dojo/dom-class',
+  'dojo/dom-style',
+  'dojo/dom-geometry',
+  'dojo/throttle',
+  'dojo/debounce',
+  'dojo/request/xhr',
+  'dojo/window',
+  'dojo/promise/all',
+  'dijit/registry',
+  'dijit/form/DateTextBox',
+  'dijit/form/NumberTextBox',
+  'dijit/form/Button',
+  'dijit/MenuBar',
+  'dijit/MenuBarItem',
+  'dijit/PopupMenuBarItem',
+  'dijit/DropDownMenu',
+  'dijit/MenuItem',
+  'dijit/MenuSeparator',
+  'dijit/CheckedMenuItem',
+  'dijit/RadioMenuItem',
+  'dijit/PopupMenuItem',
+  'dijit/Calendar',
+  'dijit/Dialog',
 
-	"location/_Cluster",
-	"location/_Request",
-	"location/entry",
-	"location/_Sleeper",
-	"location/timeline/popup",
-	"location/timeline/keys",
-	"location/update",
+  'location/_Cluster',
+  'location/_Request',
+  'location/entry',
+  'location/_Sleeper',
+  'location/timeline/popup',
+  'location/timeline/keys',
+  'location/update',
 
-	"artnum/Request"
+  'artnum/Request'
 
-], function(
-	djDeclare,
-	djLang,
-	djEvented,
-	djDeferred,
-	dtWidgetBase,
-	dtTemplatedMixin,
-	dtWidgetsInTemplateMixin,
-	dtContentPane,
+], function (
+  djDeclare,
+  djLang,
+  djEvented,
+  djDeferred,
+  dtWidgetBase,
+  dtTemplatedMixin,
+  dtWidgetsInTemplateMixin,
+  dtContentPane,
 
-	_template,
-	djAspect,
-	djDate,
-	djDateStamp,
-	djDom,
-	djDomConstruct,
-	djOn,
-	djDomAttr,
-	djDomClass,
-	djDomStyle,
-	djDomGeo,
-	djThrottle,
-	djDebounce,
-	djXhr,
-	djWindow,
-	djAll,
-	dtRegistry,
-	dtDateTextBox,
-	dtNumberTextBox,
-	dtButton,
-	dtMenuBar,
-	dtMenuBarItem,
-	dtPopupMenuBarItem,
-	dtDropDownMenu,
-	dtMenuItem,
-	dtMenuSeparator,
-	dtCheckedMenuItem,
-	dtRadioMenuItem,
-	dtPopupMenuItem,
-	dtCalendar,
-	dtDialog,
+  _template,
+  djAspect,
+  djDate,
+  djDateStamp,
+  djDom,
+  djDomConstruct,
+  djOn,
+  djDomAttr,
+  djDomClass,
+  djDomStyle,
+  djDomGeo,
+  djThrottle,
+  djDebounce,
+  djXhr,
+  djWindow,
+  djAll,
+  dtRegistry,
+  dtDateTextBox,
+  dtNumberTextBox,
+  dtButton,
+  dtMenuBar,
+  dtMenuBarItem,
+  dtPopupMenuBarItem,
+  dtDropDownMenu,
+  dtMenuItem,
+  dtMenuSeparator,
+  dtCheckedMenuItem,
+  dtRadioMenuItem,
+  dtPopupMenuItem,
+  dtCalendar,
+  dtDialog,
 
-	_Cluster,
-	request,
-	entry,
-	_Sleeper,
-	
-	tlPopup, tlKeys, update,
+  _Cluster,
+  request,
+  entry,
+  _Sleeper,
 
-	Req
+  tlPopup, tlKeys, update,
+
+  Req
 ) {
-	
-return djDeclare("location.timeline", [
-	dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, 
-	tlPopup, tlKeys, update ], {
+  return djDeclare('location.timeline', [
+    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster,
+    tlPopup, tlKeys, update ], {
 
-	center: null,
-	offset: 220,
-	blockSize: 42,
-	baseClass: "timeline",
-	templateString: _template,
-	zoomCss: null,
-	lines: null,
-	moveQueue: null,
-	timeout: null,
-	lastDay: null,
-	firstDay: null,
-	verticals: null,
-	lastClientXY: [0, 0],
-	logs: null,
-	lockEvents: null,
-	lastId: 0,
-	lastMod: 0,
-	inputString: '',
-	eventStarted: null,
-	daysZoom: 0,
-	compact: false,
-	currentVerticalLine: 0,
+    center: null,
+    offset: 220,
+    blockSize: 42,
+    baseClass: 'timeline',
+    templateString: _template,
+    zoomCss: null,
+    lines: null,
+    moveQueue: null,
+    timeout: null,
+    lastDay: null,
+    firstDay: null,
+    verticals: null,
+    lastClientXY: [0, 0],
+    logs: null,
+    lockEvents: null,
+    lastId: 0,
+    lastMod: 0,
+    inputString: '',
+    eventStarted: null,
+    daysZoom: 0,
+    compact: false,
+    currentVerticalLine: 0,
 
-	constructor: function (args) {
-		djLang.mixin(this, arguments);
-		this.lastId = 0;
-		this.verticals = new Array();
-		this.days = new Array();
-		this.weekNumber = new Array();
-		this.entries = new Array();
-		this.lines = null;
-		this.todayOffset = -1;
-		this.months = new Array();
-		this.moveQueue = new Array();
-		this.timeout = null;
-		this.lastDay = null;
-		this.firstDay = null;
-		this.odd = true;
-		this.center = new Date();
-		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
-		var verticals = new Array();
-		this.lastClientXY = new Array(0,0);
-		this.logs = new Array();
-		this.inputString = '';
-		this.lastMod = '';
-		this.lastId = '';
-		this.xDiff = 0;
-		this.daysZoom = 30;
-		this.compact = false;
-		this.currentVerticalLine = 0;
-		this.displayOrder = new Array();
-		this.runningRequest = new Array();
-		this.extension = false;
+    constructor: function (args) {
+      djLang.mixin(this, arguments)
+      this.lastId = 0
+      this.verticals = new Array()
+      this.days = new Array()
+      this.weekNumber = new Array()
+      this.entries = new Array()
+      this.lines = null
+      this.todayOffset = -1
+      this.months = new Array()
+      this.moveQueue = new Array()
+      this.timeout = null
+      this.lastDay = null
+      this.firstDay = null
+      this.odd = true
+      this.center = new Date()
+      this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
+      var verticals = new Array()
+      this.lastClientXY = new Array(0, 0)
+      this.logs = new Array()
+      this.inputString = ''
+      this.lastMod = ''
+      this.lastId = ''
+      this.xDiff = 0
+      this.daysZoom = 30
+      this.compact = false
+      this.currentVerticalLine = 0
+      this.displayOrder = new Array()
+      this.runningRequest = new Array()
+      this.extension = false
 
-		this.zoomCss = document.createElement('style');
+      this.zoomCss = document.createElement('style')
 
-		this.Proxy = new Worker('/location/js/ww/proxy.js');
-		this.Proxy.onmessage = djLang.hitch(this, function ( e ) {
-			if(!e || !e.data || !e.data.type) { return; }
-			switch(e.data.type) {
-				case 'entry': 
-					for(var i = 0; i < this.entries.length; i++) {
-						if(this.entries[i].get('id') == e.data.content) {
-							this.entries[i].update();
-							break;
-						}
-					}
-					break;
-				case 'entries':
-					for(var i = 0; i < this.entries.length; i++) {
-						if(e.data.content.indexOf(this.entries[i].get('target')) != -1) {
-							this.entries[i].update();
-						}
-					}
-					break;
-			}
-		});
-		this.Updater = new Worker('/location/js/ww/updater.js');
-		this.Updater.onmessage = this.Proxy.onmessage;
+      this.Proxy = new Worker('/location/js/ww/proxy.js')
+      this.Proxy.onmessage = djLang.hitch(this, function (e) {
+        if (!e || !e.data || !e.data.type) { return }
+        switch (e.data.type) {
+          case 'entry':
+            for (var i = 0; i < this.entries.length; i++) {
+              if (this.entries[i].get('id') == e.data.content) {
+                this.entries[i].update()
+                break
+              }
+            }
+            break
+          case 'entries':
+            for (var i = 0; i < this.entries.length; i++) {
+              if (e.data.content.indexOf(this.entries[i].get('target')) != -1) {
+                this.entries[i].update()
+              }
+            }
+            break
+        }
+      })
+      this.Updater = new Worker('/location/js/ww/updater.js')
+      this.Updater.onmessage = this.Proxy.onmessage
 
-		document.body.appendChild(this.zoomCss);
+      document.body.appendChild(this.zoomCss)
 
-		var sStore = window.sessionStorage;
-    djXhr.get(locationConfig.store + '/Status/', { handleAs: "json", query: { 'search.type': 0}}).then( function (results){
-			if(results && results.type == 'results') {
-				for(var i = 0; i < results.data.length; i++) {
-					sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]));
-				}
-			}
-		});
-	},
+      var sStore = window.sessionStorage
+      djXhr.get(locationConfig.store + '/Status/', { handleAs: 'json', query: { 'search.type': 0}}).then(function (results) {
+        if (results && results.type == 'results') {
+          for (var i = 0; i < results.data.length; i++) {
+            sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
+          }
+        }
+      })
+    },
 
-	defaultStatus: function () {
-		var def = new djDeferred();
-		request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1, 'search.type': 0}}).then(function(result){
-			if(result.success()) {
-				def.resolve(result.whole()[0].id);	
-			}
-			def.resolve("0");
-		});
-		return def.promise;
-	},
-	
-	info: function(txt, code) {
-		this.log('info', txt, code);
-	},
-	warn: function(txt, code) {
-		this.log('warning', txt, code);
-	},
-	error: function(txt, code) {
-		this.log('error', txt, code);
-	},
-	log: function (level, txt, code) {
-		var timeout = 10000;
-		var div = document.createElement('DIV');
+    defaultStatus: function () {
+      var def = new djDeferred()
+      request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1, 'search.type': 0}}).then(function (result) {
+        if (result.success()) {
+          def.resolve(result.whole()[0].id)
+        }
+        def.resolve('0')
+      })
+      return def.promise
+    },
 
-		switch(level) {
-			case 'info': timeout = 3000; 
-				div.appendChild(document.createElement('I'));
-				div.lastChild.setAttribute('class', 'fas fa-info-circle');
-				break;
-			case 'error':
-				div.appendChild(document.createElement('I'));
-				div.lastChild.setAttribute('class', 'fas fa-times-circle');
-				break;
-			case 'warning':
-				div.appendChild(document.createElement('I'));
-				div.lastChild.setAttribute('class', 'fas fa-exclamation-circle');
-				break;
+    info: function (txt, code) {
+      this.log('info', txt, code)
+    },
+    warn: function (txt, code) {
+      this.log('warning', txt, code)
+    },
+    error: function (txt, code) {
+      this.log('error', txt, code)
+    },
+    log: function (level, txt, code) {
+      var timeout = 10000
+      var div = document.createElement('DIV')
 
-		}
-		
-		div.setAttribute('class', 'message ' + level);
-		div.appendChild(document.createTextNode(' ' + txt));
+      switch (level) {
+        case 'info': timeout = 3000
+          div.appendChild(document.createElement('I'))
+          div.lastChild.setAttribute('class', 'fas fa-info-circle')
+          break
+        case 'error':
+          div.appendChild(document.createElement('I'))
+          div.lastChild.setAttribute('class', 'fas fa-times-circle')
+          break
+        case 'warning':
+          div.appendChild(document.createElement('I'))
+          div.lastChild.setAttribute('class', 'fas fa-exclamation-circle')
+          break
+      }
 
+      div.setAttribute('class', 'message ' + level)
+      div.appendChild(document.createTextNode(' ' + txt))
 
-		var timeout = window.setTimeout( () => {
-			window.requestAnimationFrame( () => {
-				div.parentNode.removeChild(div);
-			});
-		}, timeout);
-		
-		djOn(div, 'click', () => {
-			window.clearTimeout(timeout);
-			div.parentNode.removeChild(div);
-		});
+      var timeout = window.setTimeout(() => {
+        window.requestAnimationFrame(() => {
+          div.parentNode.removeChild(div)
+        })
+      }, timeout)
 
-		window.requestAnimationFrame( djLang.hitch( this, () => {
-			this.logline.appendChild(div);
-		}));
-	},
+      djOn(div, 'click', () => {
+        window.clearTimeout(timeout)
+        div.parentNode.removeChild(div)
+      })
 
-	_setCenterAttr: function (date) {
-		this.center = date;
-		this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0);
-	},
+      window.requestAnimationFrame(djLang.hitch(this, () => {
+        this.logline.appendChild(div)
+      }))
+    },
 
-	_setZoomAttr: function (zoomValue) {
-		var style = '', page = getPageRect(), days = 1, classname = '';
-		
-		djDomClass.remove(this.domNode, [ 'day', 'month', 'week', 'quarter', 'semseter' ]);
-		switch(zoomValue) {
-			case 'day':
-				days = 2;
-				classname = 'day';
-				style = ' #Sight { display: none; }';
-				break;
-			case 'month':
-				days = 31;
-				classname = 'month';
-				break;
-			case 'week':
-				days = 7;
-				classname = 'week';
-				break;
-			case 'quarter':
-				days = 91;
-				classname = 'quarter';
-				break;
-			case 'semester':
-				days = 181;
-				classname = 'semester';
-				break;
-			default: 
-				days = zoomValue;
-				break;
-		}
+    _setCenterAttr: function (date) {
+      this.center = date
+      this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
+    },
 
-		this.daysZoom = days;
-		if(classname != '') {
-			djDomClass.add(this.domNode, classname);
-		}
-		this.set('blockSize', (page[2] - 240) / days);
-		this.zoomCss.innerHTML = '.timeline .line span { width: '+ (this.get('blockSize')-2) +'px !important;} ' + style;
-		this.resize();
-	},
+    _setZoomAttr: function (zoomValue) {
+      var style = '', page = getPageRect(), days = 1, classname = ''
 
-	_setFilterAttr: function (value) {
-		for(var i = 0; i < this.entries.length; i++) {
-			var entry = this.entries[i]; 
-			if(entry.tags.length > 0) {
-				if(entry.tags.find( (element) => {
-					if(element.toLowerCase() == value.toLowerCase()) {
-						return true;
-					}
-					return false;
-				})) {
-					entry.set('active', true);
-				} else {
-					entry.set('active', false);
-				}
-			} else {
-				entry.set('active', false);
-			}
-		}
-	},
+      djDomClass.remove(this.domNode, [ 'day', 'month', 'week', 'quarter', 'semseter' ])
+      switch (zoomValue) {
+        case 'day':
+          days = 2
+          classname = 'day'
+          style = ' #Sight { display: none; }'
+          break
+        case 'month':
+          days = 31
+          classname = 'month'
+          break
+        case 'week':
+          days = 7
+          classname = 'week'
+          break
+        case 'quarter':
+          days = 91
+          classname = 'quarter'
+          break
+        case 'semester':
+          days = 181
+          classname = 'semester'
+          break
+        default:
+          days = zoomValue
+          break
+      }
 
-	_getZoomAttr: function () {
-		return this.daysZoom;
-	},
+      this.daysZoom = days
+      if (classname != '') {
+        djDomClass.add(this.domNode, classname)
+      }
+      this.set('blockSize', (page[2] - 240) / days)
+      this.zoomCss.innerHTML = '.timeline .line span { width: ' + (this.get('blockSize') - 2) + 'px !important;} ' + style
+      this.resize()
+    },
 
-	zoomIn: function () {
-		if(this.get('zoom') > 7) {
-			this.set('zoom', this.get('zoom') - 5);
-		}
-	},
+    _setFilterAttr: function (value) {
+      for (var i = 0; i < this.entries.length; i++) {
+        var entry = this.entries[i]
+        if (entry.tags.length > 0) {
+          if (entry.tags.find((element) => {
+            if (element.toLowerCase() == value.toLowerCase()) {
+              return true
+            }
+            return false
+          })) {
+            entry.set('active', true)
+          } else {
+            entry.set('active', false)
+          }
+        } else {
+          entry.set('active', false)
+        }
+      }
+    },
 
-	zoomOut: function () {
-		if(this.get('zoom') < 180) {
-			this.set('zoom', this.get('zoom') + 5);
-		}
-	},
+    _getZoomAttr: function () {
+      return this.daysZoom
+    },
 
-	zoomInN: function (n) {
-			this.set('zoom', this.get('zoom') - 7);
-	},
+    zoomIn: function () {
+      if (this.get('zoom') > 7) {
+        this.set('zoom', this.get('zoom') - 5)
+      }
+    },
 
-	zoomOutN: function (n) {
-			this.set('zoom', this.get('zoom') + 7);
-	},
+    zoomOut: function () {
+      if (this.get('zoom') < 180) {
+        this.set('zoom', this.get('zoom') + 5)
+      }
+    },
 
+    zoomInN: function (n) {
+      this.set('zoom', this.get('zoom') - 7)
+    },
 
-	isBefore: function ( a, b ) {
-		if(djDate.compare(a, b, "date")<=0) {
-			return true;
-		}
-		return false;
-	},
+    zoomOutN: function (n) {
+      this.set('zoom', this.get('zoom') + 7)
+    },
 
-	makeDay: function ( newDay ) {
-		var dayStamp = djDateStamp.toISOString(newDay, {selector: "date"});
-		var c = "day";
-		if(newDay.getDay() == 0 || newDay.getDay() == 6) { c = "day weekend"}
+    isBefore: function (a, b) {
+      if (djDate.compare(a, b, 'date') <= 0) {
+        return true
+      }
+      return false
+    },
 
-		switch(newDay.getDay()) {
-			case 0: txtDate = 'Dim ' + newDay.getDate(); break;
-			case 1: txtDate = 'Lun ' + newDay.getDate(); break;
-			case 2: txtDate = 'Mar ' + newDay.getDate(); break;
-			case 3: txtDate = 'Mer ' + newDay.getDate(); break;
-			case 4: txtDate = 'Jeu ' + newDay.getDate(); break;
-			case 5: txtDate = 'Ven ' + newDay.getDate(); break;
-			case 6: txtDate = 'Sam ' + newDay.getDate(); break;
-		}
+    makeDay: function (newDay) {
+      var dayStamp = djDateStamp.toISOString(newDay, {selector: 'date'})
+      var c = 'day'
+      if (newDay.getDay() == 0 || newDay.getDay() == 6) { c = 'day weekend' }
 
-		var domDay = document.createElement('SPAN')
-		domDay.setAttribute('data-artnum-day', dayStamp);
-		domDay.setAttribute('class', c);
-		domDay.innerHTML=txtDate;
-		return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) };
-	},
+      switch (newDay.getDay()) {
+        case 0: txtDate = 'Dim ' + newDay.getDate(); break
+        case 1: txtDate = 'Lun ' + newDay.getDate(); break
+        case 2: txtDate = 'Mar ' + newDay.getDate(); break
+        case 3: txtDate = 'Mer ' + newDay.getDate(); break
+        case 4: txtDate = 'Jeu ' + newDay.getDate(); break
+        case 5: txtDate = 'Ven ' + newDay.getDate(); break
+        case 6: txtDate = 'Sam ' + newDay.getDate(); break
+      }
 
-	resize: function ( ) {
-		var that = this;
-		var opts = arguments[0] ? arguments[0] : {} ;
+      var domDay = document.createElement('SPAN')
+      domDay.setAttribute('data-artnum-day', dayStamp)
+      domDay.setAttribute('class', c)
+      domDay.innerHTML = txtDate
+      return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
+    },
 
-		this.drawTimeline();
-		this.drawVerticalLine();
-		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].resize();
-		}
-	},
+    resize: function () {
+      var that = this
+      var opts = arguments[0] ? arguments[0] : {}
 
-	createMonthName: function (month, year, days, frag) {
-		var n = document.createElement('DIV');
-		n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px');
-		switch(month+1) {
-			case 1: n.innerHTML = 'Janvier&nbsp;' + year; break;	
-			case 2: n.innerHTML = 'Février&nbsp;' + year; break;	
-			case 3: n.innerHTML = 'Mars&nbsp;' + year; break;	
-			case 4: n.innerHTML = 'Avril&nbsp;' + year; break;	
-			case 5: n.innerHTML = 'Mai&nbsp;' + year; break;	
-			case 6: n.innerHTML = 'Juin&nbsp;' + year; break;	
-			case 7: n.innerHTML = 'Juillet&nbsp;' + year; break;	
-			case 8: n.innerHTML = 'Août&nbsp;' + year; break;	
-			case 9: n.innerHTML = 'Septembre&nbsp;' + year; break;	
-			case 10: n.innerHTML = 'Octobre&nbsp;' + year; break;	
-			case 11: n.innerHTML = 'Novembre&nbsp;' + year; break;	
-			case 12: n.innerHTML = 'Décembre&nbsp;' + year; break;	
-		}
-		if(month % 2) { 
-			n.setAttribute('class', 'monthName even');
-		} else {
-			n.setAttribute('class', 'monthName odd');
-		}	
-		frag.appendChild(n);
-		this.months.push(n);
-	},
-	destroyMonthName: function() {
-		for(var x = this.months.pop(); x; x = this.months.pop()) {
-			x.parentNode.removeChild(x);
-		}
-	},
+      this.drawTimeline()
+      this.drawVerticalLine()
+      for (var i = 0; i < this.entries.length; i++) {
+        this.entries[i].resize()
+      }
+    },
 
-	createWeekNumber: function (number, days, frag) {
-		var n = document.createElement('DIV');
-		n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px');
-		n.innerHTML = 'Semaine ' + number;
-		if(days * this.get('blockSize') < 80) {
-			n.innerHTML = number;
-		}
-		if(number % 2) { 
-			n.setAttribute('class', 'weekNumber even');
-		} else {
-			n.setAttribute('class', 'weekNumber odd');
-		}
-		frag.appendChild(n);
-		this.weekNumber.push(n);
-	},
-	destroyWeekNumber: function() {
-		for(var x = this.weekNumber.pop(); x; x = this.weekNumber.pop()) {
-			x.parentNode.removeChild(x);
-		}
-	},
+    createMonthName: function (month, year, days, frag) {
+      var n = document.createElement('DIV')
+      n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px')
+      switch (month + 1) {
+        case 1: n.innerHTML = 'Janvier&nbsp;' + year; break
+        case 2: n.innerHTML = 'Février&nbsp;' + year; break
+        case 3: n.innerHTML = 'Mars&nbsp;' + year; break
+        case 4: n.innerHTML = 'Avril&nbsp;' + year; break
+        case 5: n.innerHTML = 'Mai&nbsp;' + year; break
+        case 6: n.innerHTML = 'Juin&nbsp;' + year; break
+        case 7: n.innerHTML = 'Juillet&nbsp;' + year; break
+        case 8: n.innerHTML = 'Août&nbsp;' + year; break
+        case 9: n.innerHTML = 'Septembre&nbsp;' + year; break
+        case 10: n.innerHTML = 'Octobre&nbsp;' + year; break
+        case 11: n.innerHTML = 'Novembre&nbsp;' + year; break
+        case 12: n.innerHTML = 'Décembre&nbsp;' + year; break
+      }
+      if (month % 2) {
+        n.setAttribute('class', 'monthName even')
+      } else {
+        n.setAttribute('class', 'monthName odd')
+      }
+      frag.appendChild(n)
+      this.months.push(n)
+    },
+    destroyMonthName: function () {
+      for (var x = this.months.pop(); x; x = this.months.pop()) {
+        x.parentNode.removeChild(x)
+      }
+    },
 
-	postCreate: function () {
-		var that = this;
-		var tContainer = dtRegistry.byId('tContainer')
-		this.view = new Object();
-		this.set('zoom', 'week');
-		tContainer.startup();
+    createWeekNumber: function (number, days, frag) {
+      var n = document.createElement('DIV')
+      n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px')
+      n.innerHTML = 'Semaine ' + number
+      if (days * this.get('blockSize') < 80) {
+        n.innerHTML = number
+      }
+      if (number % 2) {
+        n.setAttribute('class', 'weekNumber even')
+      } else {
+        n.setAttribute('class', 'weekNumber odd')
+      }
+      frag.appendChild(n)
+      this.weekNumber.push(n)
+    },
+    destroyWeekNumber: function () {
+      for (var x = this.weekNumber.pop(); x; x = this.weekNumber.pop()) {
+        x.parentNode.removeChild(x)
+      }
+    },
 
-		djAspect.after(tContainer, 'addChild', function () {
-			if(this.hasChildren()) {
-				djDomStyle.set(this.domNode, 'display', 'block');
-			}
-		}, true);
+    postCreate: function () {
+      var that = this
+      var tContainer = dtRegistry.byId('tContainer')
+      this.view = new Object()
+      this.set('zoom', 'week')
+      tContainer.startup()
 
-		djAspect.after(tContainer, 'removeChild', function (child) {
-			if(! this.hasChildren()) {
-				djDomStyle.set(this.domNode, 'display', 'none');
-			}
-		}, true);
+      djAspect.after(tContainer, 'addChild', function () {
+        if (this.hasChildren()) {
+          djDomStyle.set(this.domNode, 'display', 'block')
+        }
+      }, true)
 
-    djOn(window, "keypress", djLang.hitch(this, this.keys));
-		djOn(this.domNode, "mouseup, mousedown", djLang.hitch(this, this.mouseUpDown));
-		window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')); }, { passive: true});
-		window.addEventListener('wheel', djLang.hitch(this, this.eWheel));
-		window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true});
+      djAspect.after(tContainer, 'removeChild', function (child) {
+        if (!this.hasChildren()) {
+          djDomStyle.set(this.domNode, 'display', 'none')
+        }
+      }, true)
 
-		this.update().then(djLang.hitch(this, () => {
-			this.view.rectangle = getPageRect();	
-		}));
+      djOn(window, 'keypress', djLang.hitch(this, this.keys))
+      djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
+      window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, { passive: true})
+      window.addEventListener('wheel', djLang.hitch(this, this.eWheel))
+      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true})
 
-		djOn(window, 'hashchange, load', djLang.hitch(this, () => {
-			var that = this;
-			window.setTimeout( () => { /* hack to work in google chrome */
-				if(window.location.hash) {
-					if(Number(window.location.hash.substr(1))) {
-						that.doSearchLocation(window.location.hash.substr(1));
-					} else {
-						that.set('filter', decodeURI(window.location.hash.substr(1)));
-					}
-				}
-			}, 500);
-		}));
-	},
+      this.update().then(djLang.hitch(this, () => {
+        this.view.rectangle = getPageRect()
+      }))
 
-	mask: function(state, callback) {
-		if(state) {
-			var mask = document.createElement('DIV');
-			this._mask = true;
-			this._maskDom = mask;
-			mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998');
-			djOn(mask, 'click', (e) => { this.mask(false); callback(e); }); 
-			window.requestAnimationFrame( () => {
-				document.getElementsByTagName('BODY')[0].appendChild(mask);
-			});
-		} else {
-			this._mask = false;
-			this._maskDom.parentNode.removeChild(this._maskDom);
-		}
-	},
+      djOn(window, 'hashchange, load', djLang.hitch(this, () => {
+        var that = this
+        window.setTimeout(() => { /* hack to work in google chrome */
+          if (window.location.hash) {
+            if (Number(window.location.hash.substr(1))) {
+              that.doSearchLocation(window.location.hash.substr(1))
+            } else {
+              that.set('filter', decodeURI(window.location.hash.substr(1)))
+            }
+          }
+        }, 500)
+      }))
+    },
 
-	buildMenu: function() {
-		var that = this;
+    mask: function (state, callback) {
+      if (state) {
+        var mask = document.createElement('DIV')
+        this._mask = true
+        this._maskDom = mask
+        mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998')
+        djOn(mask, 'click', (e) => { this.mask(false); callback(e) })
+        window.requestAnimationFrame(() => {
+          document.getElementsByTagName('BODY')[0].appendChild(mask)
+        })
+      } else {
+        this._mask = false
+        this._maskDom.parentNode.removeChild(this._maskDom)
+      }
+    },
 
-		var item = new dtMenuItem({ label: 'Tout', disabled: true});
-		djOn(item, 'click', djLang.hitch(that, that.filterNone));
-		that.searchMenu.addChild(item);
-		that.searchMenu.filterNone = item;
-		
-		that.searchMenu.addChild(new dtMenuSeparator());
+    buildMenu: function () {
+      var that = this
 
-		Req.get('https://aircluster.local.airnace.ch/store/Category').then((response)  => {
-			if(response && response.data && response.data.length > 0) {
-				var names = new Object();
-				for(var i = 0; i < response.data.length; i++) {
-					names[response.data[i]['uniqueidentifier']] = response.data[i]['cn;lang-fr'];
-				}
+      var item = new dtMenuItem({ label: 'Tout', disabled: true})
+      djOn(item, 'click', djLang.hitch(that, that.filterNone))
+      that.searchMenu.addChild(item)
+      that.searchMenu.filterNone = item
 
-				for(var key in that.categories) {
-					if(names[key]) {
-						var item = new dtPopupMenuItem({ label: names[key], popup: new dtDropDownMenu()});
-						that.searchMenu.addChild(item);
+      that.searchMenu.addChild(new dtMenuSeparator())
 
-						var all = new dtMenuItem({ label: 'Tout', value: { name: key, content: new Array() } });
-						djOn(all, 'click', djLang.hitch(that, that.filterFamily));
-						item.popup.addChild(all);
-						item.popup.addChild(new dtMenuSeparator());
+      Req.get('https://aircluster.local.airnace.ch/store/Category').then((response) => {
+        if (response && response.data && response.data.length > 0) {
+          var names = new Object()
+          for (var i = 0; i < response.data.length; i++) {
+            names[response.data[i]['uniqueidentifier']] = response.data[i]['cn;lang-fr']
+          }
 
-						for(var subkey in that.categories[key]) {
-							if(names[subkey]) {
-								var subitem = new dtMenuItem({ label: names[subkey], value : { name: subkey, content: that.categories[key][subkey]} });
-								djOn(subitem, 'click', djLang.hitch(that, that.filterFamily));
-								all.value.content = all.value.content.concat(that.categories[key][subkey]);
-								item.popup.addChild(subitem);
-							}
-						}
-					}
-				}
+          for (var key in that.categories) {
+            if (names[key]) {
+              var item = new dtPopupMenuItem({ label: names[key], popup: new dtDropDownMenu()})
+              that.searchMenu.addChild(item)
 
-			}
-			
-			that.searchMenu.addChild(new dtMenuSeparator());
+              var all = new dtMenuItem({ label: 'Tout', value: { name: key, content: new Array() } })
+              djOn(all, 'click', djLang.hitch(that, that.filterFamily))
+              item.popup.addChild(all)
+              item.popup.addChild(new dtMenuSeparator())
 
-			/* */
+              for (var subkey in that.categories[key]) {
+                if (names[subkey]) {
+                  var subitem = new dtMenuItem({ label: names[subkey], value: { name: subkey, content: that.categories[key][subkey]} })
+                  djOn(subitem, 'click', djLang.hitch(that, that.filterFamily))
+                  all.value.content = all.value.content.concat(that.categories[key][subkey])
+                  item.popup.addChild(subitem)
+                }
+              }
+            }
+          }
+        }
 
-			Req.get(locationConfig.store + '/Status/').then((results) => {
-				if(results && results.data && results.data.length > 0) {
+        that.searchMenu.addChild(new dtMenuSeparator())
 
+        /* */
 
-					var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()});
-					results.data.forEach( (entry) => {
-						if(entry.type == 0) {
-							var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
-							var item = new dtMenuItem({label: html, value: entry});
-							djOn(item, 'click', djLang.hitch(that, that.filterStatus));
-							p.popup.addChild(item);
-						}
-					});
-					that.searchMenu.addChild(p);
-					
-					p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()});
-					results.data.forEach( (entry) => {
-						if(entry.type == 1) {
-							var html = '<li class="fa fa-square" style="color: #' + entry.color +'"></li> ' + entry.name;
-							var item = new dtMenuItem({ label: html, value: entry });
-							djOn(item, 'click', djLang.hitch(that, (e) => {
-								var node = dtRegistry.byNode(e.selectorTarget);
-								if(node.value && node.value.id) {
-									this.searchMenu.filterNone.set('disabled', false);
-									var out = that.filterComplement(this.entries, node.value.id);
-									this.filterApply(out);
-									this.resize();
-								}
-							}));
-							p.popup.addChild(item);
-						}
-					});
-					that.searchMenu.addChild(p);
-				}
+        Req.get(locationConfig.store + '/Status/').then((results) => {
+          if (results && results.data && results.data.length > 0) {
+            var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()})
+            results.data.forEach((entry) => {
+              if (entry.type == 0) {
+                var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
+                var item = new dtMenuItem({label: html, value: entry})
+                djOn(item, 'click', djLang.hitch(that, that.filterStatus))
+                p.popup.addChild(item)
+              }
+            })
+            that.searchMenu.addChild(p)
 
-				that.searchMenu.addChild(new dtMenuSeparator());
+            p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()})
+            results.data.forEach((entry) => {
+              if (entry.type == 1) {
+                var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
+                var item = new dtMenuItem({ label: html, value: entry })
+                djOn(item, 'click', djLang.hitch(that, (e) => {
+                  var node = dtRegistry.byNode(e.selectorTarget)
+                  if (node.value && node.value.id) {
+                    this.searchMenu.filterNone.set('disabled', false)
+                    var out = that.filterComplement(this.entries, node.value.id)
+                    this.filterApply(out)
+                    this.resize()
+                  }
+                }))
+                p.popup.addChild(item)
+              }
+            })
+            that.searchMenu.addChild(p)
+          }
 
-				var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1));
+          that.searchMenu.addChild(new dtMenuSeparator())
 
-				var item = new dtMenuItem({ label: 'Commence le '  });
-				var x = new dtDateTextBox({ value: now, id: 'menuStartDay' });
-				item.containerNode.appendChild(x.domNode);
-				item.own(x);
-				djOn(item, 'click', djLang.hitch(that, (e) => {
-					this.filterReset();
-					var date = dtRegistry.byId('menuStartDay').get('value');
-					this.center = date;
-					this.update();
-					this.filterApply(this.filterDate(this.entries, date));
-				}));
-				that.searchMenu.addChild(item);
-				
-				var item = new dtMenuItem({ label: 'Termine le '});
-				djOn(item, 'click', djLang.hitch(that, () => {
-					this.filterReset();
-					var date = dtRegistry.byId('menuEndDay').get('value');
-					this.center = date;
-					this.update();
-					that.filterApply(this.filterDate(this.entries, date, 'trueEnd'));
-				}));
-				var x = new dtDateTextBox({ value: now, id: 'menuEndDay' });
-				item.containerNode.appendChild(x.domNode);
-				item.own(x);
-				that.searchMenu.addChild(item);
+          var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
-				that.searchMenu.addChild(new dtMenuSeparator());
+          var item = new dtMenuItem({ label: 'Commence le ' })
+          var x = new dtDateTextBox({ value: now, id: 'menuStartDay' })
+          item.containerNode.appendChild(x.domNode)
+          item.own(x)
+          djOn(item, 'click', djLang.hitch(that, (e) => {
+            this.filterReset()
+            var date = dtRegistry.byId('menuStartDay').get('value')
+            this.center = date
+            this.update()
+            this.filterApply(this.filterDate(this.entries, date))
+          }))
+          that.searchMenu.addChild(item)
 
-				var item = new dtMenuItem({ label: 'À faire le '});
-				djOn(item, 'click', djLang.hitch(that, () => {
-					this.filterReset();
-					var date = dtRegistry.byId('menuTodoDay').get('value');
-					this.center = date;
-					this.update();
-					var out = this.filterDate(this.entries, date, 'trueBegin');
-					this.filterApply(out.concat(this.filterComplementDate( this.entries, date, 4)));
-				}));
-				var x = new dtDateTextBox({ value: now, id: 'menuTodoDay' });
-				item.containerNode.appendChild(x.domNode);
-				item.own(x);
-				that.searchMenu.addChild(item);
+          var item = new dtMenuItem({ label: 'Termine le '})
+          djOn(item, 'click', djLang.hitch(that, () => {
+            this.filterReset()
+            var date = dtRegistry.byId('menuEndDay').get('value')
+            this.center = date
+            this.update()
+            that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
+          }))
+          var x = new dtDateTextBox({ value: now, id: 'menuEndDay' })
+          item.containerNode.appendChild(x.domNode)
+          item.own(x)
+          that.searchMenu.addChild(item)
 
+          that.searchMenu.addChild(new dtMenuSeparator())
 
-			}).then(() => { that.menu.startup(); });
-		});
-	},
+          var item = new dtMenuItem({ label: 'À faire le '})
+          djOn(item, 'click', djLang.hitch(that, () => {
+            this.filterReset()
+            var date = dtRegistry.byId('menuTodoDay').get('value')
+            this.center = date
+            this.update()
+            var out = this.filterDate(this.entries, date, 'trueBegin')
+            this.filterApply(out.concat(this.filterComplementDate(this.entries, date, 4)))
+          }))
+          var x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
+          item.containerNode.appendChild(x.domNode)
+          item.own(x)
+          that.searchMenu.addChild(item)
+        }).then(() => { that.menu.startup() })
+      })
+    },
 
-	filterNone: function() {
-		this.searchMenu.filterNone.set('disabled', true);
-		this.filterReset();
-	},
+    filterNone: function () {
+      this.searchMenu.filterNone.set('disabled', true)
+      this.filterReset()
+    },
 
-	filterFamily: function(event) {
-		this.filterReset();
-		var node = dtRegistry.byNode(event.selectorTarget);
-		this.searchMenu.filterNone.set('disabled', false);
-		for(var i = 0; i < this.entries.length; i++) {
-			if(node.value.content.indexOf(this.entries[i].target) == -1) {
-				this.entries[i].set('active', false);
-			} else {
-				this.entries[i].set('active', true);
-			}
-		}
-	},
+    filterFamily: function (event) {
+      this.filterReset()
+      var node = dtRegistry.byNode(event.selectorTarget)
+      this.searchMenu.filterNone.set('disabled', false)
+      for (var i = 0; i < this.entries.length; i++) {
+        if (node.value.content.indexOf(this.entries[i].target) == -1) {
+          this.entries[i].set('active', false)
+        } else {
+          this.entries[i].set('active', true)
+        }
+      }
+    },
 
-	filterDate: function(entries) {
-		this.filterReset();
-		var out = new Array();
-		var date = new Date(), what = 'trueBegin';
-		this.searchMenu.filterNone.set('disabled', false);
-		if(arguments[1]) {
-			date = arguments[1];
-		}
-		if(arguments[2]) {
-			what = arguments[2];
-		}
+    filterDate: function (entries) {
+      this.filterReset()
+      var out = new Array()
+      var date = new Date(), what = 'trueBegin'
+      this.searchMenu.filterNone.set('disabled', false)
+      if (arguments[1]) {
+        date = arguments[1]
+      }
+      if (arguments[2]) {
+        what = arguments[2]
+      }
 
+      for (var i = 0; i < entries.length; i++) {
+        var active = false
+        for (var k in entries[i].entries) {
+          if (djDate.compare(entries[i].entries[k].get(what), date, 'date') == 0) {
+            out.push(entries[i].get('id')); break
+          }
+        }
+      }
 
-		for(var i = 0; i < entries.length; i++) {
-			var active = false;
-			for(var k in  entries[i].entries) {
-				if(djDate.compare(entries[i].entries[k].get(what), date, "date") == 0) {
-					out.push(entries[i].get('id')); break;
-				}
-			}
-		}
+      return out
+    },
 
-		return out;
-	},
+    filterStatus: function (event) {
+      this.filterReset()
+      var node = dtRegistry.byNode(event.selectorTarget)
+      this.searchMenu.filterNone.set('disabled', false)
+      for (var i = 0; i < this.entries.length; i++) {
+        var entry = this.entries[i]
+        var active = entry.get('activeReservations')
+        if (active.length <= 0) {
+          entry.set('active', false)
+        } else {
+          var count = 0
+          for (var j = 0; j < active.length; j++) {
+            if (active[j].status == node.value.id) {
+              count++; break
+            }
+          }
+          if (count > 0) {
+            entry.set('active', true)
+          } else {
+            entry.set('active', false)
+          }
+        }
+      }
+      this.resize()
+    },
 
-	filterStatus: function (event) {
-		this.filterReset();
-		var node = dtRegistry.byNode(event.selectorTarget);
-		this.searchMenu.filterNone.set('disabled', false);
-		for(var i = 0; i < this.entries.length; i++) {
-			var entry = this.entries[i];
-			var active = entry.get('activeReservations');
-			if(active.length <= 0) {
-				entry.set('active', false);
-			} else {
-				var count = 0;
-				for(var j = 0; j < active.length; j++) {
-					if(active[j].status == node.value.id) {
-						count++; break;
-					}
-				}
-				if(count > 0) {
-					entry.set('active', true);
-				} else {
-					entry.set('active', false);
-				}
-			}
-		}	
-		this.resize();
-	},
-
-	filterComplementDate: function( entries, date, complement ) {
-		this.filterReset();
-		var out = new Array();
-		for(var i = 0; i < entries.length; i++) {
-			var found = false;
-			var active = entries[i].get('activeReservations');
-			for(var j = 0; j < active.length; j++) {
-				for(var k = 0; k < active[j].complements.length; k++) {
-					if(active[j].complements[k].type.id == complement &&
+    filterComplementDate: function (entries, date, complement) {
+      this.filterReset()
+      var out = new Array()
+      for (var i = 0; i < entries.length; i++) {
+        var found = false
+        var active = entries[i].get('activeReservations')
+        for (var j = 0; j < active.length; j++) {
+          for (var k = 0; k < active[j].complements.length; k++) {
+            if (active[j].complements[k].type.id == complement &&
 						active[j].complements[k].range.within(date)) {
-						out.push(entries[i].get('id')); found = true; break;
-					}
-				}
-				if(found) { break; }
-			}
-		}
-		return out;
-	},
+              out.push(entries[i].get('id')); found = true; break
+            }
+          }
+          if (found) { break }
+        }
+      }
+      return out
+    },
 
-	filterComplement: function (entries, value) {
-		this.filterReset();
-		var out = new Array();
-		for(var i = 0; i < entries.length; i++) {
-			var found = false;
-			var active = entries[i].get('activeReservations');
-			if(active.length > 0) {
-				for(var j = 0; j < active.length; j++) {
-					for(var k = 0; k < active[j].complements.length; k++) {
-						if(active[j].complements[k].type.id == value) {
-							out.push(entries[i].get('id'));
-							found = true; 
-							break;
-						}
-					}
-					if(found) { break; }
-				}
-			}
-		}
-		return out;
-	},
+    filterComplement: function (entries, value) {
+      this.filterReset()
+      var out = new Array()
+      for (var i = 0; i < entries.length; i++) {
+        var found = false
+        var active = entries[i].get('activeReservations')
+        if (active.length > 0) {
+          for (var j = 0; j < active.length; j++) {
+            for (var k = 0; k < active[j].complements.length; k++) {
+              if (active[j].complements[k].type.id == value) {
+                out.push(entries[i].get('id'))
+                found = true
+                break
+              }
+            }
+            if (found) { break }
+          }
+        }
+      }
+      return out
+    },
 
-	filterApply: function(entries) {
-		this.filterReset();
-		for(var i = 0; i < this.entries.length; i++) {
-			if(entries.indexOf(this.entries[i].get('id')) == -1) {
-				this.entries[i].set('active', false);
-			} else {
-				this.entries[i].set('active', true);
-			}
-		}
-	},
-	
-	filterReset: function (prefilter = false) {
-		for(var i = 0; i < this.entries.length; i++) {
-			this.entries[i].set('active', true);
-		}
-	},
+    filterApply: function (entries) {
+      this.filterReset()
+      for (var i = 0; i < this.entries.length; i++) {
+        if (entries.indexOf(this.entries[i].get('id')) == -1) {
+          this.entries[i].set('active', false)
+        } else {
+          this.entries[i].set('active', true)
+        }
+      }
+    },
 
-	mouseUpDown: function(event) {
-		if(event.type=='mouseup') {
-			this.eventStarted = null;
-		} else {
-			this.eventStarted = event;
-		}
-		window.requestAnimationFrame(function() {
-			var domNode = document.getElementsByTagName('body')[0]
-			if(event.type=='mouseup') {
-				domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')	
-			}	else {
-				domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')	
-			}
-		});
-	},
+    filterReset: function (prefilter = false) {
+      for (var i = 0; i < this.entries.length; i++) {
+        this.entries[i].set('active', true)
+      }
+    },
 
-	mouseOver: function (event) {
-		if(this._mask) { return; }
-		var nodeBox = djDomGeo.getContentBox(this.domNode);
-		var sight = this.sight;
-		var days = this.days;
+    mouseUpDown: function (event) {
+      if (event.type == 'mouseup') {
+        this.eventStarted = null
+      } else {
+        this.eventStarted = event
+      }
+      window.requestAnimationFrame(function () {
+        var domNode = document.getElementsByTagName('body')[0]
+        if (event.type == 'mouseup') {
+          domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
+        }	else {
+          domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
+        }
+      })
+    },
 
-		if(document.selection && document.selection.empty) {
-			document.selection.empty();
-		} else if(window.getSelection) {
-			var sel = window.getSelection();
-			sel.removeAllRanges();
-		}
+    mouseOver: function (event) {
+      if (this._mask) { return }
+      var nodeBox = djDomGeo.getContentBox(this.domNode)
+      var sight = this.sight
+      var days = this.days
 
-		if(event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return; }
+      if (document.selection && document.selection.empty) {
+        document.selection.empty()
+      } else if (window.getSelection) {
+        var sel = window.getSelection()
+        sel.removeAllRanges()
+      }
 
-		/* Move, following mouse, timeline left/right and up/down when left button is held */
-		if(event.buttons == 1) {
-			var xDiff = Math.abs(this.lastClientXY[0] - event.clientX);
-			var yDiff = Math.abs(this.lastClientXY[1] - event.clientY);
+      if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
 
-			if((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {	
-				if(this.lastClientXY[0] - event.clientX > 0) {
-					this.xDiff += xDiff;
-				}	else if(this.lastClientXY[0] - event.clientX < 0) {
-					this.xDiff += -xDiff;
-				}
-				if(Math.abs(this.xDiff) >= this.get('blockSize')) {
-					if(this.xDiff < 0) {
-						this.moveXLeft(1);
-					} else {
-						this.moveXRight(1);
-					}
-					this.xDiff = 0;
-				}
-			}
+      /* Move, following mouse, timeline left/right and up/down when left button is held */
+      if (event.buttons == 1) {
+        var xDiff = Math.abs(this.lastClientXY[0] - event.clientX)
+        var yDiff = Math.abs(this.lastClientXY[1] - event.clientY)
 
-			if((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
-				var top = (window.pageYOffset || document.documentElement.scrollTop)  - (document.documentElement.clientTop || 0);
-				if(this.lastClientXY[1] - event.clientY > 0) {
-					window.scrollTo(0, top + (yDiff * 1.25));
-				} else if(this.lastClientXY[1] - event.clientY < 0){
-					window.scrollTo(0, top - (yDiff * 1.25));			
-				}
-			}
-		}
+        if ((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {
+          if (this.lastClientXY[0] - event.clientX > 0) {
+            this.xDiff += xDiff
+          }	else if (this.lastClientXY[0] - event.clientX < 0) {
+            this.xDiff += -xDiff
+          }
+          if (Math.abs(this.xDiff) >= this.get('blockSize')) {
+            if (this.xDiff < 0) {
+              this.moveXLeft(1)
+            } else {
+              this.moveXRight(1)
+            }
+            this.xDiff = 0
+          }
+        }
 
-		window.requestAnimationFrame(function() {
-			var none = true;
-			for(var i = 0; i < days.length; i++) {
-				var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle);
-				if(event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
-					sight.setAttribute('style', 'width: ' + pos.w +'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none');	
-					none = false;
-				}
-			}
-			
-			if(none) {
-				sight.removeAttribute('style');	
-			}
-		}); 
-	
-		this.lastClientXY[0] = event.clientX;
-		this.lastClientXY[1] = event.clientY;
-	},
+        if ((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
+          var top = (window.pageYOffset || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0)
+          if (this.lastClientXY[1] - event.clientY > 0) {
+            window.scrollTo(0, top + (yDiff * 1.25))
+          } else if (this.lastClientXY[1] - event.clientY < 0) {
+            window.scrollTo(0, top - (yDiff * 1.25))
+          }
+        }
+      }
 
-	eWheel: function(event) {
-		if(this._mask) { return; }
-		if(event.deltaX < 0) {
-			this.moveLeft();
-		} else if(event.deltaX > 0) { 
-			this.moveRight();
-		}
-		this.wheelTo = null;
-		if(event.ctrlKey) {
-			event.preventDefault();
-			if(event.deltaY < 0) {
-				this.zoomInN(event.deltaY);
-			} else {
-				this.zoomOutN(-event.deltaY);
-			}
-		}
-	},
+      window.requestAnimationFrame(function () {
+        var none = true
+        for (var i = 0; i < days.length; i++) {
+          var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
+          if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
+            sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none')
+            none = false
+          }
+        }
 
-	getDateRange: function () {
-		return { begin: this.firstDay, end: this.lastDay }
+        if (none) {
+          sight.removeAttribute('style')
+        }
+      })
 
-	},
-	_getDateRangeAttr: function() {
-		return this.getDateRange();
-	},
+      this.lastClientXY[0] = event.clientX
+      this.lastClientXY[1] = event.clientY
+    },
 
-	today: function () {
-		this.set('center', new Date());
-		this.update(true);
-	},
+    eWheel: function (event) {
+      if (this._mask) { return }
+      if (event.deltaX < 0) {
+        this.moveLeft()
+      } else if (event.deltaX > 0) {
+        this.moveRight()
+      }
+      this.wheelTo = null
+      if (event.ctrlKey) {
+        event.preventDefault()
+        if (event.deltaY < 0) {
+          this.zoomInN(event.deltaY)
+        } else {
+          this.zoomOutN(-event.deltaY)
+        }
+      }
+    },
 
-	chooseDay: function () {
-		var calendar = new dtCalendar({ value: this.center } );
-		var dialog = new dtDialog({ title: 'Choisir une date'});
+    getDateRange: function () {
+      return { begin: this.firstDay, end: this.lastDay }
+    },
+    _getDateRangeAttr: function () {
+      return this.getDateRange()
+    },
 
-		dialog.addChild(calendar);
-		dialog.startup();
-		dialog.show();
+    today: function () {
+      this.set('center', new Date())
+      this.update(true)
+    },
 
-		djOn(calendar, 'change', djLang.hitch(this, (e) => {
-			this.set('center', e); 
-			this.update();
-			dialog.destroy();
-		}));
-	},
+    chooseDay: function () {
+      var calendar = new dtCalendar({ value: this.center })
+      var dialog = new dtDialog({ title: 'Choisir une date'})
 
-	moveXRight: function(x) {
-		this.center = djDate.add(this.center, "day", Math.abs(x));
-		this.update();
-	},
-	moveOneRight: function () {
-		this.center = djDate.add(this.center, "day", 1);
-		this.update();
-	},
-	moveRight: function () {
-		var move = 1;
-		if(this.days.length > 7) {
-			move = Math.floor(this.days.length / 7);
-		}
-		this.center = djDate.add(this.center, "day", move);
-		this.update();
-	},
-	moveXLeft: function(x) {
-		this.center = djDate.add(this.center, "day", -Math.abs(x));
-		this.update();
-	},
-	moveOneLeft: function() {
-		this.center = djDate.add(this.center, "day", -1);
-		this.update();
-	},
-	moveLeft: function () {
-		var move = 1;
-		if(this.days.length > 7) {
-			move = Math.floor(this.days.length / 7);
-		}
+      dialog.addChild(calendar)
+      dialog.startup()
+      dialog.show()
 
-		this.center = djDate.add(this.center, "day", -move);
-		this.update();
-	},
+      djOn(calendar, 'change', djLang.hitch(this, (e) => {
+        this.set('center', e)
+        this.update()
+        dialog.destroy()
+      }))
+    },
 
-	beginDraw: function() {
-		//this.newBuffer = document.createDocumentFragment();
-	},
+    moveXRight: function (x) {
+      this.center = djDate.add(this.center, 'day', Math.abs(x))
+      this.update()
+    },
+    moveOneRight: function () {
+      this.center = djDate.add(this.center, 'day', 1)
+      this.update()
+    },
+    moveRight: function () {
+      var move = 1
+      if (this.days.length > 7) {
+        move = Math.floor(this.days.length / 7)
+      }
+      this.center = djDate.add(this.center, 'day', move)
+      this.update()
+    },
+    moveXLeft: function (x) {
+      this.center = djDate.add(this.center, 'day', -Math.abs(x))
+      this.update()
+    },
+    moveOneLeft: function () {
+      this.center = djDate.add(this.center, 'day', -1)
+      this.update()
+    },
+    moveLeft: function () {
+      var move = 1
+      if (this.days.length > 7) {
+        move = Math.floor(this.days.length / 7)
+      }
 
-	/* insert into linked list */
-	_lli: function(root, node) {
-		node.set('nextNode', null);
-		for(var current = root; current; current = current.get('nextNode')) {
-			if(current.get('target') == node.get('placeAfter')) {
-				node.set('nextNode', current.get('nextNode'));
-				current.set('nextNode', node);
-				return true;
-			}
-		}
+      this.center = djDate.add(this.center, 'day', -move)
+      this.update()
+    },
 
-		return false;
-	},
+    beginDraw: function () {
+      // this.newBuffer = document.createDocumentFragment();
+    },
 
-	endDraw: function() {
-		var newBuffer = document.createDocumentFragment(); 
-	
-		this.displayOrder = this.entries.sort( function (a, b) {
-			var oa = a.get('order'), ob = b.get('order');
-			
-			if(oa && !ob) { return -1; }
-			if(!oa && ob) { return 1; }
+    /* insert into linked list */
+    _lli: function (root, node) {
+      node.set('nextNode', null)
+      for (var current = root; current; current = current.get('nextNode')) {
+        if (current.get('target') == node.get('placeAfter')) {
+          node.set('nextNode', current.get('nextNode'))
+          current.set('nextNode', node)
+          return true
+        }
+      }
 
-			if(parseInt(oa) > parseInt(ob)) { return 1; }
-			if(parseInt(oa) < parseInt(ob)) { return -1; }
-			return 0;
-		});
+      return false
+    },
 
-		for(var i = 0; i < this.displayOrder.length; i++) {
-			if(this.displayOrder[i]) { newBuffer.appendChild(this.displayOrder[i].domNode); }
-		}
+    endDraw: function () {
+      var newBuffer = document.createDocumentFragment()
 
-		var className = 'odd';
-		for(var i = newBuffer.firstChild; i; i = i.nextSibling) {
-			djDomClass.add(i, className);
-			className = className == 'odd' ? 'even' : 'odd';
-		}
+      this.displayOrder = this.entries.sort(function (a, b) {
+        var oa = a.get('order'), ob = b.get('order')
 
-		var node = this.domEntries;
-		window.requestAnimationFrame( () => {
-			while(node.firstChild) {
-				node.removeChild(node.firstChild);
-			}
-			node.appendChild(newBuffer);
-		});
-	},
+        if (oa && !ob) { return -1 }
+        if (!oa && ob) { return 1 }
 
-	addEntry: function ( widget ) {
-		this.entries.push(widget);
-	},
-	
-	_getCompactAttr: function() {
-		return this.compact;
-	},
+        if (parseInt(oa) > parseInt(ob)) { return 1 }
+        if (parseInt(oa) < parseInt(ob)) { return -1 }
+        return 0
+      })
 
-	toggle: function(attr) {
-		var targetNode = this.currentTopEntry(), delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1];
-		switch(attr) {
-			case 'compact':
-				if(this.get('compact')) {
-					this.set('compact', !this.get('compact'));
-				} else {
-					this.set('compact', true);
-				}
-				
-				if(this.get('compact')) {
-					djDomClass.add(window.App.domNode, 'compact');
-				} else {
-					djDomClass.remove(window.App.domNode, 'compact');
-				}
-				this.emit('zoom');	
-				break;
-			case 'extension':
-				this.set('extension', !this.get('extension'));
-				if(this.get('extension')) {
-					djDomClass.remove(window.App.domNode, 'noextender');
-				} else {
-					djDomClass.add(window.App.domNode, 'noextender');
-				}
-				break;
-		}
-		this.update(true).then( () => {
-			var pos = getElementRect(targetNode.domNode);
-			window.scroll(0, pos[1] - delta);
-		});
-	},
-	
-	drawTimeline: function() {
-		var avWidth = this.domNode.offsetWidth;
-		var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array();
-		this.todayOffset = -1;
-		this.weekOffset = -1;
-		this.destroyWeekNumber();
-		this.destroyMonthName();
-		for(var x = this.days.pop(); x!=null; x = this.days.pop()) {
-			if(x.domNode.parentNode) {
-				x.domNode.parentNode.removeChild(x.domNode);
-			}
-		}
+      for (var i = 0; i < this.displayOrder.length; i++) {
+        if (this.displayOrder[i]) { newBuffer.appendChild(this.displayOrder[i].domNode) }
+      }
 
-		var docFrag = document.createDocumentFragment();
-		var hFrag = document.createDocumentFragment();
-		var shFrag = document.createDocumentFragment();
+      var className = 'odd'
+      for (var i = newBuffer.firstChild; i; i = i.nextSibling) {
+        djDomClass.add(i, className)
+        className = className == 'odd' ? 'even' : 'odd'
+      }
 
-		this.firstDay = djDate.add(this.center, "day", -Math.floor(avWidth / this.get('blockSize') / 2));
-		for(var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
+      var node = this.domEntries
+      window.requestAnimationFrame(() => {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild)
+        }
+        node.appendChild(newBuffer)
+      })
+    },
 
-			if(djDate.compare(day, new Date(), "date") == 0) {
-				this.todayOffset = i;	
-			}
+    addEntry: function (widget) {
+      this.entries.push(widget)
+    },
 
-			if(currentWeek != day.getWeek()) {
-				if(currentWeek == 0) {
-					currentWeek = day.getWeek();	
-				} else {
-					if(this.weekOffset == -1) { this.weekOffset = i; }
-					this.createWeekNumber(currentWeek, dayCount, hFrag);
-					dayCount = 0;
-					currentWeek = day.getWeek();
-				}
-			}
-			if(currentMonth != day.getMonth()) {
-				if(currentMonth == -1) {
-					currentMonth = day.getMonth();
-					if(currentMonth % 2) { months.push(i); }
-					currentYear = day.getFullYear();
-				}	else {
-					this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
-					dayMonthCount = 0;	
-					currentMonth = day.getMonth();
-					if(currentMonth % 2) { months.push(i); }
-					currentYear = day.getFullYear();
-				}
-			}
-			var d = this.makeDay(day);
-			this.days.push(d);
-			if(this.get('blockSize') > 20) {
-				djDomConstruct.place(d.domNode, docFrag, "last");
-			}
-			day = djDate.add(day, "day", 1);
-			this.lastDay = day;
-			dayCount++; dayMonthCount++;
-		}
-		if(dayCount > 0) {
-			this.createWeekNumber(currentWeek, dayCount, hFrag);
-		}
-		if(dayMonthCount > 0) {
-			this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag);
-		}
-		window.requestAnimationFrame(djLang.hitch(this, function () {
-			this.line.appendChild(docFrag);
-			this.header.appendChild(hFrag);
-			this.supHeader.appendChild(shFrag);
-		}));
-	},
+    _getCompactAttr: function () {
+      return this.compact
+    },
 
-	drawVerticalLine: function() {
-		var frag = document.createDocumentFragment();
-		var that = this;
-	
-		if(this.currentVerticalLine != this.get('blockSize')) {
-			frag.appendChild(document.createElement('DIV'));	
-			for(var i = 0; i < this.days.length; i++) {
-				var node  = document.createElement('DIV');
-				var nodeclass = '';
-				if(i % 2) {
-					nodeclass = 'vertical even';
-				} else {
-					nodeclass = 'vertical odd';
-				}
-				
-				var style = '';
+    toggle: function (attr) {
+      var targetNode = this.currentTopEntry(), delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1]
+      switch (attr) {
+        case 'compact':
+          if (this.get('compact')) {
+            this.set('compact', !this.get('compact'))
+          } else {
+            this.set('compact', true)
+          }
 
-				if(djDate.compare(this.days[i]._date, new Date(), "date") == 0) {
-					nodeclass = nodeclass + ' today';
-				}
-				node.setAttribute('class', nodeclass);
-				node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' + 
-					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px');
-				frag.firstChild.appendChild(node);
-			}
+          if (this.get('compact')) {
+            djDomClass.add(window.App.domNode, 'compact')
+          } else {
+            djDomClass.remove(window.App.domNode, 'compact')
+          }
+          this.emit('zoom')
+          break
+        case 'extension':
+          this.set('extension', !this.get('extension'))
+          if (this.get('extension')) {
+            djDomClass.remove(window.App.domNode, 'noextender')
+          } else {
+            djDomClass.add(window.App.domNode, 'noextender')
+          }
+          break
+      }
+      this.update(true).then(() => {
+        var pos = getElementRect(targetNode.domNode)
+        window.scroll(0, pos[1] - delta)
+      })
+    },
 
-			window.requestAnimationFrame( () => {
-				if(that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild); }
-				that.nVerticals.appendChild(frag);
-			});
-		}
-	},
+    drawTimeline: function () {
+      var avWidth = this.domNode.offsetWidth
+      var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array()
+      this.todayOffset = -1
+      this.weekOffset = -1
+      this.destroyWeekNumber()
+      this.destroyMonthName()
+      for (var x = this.days.pop(); x != null; x = this.days.pop()) {
+        if (x.domNode.parentNode) {
+          x.domNode.parentNode.removeChild(x.domNode)
+        }
+      }
 
-	refresh: function() {
-		var that = this;
-		request.head('/location/store/Reservation').then( function (result) { 
-			if(that.lastMod != result['last-modification']) {
-				that.update(true);
-				that.lastMod = result['last-modification'];
-				that.lastId = result['last-id'];
-			} else if(that.lastId != result['last-id']) {
-				that.update();
-				that.lastMod = result['last-modification'];
-				that.lastId = result['last-id'];
-			} 
-				
-			window.setTimeout(djLang.hitch(that, that.refresh), 1200);	
-		});
-	},
+      var docFrag = document.createDocumentFragment()
+      var hFrag = document.createDocumentFragment()
+      var shFrag = document.createDocumentFragment()
 
-	run: function () {
-		var loaded = new Array();
-		var that = this;
-		this.currentPosition = 0;
+      this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
+      for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
+        if (djDate.compare(day, new Date(), 'date') == 0) {
+          this.todayOffset = i
+        }
 
-		request.get('https://aircluster.local.airnace.ch/store/Machine').then( function (response) {
-			that.setServers(locationConfig.servers);
-			if(response.success()) {
-				that.beginDraw();
-				var whole = response.whole();
-				whole.sort(function(a,b){
-					if(parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };
-					if(parseInt(a.description, 10) > parseInt(b.description, 10)) { return 1 };
-					return 0;
-				});
-				
+        if (currentWeek != day.getWeek()) {
+          if (currentWeek == 0) {
+            currentWeek = day.getWeek()
+          } else {
+            if (this.weekOffset == -1) { this.weekOffset = i }
+            this.createWeekNumber(currentWeek, dayCount, hFrag)
+            dayCount = 0
+            currentWeek = day.getWeek()
+          }
+        }
+        if (currentMonth != day.getMonth()) {
+          if (currentMonth == -1) {
+            currentMonth = day.getMonth()
+            if (currentMonth % 2) { months.push(i) }
+            currentYear = day.getFullYear()
+          }	else {
+            this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
+            dayMonthCount = 0
+            currentMonth = day.getMonth()
+            if (currentMonth % 2) { months.push(i) }
+            currentYear = day.getFullYear()
+          }
+        }
+        var d = this.makeDay(day)
+        this.days.push(d)
+        if (this.get('blockSize') > 20) {
+          djDomConstruct.place(d.domNode, docFrag, 'last')
+        }
+        day = djDate.add(day, 'day', 1)
+        this.lastDay = day
+        dayCount++; dayMonthCount++
+      }
+      if (dayCount > 0) {
+        this.createWeekNumber(currentWeek, dayCount, hFrag)
+      }
+      if (dayMonthCount > 0) {
+        this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
+      }
+      window.requestAnimationFrame(djLang.hitch(this, function () {
+        this.line.appendChild(docFrag)
+        this.header.appendChild(hFrag)
+        this.supHeader.appendChild(shFrag)
+      }))
+    },
 
-				var inc = 0;
-				var category = new Object();
-				for(var i = 0; i < whole.length; i++) {
-					var machine = whole[i];
-					var groupName = "group" + (inc % 2);
-					var name =  machine.description;
-					var label = machine.cn ? machine.cn : '';
+    drawVerticalLine: function () {
+      var frag = document.createDocumentFragment()
+      var that = this
 
-					if(machine.family) {
-						if(Array.isArray(machine.family)) {
-							groupName = [];
-							machine.family.forEach( (g) => {
-								groupName.push( g.replace(/(\s|\-)/g, ''));
-							});
-						} else {
-							groupName = [ machine.family.replace(/(\s|\-)/g, '') ];
-						}
-					}
+      if (this.currentVerticalLine != this.get('blockSize')) {
+        frag.appendChild(document.createElement('DIV'))
+        for (var i = 0; i < this.days.length; i++) {
+          var node = document.createElement('DIV')
+          var nodeclass = ''
+          if (i % 2) {
+            nodeclass = 'vertical even'
+          } else {
+            nodeclass = 'vertical odd'
+          }
 
-					if(name) {
-						if(machine.cn ) {
-							name += '<div class="name">' + machine.cn + '</div>'; 	
-						}
-						var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description });
+          var style = ''
 
-						var families = new Array(), types = new Array();
-						if(machine.family && machine.type) {
-							families = String(machine.family).split(',');
-							types = String(machine.type).split(',');
-							if(! djLang.isArray(families)) { families = new Array( families ); }
-							if(! djLang.isArray(types)) { types = new Array( types ); }
-							
-							for(var j = 0; j < families.length; j++) {
-								if(! category[families[j]]) {
-									category[families[j]] = new Object();
-								}
+          if (djDate.compare(this.days[i]._date, new Date(), 'date') == 0) {
+            nodeclass = nodeclass + ' today'
+          }
+          node.setAttribute('class', nodeclass)
+          node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' +
+					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px')
+          frag.firstChild.appendChild(node)
+        }
 
-								for(var k = 0; k < types.length; k++) {
-									if(! category[families[j]][types[k]]) {
-										category[families[j]][types[k]] = new Array();
-									}
-									category[families[j]][types[k]].push(e.target);
-								}
-							}
-						}
+        window.requestAnimationFrame(() => {
+          if (that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild) }
+          that.nVerticals.appendChild(frag)
+        })
+      }
+    },
 
-						djDomClass.add(e.domNode, groupName);
-						e.setServers(locationConfig.servers);
-						that.addEntry(e);
-						loaded.push(e.loaded);
-						if(machine.airaltref && djLang.isArray(machine.airaltref)) {
-							machine.airaltref.forEach( function (altref ) {
-									var name = altref + '<div class="name">' + machine.cn + '</div>'; 	
-									var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim() });
-									for(var j = 0; j < families.length; j++) {
-										for(var k = 0; k < types.length; k++) {
-											category[families[j]][types[k]].push(e.target);
-										}
-									}
-									djDomClass.add(e.domNode, groupName);
-							
-									e.setServers(locationConfig.servers);
-									that.addEntry(e);
-									loaded.push(e.loaded);
-								});
-							} else if(machine.airaltref) {
-								var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'; 	
-								var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim() });
-								for(var j = 0; j < families.length; j++) {
-									for(var k = 0; k < types.length; k++) {
-										category[families[j]][types[k]].push(e.target);
-									}
-								}
-								
-								djDomClass.add(e.domNode, groupName);
-								e.setServers(locationConfig.servers);
-								that.addEntry(e);
-								loaded.push(e.loaded);
-							}
-					
-							inc++;
-						}
-					}
-			}
-			that.categories = category;
-			djAll(loaded).then( function () {
-				that.buildMenu();
-				that.endDraw();
-				that.update();
-			});
-		});
-	},
+    refresh: function () {
+      var that = this
+      request.head('/location/store/Reservation').then(function (result) {
+        if (that.lastMod != result['last-modification']) {
+          that.update(true)
+          that.lastMod = result['last-modification']
+          that.lastId = result['last-id']
+        } else if (that.lastId != result['last-id']) {
+          that.update()
+          that.lastMod = result['last-modification']
+          that.lastId = result['last-id']
+        }
 
-	update: function (force = false) {
-		var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date(), oldest = null;
-		begin.setTime(this.get('dateRange').begin.getTime());
-		end.setTime(this.get('dateRange').end.getTime());
-		begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0,0,0);
-		end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0,0,0);
-		this.resize();
+        window.setTimeout(djLang.hitch(that, that.refresh), 1200)
+      })
+    },
 
-		this.Updater.postMessage({type: 'move', content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query : {
-			"search.begin": '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
-			"search.end" : '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
-			"search.deleted" : '-' }
-		}]});
-		def.resolve();
+    run: function () {
+      var loaded = new Array()
+      var that = this
+      this.currentPosition = 0
 
-		return def.promise;
-	},
+      request.get('https://aircluster.local.airnace.ch/store/Machine').then(function (response) {
+        that.setServers(locationConfig.servers)
+        if (response.success()) {
+          that.beginDraw()
+          var whole = response.whole()
+          whole.sort(function (a, b) {
+            if (parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };
+            if (parseInt(a.description, 10) > parseInt(b.description, 10)) { return 1 };
+            return 0
+          })
+
+          var inc = 0
+          var category = new Object()
+          for (var i = 0; i < whole.length; i++) {
+            var machine = whole[i]
+            var groupName = 'group' + (inc % 2)
+            var name = machine.description
+            var label = machine.cn ? machine.cn : ''
+
+            if (machine.family) {
+              if (Array.isArray(machine.family)) {
+                groupName = []
+                machine.family.forEach((g) => {
+                  groupName.push(g.replace(/(\s|\-)/g, ''))
+                })
+              } else {
+                groupName = [ machine.family.replace(/(\s|\-)/g, '') ]
+              }
+            }
+
+            if (name) {
+              if (machine.cn) {
+                name += '<div class="name">' + machine.cn + '</div>'
+              }
+              var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description })
+
+              var families = new Array(), types = new Array()
+              if (machine.family && machine.type) {
+                families = String(machine.family).split(',')
+                types = String(machine.type).split(',')
+                if (!djLang.isArray(families)) { families = new Array(families) }
+                if (!djLang.isArray(types)) { types = new Array(types) }
+
+                for (var j = 0; j < families.length; j++) {
+                  if (!category[families[j]]) {
+                    category[families[j]] = new Object()
+                  }
+
+                  for (var k = 0; k < types.length; k++) {
+                    if (!category[families[j]][types[k]]) {
+                      category[families[j]][types[k]] = new Array()
+                    }
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }
+              }
+
+              djDomClass.add(e.domNode, groupName)
+              e.setServers(locationConfig.servers)
+              that.addEntry(e)
+              loaded.push(e.loaded)
+              if (machine.airaltref && djLang.isArray(machine.airaltref)) {
+                machine.airaltref.forEach(function (altref) {
+                  var name = altref + '<div class="name">' + machine.cn + '</div>'
+                  var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim() })
+                  for (var j = 0; j < families.length; j++) {
+                    for (var k = 0; k < types.length; k++) {
+                      category[families[j]][types[k]].push(e.target)
+                    }
+                  }
+                  djDomClass.add(e.domNode, groupName)
+
+                  e.setServers(locationConfig.servers)
+                  that.addEntry(e)
+                  loaded.push(e.loaded)
+                })
+              } else if (machine.airaltref) {
+                var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
+                var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim() })
+                for (var j = 0; j < families.length; j++) {
+                  for (var k = 0; k < types.length; k++) {
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }
+
+                djDomClass.add(e.domNode, groupName)
+                e.setServers(locationConfig.servers)
+                that.addEntry(e)
+                loaded.push(e.loaded)
+              }
+
+              inc++
+            }
+          }
+        }
+        that.categories = category
+        djAll(loaded).then(function () {
+          that.buildMenu()
+          that.endDraw()
+          that.update()
+        })
+      })
+    },
+
+    update: function (force = false) {
+      var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date(), oldest = null
+      begin.setTime(this.get('dateRange').begin.getTime())
+      end.setTime(this.get('dateRange').end.getTime())
+      begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0, 0, 0)
+      end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0, 0, 0)
+      this.resize()
+
+      this.Updater.postMessage({type: 'move',
+        content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query: {
+          'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
+          'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
+          'search.deleted': '-' }
+        }]})
+      def.resolve()
+
+      return def.promise
+    },
 
 	 _getEntriesAttr: function () {
-    entries = new Array();
-    dtRegistry.findWidgets(this.domEntries).forEach( function (widget) {
-      if(widget instanceof location.entry) {
-        entries.push(widget);
+      entries = new Array()
+      dtRegistry.findWidgets(this.domEntries).forEach(function (widget) {
+        if (widget instanceof location.entry) {
+          entries.push(widget)
+        }
+      })
+
+      return entries
+    },
+
+    highlight: function (domNode) {
+      var that = this
+
+      if (this.Highlighting) {
+        djDomStyle.set(this.Highlighting[0], 'box-shadow', '')
+        window.clearTimeout(this.Highlighting[1])
+      } else {
+        this.Highlighting = []
       }
-    });
 
-    return entries;
-  },
+      djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)')
+      this.Highlighting[0] = domNode
+      this.Highlighting[1] = window.setTimeout(function () {
+        djDomStyle.set(domNode, 'box-shadow', '')
+      }, 5000)
+    },
 
-	highlight: function (domNode) {
-		var that = this;
+    goToReservation: function (data, center) {
+      var def = new djDeferred()
+      var that = this
+      var middle = window.innerHeight / 3
+      var widget = null
 
-		if(this.Highlighting) {
-			djDomStyle.set(this.Highlighting[0], 'box-shadow', '');
-			window.clearTimeout(this.Highlighting[1]);
-		} else {
-			this.Highlighting = [];
-		}
+      for (var k in this.entries) {
+        if (this.entries[k].target == data['target']) {
+          widget = this.entries[k]
+          break
+        }
+      }
 
-		djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)');
-		this.Highlighting[0] = domNode;
-		this.Highlighting[1] = window.setTimeout(function() {
-			djDomStyle.set(domNode, 'box-shadow', '');
-		}, 5000);
-	},
+      var tContainer = dtRegistry.byId('tContainer')
+      if (djDomStyle.get(tContainer.domNode, 'display') != 'none') {
+        var w = djDomStyle.get(tContainer.domNode, 'width')
+        center = djDate.add(center, 'day', Math.abs(w / this.get('blockSize')))
+      }
 
-	goToReservation: function(data, center) {
-		var def = new djDeferred();
-		var that = this;
-		var middle =  window.innerHeight / 3;
-		var widget = null;
-		
-		for(var k in this.entries) {
-			if(this.entries[k].target == data['target']) {
-				widget = this.entries[k];
-				break;
-			}
-		}
+      that.set('center', center)
+      that.resize()
 
-		var tContainer = dtRegistry.byId('tContainer');
-		if(djDomStyle.get(tContainer.domNode, "display") != 'none') {
-			var w = djDomStyle.get(tContainer.domNode, "width");
-			center = djDate.add(center, "day", Math.abs(w / this.get('blockSize')));	
-		}
+      that.update(true).then(function () {
+        if (widget) {
+          var pos = djDomGeo.position(widget.domNode, true)
+          window.scroll(0, pos.y - middle)
 
-		that.set('center', center);
-		that.resize();
+          widget.update(true).then(function () {
+            var pos = djDomGeo.position(widget.domNode, true)
+            window.scroll(0, pos.y - middle)
+            that.scroll()
+            var reservation = null
 
-		that.update(true).then( function () {
-			if(widget) {
-				var pos = djDomGeo.position(widget.domNode, true);
-				window.scroll(0, pos.y - middle);
+            for (var k in widget.entries) {
+              if (widget.entries[k].id == data.id) {
+                reservation = widget.entries[k]
+                break
+              }
+            }
 
-				widget.update(true).then(function () {
-					var pos = djDomGeo.position(widget.domNode, true);
-					window.scroll(0, pos.y - middle);
-					that.scroll();
-					var reservation = null;
+            if (reservation) {
+              def.resolve(reservation)
+            }
+          })
+        }
+      })
 
-					for(var k in widget.entries) {
-						if(widget.entries[k].id == data.id) {
-							reservation = widget.entries[k];
-							break;
-						}
-					}
-						
-						if(reservation) {
-							def.resolve(reservation);
-						}
-				});
-			}
-		});
+      return def.promise
+    },
 
-		return def.promise;
-	},
+    currentTopEntry: function () {
+      var current
+      page = getPageRect()
+      for (var k in this.entries) {
+        var rect = this.entries[k].view.rectangle
+        if (!current && rect[1] >= page[1]) {
+          current = this.entries[k]
+          continue
+        }
 
-	currentTopEntry: function () {
-		var current;
-		page = getPageRect(); 
-		for(var k in this.entries) {
-			var rect = this.entries[k].view.rectangle;
-			if(! current && rect[1] >= page[1]) {
-				current = this.entries[k];
-				continue;
-			}
-			
-			if(rect[1] >= page[1] && rect[1] < current.view.rectangle[1]) {
-				current = this.entries[k];
-			}
-		}
-		return current;
-	},
+        if (rect[1] >= page[1] && rect[1] < current.view.rectangle[1]) {
+          current = this.entries[k]
+        }
+      }
+      return current
+    },
 
-	doSearchLocation: function (loc) {
-		var that = this;
-		
-		Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
-			if(result && result.data) {
-				data = result.data;
-				that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
-					that.highlight(widget.domNode);
-				});
-			}
-		});
-	},
+    doSearchLocation: function (loc) {
+      var that = this
 
-	print: function ( url ) {
-		window.open(url);
-	},
+      Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
+        if (result && result.data) {
+          data = result.data
+          that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
+            that.highlight(widget.domNode)
+          })
+        }
+      })
+    },
 
-	getEntry: function( entry ) {
-		var e = null;
-		for(var i = 0; i < this.entries.length; i++) {
-			if(this.entries[i].get('target') == entry) {
-				e = this.entries[i];
-				break;
-			}
-		}
+    print: function (url) {
+      window.open(url)
+    },
 
-		return e;
-	},
+    getEntry: function (entry) {
+      var e = null
+      for (var i = 0; i < this.entries.length; i++) {
+        if (this.entries[i].get('target') == entry) {
+          e = this.entries[i]
+          break
+        }
+      }
 
-	setOpen: function ( ident ) {
-		if(! this.Open ) { this.Open = new Array(); }
-		if(this.Open.indexOf(ident) == -1) { this.Open.push(ident); }
-	},
+      return e
+    },
 
-	unsetOpen: function (ident) {
-		if( this.Open ) {
-			var idx = this.Open.indexOf(ident);
-			if(idx != -1) {
-				this.Open.splice(idx, 1);
-			}
-		}
-	},
+    setOpen: function (ident) {
+      if (!this.Open) { this.Open = new Array() }
+      if (this.Open.indexOf(ident) == -1) { this.Open.push(ident) }
+    },
 
-	isOpen: function ( ident ) {
-		if( this.Open ) {
-			if(this.Open.indexOf(ident) == -1) { return false; }
-			return true;
-		}
-		return false;
-	},
+    unsetOpen: function (ident) {
+      if (this.Open) {
+        var idx = this.Open.indexOf(ident)
+        if (idx != -1) {
+          this.Open.splice(idx, 1)
+        }
+      }
+    },
 
-	setModify: function ( ident ) {
-		if(! this.Mod ) { this.Mod = new Array(); }
-		if(this.Mod.indexOf(ident) == -1) { this.Mod.push(ident); }
-	},
+    isOpen: function (ident) {
+      if (this.Open) {
+        if (this.Open.indexOf(ident) == -1) { return false }
+        return true
+      }
+      return false
+    },
 
-	unsetModify: function ( ident ) {
-		if( this.Mod ) {
-			var idx = this.Mod.indexOf(ident);
-			if(idx != -1) {
-				this.Mod.splice(idx, 1);
-			}
-		}
-	},
+    setModify: function (ident) {
+      if (!this.Mod) { this.Mod = new Array() }
+      if (this.Mod.indexOf(ident) == -1) { this.Mod.push(ident) }
+    },
 
-	isModify: function ( ident ) {
-		if( this.Mod ) {
-			if(this.Mod.indexOf(ident) == -1) { return false; }
-			return true;
-		}
-		return false;
-	},
+    unsetModify: function (ident) {
+      if (this.Mod) {
+        var idx = this.Mod.indexOf(ident)
+        if (idx != -1) {
+          this.Mod.splice(idx, 1)
+        }
+      }
+    },
 
-	Reservation : {
-		_st: window.localStorage,
+    isModify: function (ident) {
+      if (this.Mod) {
+        if (this.Mod.indexOf(ident) == -1) { return false }
+        return true
+      }
+      return false
+    },
 
-		getAll: function () {
-		},
+    Reservation: {
+      _st: window.localStorage,
 
-		get: function ( id ) {
-		}, 
+      getAll: function () {
+      },
 
-		set: function ( id, object ) {
-		},
+      get: function (id) {
+      },
 
-		remove: function ( id ) {
-		},
+      set: function (id, object) {
+      },
 
-		clean: function () {
-		}
-	},
-});});
+      remove: function (id) {
+      },
+
+      clean: function () {
+      }
+    }
+  })
+})
