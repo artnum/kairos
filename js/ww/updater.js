@@ -4,7 +4,7 @@ importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 var req = new XMLHttpRequest()
 var last = { 'modification': null, 'id': 0 }
-var firstLoad = true
+
 wantdb(() => { checker() })
 
 onmessage = function (msg) {
@@ -63,12 +63,6 @@ var handleResults = function (txt) {
         } else {
           if (last.id < Number(r.data[i].id)) {
             last.id = Number(r.data[i].id)
-            if (!firstLoad) {
-              var n = new Notification('Nouvelle réservation ' + r.data[i].id + ' a été créée')
-              if (n.permission === 'denied') {
-                console.log(n)
-              }
-            }
           }
         }
         if (ids.indexOf(r.data[i].target) === -1) {
@@ -121,7 +115,7 @@ var checker = function () {
   if (parameters !== '') {
     url += '?' + parameters
   }
-  firstLoad = false
+
   var cReq = new XMLHttpRequest()
   cReq.onload = function (e) {
     if (cReq.readyState === 4) {
