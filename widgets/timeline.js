@@ -1221,6 +1221,7 @@ define([
           that.buildMenu()
           that.endDraw()
           that.update()
+          window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(that), 300000)
         })
       })
     },
@@ -1249,8 +1250,6 @@ define([
           'search.deleted': '-' }
         }]})
       def.resolve()
-
-      window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 30000)
 
       return def.promise
     },
@@ -1440,6 +1439,9 @@ define([
 
       clean: function () {
       }
+    },
+    openReturn: function (id) {
+ 
     }
   })
 })
