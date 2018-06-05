@@ -1228,7 +1228,10 @@ define([
     },
 
     update: function (force = false) {
-      var def = new djDeferred(), r = new Array(), begin = new Date(), end = new Date(), now = new Date(), oldest = null
+      var def = new djDeferred()
+      var begin = new Date()
+      var end = new Date()
+      
       begin.setTime(this.get('dateRange').begin.getTime())
       end.setTime(this.get('dateRange').end.getTime())
       begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0, 0, 0)
@@ -1246,8 +1249,8 @@ define([
       return def.promise
     },
 
-	 _getEntriesAttr: function () {
-      entries = new Array()
+    _getEntriesAttr: function () {
+      var entries = []
       dtRegistry.findWidgets(this.domEntries).forEach(function (widget) {
         if (widget instanceof location.entry) {
           entries.push(widget)

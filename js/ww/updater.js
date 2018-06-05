@@ -1,6 +1,9 @@
+/* eslint-env worker */
+/* global wantdb, DB, objectHash */
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
-var req = new XMLHttpRequest(), last = { 'modification': null, 'id': 0 }
+var req = new XMLHttpRequest()
+var last = { 'modification': null, 'id': 0 }
 var firstLoad = true
 wantdb(() => { checker() })
 
@@ -17,25 +20,26 @@ onmessage = function (msg) {
       var parameters = ''
       var url = msg.data.content[0]
       if (msg.data.content[1] && msg.data.content[1].query) {
-        var array = new Array()
+        var array = []
         for (var k in msg.data.content[1].query) {
           array.push(encodeURIComponent(k) + '=' + encodeURIComponent(msg.data.content[1].query[k]))
         }
         parameters = array.join('&')
       }
-      if (parameters != '') { url += '?' + parameters }
+      if (parameters !== '') { url += '?' + parameters }
       req.open('get', url, true)
       req.send()
       break
   }
 }
 
-handleResults = function (txt) {
-  var ids = new Array()
+var handleResults = function (txt) {
+  var ids = []
+  var r
   try {
     r = JSON.parse(txt)
   } catch (e) {
-    return byTarget
+    return ids
   }
   if (r && r.data && r.data.length > 0) {
     var tx = DB.transaction('reservations', 'readwrite')
@@ -59,15 +63,20 @@ handleResults = function (txt) {
         } else {
           if (last.id < Number(r.data[i].id)) {
             last.id = Number(r.data[i].id)
-            if (!firstLoad) { new Notification('Nouvelle réservation ' + r.data[i].id + ' a été créée') }
+            if (!firstLoad) {
+              var n = new Notification('Nouvelle réservation ' + r.data[i].id + ' a été créée')
+              if (n.permission === 'denied') {
+                console.log(n)
+              }
+            }
           }
         }
-        if (ids.indexOf(r.data[i].target) == -1) {
+        if (ids.indexOf(r.data[i].target) === -1) {
           ids.push(r.data[i].target)
         }
 
         if (r.data[i].previous) {
-          if (ids.indexOf(r.data[i].previous) == -1) {
+          if (ids.indexOf(r.data[i].previous) === -1) {
             ids.push(r.data[i].previous)
           }
         }
@@ -86,19 +95,19 @@ req.onload = function (e) {
   }
 }
 
-checker = function () {
+var checker = function () {
   var url = '/location/store/DeepReservation'
   var parameters = ''
-  if (last.modification == null && last.id == 0) {
+  if (last.modification == null && last.id === 0) {
     setTimeout(checker, 2500)
     return
   }
 
-  var params = new Array()
+  var params = []
   if (last.modification != null) {
     params.push('search.modification=' + encodeURIComponent('>' + last.modification.toISOString()))
   }
-  if (last.id != 0) {
+  if (last.id !== 0) {
     params.push('search.id=' + encodeURIComponent('>' + String(last.id)))
     if (params.length > 1) {
       params.push('search._rules=' + encodeURIComponent('modification OR id'))
@@ -109,7 +118,7 @@ checker = function () {
     params.push('long=1')
     parameters = params.join('&')
   }
-  if (parameters != '') {
+  if (parameters !== '') {
     url += '?' + parameters
   }
   firstLoad = false
@@ -117,7 +126,7 @@ checker = function () {
   cReq.onload = function (e) {
     if (cReq.readyState === 4) {
       if (cReq.status === 200) {
-        var byTarget = handleResults(cReq.responseText)
+        handleResults(cReq.responseText)
       }
       checker()
     }
