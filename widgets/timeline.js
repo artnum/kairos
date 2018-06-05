@@ -46,7 +46,6 @@ define([
   'location/_Cluster',
   'location/_Request',
   'location/entry',
-  'location/_Sleeper',
   'location/timeline/popup',
   'location/timeline/keys',
   'location/update',
@@ -98,7 +97,6 @@ define([
   _Cluster,
   request,
   entry,
-  _Sleeper,
 
   tlPopup, tlKeys, update,
 
@@ -1227,6 +1225,12 @@ define([
       })
     },
 
+    updateChild: function () {
+      for (var i = 0; i < this.entries.length; i++) {
+        this.entries[i].update()
+      }
+    },
+
     update: function (force = false) {
       var def = new djDeferred()
       var begin = new Date()
@@ -1245,6 +1249,8 @@ define([
           'search.deleted': '-' }
         }]})
       def.resolve()
+
+      window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 30000)
 
       return def.promise
     },

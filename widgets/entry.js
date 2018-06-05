@@ -28,7 +28,6 @@ define([
   'location/rForm',
   'location/_Cluster',
   'location/_Request',
-  'location/_Sleeper',
   'location/update',
 
   'artnum/Request'
@@ -63,7 +62,6 @@ define([
 
   _Cluster,
   request,
-  _Sleeper,
   update,
 
   Req
@@ -90,7 +88,6 @@ define([
     currentLocation: '',
 
     constructor: function (args) {
-      _Sleeper.init()
       this.waiters = 0
       this.childs = new Object()
       this.power = true
