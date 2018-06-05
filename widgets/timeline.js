@@ -1,3 +1,4 @@
+/* global define, Worker, locationConfig, getPageRect, getElementRect */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -86,7 +87,7 @@ define([
   dtMenuBarItem,
   dtPopupMenuBarItem,
   dtDropDownMenu,
-  dtMenuItem,
+  DtMenuItem,
   dtMenuSeparator,
   dtCheckedMenuItem,
   dtRadioMenuItem,
@@ -133,23 +134,22 @@ define([
     constructor: function (args) {
       djLang.mixin(this, arguments)
       this.lastId = 0
-      this.verticals = new Array()
-      this.days = new Array()
-      this.weekNumber = new Array()
-      this.entries = new Array()
+      this.verticals = []
+      this.days = []
+      this.weekNumber = []
+      this.entries = []
       this.lines = null
       this.todayOffset = -1
-      this.months = new Array()
-      this.moveQueue = new Array()
+      this.months = []
+      this.moveQueue = []
       this.timeout = null
       this.lastDay = null
       this.firstDay = null
       this.odd = true
       this.center = new Date()
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
-      var verticals = new Array()
-      this.lastClientXY = new Array(0, 0)
-      this.logs = new Array()
+      this.lastClientXY = []
+      this.logs = []
       this.inputString = ''
       this.lastMod = ''
       this.lastId = ''
@@ -157,8 +157,8 @@ define([
       this.daysZoom = 30
       this.compact = false
       this.currentVerticalLine = 0
-      this.displayOrder = new Array()
-      this.runningRequest = new Array()
+      this.displayOrder = []
+      this.runningRequest = []
       this.extension = false
 
       this.zoomCss = document.createElement('style')
@@ -500,7 +500,7 @@ define([
     buildMenu: function () {
       var that = this
 
-      var item = new dtMenuItem({ label: 'Tout', disabled: true})
+      var item = new DtMenuItem({label: 'Tout', disabled: true})
       djOn(item, 'click', djLang.hitch(that, that.filterNone))
       that.searchMenu.addChild(item)
       that.searchMenu.filterNone = item
@@ -519,14 +519,14 @@ define([
               var item = new dtPopupMenuItem({ label: names[key], popup: new dtDropDownMenu()})
               that.searchMenu.addChild(item)
 
-              var all = new dtMenuItem({ label: 'Tout', value: { name: key, content: new Array() } })
+              var all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
               djOn(all, 'click', djLang.hitch(that, that.filterFamily))
               item.popup.addChild(all)
               item.popup.addChild(new dtMenuSeparator())
 
               for (var subkey in that.categories[key]) {
                 if (names[subkey]) {
-                  var subitem = new dtMenuItem({ label: names[subkey], value: { name: subkey, content: that.categories[key][subkey]} })
+                  var subitem = new DtMenuItem({ label: names[subkey], value: { name: subkey, content: that.categories[key][subkey]} })
                   djOn(subitem, 'click', djLang.hitch(that, that.filterFamily))
                   all.value.content = all.value.content.concat(that.categories[key][subkey])
                   item.popup.addChild(subitem)
@@ -544,9 +544,9 @@ define([
           if (results && results.data && results.data.length > 0) {
             var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()})
             results.data.forEach((entry) => {
-              if (entry.type == 0) {
+              if (entry.type === 0) {
                 var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
-                var item = new dtMenuItem({label: html, value: entry})
+                var item = new DtMenuItem({label: html, value: entry})
                 djOn(item, 'click', djLang.hitch(that, that.filterStatus))
                 p.popup.addChild(item)
               }
@@ -555,9 +555,9 @@ define([
 
             p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()})
             results.data.forEach((entry) => {
-              if (entry.type == 1) {
+              if (entry.type === 1) {
                 var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
-                var item = new dtMenuItem({ label: html, value: entry })
+                var item = new DtMenuItem({ label: html, value: entry })
                 djOn(item, 'click', djLang.hitch(that, (e) => {
                   var node = dtRegistry.byNode(e.selectorTarget)
                   if (node.value && node.value.id) {
@@ -577,8 +577,8 @@ define([
 
           var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
-          var item = new dtMenuItem({ label: 'Commence le ' })
-          var x = new dtDateTextBox({ value: now, id: 'menuStartDay' })
+          var item = new DtMenuItem({label: 'Commence le '})
+          var x = new dtDateTextBox({value: now, id: 'menuStartDay' })
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           djOn(item, 'click', djLang.hitch(that, (e) => {
@@ -590,7 +590,7 @@ define([
           }))
           that.searchMenu.addChild(item)
 
-          var item = new dtMenuItem({ label: 'Termine le '})
+          item = new DtMenuItem({label: 'Termine le '})
           djOn(item, 'click', djLang.hitch(that, () => {
             this.filterReset()
             var date = dtRegistry.byId('menuEndDay').get('value')
@@ -598,14 +598,14 @@ define([
             this.update()
             that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
           }))
-          var x = new dtDateTextBox({ value: now, id: 'menuEndDay' })
+          x = new dtDateTextBox({ value: now, id: 'menuEndDay' })
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           that.searchMenu.addChild(item)
 
           that.searchMenu.addChild(new dtMenuSeparator())
 
-          var item = new dtMenuItem({ label: 'À faire le '})
+          item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
             this.filterReset()
             var date = dtRegistry.byId('menuTodoDay').get('value')
@@ -614,7 +614,7 @@ define([
             var out = this.filterDate(this.entries, date, 'trueBegin')
             this.filterApply(out.concat(this.filterComplementDate(this.entries, date, 4)))
           }))
-          var x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
+          x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           that.searchMenu.addChild(item)
@@ -642,8 +642,9 @@ define([
 
     filterDate: function (entries) {
       this.filterReset()
-      var out = new Array()
-      var date = new Date(), what = 'trueBegin'
+      var out = []
+      var date = new Date()
+      var what = 'trueBegin'
       this.searchMenu.filterNone.set('disabled', false)
       if (arguments[1]) {
         date = arguments[1]
@@ -653,9 +654,8 @@ define([
       }
 
       for (var i = 0; i < entries.length; i++) {
-        var active = false
         for (var k in entries[i].entries) {
-          if (djDate.compare(entries[i].entries[k].get(what), date, 'date') == 0) {
+          if (djDate.compare(entries[i].entries[k].get(what), date, 'date') === 0) {
             out.push(entries[i].get('id')); break
           }
         }
@@ -676,7 +676,7 @@ define([
         } else {
           var count = 0
           for (var j = 0; j < active.length; j++) {
-            if (active[j].status == node.value.id) {
+            if (active[j].status === node.value.id) {
               count++; break
             }
           }
@@ -692,14 +692,14 @@ define([
 
     filterComplementDate: function (entries, date, complement) {
       this.filterReset()
-      var out = new Array()
+      var out = []
       for (var i = 0; i < entries.length; i++) {
         var found = false
         var active = entries[i].get('activeReservations')
         for (var j = 0; j < active.length; j++) {
           for (var k = 0; k < active[j].complements.length; k++) {
-            if (active[j].complements[k].type.id == complement &&
-						active[j].complements[k].range.within(date)) {
+            if (active[j].complements[k].type.id === complement &&
+              active[j].complements[k].range.within(date)) {
               out.push(entries[i].get('id')); found = true; break
             }
           }
@@ -711,14 +711,14 @@ define([
 
     filterComplement: function (entries, value) {
       this.filterReset()
-      var out = new Array()
+      var out = []
       for (var i = 0; i < entries.length; i++) {
         var found = false
         var active = entries[i].get('activeReservations')
         if (active.length > 0) {
           for (var j = 0; j < active.length; j++) {
             for (var k = 0; k < active[j].complements.length; k++) {
-              if (active[j].complements[k].type.id == value) {
+              if (active[j].complements[k].type.id === value) {
                 out.push(entries[i].get('id'))
                 found = true
                 break
@@ -734,7 +734,7 @@ define([
     filterApply: function (entries) {
       this.filterReset()
       for (var i = 0; i < this.entries.length; i++) {
-        if (entries.indexOf(this.entries[i].get('id')) == -1) {
+        if (entries.indexOf(this.entries[i].get('id')) === -1) {
           this.entries[i].set('active', false)
         } else {
           this.entries[i].set('active', true)
@@ -749,16 +749,16 @@ define([
     },
 
     mouseUpDown: function (event) {
-      if (event.type == 'mouseup') {
+      if (event.type === 'mouseup') {
         this.eventStarted = null
       } else {
         this.eventStarted = event
       }
       window.requestAnimationFrame(function () {
         var domNode = document.getElementsByTagName('body')[0]
-        if (event.type == 'mouseup') {
+        if (event.type === 'mouseup') {
           domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
-        }	else {
+        } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
         }
       })
@@ -780,14 +780,14 @@ define([
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
 
       /* Move, following mouse, timeline left/right and up/down when left button is held */
-      if (event.buttons == 1) {
+      if (event.buttons === 1) {
         var xDiff = Math.abs(this.lastClientXY[0] - event.clientX)
         var yDiff = Math.abs(this.lastClientXY[1] - event.clientY)
 
         if ((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {
           if (this.lastClientXY[0] - event.clientX > 0) {
             this.xDiff += xDiff
-          }	else if (this.lastClientXY[0] - event.clientX < 0) {
+          } else if (this.lastClientXY[0] - event.clientX < 0) {
             this.xDiff += -xDiff
           }
           if (Math.abs(this.xDiff) >= this.get('blockSize')) {
@@ -916,7 +916,7 @@ define([
     _lli: function (root, node) {
       node.set('nextNode', null)
       for (var current = root; current; current = current.get('nextNode')) {
-        if (current.get('target') == node.get('placeAfter')) {
+        if (current.get('target') === node.get('placeAfter')) {
           node.set('nextNode', current.get('nextNode'))
           current.set('nextNode', node)
           return true
@@ -930,7 +930,8 @@ define([
       var newBuffer = document.createDocumentFragment()
 
       this.displayOrder = this.entries.sort(function (a, b) {
-        var oa = a.get('order'), ob = b.get('order')
+        var oa = a.get('order')
+        var ob = b.get('order')
 
         if (oa && !ob) { return -1 }
         if (!oa && ob) { return 1 }
@@ -1287,7 +1288,7 @@ define([
       }
 
       var tContainer = dtRegistry.byId('tContainer')
-      if (djDomStyle.get(tContainer.domNode, 'display') != 'none') {
+      if (djDomStyle.get(tContainer.domNode, 'display') !== 'none') {
         var w = djDomStyle.get(tContainer.domNode, 'width')
         center = djDate.add(center, 'day', Math.abs(w / this.get('blockSize')))
       }
@@ -1307,7 +1308,7 @@ define([
             var reservation = null
 
             for (var k in widget.entries) {
-              if (widget.entries[k].id == data.id) {
+              if (widget.entries[k].id === data.id) {
                 reservation = widget.entries[k]
                 break
               }
@@ -1325,7 +1326,7 @@ define([
 
     currentTopEntry: function () {
       var current
-      page = getPageRect()
+      var page = getPageRect()
       for (var k in this.entries) {
         var rect = this.entries[k].view.rectangle
         if (!current && rect[1] >= page[1]) {
@@ -1343,9 +1344,9 @@ define([
     doSearchLocation: function (loc) {
       var that = this
 
-      Req.get(locationConfig.store + '/Reservation/' + loc, { query: { 'search.delete': '-' }}).then(function (result) {
+      Req.get(locationConfig.store + '/Reservation/' + loc, {query: {'search.delete': '-'}}).then(function (result) {
         if (result && result.data) {
-          data = result.data
+          var data = result.data
           that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
             that.highlight(widget.domNode)
           })
@@ -1360,7 +1361,7 @@ define([
     getEntry: function (entry) {
       var e = null
       for (var i = 0; i < this.entries.length; i++) {
-        if (this.entries[i].get('target') == entry) {
+        if (this.entries[i].get('target') === entry) {
           e = this.entries[i]
           break
         }
@@ -1370,14 +1371,14 @@ define([
     },
 
     setOpen: function (ident) {
-      if (!this.Open) { this.Open = new Array() }
-      if (this.Open.indexOf(ident) == -1) { this.Open.push(ident) }
+      if (!this.Open) { this.Open = [] }
+      if (this.Open.indexOf(ident) === -1) { this.Open.push(ident) }
     },
 
     unsetOpen: function (ident) {
       if (this.Open) {
         var idx = this.Open.indexOf(ident)
-        if (idx != -1) {
+        if (idx !== -1) {
           this.Open.splice(idx, 1)
         }
       }
@@ -1385,21 +1386,21 @@ define([
 
     isOpen: function (ident) {
       if (this.Open) {
-        if (this.Open.indexOf(ident) == -1) { return false }
+        if (this.Open.indexOf(ident) === -1) { return false }
         return true
       }
       return false
     },
 
     setModify: function (ident) {
-      if (!this.Mod) { this.Mod = new Array() }
-      if (this.Mod.indexOf(ident) == -1) { this.Mod.push(ident) }
+      if (!this.Mod) { this.Mod = [] }
+      if (this.Mod.indexOf(ident) === -1) { this.Mod.push(ident) }
     },
 
     unsetModify: function (ident) {
       if (this.Mod) {
         var idx = this.Mod.indexOf(ident)
-        if (idx != -1) {
+        if (idx !== -1) {
           this.Mod.splice(idx, 1)
         }
       }
@@ -1407,7 +1408,7 @@ define([
 
     isModify: function (ident) {
       if (this.Mod) {
-        if (this.Mod.indexOf(ident) == -1) { return false }
+        if (this.Mod.indexOf(ident) === -1) { return false }
         return true
       }
       return false
