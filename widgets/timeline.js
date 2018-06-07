@@ -704,6 +704,7 @@ define([
           var set = this.Filters.entries.splice(0)
           this.Filters.init()
           this.Filters.dateRange(date, set, 'complement').then(function () {
+            this.searchMenu.filterNone.set('disabled', false)
             result = result.concat(this.Filters.entries)
             for (var i = 0; i < this.entries.length; i++) {
               if (result.indexOf(this.entries[i].get('target')) === -1) {
