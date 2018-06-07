@@ -48,7 +48,9 @@ define([
   'location/entry',
   'location/timeline/popup',
   'location/timeline/keys',
+  'location/timeline/filters',
   'location/update',
+  'location/Return',
 
   'artnum/Request'
 
@@ -92,19 +94,20 @@ define([
   dtRadioMenuItem,
   dtPopupMenuItem,
   dtCalendar,
-  dtDialog,
+  Dialog,
 
   _Cluster,
   request,
   entry,
 
-  tlPopup, tlKeys, update,
+  tlPopup, tlKeys, update, Filters,
+  Return,
 
   Req
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster,
-    tlPopup, tlKeys, update ], {
+    tlPopup, tlKeys, update, Filters ], {
 
     center: null,
     offset: 220,
@@ -160,7 +163,6 @@ define([
       this.extension = false
 
       this.zoomCss = document.createElement('style')
-
       this.Proxy = new Worker('/location/js/ww/proxy.js')
       this.Proxy.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
@@ -608,9 +610,9 @@ define([
             this.filterReset()
             var date = dtRegistry.byId('menuTodoDay').get('value')
             this.center = date
+            date.setHours(0, 0, 0)
             this.update()
-            var out = this.filterDate(this.entries, date, 'trueBegin')
-            this.filterApply(out.concat(this.filterComplementDate(this.entries, date, 4)))
+            this.filterComplementDate(date, '4')
           }))
           x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
@@ -688,23 +690,34 @@ define([
       this.resize()
     },
 
-    filterComplementDate: function (entries, date, complement) {
-      this.filterReset()
-      var out = []
-      for (var i = 0; i < entries.length; i++) {
-        var found = false
-        var active = entries[i].get('activeReservations')
-        for (var j = 0; j < active.length; j++) {
-          for (var k = 0; k < active[j].complements.length; k++) {
-            if (active[j].complements[k].type.id === complement &&
-              active[j].complements[k].range.within(date)) {
-              out.push(entries[i].get('id')); found = true; break
+    filterComplementDate: function (date, complement) {
+      this.Filters.init()
+      this.Filters.beginDay(date).then(function () {
+        var result = this.Filters.entries.splice(0)
+        this.Filters.init()
+        this.Filters.find((val) => {
+          for (var i = 0; i < val.complements.length; i++) {
+            if (val.complements[i].type.id === complement) {
+              return true
             }
           }
-          if (found) { break }
-        }
-      }
-      return out
+          return false
+        }).then(function () {
+          var set = this.Filters.entries.splice(0)
+          this.Filters.init()
+          this.Filters.dateRange(date, set, 'complement').then(function () {
+            result = result.concat(this.Filters.entries)
+            for (var i = 0; i < this.entries.length; i++) {
+              if (result.indexOf(this.entries[i].get('target')) === -1) {
+                this.entries[i].set('active', false)
+              } else {
+                this.entries[i].set('active', true)
+              }
+            }
+          }.bind(this))
+        }.bind(this))
+      }.bind(this))
+      this.filterReset()
     },
 
     filterComplement: function (entries, value) {
@@ -859,7 +872,7 @@ define([
 
     chooseDay: function () {
       var calendar = new dtCalendar({ value: this.center })
-      var dialog = new dtDialog({ title: 'Choisir une date'})
+      var dialog = new Dialog({ title: 'Choisir une date'})
 
       dialog.addChild(calendar)
       dialog.startup()
@@ -1144,10 +1157,10 @@ define([
               if (Array.isArray(machine.family)) {
                 groupName = []
                 machine.family.forEach((g) => {
-                  groupName.push(g.replace(/(\s|\-)/g, ''))
+                  groupName.push(g.replace(/(\s|-)/g, ''))
                 })
               } else {
-                groupName = [ machine.family.replace(/(\s|\-)/g, '') ]
+                groupName = [ machine.family.replace(/(\s|-)/g, '') ]
               }
             }
 
@@ -1157,7 +1170,8 @@ define([
               }
               var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description })
 
-              var families = new Array(), types = new Array()
+              var families = []
+              var types = []
               if (machine.family && machine.type) {
                 families = String(machine.family).split(',')
                 types = String(machine.type).split(',')
@@ -1166,12 +1180,12 @@ define([
 
                 for (var j = 0; j < families.length; j++) {
                   if (!category[families[j]]) {
-                    category[families[j]] = new Object()
+                    category[families[j]] = {}
                   }
 
                   for (var k = 0; k < types.length; k++) {
                     if (!category[families[j]][types[k]]) {
-                      category[families[j]][types[k]] = new Array()
+                      category[families[j]][types[k]] = []
                     }
                     category[families[j]][types[k]].push(e.target)
                   }
@@ -1441,7 +1455,11 @@ define([
       }
     },
     openReturn: function (id) {
- 
+      var dialog = new Dialog({title: 'Retour'}) 
+      this.own(dialog)
+      var ret = new Return()
+      dialog.own(ret)
+      dialog.addChild(ret)
     }
   })
 })

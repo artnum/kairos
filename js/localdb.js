@@ -1,3 +1,4 @@
+/* global indexedDB */
 var DB = null
 
 function wantdb (callback) {
