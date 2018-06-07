@@ -605,6 +605,7 @@ define([
 
           item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
+            this.wait()
             this.filterReset()
             var date = dtRegistry.byId('menuTodoDay').get('value')
             this.center = date
@@ -713,6 +714,7 @@ define([
                 this.entries[i].set('active', true)
               }
             }
+            this.unwait()
           }.bind(this))
         }.bind(this))
       }.bind(this))
@@ -1459,6 +1461,29 @@ define([
       var ret = new Return()
       dialog.own(ret)
       dialog.addChild(ret)
+    },
+    wait: function () {
+      if (!document.getElementById('WaitDisplay')) {
+        var w = Math.abs(window.innerWidth / 2) - 25
+        var x = document.createElement('DIV')
+        var y = document.createElement('I')
+        y.setAttribute('class', 'fas fa-spinner fa-pulse')
+        y.setAttribute('style', 'position: relative; top: 100px;')
+        x.appendChild(y)
+        x.setAttribute('id', 'WaitDisplay')
+        x.setAttribute('style', 'font-size: 80px; text-align: center; position: absolute; z-index: 99999999; left: ' + w + 'px; top: 0; left: 0; bottom: 0; right: 0; background-color: rgba(255,255,255,0.5)')
+        window.requestAnimationFrame(() => {
+          document.body.appendChild(x)
+        })
+      }
+    },
+    unwait: function () {
+      var n = document.getElementById('WaitDisplay')
+      if (n) {
+        window.requestAnimationFrame(() => {
+          document.body.removeChild(n)
+        })
+      }
     }
   })
 })
