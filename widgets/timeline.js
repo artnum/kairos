@@ -50,7 +50,6 @@ define([
   'location/timeline/keys',
   'location/timeline/filters',
   'location/update',
-  'location/Return',
 
   'artnum/Request'
 
@@ -101,7 +100,6 @@ define([
   entry,
 
   tlPopup, tlKeys, update, Filters,
-  Return,
 
   Req
 ) {
