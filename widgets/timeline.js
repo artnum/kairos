@@ -137,6 +137,7 @@ define([
       this.days = []
       this.weekNumber = []
       this.entries = []
+      this.Entries = {}
       this.lines = null
       this.todayOffset = -1
       this.months = []
@@ -161,22 +162,30 @@ define([
       this.extension = false
 
       this.zoomCss = document.createElement('style')
+      this.Cleaner = new Worker('/location/js/ww/cleaner.js')
+      this.Cleaner.onmessage = djLang.hitch(this, function (e) {
+        if (!e || !e.data) { return }
+        for (var i = 0; i < e.data.length; i++) {
+          if (this.Entries[e.data[i]]) {
+            console.log('Cleaning ' + e.data[i])
+            this.Entries[e.data[i]].update()
+          }
+        }
+      })
+
       this.Proxy = new Worker('/location/js/ww/proxy.js')
       this.Proxy.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
         switch (e.data.type) {
           case 'entry':
-            for (var i = 0; i < this.entries.length; i++) {
-              if (this.entries[i].get('id') == e.data.content) {
-                this.entries[i].update()
-                break
-              }
+            if (this.Entries[e.data.content]) {
+              this.Entries[e.data.content].update()
             }
             break
           case 'entries':
-            for (var i = 0; i < this.entries.length; i++) {
-              if (e.data.content.indexOf(this.entries[i].get('target')) != -1) {
-                this.entries[i].update()
+            for (var i = 0; i < e.data.content.length; i++) {
+              if (this.Entries[e.data.content[i]]) {
+                this.Entries[e.data.content[i]].update()
               }
             }
             break
@@ -305,7 +314,7 @@ define([
         var entry = this.entries[i]
         if (entry.tags.length > 0) {
           if (entry.tags.find((element) => {
-            if (element.toLowerCase() == value.toLowerCase()) {
+            if (element.toLowerCase() === value.toLowerCase()) {
               return true
             }
             return false
@@ -374,13 +383,11 @@ define([
     },
 
     resize: function () {
-      var that = this
-      var opts = arguments[0] ? arguments[0] : {}
-
       this.drawTimeline()
       this.drawVerticalLine()
-      for (var i = 0; i < this.entries.length; i++) {
-        this.entries[i].resize()
+
+      for (var k in this.Entries) {
+        this.Entries[k].resize()
       }
     },
 
@@ -973,6 +980,7 @@ define([
     },
 
     addEntry: function (widget) {
+      this.Entries[widget.target] = widget
       this.entries.push(widget)
     },
 
@@ -1242,8 +1250,8 @@ define([
     },
 
     updateChild: function () {
-      for (var i = 0; i < this.entries.length; i++) {
-        this.entries[i].update()
+      for (var k in this.Entries) {
+        this.Entries[k].update()
       }
     },
 
