@@ -527,14 +527,14 @@ define([
 
       Req.get('https://aircluster.local.airnace.ch/store/Category').then((response) => {
         if (response && response.data && response.data.length > 0) {
-          var names = new Object()
+          var names = {}
           for (var i = 0; i < response.data.length; i++) {
             names[response.data[i]['uniqueidentifier']] = response.data[i]['cn;lang-fr']
           }
 
           for (var key in that.categories) {
             if (names[key]) {
-              var item = new dtPopupMenuItem({ label: names[key], popup: new dtDropDownMenu()})
+              var item = new dtPopupMenuItem({label: names[key], popup: new dtDropDownMenu()})
               that.searchMenu.addChild(item)
 
               var all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
@@ -544,7 +544,7 @@ define([
 
               for (var subkey in that.categories[key]) {
                 if (names[subkey]) {
-                  var subitem = new DtMenuItem({ label: names[subkey], value: { name: subkey, content: that.categories[key][subkey]} })
+                  var subitem = new DtMenuItem({ label: names[subkey], value: {name: subkey, content: that.categories[key][subkey]} })
                   djOn(subitem, 'click', djLang.hitch(that, that.filterFamily))
                   all.value.content = all.value.content.concat(that.categories[key][subkey])
                   item.popup.addChild(subitem)
@@ -560,15 +560,25 @@ define([
 
         Req.get(locationConfig.store + '/Status/').then((results) => {
           if (results && results.data && results.data.length > 0) {
+            console.log(results.data)
             var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()})
-            results.data.forEach((entry) => {
-              if (entry.type === 0) {
+            results.data.forEach(djLang.hitch(this, function (entry) {
+              if (entry.type === "0") {
                 var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
                 var item = new DtMenuItem({label: html, value: entry})
-                djOn(item, 'click', djLang.hitch(that, that.filterStatus))
+                djOn(item, 'click', djLang.hitch(that, (event) => {
+                  var node = dtRegistry.byNode(event.selectorTarget)
+                  this.wait()
+                  var date = dtRegistry.byId('menuTodoDay').get('value')
+                  this.Filter.postMessage({ ops: [
+                    {filter: 'equal', params: { value: Number(node.value.id), attribute: 'status' }}
+                  ]})
+                  this.update()
+                }))
+
                 p.popup.addChild(item)
               }
-            })
+            }))
             that.searchMenu.addChild(p)
 
             p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()})
@@ -596,7 +606,7 @@ define([
           var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
           var item = new DtMenuItem({label: 'Commence le '})
-          var x = new dtDateTextBox({value: now, id: 'menuStartDay' })
+          var x = new dtDateTextBox({value: now, id: 'menuStartDay'})
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           djOn(item, 'click', djLang.hitch(that, (e) => {
@@ -629,12 +639,12 @@ define([
             var date = dtRegistry.byId('menuTodoDay').get('value')
             this.center = date
             date.setHours(0, 0, 0)
-            this.update()
             this.Filter.postMessage({ ops: [
               {filter: 'date', on: 'entry', params: { date: date, type: [ 'deliveryBegin', 'begin' ] }},
               {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end'}},
               {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
             ]})
+            this.update()
           }))
           x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
@@ -654,7 +664,7 @@ define([
       var node = dtRegistry.byNode(event.selectorTarget)
       this.searchMenu.filterNone.set('disabled', false)
       for (var i = 0; i < this.entries.length; i++) {
-        if (node.value.content.indexOf(this.entries[i].target) == -1) {
+        if (node.value.content.indexOf(this.entries[i].target) === -1) {
           this.entries[i].set('active', false)
         } else {
           this.entries[i].set('active', true)
