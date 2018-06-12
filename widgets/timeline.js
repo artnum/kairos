@@ -174,7 +174,23 @@ define([
       })
 
       this.Updater = new Worker('/location/js/ww/updater.js')
-      this.Updater.onmessage = this.Proxy.onmessage
+      this.Updater.onmessage = djLang.hitch(this, function (e) {
+        if (!e || !e.data || !e.data.type) { return }
+        switch (e.data.type) {
+          case 'entry':
+            if (this.Entries[e.data.content]) {
+              this.Entries[e.data.content].update()
+            }
+            break
+          case 'entries':
+            for (var i = 0; i < e.data.content.length; i++) {
+              if (this.Entries[e.data.content[i]]) {
+                this.Entries[e.data.content[i]].update()
+              }
+            }
+            break
+        }
+      })
 
       this.Filter = new Worker('/location/js/ww/filter.js')
       this.Filter.onmessage = djLang.hitch(this, function (event) {
