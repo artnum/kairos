@@ -194,6 +194,21 @@ define([
       this.Updater = new Worker('/location/js/ww/updater.js')
       this.Updater.onmessage = this.Proxy.onmessage
 
+      this.Filter = new Worker('/location/js/ww/filter.js')
+      this.Filter.onmessage = djLang.hitch(this, function (event) {
+        this.searchMenu.filterNone.set('disabled', false)
+        if (event.data) {
+          for (var k in this.Entries) {
+            if (event.data[k]) {
+              this.Entries[k].set('active', true)
+            } else {
+              this.Entries[k].set('active', false)
+            }
+          }
+        }
+        this.unwait()
+      })
+
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
@@ -613,12 +628,15 @@ define([
           item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
             this.wait()
-            this.filterReset()
             var date = dtRegistry.byId('menuTodoDay').get('value')
             this.center = date
             date.setHours(0, 0, 0)
             this.update()
-            this.filterComplementDate(date, '4')
+            this.Filter.postMessage({ ops: [
+              {filter: 'date', on: 'entry', params: { date: date, type: [ 'deliveryBegin', 'begin' ] }},
+              {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end'}},
+              {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
+            ]})
           }))
           x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)

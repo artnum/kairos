@@ -1,7 +1,6 @@
 /* eslint-env worker */
 /* global wantdb, DB */
 'use strict'
-
 importScripts('../localdb.js')
 
 wantdb(cleaner)
