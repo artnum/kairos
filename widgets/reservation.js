@@ -78,15 +78,15 @@ define([
     complements: [],
 
     constructor: function () {
-      this.attrs = new Array('special')
+      this.attrs = ['special']
       this.detailsHtml = ''
       this.special = 0
       this.hidden = true
       this.form = null
       this.dbContact = null
-      this.complements = new Array()
-      this.events = new Object()
-      this.overlap = new Object()
+      this.complements = []
+      this.events = {}
+      this.overlap = {}
       this.duration = 0
     },
 
@@ -462,6 +462,9 @@ define([
     },
 
     setTextDesc: function () {
+      if (!this.updated) { return }
+      this.set('updated', false)
+
       var html = ''
       var frag = document.createDocumentFragment()
 
@@ -677,6 +680,8 @@ define([
     },
 
     drawComplement: function () {
+      if (this.updated) { return }
+
       var that = this
       var def = new djDeferred()
       var frag = document.createDocumentFragment()
