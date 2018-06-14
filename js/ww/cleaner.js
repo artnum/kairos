@@ -17,13 +17,26 @@ function cleaner () {
       setTimeout(cleaner, 2500)
       return
     }
+    var value = cursor.value
+    var del = false
 
-    if (cursor.value.deleted != null) {
-      if (cleaned.indexOf(cursor.value.target) === -1) {
-        cleaned.push(cursor.value.target)
+    if (typeof value.id === 'string') {
+      cursor.delete()
+      del = true
+    }
+
+    if (value.deleted != null) {
+      if (cleaned.indexOf(value.target) === -1) {
+        cleaned.push(value.target)
       }
+      del = true
       cursor.delete()
     }
+
+    if (del && value.return) {
+      DB.transaction('return', 'readwrite').objectStore('return').delete(value.return)
+    }
+
     cursor.continue()
   }
 }
