@@ -20,7 +20,7 @@ function cleaner () {
     var value = cursor.value
     var del = false
 
-    if (typeof value.id === 'string') {
+    if (typeof value.id !== 'string') {
       cursor.delete()
       del = true
     }
@@ -34,7 +34,7 @@ function cleaner () {
     }
 
     if (del && value.return) {
-      DB.transaction('return', 'readwrite').objectStore('return').delete(value.return)
+      DB.transaction('return', 'readwrite').objectStore('return').delete(value.return.id)
     }
 
     cursor.continue()
