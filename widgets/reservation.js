@@ -1,3 +1,5 @@
+/* eslint-env browser, amd */
+/* global DateRange, locationConfig, pSBC */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -34,7 +36,7 @@ define([
   djDeclare,
   djLang,
   djEvented,
-  djDeferred,
+  DjDeferred,
 
   dtWidgetBase,
   dtTemplatedMixin,
@@ -72,7 +74,6 @@ define([
     attrs: [],
     detailsHtml: '',
     special: 0,
-    hidden: true,
     form: null,
     dbContact: null,
     complements: [],
@@ -81,7 +82,6 @@ define([
       this.attrs = ['special']
       this.detailsHtml = ''
       this.special = 0
-      this.hidden = true
       this.form = null
       this.dbContact = null
       this.complements = []
@@ -93,14 +93,14 @@ define([
     fromJson: function (json) {
       djLang.mixin(this, json)
 
-      this.set('updated', true);
-      [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
+      this.set('updated', true)
+      ;[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, djDateStamp.fromISOString(json[attr]))
         }
-      }));
+      }))
 
-      [ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous' ].forEach(djLang.hitch(this, (attr) => {
+      ;[ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'return' ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -119,7 +119,7 @@ define([
         this.setTextDesc()
       }
       if (!this.color) { this.color = 'FFF' }
-      if (!this.complements) { this.complements = new Array() }
+      if (!this.complements) { this.complements = [] }
       if (!this.IDent) { this.IDent = this.id }
 
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
@@ -131,7 +131,7 @@ define([
     },
     update: function () {
       var that = this
-      var def = new djDeferred()
+      var def = new DjDeferred()
 
       var store = window.App.DB.transaction('reservations').objectStore('reservations')
       var entry = store.get(this.get('id'))
@@ -161,7 +161,7 @@ define([
     postCreate: function () {
       this.originalTop = djDomStyle.get(this.domNode, 'top')
       this.set('active', false)
-	  this.resize()
+      this.resize()
       djOn(this.domNode, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
       djOn(this.domNode, 'mousedown', djLang.hitch(this, this.isolateMe))
       djOn(this.domNode, 'mouseup', djLang.hitch(this, this.cancelIsolation))
@@ -191,7 +191,7 @@ define([
         window.clearTimeout(this._isolation)
       }
 
-      if (e.type != 'mouseup' && e.type != 'mousemove') {
+      if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
           if (this.overlap.do) {
             var height = djDomStyle.get(this.main, 'height')
@@ -205,7 +205,7 @@ define([
     },
 
     addAttr: function (attr) {
-      if (this.attrs.indexOf(attr) == -1) {
+      if (this.attrs.indexOf(attr) === -1) {
         this.attrs.push(attr)
       }
     },
@@ -270,16 +270,12 @@ define([
     },
 
     _setActiveAttr: function (value) {
-      this._set('hidden', !!value)
-      this._set('active', !!value)
+      this._set('active', value)
       if (value) {
         djDomStyle.set(this.domNode, 'display', '')
       } else {
         djDomStyle.set(this.domNode, 'display', 'none')
       }
-    },
-    _getEnabledAttr: function () {
-      return !this.hidden
     },
     animate: function (x) {
       var that = this
@@ -298,7 +294,7 @@ define([
     },
     _setStartAttr: function (value) {
       this.addAttr('begin')
-      if (value == this.get('stop')) { value -= this.get('blockSize') }
+      if (value === this.get('stop')) { value -= this.get('blockSize') }
       this._set('start', value)
     },
     _getStartAttr: function () {
@@ -316,7 +312,7 @@ define([
     },
     _setStopAttr: function (value) {
       this.addAttr('end')
-      if (value == this.get('start')) { value += this.get('blockSize') }
+      if (value === this.get('start')) { value += this.get('blockSize') }
       this._set('stop', value)
     },
     _setEndAttr: function (value) {
@@ -335,9 +331,6 @@ define([
     },
     _setSupAttr: function (sup) {
       this._set('sup', sup)
-      /* if(this.id) {
-			djOn(this.sup, 'show-' + this.id, djLang.hitch(this, this.popMeUp));
-		} */
     },
     _setWithWorkerAttr: function (value) {
       this.addAttr('withWorker')
@@ -414,7 +407,7 @@ define([
 
     confirmedDom: function () {
       var i = document.createElement('I')
-      if (this.is('confirmed')) {
+      if (this.is('confirmed') || this.get('return')) {
         i.setAttribute('class', 'far fa-check-circle')
       } else {
         i.setAttribute('class', 'far fa-circle')
@@ -426,12 +419,15 @@ define([
     },
 
     doConfirm: function () {
-      if (this.is('confirmed')) {
-        this.setIs('confirmed', false)
+      if (this.return) {
+        Req.del(locationConfig.store + '/Return/' + this.return.id)
+        this.set('return', null)
       } else {
-        this.setIs('confirmed', true)
+        this.return = {}
+        this.return.target = this.get('id')
+        this.return.reported = djDateStamp.toISOString(new Date())
+        this.saveReturn()
       }
-      this.save()
     },
 
     contactDom: function () {
@@ -465,7 +461,6 @@ define([
       if (!this.updated) { return }
       this.set('updated', false)
 
-      var html = ''
       var frag = document.createDocumentFragment()
 
       frag.appendChild(document.createElement('DIV'))
@@ -475,18 +470,18 @@ define([
 
       var ident = document.createElement('SPAN')
 
-      if (this.get('folder') != '' && this.get('folder') != null) {
+      if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.appendChild(document.createTextNode(' '))
         ident.appendChild(document.createElement('I'))
         ident.lastChild.setAttribute('class', 'fas fa-folder')
       }
-      if (this.get('equipment') != '' && this.get('equipment') != null) {
+      if (this.get('equipment') !== '' && this.get('equipment') != null) {
         ident.appendChild(document.createTextNode(' '))
         ident.appendChild(document.createElement('I'))
         ident.lastChild.setAttribute('class', 'fas fa-wrench')
       }
 
-      if (this.get('title') != '' && this.get('title') != null) {
+      if (this.get('title') !== '' && this.get('title') != null) {
         ident.appendChild(document.createTextNode(' '))
         ident.appendChild(document.createElement('I'))
         ident.lastChild.setAttribute('class', 'fas fa-exchange-alt')
@@ -500,7 +495,7 @@ define([
       /* Second line */
       frag.appendChild(document.createElement('DIV'))
 
-      if ((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() == this.get('trueEnd').getDate())) {
+      if ((Math.abs(this.get('trueBegin').getTime() - this.get('trueEnd').getTime()) <= 86400000) && (this.get('trueBegin').getDate() === this.get('trueEnd').getDate())) {
         frag.lastChild.appendChild(document.createElement('SPAN'))
         frag.lastChild.lastChild.setAttribute('class', 'date single begin')
         frag.lastChild.lastChild.appendChild(document.createTextNode(this.get('trueBegin').shortDate()))
@@ -612,7 +607,7 @@ define([
 
       this.myForm = f
       this.myContentPane = cp
-      f.set('_pane', [ cp, tContainer])
+      f.set('_pane', [cp, tContainer])
       this.syncForm()
     },
 
@@ -655,7 +650,7 @@ define([
       console.log('Not implemented')
     },
     timeFromX: function (x) {
-      var blockTime = this.get('blockSize')	/ 24 /* block is a day, day is 24 hours */
+      var blockTime = this.get('blockSize') / 24 /* block is a day, day is 24 hours */
       var hoursToX = Math.ceil((x - this.get('offset')) / blockTime)
       var d = djDate.add(this.get('dateRange').begin, 'hour', hoursToX)
       d.setMinutes(0); d.setSeconds(0)
@@ -683,11 +678,11 @@ define([
       if (this.updated) { return }
 
       var that = this
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var frag = document.createDocumentFragment()
       var appendFrag = false
       var x = this.complements
-      var byType = new Object()
+      var byType = {}
 
       for (var i = 0; i < x.length; i++) {
         /* Follow set end and begin at the value of the reservation */
@@ -696,7 +691,7 @@ define([
         }
         x[i].range = new DateRange(x[i].begin, x[i].end)
         if (!byType[x[i].type.color]) {
-          byType[x[i].type.color] = new Array()
+          byType[x[i].type.color] = []
         }
         byType[x[i].type.color].push(x[i])
 
@@ -725,12 +720,13 @@ define([
       var height = Math.round(cent / Object.keys(byType).length)
       var lineCount = 0
 
-      for (var i in byType) {
+      for (i in byType) {
         var color = '#FFF'
         byType[i].forEach(function (entry) {
           var display = true
           if (entry.number > 0) {
-            var begin = entry.range.begin, end = entry.range.end
+            var begin = entry.range.begin
+            var end = entry.range.end
             if (entry.type && entry.type.color) {
               color = '#' + entry.type.color
             }
@@ -749,7 +745,10 @@ define([
             if (djDate.compare(end, that.get('trueEnd'), 'datetime') > 0) { end = that.get('trueEnd') }
 
             if (display) {
-              var width = 0, left = 0, entryBegin = that.get('trueBegin'), entryEnd = that.get('trueEnd')
+              var width = 0
+              var left = 0
+              var entryBegin = that.get('trueBegin')
+              var entryEnd = that.get('trueEnd')
 
               if (djDate.compare(entryBegin, that.get('dateRange').begin, 'datetime') < 0) {
                 entryBegin = that.get('dateRange').begin
@@ -775,7 +774,7 @@ define([
 
               /* if it end after the current timeline's end */
               if (djDate.compare(end, that.get('dateRange').end, 'date') >= 0) {
-                if (djDate.compare(end, that.get('dateRange').end, 'date') == 0) {
+                if (djDate.compare(end, that.get('dateRange').end, 'date') === 0) {
                   width = width - that.computeIntervalOffset(end)
                 } else {
                   width = width - (Math.abs(djDate.difference(end, that.get('dateRange').end) + 1) * that.get('blockSize')) - that.computeIntervalOffset(end)
@@ -831,7 +830,8 @@ define([
     },
 
     resize: function () {
-      var that = this, def = new djDeferred()
+      var that = this
+      var def = new DjDeferred()
       this.refresh()
 
       if (!this.sup) { def.resolve(); return }
@@ -840,17 +840,15 @@ define([
       this.drawComplement()
       /* Verify  if we keep this ourself */
       if (djDate.compare(this.get('trueBegin'), this.get('dateRange').end, 'date') >= 0 ||
-				djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0 ||
-				this.deleted) {
+        djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0 ||
+        this.deleted) {
         this.set('disable')
         def.resolve()
         return
       }
-      var nobegin = false, noend = false
-
-      /* Size calculation */
-      var dateRange = this.get('dateRange')
-      var currentWidth = this.get('blockSize')
+      var nobegin = false
+      var noend = false
+      var returnDone = this.get('return') ? Boolean(this.get('return').done) : false
 
       /* Last day included */
       var bgcolor = '#FFFFFF'
@@ -888,7 +886,7 @@ define([
       stopPoint += this.computeIntervalOffset(end)
 
       var toolsOffsetBegin = 0
-      if (djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') != 0) {
+      if (djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') !== 0) {
         toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'))
       }
       if (djDate.compare(this.get('begin'), this.get('dateRange').begin) <= 0) { toolsOffsetBegin = 0 }
@@ -898,7 +896,7 @@ define([
       toolsOffsetBegin *= this.get('blockSize') / 24
 
       var toolsOffsetEnd = 0
-      if (djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') != 0) {
+      if (djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') !== 0) {
         toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'))
       }
       if (djDate.compare(this.get('end'), this.get('dateRange').end) >= 0) { toolsOffsetEnd = 0 }
@@ -932,9 +930,17 @@ define([
           djDomClass.remove(that.main, 'confirmed')
         }
 
+        if (returnDone) {
+          djDomClass.add(that.main, 'done')
+        } else {
+          djDomClass.remove(that.main, 'done')
+        }
+
         var supRect = that.sup.view.rectangle
-        var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width'), supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width')
-        var myTopBorder = djDomStyle.get(that.main, 'border-top-width'), myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width')
+        var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width')
+        var supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width')
+        var myTopBorder = djDomStyle.get(that.main, 'border-top-width')
+        var myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width')
 
         var height = that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
         var top = supRect[1] + supTopBorder
@@ -963,7 +969,7 @@ define([
         }
 
         if (toolsOffsetEnd > 0) {
-          var div = document.createElement('DIV')
+          div = document.createElement('DIV')
           div.setAttribute('class', 'delivery')
           div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
           that.tools.appendChild(div)
@@ -991,8 +997,30 @@ define([
       this.destroyReservation(this)
     },
 
+    saveReturn: function () {
+      var values = this.get('return')
+      var suffix = ''
+      var method = 'post'
+
+      if (values['id']) {
+        suffix = '/' + values['id']
+        method = 'put'
+      }
+
+      if (values.reported) {
+        values.reported = djDateStamp.toISOString(values.reported)
+      }
+
+      Req[method](locationConfig.store + '/Return' + suffix, {query: values}).then(djLang.hitch(function (result) {
+      }))
+    },
+
     save: function () {
-      var method = 'post', query = {}, suffix = '', that = this, def = new djDeferred()
+      var method = 'post'
+      var query = {}
+      var suffix = ''
+      var that = this
+      var def = new DjDeferred()
       if (this.get('IDent') != null) {
         method = 'put'
         suffix = '/' + this.get('IDent')
@@ -1001,9 +1029,9 @@ define([
 
       this.attrs.forEach((attr) => {
         query[attr] = that[attr]
-      });
+      })
 
-      [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach((attr) => {
+      ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach((attr) => {
         if (that[attr]) {
           query[attr] = djDateStamp.toISOString(that[attr])
         } else {
@@ -1013,55 +1041,25 @@ define([
       query['target'] = this.get('target')
 
       window.App.setModify(query['id'])
-      Req[method](locationConfig.store + '/Reservation' + suffix, { query: query }).then((result) => {
+      Req[method](locationConfig.store + '/Reservation' + suffix, { query: query }).then(djLang.hitch(this, function (result) {
+        if (result.type === 'results') {
+          if (result.data.success) {
+            var val
+            if ((val = this.get('return')) != null) {
+              val.target = result.data.id
+              this.set('return', val)
+              this.saveReturn()
+            }
+          }
+        }
         def.resolve(result)
-      })
+      }))
 
       return def.promise
     },
 
     copy: function () {
       this.sup.copy(this)
-      /*
-		var that = this;
-		var copy = Object.create(this);
-		djLang.mixin(copy, this);
-		copy.set('IDent', null);
-		copy.set('id', null);
-		[ 'address', 'comment', 'gps', 'folder', 'locality', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'equipment', 'reference', 'status', 'creator' ].forEach( (e) => { copy.set(e, that.get(e)); });
-		copy.save().then( () => {
-			var q = new Array();
-
-			var x = Req.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation':  that.get('id')  } });
-			q.push(x);
-			x.then( ( res ) => {
-				if(res && res.data && res.data.length > 0) {
-					for(var i = 0; i < res.data.length; i++) {
-						res.data[i].id = null;
-						res.data[i].reservation = copy.get('IDent');
-						q.push(Req.post(locationConfig.store + '/ReservationContact/', { query: res.data[i] }));
-					}
-				}
-			});
-
-			x = Req.get(locationConfig.store + '/Association', { query: { 'search.reservation':  that.get('id')  } });
-			q.push(x);
-			x.then( ( res ) => {
-				if(res && res.data && res.data.length > 0) {
-					for(var i = 0; i < res.data.length; i++) {
-						res.data[i].id = null;
-						res.data[i].reservation = copy.get('IDent');
-						q.push(Req.post(locationConfig.store + '/Association', { query: res.data[i] }));
-					}
-				}
-			});
-
-			djAll(q).then( () => {
-				copy.popMeUp();
-				that.sup.sup.update(true);
-			});
-		});
-		*/
     },
 
     extend7: function (e) {
@@ -1072,8 +1070,8 @@ define([
       var newEnd = djDate.add(this.end, 'day', days)
       if (newEnd) {
         var newDEnd = ''
-        if (this.deliveryEnd != '') {
-          var newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')))
+        if (this.deliveryEnd !== '') {
+          newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')))
         }
 
         this.end = newEnd

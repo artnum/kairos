@@ -210,8 +210,8 @@ define([
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
-      djXhr.get(locationConfig.store + '/Status/', { handleAs: 'json', query: { 'search.type': 0}}).then(function (results) {
-        if (results && results.type == 'results') {
+      djXhr.get(locationConfig.store + '/Status/', {handleAs: 'json', query: {'search.type': 0}}).then(function (results) {
+        if (results && results.type === 'results') {
           for (var i = 0; i < results.data.length; i++) {
             sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
           }
@@ -221,7 +221,7 @@ define([
 
     defaultStatus: function () {
       var def = new djDeferred()
-      request.get(locationConfig.store + '/Status/', { query: { 'search.default': 1, 'search.type': 0}}).then(function (result) {
+      request.get(locationConfig.store + '/Status/', {query: {'search.default': 1, 'search.type': 0}}).then(function (result) {
         if (result.success()) {
           def.resolve(result.whole()[0].id)
         }
@@ -261,7 +261,7 @@ define([
       div.setAttribute('class', 'message ' + level)
       div.appendChild(document.createTextNode(' ' + txt))
 
-      var timeout = window.setTimeout(() => {
+      window.setTimeout(() => {
         window.requestAnimationFrame(() => {
           div.parentNode.removeChild(div)
         })
@@ -283,7 +283,10 @@ define([
     },
 
     _setZoomAttr: function (zoomValue) {
-      var style = '', page = getPageRect(), days = 1, classname = ''
+      var style = ''
+      var page = getPageRect()
+      var days = 1
+      var classname = ''
 
       djDomClass.remove(this.domNode, [ 'day', 'month', 'week', 'quarter', 'semseter' ])
       switch (zoomValue) {
@@ -314,7 +317,7 @@ define([
       }
 
       this.daysZoom = days
-      if (classname != '') {
+      if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
       this.set('blockSize', (page[2] - 240) / days)
@@ -374,9 +377,10 @@ define([
     },
 
     makeDay: function (newDay) {
+      var txtDate = ''
       var dayStamp = djDateStamp.toISOString(newDay, {selector: 'date'})
       var c = 'day'
-      if (newDay.getDay() == 0 || newDay.getDay() == 6) { c = 'day weekend' }
+      if (newDay.getDay() === 0 || newDay.getDay() === 6) { c = 'day weekend' }
 
       switch (newDay.getDay()) {
         case 0: txtDate = 'Dim ' + newDay.getDate(); break
@@ -457,9 +461,8 @@ define([
     },
 
     postCreate: function () {
-      var that = this
       var tContainer = dtRegistry.byId('tContainer')
-      this.view = new Object()
+      this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()
 
@@ -477,9 +480,9 @@ define([
 
       djOn(window, 'keypress', djLang.hitch(this, this.keys))
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
-      window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, { passive: true})
+      window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       window.addEventListener('wheel', djLang.hitch(this, this.eWheel))
-      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), { passive: true})
+      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), {passive: true})
 
       this.update().then(djLang.hitch(this, () => {
         this.view.rectangle = getPageRect()
@@ -560,7 +563,6 @@ define([
 
         Req.get(locationConfig.store + '/Status/').then((results) => {
           if (results && results.data && results.data.length > 0) {
-            console.log(results.data)
             var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()})
             results.data.forEach(djLang.hitch(this, function (entry) {
               if (entry.type === "0") {
@@ -1147,23 +1149,6 @@ define([
       }
     },
 
-    refresh: function () {
-      var that = this
-      request.head('/location/store/Reservation').then(function (result) {
-        if (that.lastMod != result['last-modification']) {
-          that.update(true)
-          that.lastMod = result['last-modification']
-          that.lastId = result['last-id']
-        } else if (that.lastId != result['last-id']) {
-          that.update()
-          that.lastMod = result['last-modification']
-          that.lastId = result['last-id']
-        }
-
-        window.setTimeout(djLang.hitch(that, that.refresh), 1200)
-      })
-    },
-
     run: function () {
       var loaded = new Array()
       var that = this
@@ -1365,7 +1350,7 @@ define([
             var reservation = null
 
             for (var k in widget.entries) {
-              if (widget.entries[k].id === data.id) {
+              if (Number(widget.entries[k].id) === Number(data.id)) {
                 reservation = widget.entries[k]
                 break
               }
@@ -1469,25 +1454,6 @@ define([
         return true
       }
       return false
-    },
-
-    Reservation: {
-      _st: window.localStorage,
-
-      getAll: function () {
-      },
-
-      get: function (id) {
-      },
-
-      set: function (id, object) {
-      },
-
-      remove: function (id) {
-      },
-
-      clean: function () {
-      }
     },
     openReturn: function (id) {
       var dialog = new Dialog({title: 'Retour'}) 

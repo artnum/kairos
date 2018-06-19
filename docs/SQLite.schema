@@ -71,3 +71,17 @@ CREATE TABLE IF NOT EXISTS extendedReservation	( extendedReservation_id INTEGER 
 						  extendedReservation_name TEXT,
 						  extendedReservation_content TEXT
 						);
+
+CREATE TABLE IF NOT EXISTS return               ( return_id INTEGER PRIMARY KEY,
+                                                  return_target INTEGER,
+                                                  return_reported DATETIME,
+                                                  return_done DATETIME,
+                                                  return_inprogress DATETIME,
+                                                  return_contact TEXT,
+                                                  return_where TEXT,
+                                                  return_comment TEXT,
+                                                  return_other TEXT
+						  return_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+						  return_deleted TIMESTAMP DEFAULT NULL
+                                                 );
+

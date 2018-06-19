@@ -1,3 +1,5 @@
+/* eslint-env browser, amd */
+/* global locationConfig */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -140,7 +142,7 @@ define([
         if (cursor) {
           entries.push(cursor.value.id)
           if (!that.entries[cursor.value.id]) {
-            that.entries[cursor.value.id] = new Reservation({ sup: that })
+            that.entries[cursor.value.id] = new Reservation({ sup: that, id: cursor.value.id })
             that.entries[cursor.value.id].fromJson(cursor.value)
           } else {
             if (that.entries[cursor.value.id]._hash != cursor.value._hash) {
@@ -159,7 +161,7 @@ define([
           cursor.continue()
         } else {
           for (var k in that.entries) {
-            if (entries.indexOf(k) == -1) {
+            if (entries.indexOf(k) === -1) {
               that.entries[k].destroy()
               delete that.entries[k]
             }
@@ -199,7 +201,7 @@ define([
         that.displayTags(that.tags)
       })
 
-      Req.get(locationConfig.store + '/Entry/', { query: { 'search.ref': this.target }}).then((result) => {
+      Req.get(locationConfig.store + '/Entry/', {query: { 'search.ref': this.target }}).then((result) => {
         if (result && result.data) {
           result.data.forEach(function (attrs) {
             that[attrs.name] = attrs.value
@@ -642,15 +644,16 @@ define([
     },
 
     overlap: function () {
+      var entries
       if (arguments[0]) { entries = arguments[0] } else {
-        entries = new Array()
+        entries = []
         for (var k in this.entries) {
           entries.push(this.entries[k])
         }
       }
 
       /* Overlap entries, good enough for now */
-      var overlapRoot = new Array()
+      var overlapRoot = []
       for (var i = 0; i < entries.length; i++) {
         if (entries[i].deleted) { continue }
         var root = true
@@ -716,7 +719,7 @@ define([
     },
 
     _setActiveAttr: function (active) {
-      this._set('active', !!active)
+      this._set('active', active)
       if (this.get('active')) {
         djDomStyle.set(this.domNode, 'display', '')
         this.update()

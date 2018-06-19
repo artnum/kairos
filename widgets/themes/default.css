@@ -163,6 +163,10 @@ html {
 	border-bottom-right-radius: 0px;
 }
 
+.reservation.done {
+  filter: grayscale(1) opacity(0.5)
+}
+
 .reservation .id {
 	padding: 0 0.2em 0 0.2em;
 }
@@ -377,6 +381,9 @@ html {
 	display: inline-block;
 }
 
+.rForm .fullWidth {
+  width: 500px !important;
+}
 .rForm .group.twocol {
 	display: flex;
 }
@@ -388,6 +395,7 @@ html {
 
 .rForm textarea {
 	font-family: "Roboto", sans-serif;
+  min-height: 10ex;
 }
 
 .rForm .dijitTimeTextBox {

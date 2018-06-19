@@ -1,11 +1,14 @@
-/* global indexedDB */
+/* eslint-env browser, amd */
+'use strict'
 var DB = null
 
 function wantdb (callback) {
-  var dbreq = indexedDB.open('location', 2)
+  var dbreq = indexedDB.open('location', 3)
 
   dbreq.onupgradeneeded = function (e) {
-    var sReservations, sContacts
+    var sReservations
+    var sContacts
+    var sReturn
     var tx = e.target.transaction
     DB = dbreq.result
     if (!DB.objectStoreNames.contains('reservations')) {
@@ -23,7 +26,14 @@ function wantdb (callback) {
       sContacts.createIndex('by_givename', 'givenname', {unique: false})
       sContacts.createIndex('by_locality', 'locality', {unique: false})
     } else {
-      sContacts = tx.objectStore('conacts')
+      sContacts = tx.objectStore('contacts')
+    }
+
+    if (!DB.objectStoreNames.contains('return')) {
+      sReturn = DB.createObjectStore('return', { keyPath: 'id' })
+      sReturn.createIndex('by_hash', '_hash', { unique: false })
+    } else {
+      sReturn = tx.objectStore('return')
     }
   }
 

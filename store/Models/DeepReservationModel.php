@@ -142,6 +142,21 @@ class DeepReservationModel extends ReservationModel {
             /* nothing */
          }
 
+         try {
+            $st = $this->DB->prepare('SELECT * FROM `return` WHERE `return_target` = :target');
+            $st->bindParam(':target', $entry['id'], \PDO::PARAM_INT);
+            $st->execute();
+            $res = $st->fetchAll(\PDO::FETCH_ASSOC);
+            if(!empty($res)) {
+               $return = $this->unprefix($res[0]);
+               $entry['return'] = $return;
+            } else {
+               $entry['return'] = null;
+            }
+         } catch (\Exception $e) {
+
+         }
+         $entry['id'] = (string)$entry['id'];
          return $entry;
       }
       return array();

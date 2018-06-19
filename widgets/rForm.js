@@ -1,3 +1,5 @@
+/* eslint-env browser, amd */
+/* global pSBC, locationConfig */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -49,7 +51,7 @@ define([
   djDeclare,
   djLang,
   djEvented,
-  djDeferred,
+  DjDeferred,
 
   dtWidgetBase,
   dtTemplatedMixin,
@@ -80,11 +82,11 @@ define([
   dtCheckBox,
   dtDialog,
   dtTabContainer,
-  dtContentPane,
+  DtContentPane,
   dtRegistry,
 
-  contacts,
-  card,
+  Contacts,
+  Card,
   _Cluster,
   request,
   bitsfield,
@@ -106,8 +108,8 @@ define([
 
     constructor: function (args) {
       this.reservation = args.reservation
-      this.contacts = new Object()
-      this.initRequests = new Array()
+      this.contacts = {}
+      this.initRequests = []
       this.loaded = { status: false }
     },
 
@@ -178,11 +180,12 @@ define([
     },
 
     associationEntries: function (entries) {
-      var frag = document.createDocumentFragment(), byType = new Object()
+      var frag = document.createDocumentFragment()
+      var byType = {}
 
       for (var i = 0; i < entries.length; i++) {
         if (!byType[entries[i].type.id]) {
-          byType[entries[i].type.id] = new Array()
+          byType[entries[i].type.id] = []
         }
         byType[entries[i].type.id].push(entries[i])
       }
@@ -202,7 +205,7 @@ define([
         divType.lastChild.setAttribute('class', 'name')
         divType.lastChild.appendChild(document.createTextNode(name))
 
-        for (var i = 0; i < byType[k].length; i++) {
+        for (i = 0; i < byType[k].length; i++) {
           var divLine = document.createElement('DIV')
           divLine.setAttribute('class', 'item')
 
@@ -255,7 +258,7 @@ define([
 
           divLine.appendChild(line)
 
-          if (byType[k][i].comment != '') {
+          if (byType[k][i].comment !== '') {
             divLine.appendChild(document.createElement('DIV'))
             divLine.lastChild.setAttribute('class', 'comment')
             divLine.lastChild.appendChild(document.createTextNode(byType[k][i].comment))
@@ -279,7 +282,9 @@ define([
     },
 
     doEditComplement: function (event) {
-      var id = null, that = this, node, c
+      var id = null
+      var node
+      var c
       for (var i = event.target; i; i = i.parentNode) {
         if (i.hasAttribute('data-artnum-id')) {
           id = i.getAttribute('data-artnum-id')
@@ -288,8 +293,8 @@ define([
       }
 
       if (id) {
-        for (var i = 0; i < this.reservation.complements.length; i++) {
-          if (this.reservation.complements[i].id == id) {
+        for (i = 0; i < this.reservation.complements.length; i++) {
+          if (this.reservation.complements[i].id === id) {
             c = this.reservation.complements[i]
             break
           }
@@ -300,33 +305,33 @@ define([
         this.nNumber.set('value', c.number)
         if (!Number(c.follow)) {
           this.nMFollow.set('value', false)
-          this.nMBeginDate.set('value', djDateStamp.toISOString(c.range.begin, { selector: 'date'}))
-          this.nMBeginTime.set('value', djDateStamp.toISOString(c.range.begin, { selector: 'time'}))
-          this.nMEndDate.set('value', djDateStamp.toISOString(c.range.end, { selector: 'date'}))
-          this.nMEndTime.set('value', djDateStamp.toISOString(c.range.end, { selector: 'time'}))
+          this.nMBeginDate.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'date'}))
+          this.nMBeginTime.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'time'}))
+          this.nMEndDate.set('value', djDateStamp.toISOString(c.range.end, {selector: 'date'}))
+          this.nMEndTime.set('value', djDateStamp.toISOString(c.range.end, {selector: 'time'}))
         } else {
-          this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'date'}))
-          this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'time'}))
-          this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'date'}))
-          this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'time'}))
+          this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
+          this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'time'}))
+          this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
+          this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
           this.nMFollow.set('value', 'on')
         }
 
         this.nMComment.set('value', c.comment)
         this.nAssociationType.set('value', locationConfig.store + '/Status/' + c.type.id)
 
-        for (var i = event.target; i; i = i.parentNode) {
+        for (i = event.target; i; i = i.parentNode) {
           if (i.hasAttribute('class')) {
-            if (i.getAttribute('class') == 'item') {
+            if (i.getAttribute('class') === 'item') {
               node = i; break
             }
           }
         }
 
         /* reset selection display */
-        for (var i = this.complements.firstChild; i; i = i.nextSibling) {
+        for (i = this.complements.firstChild; i; i = i.nextSibling) {
           for (var j = i.firstChild; j; j = j.nextSibling) {
-            if (j.hasAttribute('class') && j.getAttribute('class') == 'item') {
+            if (j.hasAttribute('class') && j.getAttribute('class') === 'item') {
               djDomStyle.set(j, 'color', '')
             }
           }
@@ -342,10 +347,10 @@ define([
       this.nAssociationType.set('value', '')
       this.nNumber.set('value', 1)
       this.nMFollow.set('value', true)
-      this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'date'}))
-      this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), { selector: 'time'}))
-      this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'date'}))
-      this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), { selector: 'time'}))
+      this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
+      this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'time'}))
+      this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
+      this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
       this.nMComment.set('value', '')
       this.associationRefresh()
     },
@@ -368,28 +373,27 @@ define([
     },
 
     associationRefresh: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var that = this
       Req.get(locationConfig.store + '/Association/', { query: { 'search.reservation': this.reservation.get('id') } }).then(function (results) {
         if (results && results.data && results.data.length > 0) {
-          var types = new Array()
+          var types = []
           results.data.forEach(function (r) {
-            if (types.indexOf(r.type) == -1) { types.push(r.type) }
+            if (types.indexOf(r.type) === -1) { types.push(r.type) }
           })
 
-          var t = new Object()
+          var t = {}
           types.forEach(function (type) {
-            if (type != '') {
+            if (type !== '') {
               t[type] = Req.get(type)
             }
           })
-          var complements = new Array()
           djAll(t).then(function (types) {
             for (var k in types) {
               for (var i = 0; i < results.data.length; i++) {
-                if (results.data[i].type == k) {
+                if (results.data[i].type === k) {
                   if (types[k] && types[k].data) {
-                    results.data[i].type =	types[k].data
+                    results.data[i].type = types[k].data
                   }
                 }
               }
@@ -400,8 +404,8 @@ define([
             def.resolve()
           })
         } else {
-          that.reservation.complements = new Array()
-          that.associationEntries(new Array())
+          that.reservation.complements = []
+          that.associationEntries([])
           def.resolve()
         }
       })
@@ -410,18 +414,19 @@ define([
     },
 
     doAddEditComplement: function () {
-      var that = this, query = new Object()
+      var that = this
+      var query = {}
       var f = djDomForm.toObject(this.nComplementsForm)
 
       if (!f.nMFollow) {
-        [ 'nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach(function (i) {
-          if (f[i] == '') {
+        ;['nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach(function (i) {
+          if (f[i] === '') {
             that[i].set('state', 'Error')
           }
         })
 
-        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), { zulu: true})
-        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), { zulu: true})
+        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), {zulu: true})
+        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), {zulu: true})
         query['follow'] = 0
       } else {
         query['begin'] = ''
@@ -434,14 +439,14 @@ define([
       query['type'] = f.associationType
       query['reservation'] = this.reservation.get('id')
 
-      if (this.nComplementId.value != '') {
+      if (this.nComplementId.value !== '') {
         query['id'] = this.nComplementId.value
       } else {
         query['id'] = null
       }
 
       if (query['id'] == null) {
-        request.post('/location/store/Association/', { query: query}).then(function () {
+        request.post('/location/store/Association/', {query: query}).then(function () {
           that.associationRefresh().then(() => { that.reservation.resize() })
         })
       } else {
@@ -454,7 +459,9 @@ define([
       }
     },
 
-    doSelectMachine: function (value) {
+    evChangeForm: function (event) {
+      console.log(event)
+      console.log(this)
     },
 
     postCreate: function () {
@@ -476,7 +483,7 @@ define([
         }
       }))
 
-      this.nContactsContainer.addChild(new dtContentPane({ title: 'Nouveau contact', content: new contacts({ target: this}) }))
+      this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({target: this}) }))
       djOn(this.nForm, 'mousemove', function (event) { event.stopPropagation() })
 
       this.nMBeginDate.set('value', this.beginDate.get('value'))
@@ -493,7 +500,8 @@ define([
     load: function () {
       this.initCancel()
 
-      var select = this.status, that = this, r
+      var that = this
+      var r
       this.nMachineChange.set('value', this.reservation.get('target'))
 
       if (this.reservation.get('creator')) {
@@ -521,7 +529,7 @@ define([
         a.appendChild(document.createTextNode(' '))
         a.appendChild(document.createElement('I'))
         a.lastChild.setAttribute('class', 'fas fa-external-link-alt')
-        if (this.fLink.previousSibling.nodeName == 'A') {
+        if (this.fLink.previousSibling.nodeName === 'A') {
           this.fLink.parentNode.removeChild(this.fLink.previousSibling)
         }
         this.fLink.parentNode.insertBefore(a, this.fLink)
@@ -530,27 +538,27 @@ define([
       if (this.reservation.get('gps')) {
         this.nGps.set('value', this.reservation.get('gps'))
 
-        var a = document.createElement('A')
+        a = document.createElement('A')
         a.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.reservation.get('gps')).replace(/\s/g, '')); a.setAttribute('target', '_blank')
         a.appendChild(document.createTextNode(' '))
         a.appendChild(document.createElement('I'))
         a.lastChild.setAttribute('class', 'fas fa-external-link-alt')
-        if (this.gLink.previousSibling.nodeName == 'A') {
+        if (this.gLink.previousSibling.nodeName === 'A') {
           this.gLink.parentNode.removeChild(this.gLink.previousSibling)
         }
         this.gLink.parentNode.insertBefore(a, this.gLink)
       }
 
-      r = request.get(locationConfig.store + '/Status/', { query: {'search.type': 0 }})
+      r = request.get(locationConfig.store + '/Status/', {query: {'search.type': 0}})
       this.initRequests.push(r)
 
       if (!this.loaded.status) {
         r.then(djLang.hitch(this, function (results) {
-          if (results.type = 'results') {
+          if (results.type === 'results') {
             var def
             for (var i = 0; i < results.data.length; i++) {
               var d = results.data[i]
-              if (d.default == '1') { def = d.id }
+              if (d.default === '1') { def = d.id }
               this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id })
             }
           }
@@ -561,10 +569,10 @@ define([
         }))
       }
 
-      r = request.get(locationConfig.store + '/Status/', { query: { 'search.type': 1 }})
+      r = request.get(locationConfig.store + '/Status/', {query: { 'search.type': 1 }})
       this.initRequests.push(r)
       r.then(function (results) {
-        if (results.type = 'results') {
+        if (results.type === 'results') {
           results.data.forEach(function (d) {
             that.nAssociationType.addOption({
               label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
@@ -574,7 +582,7 @@ define([
         }
       })
 
-      if (this.reservation.is('confirmed')) {
+      if (this.reservation.is('confirmed') || this.reservation.get('return')) {
         this.nConfirmed.set('checked', true)
       }
       this.toggleConfirmed()
@@ -584,7 +592,7 @@ define([
       }
       this.toggleDelivery()
 
-      r = request.get(locationConfig.store + '/ReservationContact/', { query: { 'search.reservation': this.reservation.get('id') }})
+      r = request.get(locationConfig.store + '/ReservationContact/', {query: { 'search.reservation': this.reservation.get('id') }})
       this.initRequests.push(r)
       r.then(djLang.hitch(this, function (res) {
         if (res.success()) {
@@ -593,7 +601,8 @@ define([
               contact.linkId = contact.id
               this.createContact(contact, contact.comment)
             } else {
-              var linkId = contact.id, comment = contact.comment
+              var linkId = contact.id
+              var comment = contact.comment
               r = request.get(locationConfig.store + contact.target)
               this.initRequests.push(r)
               r.then(djLang.hitch(this, function (entry) {
@@ -615,8 +624,34 @@ define([
 
         that.doResetComplement()
         that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'))
-        that.initRequests = new Array()
+        this.refresh()
+        that.initRequests = []
       }))
+    },
+
+    refresh: function () {
+      var retval = null
+      if ((retval = this.reservation.get('return'))) {
+        console.log(retval)
+        this.nConfirmed.set('checked', true)
+        this.nReturnDone.set('checked', Boolean(retval.done))
+        this.nReturnInprogress.set('checked', Boolean(retval.inprogress))
+        if (retval.reported) {
+          var reported = djDateStamp.fromISOString(retval.reported)
+          this.nReturnDate.set('value', djDateStamp.toISOString(reported, {selector: 'date'}))
+          this.nReturnTime.set('value', djDateStamp.toISOString(reported, {selector: 'time'}))
+        }
+
+        if (retval.contact) {
+          this.nReturnAddress.set('value', retval.contact)
+        }
+        if (retval.other) {
+          this.nReturnKeys.set('value', retval.other)
+        }
+        if (retval.comment) {
+          this.nReturnComment.set('value', retval.comment)
+        }
+      }
     },
 
     toggleDelivery: function () {
@@ -636,13 +671,22 @@ define([
       }
     },
 
+    saveReturn: function (retForm) {
+      var tx = window.App.DB.transaction('return', 'readwrite')
+      var store = tx.objectStore('return')
+      retForm._hash = ''
+      store.put(retForm)
+    },
+
     toggleConfirmed: function () {
       if (this.nConfirmed.get('checked')) {
+        this.nBack.setAttribute('style', '')
         this.endTime.set('readOnly', true)
         this.endDate.set('readOnly', true)
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
       } else {
+        this.nBack.setAttribute('style', 'display: none')
         this.endTime.set('readOnly', false)
         this.endDate.set('readOnly', false)
         this.nDeliveryEndTime.set('readOnly', false)
@@ -651,14 +695,12 @@ define([
     },
 
     createContact: function (entry, type) {
-      var show = false
       var that = this
-      if (arguments[2]) { show = true }
-      c = new card('/Contacts/')
+      var c = new Card('/Contacts/')
       c.entry(entry)
 
-      var contact = new dtContentPane({
-		  	title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
+      var contact = new DtContentPane({
+        title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
         content: c.domNode,
         closable: true,
         contactType: type,
@@ -680,7 +722,7 @@ define([
       })
 
       for (var k in this.contacts) {
-        if (this.contacts[k].contactLinkId == contact.contactLinkId) {
+        if (this.contacts[k].contactLinkId === contact.contactLinkId) {
           this.nContactsContainer.removeChild(this.contacts[k])
           this.contacts[k].destroy()
           break
@@ -688,7 +730,7 @@ define([
       }
       this.contacts[type + contact.contactLinkId] = contact
       this.nContactsContainer.addChild(this.contacts[type + contact.contactLinkId])
-      if (type == '_client') {
+      if (type === '_client') {
         this.nContactsContainer.selectChild(this.contacts[type + contact.contactLinkId])
       }
     },
@@ -696,7 +738,7 @@ define([
     saveContact: function (id, options) {
       var that = this
       var type = options.type ? options.type : ''
-      if (options.type == '_autre') {
+      if (options.type === '_autre') {
         type = options.comment
       }
 
@@ -706,8 +748,8 @@ define([
           'search.target': id,
           'search.comment': type
         }}).then(djLang.hitch(this, function (results) {
-          if (results.count() == 0) {
-            request.post(locationConfig.store + '/ReservationContact/', { method: 'post', query: { reservation: that.reservation.get('id'), comment: type, freeform: null, target: id }})
+          if (results.count() === 0) {
+            request.post(locationConfig.store + '/ReservationContact/', {method: 'post', query: { reservation: that.reservation.get('id'), comment: type, freeform: null, target: id }})
               .then(djLang.hitch(this, function (results) {
                 request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
                   var e = c.first()
@@ -723,7 +765,7 @@ define([
           'search.reservation': this.reservation.get('id'),
           'search.comment': type,
           'search.freeform': options.freeform}}).then(djLang.hitch(this, function (results) {
-          if (results.count() == 0) {
+          if (results.count() === 0) {
             request.post(locationConfig.store + '/ReservationContact/', { query: {
               reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
               if (result.success()) {
@@ -748,7 +790,7 @@ define([
           this.initRequests[i].cancel()
         }
       }
-      this.initRequests = new Array()
+      this.initRequests = []
     },
 
     destroy: function () {
@@ -816,9 +858,7 @@ define([
           return false
         }
 
-        if (djDate.compare(deliveryBegin, begin) == 0 &&
-				djDate.compare(deliveryEnd, end) == 0
-        ) {
+        if (djDate.compare(deliveryBegin, begin) === 0 && djDate.compare(deliveryEnd, end) === 0) {
           this.nDelivery.set('checked', false)
           this.toggleDelivery()
           return false
@@ -851,12 +891,9 @@ define([
       this.hide()
     },
     doSave: function (event) {
-      var now = new Date()
-      var that = this
-
       if (!this.validate()) { return }
       var changeMachine = false
-      if (this.reservation.get('target') != this.nMachineChange.get('value')) {
+      if (this.reservation.get('target') !== this.nMachineChange.get('value')) {
         var newEntry = window.App.getEntry(this.nMachineChange.get('value'))
         if (newEntry == null) {
           alert('Déplacement vers machine inexistante')
@@ -885,7 +922,31 @@ define([
         deliveryEnd = null
       }
 
-      this.reservation.setIs('confirmed', this.nConfirmed.get('checked'))
+      if (this.nConfirmed.get('checked')) {
+        var currentRet = this.reservation.get('return') ? this.reservation.get('return') : {}
+        var retVal = {}
+        if (f.returnDate) {
+          if (f.returnTime) {
+            retVal.reported = f.returnDate.join(f.returnTime)
+          } else {
+            retVal.reported = f.returnDate
+          }
+        }
+        retVal.comment = f.returnComment
+        retVal.contact = f.returnAddress
+        retVal.other = f.returnKeys
+        if (f.returnDone.length > 0 && currentRet.done == null) {
+          retVal.done = djDateStamp.toISOString(new Date())
+        }
+        if (f.returnInprogress.length > 0 && currentRet.inprogress == null) {
+          retVal.inprogress = djDateStamp.toISOString(new Date())
+        }
+        retVal.target = this.reservation.get('id')
+        if (currentRet.id) {
+          retVal.id = currentRet.id
+        }
+        this.reservation.set('return', retVal)
+      }
       this.reservation.set('status', f.status)
       this.reservation.set('begin', begin)
       this.reservation.set('end', end)
@@ -900,7 +961,7 @@ define([
       this.reservation.set('gps', f.gps)
       this.reservation.set('creator', f.creator)
 
-      if (f.title != '') {
+      if (f.title !== '') {
         this.reservation.set('title', f.title)
       } else {
         if (!this.get('originalTitle')) {
