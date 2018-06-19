@@ -1,3 +1,5 @@
+/* eslint-env browser, amd */
+/* global flatten */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -48,12 +50,12 @@ define([
   return djDeclare('location.card', [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
     baseClass: 'card',
     templateString: _template,
-    mapping: { firstname: [ 'givenname', ' '],
-      familyname: [ 'sn', ' '],
+    mapping: { firstname: ['givenname', ' '],
+      familyname: ['sn', ' '],
       organization: ['o', ' '],
-      locality: [ 'l', null ],
-      npa: [ 'postalcode', null],
-      address: ['postaladdress', null ],
+      locality: ['l', null],
+      npa: ['postalcode', null],
+      address: ['postaladdress', null],
       identity: [ 'IDent', null ] },
     constructor: function (idprefix) {
       this._set('idprefix', idprefix)
@@ -65,6 +67,7 @@ define([
         case '_responsable': value = 'Responsable'; break
         case '_place': value = 'Contact sur place'; break
         case '_facturation': value = 'Facturation'; break
+        case '_retour': value = 'Retour'; break
       }
       return value
     },
@@ -101,15 +104,15 @@ define([
         }
         if (entry['telephonenumber'] || entry['mobile']) {
           this.domNode.appendChild(document.createElement('br'))
-          var num = entry['mobile'] ? entry['mobile']	: entry['telephonenumber']
+          var num = entry['mobile'] ? entry['mobile'] : entry['telephonenumber']
           var s = document.createElement('span')
           s.appendChild(document.createTextNode(num))
           this.domNode.appendChild(s)
         }
         if (entry['mail']) {
           this.domNode.appendChild(document.createElement('br'))
-          var num = entry['mobile'] ? entry['mobile']	: entry['telephonenumber']
-          var s = document.createElement('span')
+          num = entry['mobile'] ? entry['mobile'] : entry['telephonenumber']
+          s = document.createElement('span')
           s.appendChild(document.createElement('a'))
           s.firstChild.setAttribute('href', 'mailto:' + entry['mail'])
           s.firstChild.appendChild(document.createTextNode(entry['mail']))
@@ -120,7 +123,8 @@ define([
       }
     },
     raw: function (txt) {
-      var e = document.createElement('P'), first = true
+      var e = document.createElement('P')
+      var first = true
       this.own(e)
       txt.split(/(?:\r\n|\r|\n)/g).forEach(function (line) {
         if (!first) { e.appendChild(document.createElement('BR')) }
