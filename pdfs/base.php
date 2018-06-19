@@ -42,7 +42,13 @@ function format_address($addr) {
    if($addr['type'] == 'db') {
       $addr = $addr['data'];
       if(isset($addr['o'])) {
-         $lines[] = $addr['o'];
+         if(is_string($addr['o'])) {
+            $lines[] = $addr['o'];
+         } else if(is_array($addr['o'])) {
+            foreach($addr['o'] as $o) {
+               $lines[] = $o;
+            }
+         }
       }
 
       if(isset($addr['givenname']) || isset($addr['sn'])) {
