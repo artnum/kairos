@@ -5,6 +5,7 @@ class DeepReservationModel extends ReservationModel {
    function __construct($dbs, $config) {
       parent::__construct($dbs['sql'], $config);
       $this->dbs = $dbs;
+      $this->conf('datetime', array('created', 'deleted', 'modification', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
    }
 
    function set_db($dbs) {
@@ -79,6 +80,7 @@ class DeepReservationModel extends ReservationModel {
       $entry = $this->get($id);
       if($entry) {
          $entry = $this->unprefix($entry);
+         $entry = $this->_postprocess($entry);
          $entry['complements'] = array();            
          try {
             $st = $this->DB->prepare('SELECT * FROM association WHERE association_reservation = :reservation');
@@ -86,6 +88,7 @@ class DeepReservationModel extends ReservationModel {
             $st->execute();
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $complement) {
                $ux = $this->unprefix($complement);
+               $ux = $this->_postprocess($ux);
                $pathType = explode('/', str_replace('//', '/', $ux['type']));
                $table = strtolower($pathType[count($pathType) - 2]);
                $subid = $pathType[count($pathType) - 1];
@@ -149,6 +152,7 @@ class DeepReservationModel extends ReservationModel {
             $res = $st->fetchAll(\PDO::FETCH_ASSOC);
             if(!empty($res)) {
                $return = $this->unprefix($res[0]);
+               $return = $this->_postprocess($return);
                $entry['return'] = $return;
             } else {
                $entry['return'] = null;
