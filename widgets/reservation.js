@@ -30,8 +30,7 @@ define([
   'location/_Mouse',
   'location/_Request',
 
-  'artnum/Request',
-  'artnum/Join'
+  'artnum/Request'
 ], function (
   djDeclare,
   djLang,
@@ -63,8 +62,7 @@ define([
   Mouse,
   request,
 
-  Req,
-  Join
+  Req
 ) {
   return djDeclare('location.reservation', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, Mouse], {
@@ -1011,6 +1009,14 @@ define([
         values.reported = djDateStamp.toISOString(values.reported)
       }
 
+      if (values.done == null) {
+        values.done = ''
+      }
+
+      if (values.inprogress == null) {
+        values.inprogress = ''
+      }
+
       Req[method](locationConfig.store + '/Return' + suffix, {query: values}).then(djLang.hitch(function (result) {
       }))
     },
@@ -1048,6 +1054,7 @@ define([
             if ((val = this.get('return')) != null) {
               val.target = result.data.id
               this.set('return', val)
+              console.log(val)
               this.saveReturn()
             }
           }

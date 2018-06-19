@@ -5,6 +5,8 @@ class ReturnModel extends artnum\SQL {
       $this->conf('auto-increment', true);
       $this->conf('mtime', 'return_modification');
       $this->conf('mtime.ts', true);
+      $this->conf('delete', 'return_deleted');
+      $this->conf('delete.ts', true);
    }
 }
 ?>

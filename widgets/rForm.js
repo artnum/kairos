@@ -935,11 +935,19 @@ define([
         retVal.comment = f.returnComment
         retVal.contact = f.returnAddress
         retVal.other = f.returnKeys
-        if (f.returnDone.length > 0 && currentRet.done == null) {
+        if (f.returnDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
+        } else if (f.returnDone.length <= 0 && currentRet.done) {
+          retVal.done = null
+        } else {
+          retVal.done = currentRet.done
         }
-        if (f.returnInprogress.length > 0 && currentRet.inprogress == null) {
+        if (f.returnInprogress.length > 0 && !currentRet.inprogress) {
           retVal.inprogress = djDateStamp.toISOString(new Date())
+        } else if (f.returnInprogress.length <= 0 && currentRet.inprogress) {
+          retVal.inprogress = null
+        } else {
+          retVal.inprogress = currentRet.inprogress
         }
         retVal.target = this.reservation.get('id')
         if (currentRet.id) {
