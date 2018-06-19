@@ -816,9 +816,13 @@ define([
     },
 
     doDelete: function (event) {
+      var retval = this.reservation.get('return')
       if (this.reservation.remove()) {
         var that = this
         request.put(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { data: { 'deleted': new Date().toISOString(), 'id': this.reservation.get('IDent') } }).then(function () {
+          if (retval && retval.id) {
+            request.del(locationConfig.store + '/Return/' + retval.id)
+          }
           that.hide()
         })
       }
