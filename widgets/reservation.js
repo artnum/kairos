@@ -1054,7 +1054,6 @@ define([
             if ((val = this.get('return')) != null) {
               val.target = result.data.id
               this.set('return', val)
-              console.log(val)
               this.saveReturn()
             }
           }

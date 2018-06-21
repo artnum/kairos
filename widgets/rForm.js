@@ -632,7 +632,6 @@ define([
     refresh: function () {
       var retval = null
       if ((retval = this.reservation.get('return'))) {
-        console.log(retval)
         this.nConfirmed.set('checked', true)
         this.nReturnDone.set('checked', Boolean(retval.done))
         this.nReturnInprogress.set('checked', Boolean(retval.inprogress))
@@ -958,6 +957,12 @@ define([
           retVal.id = currentRet.id
         }
         this.reservation.set('return', retVal)
+      } else {
+        currentRet = this.reservation.get('return')
+        if (currentRet) {
+          Req.del('/location/store/Return/' + currentRet.id)
+          this.reservation.set('return', null)
+        }
       }
       this.reservation.set('status', f.status)
       this.reservation.set('begin', begin)
