@@ -487,19 +487,6 @@ define([
       this.update().then(djLang.hitch(this, () => {
         this.view.rectangle = getPageRect()
       }))
-
-      djOn(window, 'hashchange, load', djLang.hitch(this, () => {
-        var that = this
-        window.setTimeout(() => { /* hack to work in google chrome */
-          if (window.location.hash) {
-            if (Number(window.location.hash.substr(1))) {
-              that.doSearchLocation(window.location.hash.substr(1))
-            } else {
-              that.set('filter', decodeURI(window.location.hash.substr(1)))
-            }
-          }
-        }, 500)
-      }))
     },
 
     mask: function (state, callback) {
