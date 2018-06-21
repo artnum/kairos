@@ -405,7 +405,8 @@ define([
 
     confirmedDom: function () {
       var i = document.createElement('I')
-      if (this.is('confirmed') || this.get('return')) {
+      var ret = this.get('return')
+      if (this.is('confirmed') || (ret && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
       } else {
         i.setAttribute('class', 'far fa-circle')
