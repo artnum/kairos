@@ -16,6 +16,7 @@ $reservation = isset($res['data'][0]) ? $res['data'][0] : $res['data'];
 if(!empty($reservation['deliveryBegin'])) {
    if($reservation['deliveryBegin'] != $reservation['begin']) {
       $reservation['deliveryBegin'] = new DateTime($reservation['deliveryBegin']);
+      $reservation['deliveryBegin']->setTimezone(new DateTimeZone(date_default_timezone_get()));
    } else {
       $reservation['deliveryBegin'] = null;
    }
@@ -26,6 +27,7 @@ if(!empty($reservation['deliveryBegin'])) {
 if(!empty($reservation['deliveryEnd'])) {
    if($reservation['deliveryEnd'] != $reservation['end']) {
       $reservation['deliveryEnd'] = new DateTime($reservation['deliveryEnd']);
+      $reservation['deliveryEnd']->setTimezone(new DateTimeZone(date_default_timezone_get()));
    } else {
       $reservation['deliveryEnd'] = null;
    }
@@ -34,8 +36,11 @@ if(!empty($reservation['deliveryEnd'])) {
 }
 
 $reservation['begin'] = new DateTime($reservation['begin']);
+$reservation['begin']->setTimezone(new DateTimeZone(date_default_timezone_get()));
 $reservation['end'] = new DateTime($reservation['end']);
+$reservation['end']->setTimezone(new DateTimeZone(date_default_timezone_get()));
 $reservation['created'] = new DateTime($reservation['created']);
+$reservation['created']->setTimezone(new DateTimeZone(date_default_timezone_get()));
 
 $res = $Machine->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;
@@ -235,7 +240,9 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
       foreach($v as $data) {
          if( ! (int)$data['follow']) {
             $begin = new DateTime($data['begin']) ;
+            $begin->setTimezone(new DateTimeZone(date_default_timezone_get()));
             $end = new DateTime($data['end']);
+            $end->setTimezone(new DateTimeZone(date_default_timezone_get()));
             $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x du ', '%cb', $begin->format('d.m.Y H:i'), '%c',  ' au ', '%cb', $end->format('d.m.Y H:i')), array('break' => false));
          } else {
             $PDF->printTaggedLn(array( '%cb', $data['number'],  '%c', 'x durant toute la réservation'), array('break' => false));
