@@ -475,7 +475,6 @@ define([
       if (!event.data || !event.data.type) { return }
 
       var msg = event.data
-      console.log(event)
       switch (msg.type) {
         default: return
         case 'close':
