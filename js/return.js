@@ -9,7 +9,7 @@ var Return = function () {
   } else {
     document.body.appendChild(table)
   }
-  table.innerHTML = '<thead><tr><th>Machine</th><th>Référence</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Annonce</th><th>Contact</th><th>Clef</th><th>Divers</th></tr></thead>'
+  table.innerHTML = '<thead><tr><th>Machine</th><th>Ref</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Contact</th><th>Clef</th><th>Divers</th></tr></thead>'
   table.appendChild(document.createElement('tbody'))
   this.parent = table.lastChild
 
@@ -75,7 +75,7 @@ Return.prototype.html = {
     if (value == null) {
       txt = ''
     } else if (value instanceof Date) {
-      txt = value.fullDate() + ' ' + value.shortHour()
+      txt = value.shortDate() + '<br />' + value.shortHour()
     } else if (value instanceof Array) {
       txt = value.join('<br/>')
     }
@@ -167,14 +167,21 @@ Return.prototype.add = function (retval) {
   dom.setAttribute('id', 'return_' + retval.id)
   dom.setAttribute('data-current-state', 'closed')
 
-  dom.appendChild(this.html.label(retval._target._target.cn))
+  var rep = retval.reported ? new Date(retval.reported) : ''
+  if (rep !== '') { rep = '\nAnnonce : ' + rep.fullDate() + ' ' + rep.shortHour() }
+  dom.appendChild(this.html.label(retval._target._target.cn + rep))
   dom.appendChild(this.html.label(retval._target.target))
   dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
   dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
   dom.appendChild(this.html.label(new Date(retval._target.end)))
-  dom.appendChild(this.html.label(retval.reported ? new Date(retval.reported) : ''))
   if (retval._target.contacts && retval._target.contacts._retour) {
     var addr = new Address(retval._target.contacts._retour[0])
+    dom.appendChild(this.html.label(addr.toArray()))
+  } else if (retval._target.contacts && retval._target.contacts._place) {
+    addr = new Address(retval._target.contacts._place[0])
+    dom.appendChild(this.html.label(addr.toArray()))
+  } else if (retval._target.contacts && retval._target.contacts._responsable) {
+    addr = new Address(retval._target.contacts._responsable[0])
     dom.appendChild(this.html.label(addr.toArray()))
   } else {
     dom.appendChild(this.html.label(''))
