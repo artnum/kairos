@@ -27,6 +27,11 @@ tbody tr:active {
 	filter: drop-shadow(5px 5px 5px black);
 }
 
+td .addendum {
+  font-size: 0.8em;
+  color: #333;
+}
+
 td, th {
 	border: 1px solid black;
 	vertical-align: top;
@@ -48,6 +53,10 @@ td, th {
 .inprogress {
   background-color: green;
   color: white;
+}
+
+.inprogress .addendum {
+  color: #ccc;
 }
 
 .later {

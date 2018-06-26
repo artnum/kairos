@@ -168,7 +168,7 @@ Return.prototype.add = function (retval) {
   dom.setAttribute('data-current-state', 'closed')
 
   var rep = retval.reported ? new Date(retval.reported) : ''
-  if (rep !== '') { rep = '\nAnnonce : ' + rep.fullDate() + ' ' + rep.shortHour() }
+  if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }
   dom.appendChild(this.html.label(retval._target._target.cn + rep))
   dom.appendChild(this.html.label(retval._target.target))
   dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
