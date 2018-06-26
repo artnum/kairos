@@ -420,6 +420,7 @@ define([
         copy.fromJson(json)
         copy.set('status', original.get('status'))
         copy.set('color', original.get('color'))
+        copy.set('return', null)
         copy.set('IDent', null)
         copy.set('previous', null)
         copy.popMeUp()
@@ -428,7 +429,6 @@ define([
           for (var k in json.contacts) {
             for (var i = 0; i < json.contacts[k].length; i++) {
               var entry = json.contacts[k][i]
-              console.log(entry)
               var q = { comment: entry.comment, reservation: id, freeform: entry.freeform }
               if (entry.target != null) {
                 q.target = '/Contacts/' + entry.target.IDent
@@ -440,8 +440,8 @@ define([
           for (var i = 0; i < json.complements.length; i++) {
             var entry = json.complements[i]
             var q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null }
-            if (entry.begin != '') { q.begin = djDateStamp.toISOString(entry.begin) }
-            if (entry.end != '') { q.end = djDateStamp.toISOString(entry.end) }
+            if (entry.begin !== '') { q.begin = djDateStamp.toISOString(new Date(entry.begin)) }
+            if (entry.end !== '') { q.end = djDateStamp.toISOString(new Date(entry.end)) }
             subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }))
           }
           djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close() })
@@ -458,7 +458,6 @@ define([
         } else {
           reservation.fromJson(result.data)
           reservation.syncForm()
-          window.App.Reservation.set(reservation.get('id'), result.data)
           that.entries[reservation.get('id')] = reservation
           that.show()
           def.resolve(reservation.get('id'))
