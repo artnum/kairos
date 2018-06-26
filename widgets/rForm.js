@@ -582,7 +582,7 @@ define([
         }
       })
 
-      if (this.reservation.is('confirmed') || this.reservation.get('return')) {
+      if (this.reservation.is('confirmed') || (this.reservation.get('return') && !this.reservation.get('return').deleted)) {
         this.nConfirmed.set('checked', true)
       }
       this.toggleConfirmed()
@@ -631,8 +631,11 @@ define([
 
     refresh: function () {
       var retval = null
+      /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
       if ((retval = this.reservation.get('return'))) {
-        this.nConfirmed.set('checked', true)
+        if (!retval.deleted) {
+          this.nConfirmed.set('checked', true)
+        }
         this.nReturnDone.set('checked', Boolean(retval.done))
         this.nReturnInprogress.set('checked', Boolean(retval.inprogress))
         if (retval.reported) {
@@ -964,6 +967,7 @@ define([
           this.reservation.set('return', null)
         }
       }
+
       this.reservation.set('status', f.status)
       this.reservation.set('begin', begin)
       this.reservation.set('end', end)

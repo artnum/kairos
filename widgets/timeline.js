@@ -1,4 +1,5 @@
-/* global define, Worker, locationConfig, getPageRect, getElementRect */
+/* eslint-env browser, amd */
+/* global locationConfig, getPageRect, getElementRect */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -217,6 +218,16 @@ define([
           }
         }
       })
+    },
+
+    openWindow: function (url) {
+      this.Window.setAttribute('src', url)
+      this.Window.setAttribute('style', '')
+    },
+
+    closeWindow: function () {
+      this.Window.setAttribute('src', '')
+      this.Window.setAttribute('style', 'display: none')
     },
 
     defaultStatus: function () {
@@ -460,11 +471,49 @@ define([
       }
     },
 
+    handleBCMessage: function (event) {
+      if (!event.data || !event.data.type) { return }
+
+      var msg = event.data
+      console.log(event)
+      switch (msg.type) {
+        default: return
+        case 'close':
+          if (!msg.what) {
+            this.closeWindow()
+          }
+          switch (msg.what) {
+            default:
+            case 'window':
+              this.closeWindow()
+          }
+          break
+        case 'open':
+          if (msg.what && msg.id) {
+            switch (msg.what) {
+              default:
+              case 'reservation':
+                this.doSearchLocation(msg.id)
+                break
+            }
+          }
+          break
+      }
+
+      window.focus()
+    },
+
     postCreate: function () {
       var tContainer = dtRegistry.byId('tContainer')
+      this.bc = new BroadcastChannel('artnum/location')
       this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()
+
+      this.Window = document.createElement('iframe')
+      this.Window.setAttribute('class', 'topWin')
+      this.Window.setAttribute('style', 'display: none')
+      document.body.appendChild(this.Window)
 
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
@@ -483,9 +532,22 @@ define([
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       window.addEventListener('wheel', djLang.hitch(this, this.eWheel))
       window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), {passive: true})
+      djOn(window, 'hashchange, load', djLang.hitch(this, () => {
+        var that = this
+        window.setTimeout(() => { /* hack to work in google chrome */
+          if (window.location.hash) {
+            if (Number(window.location.hash.substr(1))) {
+              that.doSearchLocation(window.location.hash.substr(1))
+            }
+          }
+        }, 500)
+      }))
 
       this.update().then(djLang.hitch(this, () => {
         this.view.rectangle = getPageRect()
+        this.bc.onmessage = function (event) {
+          this.handleBCMessage(event)
+        }.bind(this)
       }))
     },
 
@@ -1310,7 +1372,7 @@ define([
       var widget = null
 
       for (var k in this.entries) {
-        if (this.entries[k].target == data['target']) {
+        if (this.entries[k].target === data['target']) {
           widget = this.entries[k]
           break
         }
@@ -1323,32 +1385,24 @@ define([
       }
 
       that.set('center', center)
-      that.resize()
+      that.update()
 
-      that.update(true).then(function () {
-        if (widget) {
-          var pos = djDomGeo.position(widget.domNode, true)
-          window.scroll(0, pos.y - middle)
+      if (widget) {
+        var pos = djDomGeo.position(widget.domNode, true)
+        window.scroll(0, pos.y - middle)
+        var reservation = null
 
-          widget.update(true).then(function () {
-            var pos = djDomGeo.position(widget.domNode, true)
-            window.scroll(0, pos.y - middle)
-            that.scroll()
-            var reservation = null
-
-            for (var k in widget.entries) {
-              if (Number(widget.entries[k].id) === Number(data.id)) {
-                reservation = widget.entries[k]
-                break
-              }
-            }
-
-            if (reservation) {
-              def.resolve(reservation)
-            }
-          })
+        for (k in widget.entries) {
+          if (widget.entries[k].id === data.id) {
+            reservation = widget.entries[k]
+            break
+          }
         }
-      })
+
+        if (reservation) {
+          def.resolve(reservation)
+        }
+      }
 
       return def.promise
     },
@@ -1377,7 +1431,8 @@ define([
         if (result && result.data) {
           var data = result.data
           that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
-            that.highlight(widget.domNode)
+            //that.highlight(widget.domNode)
+            widget.popMeUp()
           })
         }
       })
@@ -1441,13 +1496,6 @@ define([
         return true
       }
       return false
-    },
-    openReturn: function (id) {
-      var dialog = new Dialog({title: 'Retour'}) 
-      this.own(dialog)
-      var ret = new Return()
-      dialog.own(ret)
-      dialog.addChild(ret)
     },
     wait: function () {
       if (!document.getElementById('WaitDisplay')) {

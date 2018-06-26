@@ -42,7 +42,6 @@ define([
     keys: function (event) {
       if (!event.ctrlKey) {
         switch (event.key) {
-          case 'F5': event.preventDefault(); this.update(); break
         }
       } else {
         switch (event.key) {

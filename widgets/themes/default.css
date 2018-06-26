@@ -58,6 +58,17 @@ html {
 	background-color: rgba(0, 0, 255, 0.2);
 }
 
+/* windows */
+.topWin {
+  background-color: white;
+  width: 96%;
+  height: 96%;
+  position: fixed;
+  top: 2%;
+  left: 2%;
+  z-index: 9999;
+}
+
 /* dateentry */
 .dateentry > div {
 	width: 100% !important;

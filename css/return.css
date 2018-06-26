@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
+body {
+	font-family: Roboto;
+}
+table  {
+  width: 100%;
+	border-collapse: collapse;
+}
+tr {
+  font-size: 1.2em;
+}
+tr.details {
+  font-size: 1em;
+}
+td, th {
+	border: 1px solid black;
+	vertical-align: top;
+	padding: 2px;
+}
+
+.details {
+	color: #999;
+}
+
+.details th {
+	border: none;
+}
+
+.expandable {
+  cursor: pointer;
+}
+
+.inprogress {
+  background-color: green;
+  color: white;
+}
+
+.later {
+  background-color: hotpink;
+}
