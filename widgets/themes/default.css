@@ -67,6 +67,48 @@ html {
   top: 2%;
   left: 2%;
   z-index: 9999;
+  border: 2px solid gray;
+}
+
+.topWin iframe {
+  border: none;
+  position: absolute;
+  width: 100%;
+  height: calc(100% - 38px);
+  top: 38px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.topWin div {
+  position: absolute;
+  top: 0;
+  left:0;
+  width: 100%;
+  height: 36px;
+  text-align: right;
+  background-color: black;
+}
+
+.topWin div span {
+  color: white;
+  float: left;
+  font-size: 26px;
+  padding: 2px;
+  margin-right: 4px;
+}
+
+.topWin div li {
+  font-size: 22px;
+  margin-right: 4px;
+  padding: 4px;
+  cursor: pointer;
+  color: gray;
+}
+
+.topWin div li:hover {
+  color: white;
 }
 
 /* dateentry */

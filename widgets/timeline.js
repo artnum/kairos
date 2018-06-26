@@ -220,13 +220,53 @@ define([
       })
     },
 
+    createWindow: function () {
+      this.Window = document.createElement('div')
+      this.Window.setAttribute('class', 'topWin')
+      this.Window.setAttribute('style', 'display: none')
+
+      this.Window.appendChild(document.createElement('div'))
+
+      this.Window.firstChild.appendChild(document.createElement('span'))
+
+      var li = document.createElement('li')
+      li.setAttribute('class', 'fas fa-external-link-alt ')
+      this.Window.firstChild.appendChild(li)
+      li.addEventListener('click', function (event) {
+        window.open(this.Window.currentUrl, '_blank')
+      }.bind(this))
+
+      li = document.createElement('li')
+      li.setAttribute('class', 'fas fa-window-close')
+      this.Window.firstChild.appendChild(li)
+      li.addEventListener('click', function (event) {
+        this.closeWindow()
+      }.bind(this))
+
+      var iframe = document.createElement('iframe')
+      iframe.addEventListener('load', function (event) {
+        var doc = event.target.contentDocument
+        this.Window.firstChild.firstChild.innerHTML = doc.title
+      }.bind(this))
+      this.Window.appendChild(iframe)
+
+      this.Window.firstChild.setAttribute('class', 'windowToolbar')
+
+      document.body.appendChild(this.Window)
+    },
+
     openWindow: function (url) {
-      this.Window.setAttribute('src', url)
+      if (!this.Window) {
+        this.createWindow()
+      }
+      this.Window.lastChild.setAttribute('src', url)
+      this.Window.currentUrl = url
       this.Window.setAttribute('style', '')
     },
 
     closeWindow: function () {
-      this.Window.setAttribute('src', '')
+      this.Window.lastChild.setAttribute('src', '')
+      this.Window.currentUrl = ''
       this.Window.setAttribute('style', 'display: none')
     },
 
@@ -508,11 +548,6 @@ define([
       this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()
-
-      this.Window = document.createElement('iframe')
-      this.Window.setAttribute('class', 'topWin')
-      this.Window.setAttribute('style', 'display: none')
-      document.body.appendChild(this.Window)
 
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
