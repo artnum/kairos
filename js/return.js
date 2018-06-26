@@ -9,7 +9,7 @@ var Return = function () {
   } else {
     document.body.appendChild(table)
   }
-  table.innerHTML = '<thead><tr><th>Machine</th><th>Réservation</th><th>Référence</th><th>Adresse</th><th>Fin</th><th>Annonce</th><th>Contact</th><th>Clef</th><th>Divers</th></tr></thead>'
+  table.innerHTML = '<thead><tr><th>Machine</th><th>Référence</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Annonce</th><th>Contact</th><th>Clef</th><th>Divers</th></tr></thead>'
   table.appendChild(document.createElement('tbody'))
   this.parent = table.lastChild
 
@@ -146,7 +146,7 @@ Return.prototype.add = function (retval) {
     }
   }
 
-  if (retval.done || retval.deleted) {
+  if (retval.done || retval.deleted || retval._target.deleted) {
     return
   }
 
@@ -169,12 +169,7 @@ Return.prototype.add = function (retval) {
 
   dom.appendChild(this.html.label(retval._target._target.cn))
   dom.appendChild(this.html.label(retval._target.target))
-  var label = this.html.label(retval.target)
-  label.addEventListener('click', function () {
-    this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
-    this.bc.postMessage({what: 'window', type: 'close'})
-  }.bind(this))
-  dom.appendChild(label)
+  dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
   dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
   dom.appendChild(this.html.label(new Date(retval._target.end)))
   dom.appendChild(this.html.label(retval.reported ? new Date(retval.reported) : ''))
@@ -202,7 +197,7 @@ Return.prototype.add = function (retval) {
   }.bind(this))
 
   this.parent.appendChild(dom)
-  /*if (retval._target.contacts && retval._target.contacts._client) {
+  /* if (retval._target.contacts && retval._target.contacts._client) {
     var x = document.createElement('tr')
     x.setAttribute('data-parent-id', 'return_' + retval.id)
     x.setAttribute('class', 'details')
@@ -211,5 +206,5 @@ Return.prototype.add = function (retval) {
     x.appendChild(this.html.label(new Address(retval._target.contacts._client[0]).toArray()))
     x.lastChild.setAttribute('colspan', '8')
     this.parent.appendChild(x)
-  }*/
+  } */
 }

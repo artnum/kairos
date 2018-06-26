@@ -84,5 +84,6 @@ CREATE TABLE IF NOT EXISTS return               ( return_id INTEGER PRIMARY KEY,
 						  return_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 						  return_deleted TIMESTAMP DEFAULT NULL,
 						  return_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+                                                  return_locality TEXT,
                                                  );
 

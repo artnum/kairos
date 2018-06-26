@@ -12,6 +12,21 @@ tr {
 tr.details {
   font-size: 1em;
 }
+
+thead tr {
+	background-color: black;
+	color: white;
+}
+
+tbody tr {
+	background-color: white;
+	cursor: pointer;
+}
+
+tbody tr:active {
+	filter: drop-shadow(5px 5px 5px black);
+}
+
 td, th {
 	border: 1px solid black;
 	vertical-align: top;

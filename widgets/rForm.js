@@ -940,6 +940,7 @@ define([
         }
         retVal.comment = f.returnComment
         retVal.contact = f.returnAddress
+        retVal.locality = f.returnLocality
         retVal.other = f.returnKeys
         if (f.returnDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())

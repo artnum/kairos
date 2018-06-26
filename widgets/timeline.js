@@ -259,8 +259,11 @@ define([
       if (!this.Window) {
         this.createWindow()
       }
+
+      url += (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now()
       this.Window.lastChild.setAttribute('src', url)
       this.Window.currentUrl = url
+
       this.Window.setAttribute('style', '')
     },
 
