@@ -268,6 +268,9 @@ define([
     },
 
     closeWindow: function () {
+      if (!this.Window) {
+        return
+      }
       this.Window.lastChild.setAttribute('src', '')
       this.Window.currentUrl = ''
       this.Window.setAttribute('style', 'display: none')
