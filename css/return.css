@@ -38,6 +38,19 @@ td, th {
 	padding: 2px;
 }
 
+th {
+	cursor: pointer;
+}
+
+th[data-artnum-sortdir=desc]:after {
+  font-family: "FontAwesome";
+  content: ' \f0de';
+}
+th[data-artnum-sortdir=asc]:after {
+  font-family: "FontAwesome";
+  content: ' \f0dd';
+}
+
 .details {
 	color: #999;
 }

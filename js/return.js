@@ -13,6 +13,23 @@ var Return = function () {
   table.appendChild(document.createElement('tbody'))
   this.parent = table.lastChild
 
+  var th = table.getElementsByTagName('thead')[0].childNodes[0].getElementsByTagName('th')
+  for (var i = 0; i < th.length; i++) {
+    th[i].setAttribute('data-artnum-sortidx', i)
+    th[i].addEventListener('click', function (event) {
+      var idx = Number(event.target.getAttribute('data-artnum-sortidx'))
+      var dir = event.target.getAttribute('data-artnum-sortdir') ? event.target.getAttribute('data-artnum-sortdir') : 'asc'
+      this.sort(idx, dir)
+      event.target.setAttribute('data-artnum-sortdir', dir === 'asc' ? 'desc' : 'asc')
+
+      for (var i = 0; i < th.length; i++) {
+        if (th[i] !== event.target) {
+          th[i].removeAttribute('data-artnum-sortdir')
+        }
+      }
+    }.bind(this))
+  }
+
   this.ww = new Worker('/location/js/ww/return.js')
   this.ww.onmessage = function (msg) {
     if (msg && msg.data) {
@@ -83,11 +100,25 @@ Return.prototype.html = {
     txt = txt.replace(/(?:\r\n|\r|\n)/mg, '<br/>')
     return txt
   },
+  _value: function (value) {
+    var val = value
+    if (value == null) {
+      val = ''
+    } else if (value instanceof Date) {
+      val = value.getTime()
+    } else if (value instanceof Array) {
+      val = value.join('')
+    }
+
+    val = String(val).replace(/(?:\r\n|\r|\n)/mg, '')
+    return val
+  },
   label: function (value) {
     var span = document.createElement('td')
 
     span.innerHTML = this._txt(value)
     span.setAttribute('class', 'label')
+    span.setAttribute('data-artnum-sort', this._value(value))
     return span
   },
 
@@ -127,6 +158,27 @@ Return.prototype.expandDetails = function (event) {
         node.setAttribute('style', '')
       }
     }
+  }
+}
+
+Return.prototype.sort = function (idx, direction = 'asc') {
+  var i = 1
+  var getValue = function (row, col) {
+    return this.parent.childNodes[row].childNodes[col].getAttribute('data-artnum-sort')
+  }.bind(this)
+  var swap = function (row1, row2) {
+    var x = row1.parentNode.removeChild(row1)
+    row2.parentNode.insertBefore(x, row2)
+  }
+
+  while (i < this.parent.childNodes.length) {
+    var j = i
+    while (j > 0 &&
+      (direction === 'asc' ? getValue(j - 1, idx) < getValue(j, idx) : getValue(j - 1, idx) > getValue(j, idx))) {
+      swap(this.parent.childNodes[j], this.parent.childNodes[j - 1])
+      j--
+    }
+    i++
   }
 }
 
