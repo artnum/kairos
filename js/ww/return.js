@@ -59,6 +59,31 @@ var fetchLastMod = function (lastmod, db) {
   })
 }
 
-var idxdb = new IdxDB().then(function (db) {
+function clean (db) {
+  var st = db.transaction('return').objectStore('return')
+  st.openCursor().onsuccess = function (event) {
+    var cursor = event.target.result
+    if (!cursor) {
+      setTimeout(function () { clean(db) }, 5000)
+      return
+    }
+
+    var id = cursor.value.id
+    fetch('/location/store/Return/' + id).then(function (response) {
+      response.json().then(function (res) {
+        if (res && !res.data.id) {
+          console.log('Delete return ' + id + ', vanish from store', res.data)
+          st = db.transaction('return', 'readwrite').objectStore('return')
+          st.delete(id)
+          postMessage({id: id, deleted: 'now'})
+        }
+      })
+    })
+    cursor.continue()
+  }
+}
+
+new IdxDB().then(function (db) {
   findLastMod(db).then(function (lastmod) { fetchLastMod(lastmod, db) })
+  setTimeout(function () { clean(db) }, 5000)
 })
