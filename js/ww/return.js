@@ -64,12 +64,12 @@ function clean (db) {
   st.openCursor().onsuccess = function (event) {
     var cursor = event.target.result
     if (!cursor) {
-      setTimeout(function () { clean(db) }, 5000)
+      setTimeout(function () { clean(db) }, 15000)
       return
     }
 
     var id = cursor.value.id
-    fetch('/location/store/Return/' + id).then(function (response) {
+    fetch('/location/store/Return/' + id, {method: 'HEAD'}).then(function (response) {
       response.json().then(function (res) {
         if (res && !res.data.id) {
           console.log('Delete return ' + id + ', vanish from store', res.data)
