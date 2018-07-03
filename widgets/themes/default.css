@@ -2,6 +2,15 @@ html {
 	overflow-x: hidden;
 }
 
+.header:active div.even {
+	background-color: red;
+	color: yellow;
+}
+.header:active div.odd {
+	background-color: yellow;
+	color: red;
+}
+
 /* Menu */
 #AppHeader {
 	z-index: 460;

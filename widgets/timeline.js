@@ -915,6 +915,15 @@ define([
 
       /* Move, following mouse, timeline left/right and up/down when left button is held */
       if (event.buttons === 1) {
+        if (!this.originalTarget) {
+          this.originalTarget = event.target
+        }
+        var multiplicator = 1
+        if (this.originalTarget.getAttribute('class').includes('weekNumber')) {
+          multiplicator = 7
+        } else if (this.originalTarget.getAttribute('class').includes('monthName')) {
+          multiplicator = 30
+        }
         var xDiff = Math.abs(this.lastClientXY[0] - event.clientX)
         var yDiff = Math.abs(this.lastClientXY[1] - event.clientY)
 
@@ -925,10 +934,11 @@ define([
             this.xDiff += -xDiff
           }
           if (Math.abs(this.xDiff) >= this.get('blockSize')) {
+            var move = 1
             if (this.xDiff < 0) {
-              this.moveXLeft(1)
+              this.moveXLeft(Math.round(move * multiplicator))
             } else {
-              this.moveXRight(1)
+              this.moveXRight(Math.round(move * multiplicator))
             }
             this.xDiff = 0
           }
@@ -942,6 +952,8 @@ define([
             window.scrollTo(0, top - (yDiff * 1.25))
           }
         }
+      } else {
+        this.originalTarget = null
       }
 
       window.requestAnimationFrame(function () {
@@ -965,10 +977,11 @@ define([
 
     eWheel: function (event) {
       if (this._mask) { return }
+      var move = 1
       if (event.deltaX < 0) {
-        this.moveLeft()
+        this.moveXLeft(move)
       } else if (event.deltaX > 0) {
-        this.moveRight()
+        this.moveXRight(move)
       }
       this.wheelTo = null
       if (event.ctrlKey) {
