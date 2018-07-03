@@ -571,7 +571,7 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       window.addEventListener('wheel', djLang.hitch(this, this.eWheel))
-      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver), {passive: true})
+      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -933,15 +933,13 @@ define([
           } else if (this.lastClientXY[0] - event.clientX < 0) {
             this.xDiff += -xDiff
           }
-          if (Math.abs(this.xDiff) >= this.get('blockSize')) {
-            var move = 1
-            if (this.xDiff < 0) {
-              this.moveXLeft(Math.round(move * multiplicator))
-            } else {
-              this.moveXRight(Math.round(move * multiplicator))
-            }
-            this.xDiff = 0
+          var move = 1
+          if (this.xDiff < 0) {
+            this.moveXLeft(Math.round(move * multiplicator))
+          } else {
+            this.moveXRight(Math.round(move * multiplicator))
           }
+          this.xDiff = 0
         }
 
         if ((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
