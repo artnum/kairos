@@ -3,53 +3,41 @@
 'use strict'
 importScripts('../localdb.js')
 
-new IdxDB().then(function (DB) {
-  function cleaner () {
-    var store = DB.transaction('reservations', 'readwrite').objectStore('reservations')
-    var cleaned = []
+new IdxDB().then(function (db) {
+  function cleaner (db) {
+    var st = db.transaction('reservations').objectStore('reservations')
+    st.getAllKeys().onsuccess = function (event) {
+      var keys = event.target.result
 
-    store.openCursor().onsuccess = function (event) {
-      var cursor = event.target.result
+      do {
+        var subkeys = keys.splice(0, 200)
+        var strkeys = subkeys.join('|')
 
-      if (!cursor) {
-        postMessage(cleaned)
-        setTimeout(cleaner, 2500)
-        return
-      }
-      var value = cursor.value
-      var del = false
+        fetch('/location/store/Reservation/|' + strkeys).then(function (response) {
+          response.json().then(function (data) {
+            var entries = data.data
+            var found = []
+            st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+            for (var i = 0; i < entries.length; i++) {
+              if (entries[i].deleted != null && entries[i].deleted !== '') {
+                st.delete(entries[i].id)
+              } else {
+                found.push(entries[i].id)
+              }
+            }
 
-      if (typeof value.id !== 'string') {
-        cursor.delete()
-        del = true
-      }
-
-      if (!del) {
-        fetch('/location/store/Reservation/' + value.id, {method: 'head'}).then(function (response) {
-          var deleted = response.headers.get('X-Artnum-deleted')
-          if (Number(deleted)) {
-            DB.transaction('reservations', 'readwrite').objectStore('reservations').delete(value.id)
-          }
-        }, function (error) {
-          console.error('Error fetch reservation', error)
+            for (i = 0; i < subkeys.length; i++) {
+              if (found.indexOf(subkeys[i])) {
+                st.delete(subkeys[i])
+              }
+            }
+          })
         })
-      }
+      } while (keys.length > 0)
 
-      if (value.deleted != null) {
-        if (cleaned.indexOf(value.target) === -1) {
-          cleaned.push(value.target)
-        }
-        del = true
-        cursor.delete()
-      }
-
-      if (del && value.return) {
-        DB.transaction('return', 'readwrite').objectStore('return').delete(value.return.id)
-      }
-
-      cursor.continue()
+      setTimeout(function () { cleaner(db) }, 15000)
     }
   }
 
-  cleaner()
+  cleaner(db)
 })

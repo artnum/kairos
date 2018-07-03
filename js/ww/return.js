@@ -93,11 +93,11 @@ function clean (db) {
         })
       })
     } while (keys.length > 0)
-    setTimeout(function () { clean(db) }, 5000)
+    setTimeout(function () { clean(db) }, 15000)
   }
 }
 
 new IdxDB().then(function (db) {
   findLastMod(db).then(function (lastmod) { fetchLastMod(lastmod, db) })
-  setTimeout(function () { clean(db) }, 5000)
+  setTimeout(function () { clean(db) }, 15000)
 })
