@@ -3,19 +3,21 @@
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 
+var msgs = []
+self.onmessage = function (msg) {
+  msgs.push(msg)
+}
+
 new IdxDB().then(function (DB) {
   var req = new XMLHttpRequest()
   var last = { 'modification': null, 'id': 0 }
-  onmessage = function (msg) {
+  var msgHandle = function (msg) {
     if (!msg.data && !msg.data.op) {
       console.warn('Web Worker Message is wrong', msg)
     }
 
     switch (msg.data.type) {
       case 'move':
-        if (req && req.readyState > 0 && req.readyState < 4) {
-          req.abort()
-        }
         var parameters = ''
         var url = msg.data.content[0]
         if (msg.data.content[1] && msg.data.content[1].query) {
@@ -29,6 +31,13 @@ new IdxDB().then(function (DB) {
         req.open('get', url, true)
         req.send()
         break
+    }
+  }
+  self.onmessage = msgHandle
+
+  if (msgs.length > 0) {
+    for (var i = 0; i < msgs.length; i++) {
+      msgHandle(msgs[i])
     }
   }
 
@@ -74,6 +83,7 @@ new IdxDB().then(function (DB) {
             }
           }
           r.data[i]._hash = objectHash.sha1(r.data[i])
+          r.data[i]._atime = new Date().toISOString()
           store.put(r.data[i])
         }
       }

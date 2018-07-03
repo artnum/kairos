@@ -583,12 +583,10 @@ define([
         }, 500)
       }))
 
-      this.update().then(djLang.hitch(this, () => {
-        this.view.rectangle = getPageRect()
-        this.bc.onmessage = function (event) {
-          this.handleBCMessage(event)
-        }.bind(this)
-      }))
+      this.view.rectangle = getPageRect()
+      this.bc.onmessage = function (event) {
+        this.handleBCMessage(event)
+      }.bind(this)
     },
 
     mask: function (state, callback) {
@@ -1242,6 +1240,7 @@ define([
       var loaded = new Array()
       var that = this
       this.currentPosition = 0
+      this.update()
 
       request.get('https://aircluster.local.airnace.ch/store/Machine').then(function (response) {
         that.setServers(locationConfig.servers)
@@ -1359,7 +1358,7 @@ define([
       var def = new djDeferred()
       var begin = new Date()
       var end = new Date()
-      
+
       begin.setTime(this.get('dateRange').begin.getTime())
       end.setTime(this.get('dateRange').end.getTime())
       begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0, 0, 0)

@@ -9,6 +9,8 @@ new IdxDB().then(function (db) {
     st.getAllKeys().onsuccess = function (event) {
       var keys = event.target.result
 
+      if (keys.length === 0) { return }
+
       do {
         var subkeys = keys.splice(0, 200)
         var strkeys = subkeys.join('|')
@@ -27,13 +29,28 @@ new IdxDB().then(function (db) {
             }
 
             for (i = 0; i < subkeys.length; i++) {
-              if (found.indexOf(subkeys[i])) {
+              if (found.indexOf(subkeys[i]) === -1) {
                 st.delete(subkeys[i])
               }
             }
           })
         })
       } while (keys.length > 0)
+
+      st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+      st.openCursor().onsuccess = function (event) {
+        var cursor = event.target.result
+
+        if (!cursor) {
+          return
+        }
+
+        if (!cursor.value._atime || new Date(cursor.value._atime).getTime() < new Date().getTime() - 43200) {
+          cursor.delete()
+        }
+
+        cursor.continue()
+      }
 
       setTimeout(function () { cleaner(db) }, 15000)
     }
