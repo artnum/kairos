@@ -33,9 +33,17 @@ var Return = function () {
   this.ww = new Worker('/location/js/ww/return.js')
   this.ww.onmessage = function (msg) {
     if (msg && msg.data) {
-      this.query(msg.data).then(function (retval) {
-        this.add(retval)
-      }.bind(this))
+      if (msg.data.delete && msg.data.id) {
+        console.log('delete', msg.data)
+        var node = document.getElementById('return_' + msg.data.id)
+        if (node) {
+          this.parent.removeChild(node)
+        }
+      } else {
+        this.query(msg.data).then(function (retval) {
+          this.add(retval)
+        }.bind(this))
+      }
     }
   }.bind(this)
   this.entry = {}

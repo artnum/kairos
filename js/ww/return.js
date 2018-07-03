@@ -61,25 +61,39 @@ var fetchLastMod = function (lastmod, db) {
 
 function clean (db) {
   var st = db.transaction('return').objectStore('return')
-  st.openCursor().onsuccess = function (event) {
-    var cursor = event.target.result
-    if (!cursor) {
-      setTimeout(function () { clean(db) }, 15000)
-      return
-    }
+  st.getAllKeys().onsuccess = function (event) {
+    var keys = event.target.result
 
-    var id = cursor.value.id
-    fetch('/location/store/Return/' + id, {method: 'HEAD'}).then(function (response) {
-      response.json().then(function (res) {
-        if (res && !res.data.id) {
-          console.log('Delete return ' + id + ', vanish from store', res.data)
+    /* this is done to limit size of URL */
+    do {
+      var subkeys = keys.splice(0, 200)
+      var strkeys = subkeys.join('|')
+      fetch('/location/store/Return/|' + strkeys).then(function (response) {
+        response.json().then(function (data) {
+          var entries = data.data
+          var found = []
           st = db.transaction('return', 'readwrite').objectStore('return')
-          st.delete(id)
-          postMessage({id: id, deleted: 'now'})
-        }
+          for (var i = 0; i < entries.length; i++) {
+            if (entries[i].deleted === '') { entries[i].deleted = null }
+            if (entries[i].done === '') { entries[i].done = null }
+
+            if (entries[i].deleted != null || entries[i].done != null) {
+              st.delete(entries[i].id)
+              postMessage({delete: true, id: entries[i].id})
+            } else {
+              found.push(entries[i].id)
+            }
+          }
+          for (i = 0; i < subkeys.length; i++) {
+            if (found.indexOf(subkeys[i]) === -1) {
+              st.delete(subkeys[i])
+              postMessage({delete: true, id: subkeys[i]})
+            }
+          }
+        })
       })
-    })
-    cursor.continue()
+    } while (keys.length > 0)
+    setTimeout(function () { clean(db) }, 5000)
   }
 }
 
