@@ -18,19 +18,10 @@ new IdxDB().then(function (db) {
         fetch('/location/store/Reservation/|' + strkeys).then(function (response) {
           response.json().then(function (data) {
             var entries = data.data
-            var found = []
             st = db.transaction('reservations', 'readwrite').objectStore('reservations')
             for (var i = 0; i < entries.length; i++) {
               if (entries[i].deleted != null && entries[i].deleted !== '') {
                 st.delete(entries[i].id)
-              } else {
-                found.push(entries[i].id)
-              }
-            }
-
-            for (i = 0; i < subkeys.length; i++) {
-              if (found.indexOf(subkeys[i]) === -1) {
-                st.delete(subkeys[i])
               }
             }
           })
