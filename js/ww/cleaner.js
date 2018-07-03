@@ -45,8 +45,8 @@ new IdxDB().then(function (db) {
           return
         }
 
-        /* 4320000ms = 12h */
-        if (!cursor.value._atime || new Date(cursor.value._atime).getTime() < new Date().getTime() - 4320000) {
+        /* 43200000ms = 12h */
+        if (!cursor.value._atime || new Date(cursor.value._atime).getTime() < new Date().getTime() - 43200000) {
           cursor.delete()
         }
 
