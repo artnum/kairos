@@ -37,22 +37,6 @@ new IdxDB().then(function (db) {
         })
       } while (keys.length > 0)
 
-      st = db.transaction('reservations', 'readwrite').objectStore('reservations')
-      st.openCursor().onsuccess = function (event) {
-        var cursor = event.target.result
-
-        if (!cursor) {
-          return
-        }
-
-        /* 43200000ms = 12h */
-        if (!cursor.value._atime || new Date(cursor.value._atime).getTime() < new Date().getTime() - 43200000) {
-          cursor.delete()
-        }
-
-        cursor.continue()
-      }
-
       setTimeout(function () { cleaner(db) }, 15000)
     }
   }
