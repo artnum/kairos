@@ -84,12 +84,6 @@ function clean (db) {
               found.push(entries[i].id)
             }
           }
-          for (i = 0; i < subkeys.length; i++) {
-            if (found.indexOf(subkeys[i]) === -1) {
-              st.delete(subkeys[i])
-              postMessage({delete: true, id: subkeys[i]})
-            }
-          }
         })
       })
     } while (keys.length > 0)
