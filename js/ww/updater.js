@@ -11,7 +11,21 @@ self.onmessage = function (msg) {
 new IdxDB().then(function (DB) {
   var req = new XMLHttpRequest()
   var last = { 'modification': null, 'id': 0 }
+
+  var handleReqLoad = function (e) {
+    if (req.readyState === 4) {
+      if (req.status === 200) {
+        handleResults(req.responseText)
+      }
+    }
+  }
+
+  req.onload = handleReqLoad
+
   var msgHandle = function (msg) {
+    if (req.readyState > 0 && req.readyState < 3) {
+      req.abort()
+    }
     if (!msg.data && !msg.data.op) {
       console.warn('Web Worker Message is wrong', msg)
     }
@@ -47,11 +61,10 @@ new IdxDB().then(function (DB) {
     try {
       r = JSON.parse(txt)
     } catch (e) {
-      return ids
+      console.log(e)
     }
     if (r && r.data && r.data.length > 0) {
       var tx = DB.transaction('reservations', 'readwrite')
-      tx.oncomplete = function (e) { postMessage({ type: 'entries', content: ids }) }
       var store = tx.objectStore('reservations')
       for (var i = 0; i < r.data.length; i++) {
         if (r.data[i].target) {
@@ -88,14 +101,7 @@ new IdxDB().then(function (DB) {
         }
       }
     }
-  }
-
-  req.onload = function (e) {
-    if (req.readyState === 4) {
-      if (req.status === 200) {
-        handleResults(req.responseText)
-      }
-    }
+    postMessage({ type: 'entries', content: ids })
   }
 
   var checker = function () {

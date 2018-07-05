@@ -919,9 +919,10 @@ define([
           this.originalTarget = event.target
         }
         var multiplicator = 1
-        if (this.originalTarget.getAttribute('class').includes('weekNumber')) {
+        var targetClass = this.originalTarget.getAttribute('class')
+        if (targetClass && targetClass.includes('weekNumber')) {
           multiplicator = 7
-        } else if (this.originalTarget.getAttribute('class').includes('monthName')) {
+        } else if (targetClass && targetClass.includes('monthName')) {
           multiplicator = 30
         }
         var xDiff = Math.abs(this.lastClientXY[0] - event.clientX)
@@ -1372,9 +1373,8 @@ define([
 
       begin.setTime(this.get('dateRange').begin.getTime())
       end.setTime(this.get('dateRange').end.getTime())
-      begin.setUTCMonth(begin.getMonth(), 0); begin.setUTCHours(0, 0, 0)
-      end.setUTCMonth(end.getMonth() + 1, 1); end.setUTCHours(0, 0, 0)
-      this.resize()
+      begin.setTime(begin.getTime() - 604800000)
+      end.setTime(end.getTime() + 604800000)
 
       this.Updater.postMessage({type: 'move',
         content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query: {
@@ -1382,6 +1382,7 @@ define([
           'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
           'search.deleted': '-' }
         }]})
+      this.resize()
       def.resolve()
 
       return def.promise

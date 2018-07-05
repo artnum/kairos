@@ -89,6 +89,13 @@ define([
     },
 
     fromJson: function (json) {
+      if (this.get('_hash')) {
+        if (json._hash === this.get('_hash')) {
+          this.set('updated', false)
+          return
+        }
+      }
+
       djLang.mixin(this, json)
 
       this.set('updated', true)
@@ -457,7 +464,7 @@ define([
     },
 
     setTextDesc: function () {
-      if (!this.updated) { return }
+      if (!this.get('updated')) { return }
       this.set('updated', false)
 
       var frag = document.createDocumentFragment()
@@ -674,7 +681,7 @@ define([
     },
 
     drawComplement: function () {
-      if (this.updated) { return }
+      if (this.get('updated')) { return }
 
       var that = this
       var def = new DjDeferred()
