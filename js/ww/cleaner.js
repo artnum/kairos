@@ -1,7 +1,10 @@
 /* eslint-env worker */
-/* global IdxDB */
+/* global IdxDB, objectHash */
 'use strict'
 importScripts('../localdb.js')
+importScripts('../object-hash/dist/object_hash.js')
+
+var Entries = {}
 
 new IdxDB().then(function (db) {
   function cleaner (db) {
@@ -22,12 +25,21 @@ new IdxDB().then(function (db) {
             for (var i = 0; i < entries.length; i++) {
               if (entries[i].deleted != null && entries[i].deleted !== '') {
                 st.delete(entries[i].id)
+                delete Entries[entries[i].id]
+              } else {
+                var hash = objectHash.sha1(entries[i])
+                if (Entries[entries[i].id]) {
+                  if (Entries[entries[i].id] !== hash) {
+                    /* Post message */  
+                  }
+                }
+                Entries[entries[i].id] = hash
               }
             }
           })
         })
       } while (keys.length > 0)
-
+      console.log(Entries)
       setTimeout(function () { cleaner(db) }, 15000)
     }
   }

@@ -140,12 +140,16 @@ define([
 
       var store = window.App.DB.transaction('reservations').objectStore('reservations')
       var entry = store.get(this.get('id'))
-      entry.onsuccess = function (e) {
+      entry.onsuccess = djLang.hitch(this, function (e) {
+        if (e.target.result._hash === this.get('_hash')) {
+          def.resolve()
+          return
+        }
         if (e.target && e.target.result) {
           that.fromJson(e.target.result)
         }
         def.resolve()
-      }
+      })
       entry.onerror = function (e) {
         window.App.error('Erreur de chargement de la réservation ' + that.get('id'))
         def.resolve()
@@ -464,9 +468,6 @@ define([
     },
 
     setTextDesc: function () {
-      if (!this.get('updated')) { return }
-      this.set('updated', false)
-
       var frag = document.createDocumentFragment()
 
       frag.appendChild(document.createElement('DIV'))
@@ -1063,6 +1064,7 @@ define([
               val.target = result.data.id
               this.set('return', val)
               this.saveReturn()
+              this.set('_hash', '')
             }
           }
         }
