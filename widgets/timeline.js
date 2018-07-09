@@ -615,7 +615,7 @@ define([
 
       that.searchMenu.addChild(new dtMenuSeparator())
 
-      Req.get('https://aircluster.local.airnace.ch/store/Category').then((response) => {
+      Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
         if (response && response.data && response.data.length > 0) {
           var names = {}
           for (var i = 0; i < response.data.length; i++) {
