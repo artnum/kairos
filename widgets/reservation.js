@@ -682,8 +682,6 @@ define([
     },
 
     drawComplement: function () {
-      if (this.get('updated')) { return }
-
       var that = this
       var def = new DjDeferred()
       var frag = document.createDocumentFragment()
