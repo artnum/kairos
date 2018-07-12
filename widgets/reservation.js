@@ -1101,6 +1101,5 @@ define([
         this.save().then(() => { window.App.info('Prolongation effectuée') })
       }
     }
-
   })
 })

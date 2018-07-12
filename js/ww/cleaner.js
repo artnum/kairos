@@ -30,7 +30,7 @@ new IdxDB().then(function (db) {
                 var hash = objectHash.sha1(entries[i])
                 if (Entries[entries[i].id]) {
                   if (Entries[entries[i].id] !== hash) {
-                    /* Post message */  
+                    /* Post message */
                   }
                 }
                 Entries[entries[i].id] = hash
@@ -39,7 +39,6 @@ new IdxDB().then(function (db) {
           })
         })
       } while (keys.length > 0)
-      console.log(Entries)
       setTimeout(function () { cleaner(db) }, 15000)
     }
   }

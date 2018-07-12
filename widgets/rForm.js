@@ -697,8 +697,12 @@ define([
     },
 
     createContact: function (entry, type) {
-      var that = this
       var c = new Card('/Contacts/')
+
+      if (type === '') {
+        type = 'Autre'
+      }
+
       c.entry(entry)
 
       var contact = new DtContentPane({
@@ -708,19 +712,23 @@ define([
         contactType: type,
         contactCard: c,
         contactLinkId: entry.linkId,
+        contactSup: this,
         style: 'height: 80px;',
-        onClose: djLang.hitch(this, function (event) {
-          if (confirm('Supprimer le contact ' + c.getType(type))) {
-            var tab = event.selectedChildWidget
-            if (tab) {
-              if (tab.contactType) {
-                that.contacts[tab.contactType] = null
-                request.del(locationConfig.store + '/ReservationContact/' + tab.contactLinkId)
-                event.removeChild(tab)
+        onClose: function (event) {
+          var sup = this.contactSup
+          if (confirm('Supprimer le contact ' + this.contactCard.getType(this.contactType))) {
+            request.del(locationConfig.store + '/ReservationContact/' + this.contactLinkId).then(function () {
+              event.removeChild(this)
+              for (var i in sup.contacts) {
+                if (sup.contacts[i].contactLinkId === this.contactLinkId) {
+                  sup.contacts[i].destroy()
+                  delete sup.contacts[i]
+                  break
+                }
               }
-            }
+            }.bind(this))
           }
-        })
+        }
       })
 
       for (var k in this.contacts) {
