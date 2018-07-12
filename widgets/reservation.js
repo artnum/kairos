@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, locationConfig, pSBC */
+/* global DateRange, locationConfig, pSBC, fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -7,10 +7,6 @@ define([
   'dojo/Deferred',
 
   'dijit/_WidgetBase',
-  'dijit/_TemplatedMixin',
-  'dijit/_WidgetsInTemplateMixin',
-
-  'dojo/text!./templates/reservation.html',
 
   'dojo/dom',
   'dojo/date',
@@ -38,10 +34,6 @@ define([
   DjDeferred,
 
   dtWidgetBase,
-  dtTemplatedMixin,
-  dtWidgetsInTemplateMixin,
-
-  _template,
 
   djDom,
   djDate,
@@ -56,19 +48,18 @@ define([
 
   dtTooltip,
   dtRegistry,
-  dtContentPane,
+  DtContentPane,
 
-  rForm,
+  RForm,
   Mouse,
   request,
 
   Req
 ) {
   return djDeclare('location.reservation', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, Mouse], {
+    dtWidgetBase, djEvented, Mouse], {
     events: [],
     baseClass: 'reservation',
-    templateString: _template,
     attrs: [],
     detailsHtml: '',
     special: 0,
@@ -86,6 +77,10 @@ define([
       this.events = {}
       this.overlap = {}
       this.duration = 0
+      this.nodeGeneration = 0
+      this._gui = {
+        hidden: false
+      }
     },
 
     fromJson: function (json) {
@@ -114,14 +109,11 @@ define([
       if (this.contacts && this.contacts['_client']) {
         if (this.contacts['_client'][0].target) {
           this.dbContact = this.contacts['_client'][0].target
-          this.setTextDesc()
         } else {
           this.dbContact = { freeform: this.contacts['_client'][0].freeform }
-          this.setTextDesc()
         }
       } else {
         this.dbContact = {}
-        this.setTextDesc()
       }
       if (!this.color) { this.color = 'FFF' }
       if (!this.complements) { this.complements = [] }
@@ -132,7 +124,12 @@ define([
     },
 
     refresh: function () {
-      return this.update()
+      return new Promise(function (resolve, reject) {
+        this.update().then(function (res) {
+          this.resize()
+          resolve(res)
+        }.bind(this), function (res) { reject(res) })
+      }.bind(this))
     },
     update: function () {
       var that = this
@@ -141,12 +138,14 @@ define([
       var store = window.App.DB.transaction('reservations').objectStore('reservations')
       var entry = store.get(this.get('id'))
       entry.onsuccess = djLang.hitch(this, function (e) {
-        if (e.target.result._hash === this.get('_hash')) {
-          def.resolve()
-          return
-        }
-        if (e.target && e.target.result) {
-          that.fromJson(e.target.result)
+        if (e.target.result) {
+          if (e.target.result._hash === this.get('_hash')) {
+            def.resolve()
+            return
+          }
+          if (e.target && e.target.result) {
+            that.fromJson(e.target.result)
+          }
         }
         def.resolve()
       })
@@ -168,13 +167,21 @@ define([
       this.sup.info(txt, code)
     },
     postCreate: function () {
+      this.currentDom = document.createElement('DIV')
+      this.currentDom.setAttribute('style', 'display: none')
+      fastdom.mutate(djLang.hitch(this, function () {
+        this.sup.data.appendChild(this.currentDom)
+      }))
+      this._gui.hidden = true
+
       this.originalTop = djDomStyle.get(this.domNode, 'top')
       this.set('active', false)
+      djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
+      djOn(this.currentDom, 'mousedown', djLang.hitch(this, this.isolateMe))
+      djOn(this.currentDom, 'mouseup', djLang.hitch(this, this.cancelIsolation))
+      djOn(this.currentDom, 'mousemove', djLang.hitch(this, this.cancelIsolation))
+
       this.resize()
-      djOn(this.domNode, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
-      djOn(this.domNode, 'mousedown', djLang.hitch(this, this.isolateMe))
-      djOn(this.domNode, 'mouseup', djLang.hitch(this, this.cancelIsolation))
-      djOn(this.domNode, 'mousemove', djLang.hitch(this, this.cancelIsolation))
     },
 
     isolateMe: function (e) {
@@ -188,7 +195,6 @@ define([
             var height = djDomStyle.get(this.main, 'height')
             djDomStyle.set(this.main, 'height', height * this.getOverlapLevel())
           }
-          this.drawComplement()
           djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
@@ -207,7 +213,6 @@ define([
             djDomStyle.set(this.main, 'height', height / this.getOverlapLevel())
           }
           djDomStyle.set(this.domNode, 'z-index', this._zindex)
-          this.drawComplement()
           this._isolated = false
         }
       }
@@ -241,7 +246,6 @@ define([
     _setIDentAttr: function (value) {
       this.IDent = value
       this.id = value
-      this.setTextDesc()
     },
     _setEquipmentAttr: function (value) {
       this.addAttr('equipment')
@@ -254,22 +258,18 @@ define([
     _setGpsAttr: function (value) {
       this.addAttr('gps')
       this._set('gps', value)
-      this.setTextDesc()
     },
     _setAddressAttr: function (value) {
       this.addAttr('address')
       this._set('address', value)
-      this.setTextDesc()
     },
     _setLocalityAttr: function (value) {
       this.addAttr('locality')
       this._set('locality', value)
-      this.setTextDesc()
     },
     _setCommentAttr: function (value) {
       this.addAttr('comment')
       this._set('comment', value)
-      this.setTextDesc()
     },
     _setEnableAttr: function () {
       this.set('active', true)
@@ -328,7 +328,6 @@ define([
       this.addAttr('end')
       this._set('end', value)
       this._set('stop', this.xFromTime(value))
-      this.setTextDesc()
     },
     _setDeliveryBeginAttr: function (value) {
       this.addAttr('deliveryBegin')
@@ -340,6 +339,12 @@ define([
     },
     _setSupAttr: function (sup) {
       this._set('sup', sup)
+      if (this.currentDom) {
+        fastdom.mutate(djLang.hitch(this, function () {
+          this.currentDom.parentNode.removeChild(this.currentDom)
+          sup.data.appendChild(this.currentDom)
+        }))
+      }
     },
     _setWithWorkerAttr: function (value) {
       this.addAttr('withWorker')
@@ -467,8 +472,8 @@ define([
       return content
     },
 
-    setTextDesc: function () {
-      var frag = document.createDocumentFragment()
+    _setTextDesc: function (root) {
+      var frag = document.createElement('DIV')
 
       frag.appendChild(document.createElement('DIV'))
       if (!this.get('compact')) {
@@ -559,14 +564,20 @@ define([
         frag.lastChild.appendChild(document.createTextNode(comment))
       }
 
-      var div = this.txtDesc
-      window.requestAnimationFrame(() => {
-        if (div.firstChild) {
-          div.removeChild(div.firstChild)
-        }
-        div.appendChild(document.createElement('DIV'))
-        div.firstChild.appendChild(frag)
-      })
+      var extender = document.createElement('DIV')
+      extender.setAttribute('class', 'extender')
+      extender.setAttribute('title', 'Ajouter une semaine à la réservation')
+      djOn(extender, 'click', djLang.hitch(this, this.extend7))
+      extender.innerHTML = '<div><i class="fas fa-angle-double-right"></i></div>'
+
+      var details = document.createElement('DIV')
+      details.setAttribute('style', 'position: relative; top: -100%; height: 100%')
+      details.appendChild(document.createElement('DIV'))
+      details.firstChild.setAttribute('class', 'details')
+      details.firstChild.appendChild(extender)
+      details.firstChild.appendChild(frag)
+
+      return details
     },
 
     eDetails: function (event) {
@@ -599,10 +610,10 @@ define([
         return
       }
       window.App.setOpen(this.get('IDent'))
-      var f = new rForm({ reservation: this })
+      var f = new RForm({ reservation: this })
       this.highlight()
 
-      var cp = new dtContentPane({
+      var cp = new DtContentPane({
         title: '<i class="fas fa-spinner fa-spin"></i> Réservation ' + this.get('id'),
         closable: true,
         id: 'ReservationTab_' + this.get('id'),
@@ -681,13 +692,12 @@ define([
       return this.sup.computeIntervalOffset(date)
     },
 
-    drawComplement: function () {
+    _drawComplement: function () {
       var that = this
-      var def = new DjDeferred()
-      var frag = document.createDocumentFragment()
-      var appendFrag = false
       var x = this.complements
       var byType = {}
+      var compdiv = document.createElement('DIV')
+      compdiv.setAttribute('style', 'position: relative; height: 100%')
 
       for (var i = 0; i < x.length; i++) {
         /* Follow set end and begin at the value of the reservation */
@@ -721,7 +731,7 @@ define([
         }
       }
 
-      var cent = 100 - djDomStyle.get(that.tools, 'height') * 100 / djDomStyle.get(that.main, 'height')
+      var cent = 100
       var height = Math.round(cent / Object.keys(byType).length)
       var lineCount = 0
 
@@ -799,24 +809,14 @@ define([
               }
               div.appendChild(numDiv)
 
-              frag.appendChild(div)
-              appendFrag = true
+              compdiv.appendChild(div)
             }
           }
         })
         lineCount++
       }
 
-      window.requestAnimationFrame(() => {
-        if (!that.nStabilo) { def.resolve(); return }
-        for (var i = that.nStabilo.firstChild; i; i = that.nStabilo.firstChild) { that.nStabilo.removeChild(i) }
-        if (appendFrag) {
-          that.nStabilo.appendChild(frag)
-        }
-        def.resolve()
-      })
-
-      return def.promise
+      return compdiv
     },
 
     getOverlapLevel: function () {
@@ -834,21 +834,35 @@ define([
       return 1
     },
 
-    resize: function () {
-      var that = this
-      var def = new DjDeferred()
-      this.refresh()
+    destroy: function () {
+      this.hide()
+      this.inherited(arguments)
+    },
 
-      if (!this.sup) { def.resolve(); return }
-      if (!this.get('begin') || !this.get('end')) { def.resolve(); return }
+    show: function () {
+      this._gui.hidden = false
+    },
+
+    hide: function () {
+      this._gui.hidden = true
+    },
+
+    resize: function () {
+      if (!this.sup) { return }
+      if (!this.get('begin') || !this.get('end')) {
+        this.hide()
+        return
+      } else {
+        this.show()
+      }
 
       /* Verify  if we keep this ourself */
       if (djDate.compare(this.get('trueBegin'), this.get('dateRange').end, 'date') >= 0 ||
         djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0 ||
         this.deleted) {
-        this.set('disable')
-        def.resolve()
-        return
+        this.hide()
+      } else {
+        this.show()
       }
       var nobegin = false
       var noend = false
@@ -908,85 +922,79 @@ define([
         toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'))
       }
       toolsOffsetEnd *= this.get('blockSize') / 24
-      window.requestAnimationFrame(djLang.hitch(this, function () {
-        /* might be destroyed async */
-        if (!that || !that.main) { def.resolve(); return }
+      var domclass = ['reservation']
 
-        if (that.overlap.do > 0) {
-          djDomClass.add(that.main, 'overlap')
-        }
+      if (this.overlap.do > 0) {
+        domclass.push('overlap')
+      }
+      if (nobegin) {
+        domclass.push('nobegin')
+      }
+      if (noend) {
+        domclass.push('noend')
+      }
+      if (this.is('confirmed')) {
+        domclass.push('confirmed')
+      }
+      if (returnDone) {
+        domclass.push('done')
+      }
 
-        if (nobegin) {
-          djDomClass.add(that.main, 'nobegin')
-        } else {
-          djDomClass.remove(that.main, 'nobegin')
-        }
+      var supRect = this.sup.view.rectangle
+      fastdom.measure(djLang.hitch(this, function () {
+        var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
+        var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
+        var myTopBorder = 1
+        var myBottomBorder = 1
 
-        if (noend) {
-          djDomClass.add(that.main, 'noend')
-        } else {
-          djDomClass.remove(that.main, 'noend')
-        }
-
-        if (that.is('confirmed')) {
-          djDomClass.add(that.main, 'confirmed')
-        } else {
-          djDomClass.remove(that.main, 'confirmed')
-        }
-
-        if (returnDone) {
-          djDomClass.add(that.main, 'done')
-        } else {
-          djDomClass.remove(that.main, 'done')
-        }
-
-        var supRect = that.sup.view.rectangle
-        var supTopBorder = djDomStyle.get(that.sup.domNode, 'border-top-width')
-        var supBottomBorder = djDomStyle.get(that.sup.domNode, 'border-bottom-width')
-        var myTopBorder = djDomStyle.get(that.main, 'border-top-width')
-        var myBottomBorder = djDomStyle.get(that.main, 'border-bottom-width')
-
-        var height = that.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
+        var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
         var top = supRect[1] + supTopBorder
-        if (that.overlap.do) {
-          var overlapLevel = that.getOverlapLevel()
+        if (this.overlap.do) {
+          var overlapLevel = this.getOverlapLevel()
           height /= overlapLevel
-          top += (height + myTopBorder) * (that.getOverlapOrder() - 1)
+          top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
         }
 
-        djDomStyle.set(that.main, 'width', stopPoint)
-        djDomStyle.set(that.main, 'left', startPoint)
-        djDomStyle.set(that.main, 'top', top)
-        djDomStyle.set(that.main, 'height', height)
-        djDomStyle.set(that.main, 'position', 'absolute')
-
-        that.tools.setAttribute('style', 'background-color:' + bgcolor)
-
-        for (var i = that.tools.firstChild; i; i = that.tools.firstChild) {
-          that.tools.removeChild(i)
+        var domstyle = ['position: absolute']
+        domstyle.push('width: ' + stopPoint + 'px')
+        domstyle.push('left: ' + startPoint + 'px')
+        domstyle.push('top: ' + top + 'px')
+        domstyle.push('height: ' + height + 'px')
+        if (this._gui.hidden) {
+          domstyle.push('display: none')
         }
+
+        var tools = document.createElement('DIV')
+        tools.setAttribute('style', 'background-color:' + bgcolor)
+        tools.setAttribute('class', 'tools')
+
         if (toolsOffsetBegin > 0) {
           var div = document.createElement('DIV')
           div.setAttribute('class', 'delivery')
           div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
-          that.tools.appendChild(div)
+          tools.appendChild(div)
         }
 
         if (toolsOffsetEnd > 0) {
           div = document.createElement('DIV')
           div.setAttribute('class', 'delivery')
           div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
-          that.tools.appendChild(div)
+          tools.appendChild(div)
         }
 
-        that.setTextDesc()
-        that.set('enable')
+        var txtdiv = this._setTextDesc()
+        var compdiv = this._drawComplement()
+        txtdiv.appendChild(tools)
 
-        that.drawComplement()
-        def.resolve()
+        fastdom.mutate(djLang.hitch(this, function () {
+          this.currentDom.innerHTML = ''
+          this.currentDom.setAttribute('style', domstyle.join(';'))
+          this.currentDom.setAttribute('class', domclass.join(' '))
+          this.currentDom.appendChild(compdiv)
+          this.currentDom.appendChild(txtdiv)
+          this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
+        }))
       }))
-
-      return def.promise
     },
 
     highlight: function () {

@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global locationConfig, getPageRect, getElementRect */
+/* global locationConfig, getPageRect, getElementRect,fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -955,18 +955,23 @@ define([
         this.originalTarget = null
       }
 
-      window.requestAnimationFrame(function () {
+      fastdom.measure(function () {
         var none = true
         for (var i = 0; i < days.length; i++) {
           var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
           if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
-            sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none')
+            fastdom.mutate(function () {
+              sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none')
+            })
             none = false
+            break
           }
         }
 
         if (none) {
-          sight.removeAttribute('style')
+          fastdom.mutate(function () {
+            sight.removeAttribute('style')
+          })
         }
       })
 
@@ -1054,10 +1059,6 @@ define([
       this.update()
     },
 
-    beginDraw: function () {
-      // this.newBuffer = document.createDocumentFragment();
-    },
-
     /* insert into linked list */
     _lli: function (root, node) {
       node.set('nextNode', null)
@@ -1092,13 +1093,13 @@ define([
       }
 
       var className = 'odd'
-      for (var i = newBuffer.firstChild; i; i = i.nextSibling) {
-        djDomClass.add(i, className)
-        className = className == 'odd' ? 'even' : 'odd'
+      for (i = newBuffer.firstChild; i; i = i.nextSibling) {
+        i.setAttribute('class', i.getAttribute('class') + ' ' + className)
+        className = className === 'odd' ? 'even' : 'odd'
       }
 
       var node = this.domEntries
-      window.requestAnimationFrame(() => {
+      fastdom.mutate(() => {
         while (node.firstChild) {
           node.removeChild(node.firstChild)
         }
@@ -1196,7 +1197,7 @@ define([
         var d = this.makeDay(day)
         this.days.push(d)
         if (this.get('blockSize') > 20) {
-          djDomConstruct.place(d.domNode, docFrag, 'last')
+            djDomConstruct.place(d.domNode, docFrag, 'last')
         }
         day = djDate.add(day, 'day', 1)
         this.lastDay = day
@@ -1208,7 +1209,7 @@ define([
       if (dayMonthCount > 0) {
         this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
       }
-      window.requestAnimationFrame(djLang.hitch(this, function () {
+      fastdom.mutate(djLang.hitch(this, function () {
         this.line.appendChild(docFrag)
         this.header.appendChild(hFrag)
         this.supHeader.appendChild(shFrag)
@@ -1219,7 +1220,7 @@ define([
       var frag = document.createDocumentFragment()
       var that = this
 
-      if (this.currentVerticalLine != this.get('blockSize')) {
+      if (this.currentVerticalLine !== this.get('blockSize')) {
         frag.appendChild(document.createElement('DIV'))
         for (var i = 0; i < this.days.length; i++) {
           var node = document.createElement('DIV')
@@ -1232,24 +1233,25 @@ define([
 
           var style = ''
 
-          if (djDate.compare(this.days[i]._date, new Date(), 'date') == 0) {
+          if (djDate.compare(this.days[i]._date, new Date(), 'date') === 0) {
             nodeclass = nodeclass + ' today'
           }
           node.setAttribute('class', nodeclass)
           node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' +
-					this.get('blockSize') + 'px; display: block; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px')
+          this.get('blockSize') + 'px; display: block; background-color: transparent; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px')
           frag.firstChild.appendChild(node)
         }
 
-        window.requestAnimationFrame(() => {
-          if (that.nVerticals.firstChild) { that.nVerticals.removeChild(that.nVerticals.firstChild) }
-          that.nVerticals.appendChild(frag)
-        })
+        fastdom.mutate(djLang.hitch(this, function () {
+          if (this.nVerticals.firstChild) { this.nVerticals.removeChild(that.nVerticals.firstChild) }
+          this.nVerticals.appendChild(frag)
+          this.currentVerticalLine = this.get('blockSize')
+        }))
       }
     },
 
     run: function () {
-      var loaded = new Array()
+      var loaded = []
       var that = this
       this.currentPosition = 0
       this.update()
@@ -1257,7 +1259,6 @@ define([
       request.get('https://aircluster.local.airnace.ch/store/Machine').then(function (response) {
         that.setServers(locationConfig.servers)
         if (response.success()) {
-          that.beginDraw()
           var whole = response.whole()
           whole.sort(function (a, b) {
             if (parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };

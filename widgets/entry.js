@@ -134,7 +134,7 @@ define([
     },
 
     update: function () {
-      var entries = new Array()
+      var entries = []
       var that = this
       var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target')
       idx.openCursor(this.target).onsuccess = function (e) {
@@ -142,10 +142,14 @@ define([
         if (cursor) {
           entries.push(cursor.value.id)
           if (!that.entries[cursor.value.id]) {
-            that.entries[cursor.value.id] = new Reservation({ sup: that, id: cursor.value.id })
-            that.entries[cursor.value.id].fromJson(cursor.value)
+            try {
+              that.entries[cursor.value.id] = new Reservation({ sup: that, id: cursor.value.id })
+              that.entries[cursor.value.id].fromJson(cursor.value)
+            } catch (e) {
+              /* do nothing */
+            }
           } else {
-            if (that.entries[cursor.value.id]._hash != cursor.value._hash) {
+            if (that.entries[cursor.value.id]._hash !== cursor.value._hash) {
               if (window.App.isOpen(cursor.value.id)) {
                 if (!window.App.isModify(cursor.value.id)) {
                   var n = new Notification('La réservation ' + cursor.value.id + ' a été modifiée par un autre utilisateur', { requireInteraction: true })
@@ -592,7 +596,6 @@ define([
     },
 
     addOrUpdateReservation: function (reservations) {
-      var found = false
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
           this.entries[reservations[i].id] = new Reservation({ sup: this })

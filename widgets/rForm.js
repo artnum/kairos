@@ -278,7 +278,7 @@ define([
         complements.appendChild(frag)
       })
 
-      this.reservation.drawComplement()
+      this.reservation.resize()
     },
 
     doEditComplement: function (event) {
@@ -998,14 +998,12 @@ define([
           var entry = window.App.getEntry(reservation.get('target'))
           var oldEntry = window.App.getEntry(changeMachine)
           if (entry) {
+            reservation.set('sup', entry)
             reservation.fromJson(result.data)
             reservation.syncForm()
-            window.App.Reservation.set(reservation.get('id'), result.data)
             window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée')
             delete oldEntry.entries[reservation.get('id')]
             entry.entries[reservation.get('id')] = reservation
-            entry.update()
-            oldEntry.update()
           }
         })
       }
