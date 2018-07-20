@@ -130,6 +130,11 @@ $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 
 
 $PDF->vtab(3);
 $PDF->hr();
+
+if(!empty($reservation['reference'])) {
+   $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
+}
+
 if(!empty($reservation['address']) || !empty($resevation['locality'])) {
    $line = '';
    if(!empty($reservation['address'])) {
@@ -153,9 +158,6 @@ if(!empty($reservation['gps'])) {
    $PDF->printTaggedLn(array('%c', 'GPS : ', '%cb', $reservation['gps']));
 }
 
-if(!empty($reservation['reference'])) {
-   $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
-}
 
 if($addrs['responsable'] != null) {
    $res = '';
@@ -170,10 +172,11 @@ $PDF->printTaggedLn(array(
          '%c', 'Début de location : ', '%cb', 
          $reservation['begin']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
-      array('break' => true));
+      array('break' => false));
 
 if(!is_null($reservation['deliveryBegin'])) {
    if(!is_null($reservation['deliveryBegin'])) {
+      $PDF->tab(2);
       $PDF->printTaggedLn(array(
                '%c', 'Livraison : ', '%cb',
                $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' Heure : ', '%cb',
@@ -181,15 +184,18 @@ if(!is_null($reservation['deliveryBegin'])) {
                ),
             array('break' => true));
    }
+} else {
+   $PDF->br();
 }
 $PDF->printTaggedLn(array(
          '%c', 'Fin de location : ', '%cb', 
          $reservation['end']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['end']->format('H:i'), 
          '%c'),
-      array('break' => true));
+      array('break' => false));
 
 if(!is_null($reservation['deliveryEnd'])) {
    if(!is_null($reservation['deliveryEnd'])) {
+      $PDF->tab(2);
       $PDF->printTaggedLn(array(
                '%c', 'Retour : ', '%cb',
                $reservation['deliveryEnd']->format('d.m.Y'), '%c', ' Heure : ', '%cb',
@@ -197,11 +203,16 @@ if(!is_null($reservation['deliveryEnd'])) {
                ),
             array('break' => true));
    }
+} else {
+   $PDF->br();
 }
 
 $PDF->br();
 $PDF->printTaggedLn(array('%c', 'Période facturée : '), array('break' => false));
-$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 48, 0, 'dotted', array('color' => '#999') );
+$PDF->SetX(155);
+$PDF->printTaggedLn(array('%a', '', '%c', ' Décompte intermédiaire'));
+
 $PDF->br();
 $PDF->br();
 $PDF->squaredFrame(88, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
@@ -276,8 +287,6 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
 
 $PDF->vtab(4);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Plein d\'essence effectué'), array('break' => false));
-$PDF->tab(2);
-$PDF->printTaggedLn(array('%a', '', '%c', ' Décompte intermédiaire'));
 
 $PDF->vtab(5);
 $PDF->hr();
