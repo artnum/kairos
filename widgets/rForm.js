@@ -464,6 +464,26 @@ define([
       console.log(this)
     },
 
+    changeBegin: function (e) {
+      if (this.reservation.get('deliveryBegin')) {
+        var newDate = this.beginDate.get('value').join(this.beginTime.get('value'))
+        var diff = djDate.difference(newDate, this.reservation.get('begin'), 'second')
+        newDate = djDate.add(this.reservation.get('deliveryBegin'), 'second', -diff)
+        this.nDeliveryBeginDate.set('value', newDate)
+        this.nDeliveryBeginTime.set('value', newDate)
+      }
+    },
+
+    changeEnd: function (e) {
+      if (this.reservation.get('deliveryEnd')) {
+        var newDate = this.endDate.get('value').join(this.endTime.get('value'))
+        var diff = djDate.difference(newDate, this.reservation.get('end'), 'second')
+        newDate = djDate.add(this.reservation.get('deliveryEnd'), 'second', -diff)
+        this.nDeliveryEndDate.set('value', newDate)
+        this.nDeliveryEndTime.set('value', newDate)
+      }
+    },
+
     postCreate: function () {
       this.inherited(arguments)
 
@@ -482,6 +502,11 @@ define([
           djDomStyle.set(this.nMFollowToggle, 'display', '')
         }
       }))
+
+      djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
+      djOn(this.beginTime, 'change', djLang.hitch(this, this.changeBegin))
+      djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
+      djOn(this.endTime, 'change', djLang.hitch(this, this.changeEnd))
 
       this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({target: this}) }))
       djOn(this.nForm, 'mousemove', function (event) { event.stopPropagation() })

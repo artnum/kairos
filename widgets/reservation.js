@@ -443,7 +443,11 @@ define([
       switch (what) {
         default: return false
         case 'confirmed': if (this.special & 0x1) { return true } else { return false }
-        case 'deliverydate': if (this.special & 0x2) { return true } else { return false }
+        case 'deliverydate':
+          if (this.get('deliveryBegin') || this.get('deliveryEnd')) {
+            return true
+          }
+          return false
       }
     },
     setIs: function (what, value) {
