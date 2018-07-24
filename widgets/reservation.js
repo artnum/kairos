@@ -68,6 +68,7 @@ define([
     complements: [],
 
     constructor: function () {
+      this.destroyed = false
       this.attrs = ['special']
       this.detailsHtml = ''
       this.special = 0
@@ -78,16 +79,31 @@ define([
       this.overlap = {}
       this.duration = 0
       this.nodeGeneration = 0
+      this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this._gui = {
         hidden: false
       }
     },
 
     fromJson: function (json) {
+      if (!json) { return }
+
       if (this.get('_hash')) {
         if (json._hash === this.get('_hash')) {
           this.set('updated', false)
           return
+        }
+      }
+
+      if (this.sup && json.target !== this.get('target')) {
+        var oldEntry = window.App.getEntry(this.get('target'))
+        var newEntry = window.App.getEntry(json.target)
+        if (newEntry && oldEntry) {
+          this.set('sup', newEntry)
+          delete oldEntry.entries[this.get('id')]
+          newEntry.entries[this.get('id')] = this
+          oldEntry.overlap()
+          oldEntry.resize()
         }
       }
 
@@ -100,7 +116,7 @@ define([
         }
       }))
 
-      ;[ 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'return' ].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -121,60 +137,92 @@ define([
 
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
       this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
+      if (this.sup) {
+        this.sup.overlap()
+        this.sup.resize()
+      }
     },
 
-    refresh: function () {
-      return new Promise(function (resolve, reject) {
-        this.update().then(function (res) {
-          this.resize()
-          resolve(res)
-        }.bind(this), function (res) { reject(res) })
-      }.bind(this))
-    },
-    update: function () {
-      var that = this
-      var def = new DjDeferred()
+    toObject: function () {
+      var object = {}
 
-      var store = window.App.DB.transaction('reservations').objectStore('reservations')
-      var entry = store.get(this.get('id'))
-      entry.onsuccess = djLang.hitch(this, function (e) {
-        if (e.target.result) {
-          if (e.target.result._hash === this.get('_hash')) {
-            def.resolve()
-            return
-          }
-          if (e.target && e.target.result) {
-            that.fromJson(e.target.result)
-          }
+      ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
+        if (!this[attr]) {
+          object[attr] = null
+        } else {
+          object[attr] = djDateStamp.toISOString(this[attr])
         }
-        def.resolve()
-      })
-      entry.onerror = function (e) {
-        window.App.error('Erreur de chargement de la réservation ' + that.get('id'))
-        def.resolve()
+      }))
+
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator'].forEach(djLang.hitch(this, function (attr) {
+        if (this[attr]) {
+          object[attr] = this[attr]
+        } else {
+          object[attr] = null
+        }
+      }))
+
+      if (this.sup) {
+        object['target'] = this.sup.get('target')
       }
 
-      return def.promise
+      if (this.get('IDent')) {
+        object['id'] = this.get('IDent')
+      }
+
+      return object
     },
+
+    modified: function () {
+      this.Channel.postMessage({op: 'modify', id: this.get('id'), hash: this.get('hash')})
+    },
+
+    update: function () {
+      this.Channel.postMessage({op: 'get', id: this.get('id'), hash: this.get('hash')})
+    },
+
+    refresh: this.update,
 
     error: function (txt, code) {
-      this.sup.error(txt, code)
+      if (this.sup) {
+        this.sup.error(txt, code)
+      }
     },
     warn: function (txt, code) {
-      this.sup.warn(txt, code)
+      if (this.sup) {
+        this.sup.warn(txt, code)
+      }
     },
     info: function (txt, code) {
-      this.sup.info(txt, code)
+      if (this.sup) {
+        this.sup.info(txt, code)
+      }
     },
     postCreate: function () {
+      var bc = new BroadcastChannel('reservations')
+      this.Channel = bc
+      bc.onmessage = function (msg) {
+        if (msg.data && msg.data.data && msg.data.op === 'response' && String(msg.data.data.id) === String(this.get('id'))) {
+          if (!msg.data.unchanged) {
+            this.fromJson(msg.data.data)
+            return
+          }
+          if (!msg.data.deleted) {
+            this.destroy()
+          }
+        }
+      }.bind(this)
+
       this.currentDom = document.createElement('DIV')
       this.currentDom.setAttribute('style', 'display: none')
-      fastdom.mutate(djLang.hitch(this, function () {
-        this.sup.data.appendChild(this.currentDom)
-      }))
+      if (this.sup) {
+        fastdom.mutate(djLang.hitch(this, function () {
+          this.sup.data.appendChild(this.currentDom)
+        }))
+      }
       this._gui.hidden = true
 
-      this.originalTop = djDomStyle.get(this.domNode, 'top')
+      this.originalTop = djDomStyle.get(this.currentDom, 'top')
       this.set('active', false)
       djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
       djOn(this.currentDom, 'mousedown', djLang.hitch(this, this.isolateMe))
@@ -188,14 +236,14 @@ define([
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
           this._isolated = true
-          this._zindex = djDomStyle.get(this.domNode, 'z-index')
+          this._zindex = djDomStyle.get(this.currentDom, 'z-index')
           this.highlight()
-          djDomStyle.set(this.domNode, 'z-index', '99999999')
+          djDomStyle.set(this.currentDom, 'z-index', '99999999')
           if (this.overlap.do) {
-            var height = djDomStyle.get(this.main, 'height')
-            djDomStyle.set(this.main, 'height', height * this.getOverlapLevel())
+            var height = djDomStyle.get(this.currentDom, 'height')
+            djDomStyle.set(this.currentDom, 'height', height * this.getOverlapLevel())
           }
-          djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
+          djOn(this.currentDom, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
       }
@@ -209,10 +257,10 @@ define([
       if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
           if (this.overlap.do) {
-            var height = djDomStyle.get(this.main, 'height')
-            djDomStyle.set(this.main, 'height', height / this.getOverlapLevel())
+            var height = djDomStyle.get(this.currentDom, 'height')
+            djDomStyle.set(this.currentDom, 'height', height / this.getOverlapLevel())
           }
-          djDomStyle.set(this.domNode, 'z-index', this._zindex)
+          djDomStyle.set(this.currentDom, 'z-index', this._zindex)
           this._isolated = false
         }
       }
@@ -280,25 +328,21 @@ define([
 
     _setActiveAttr: function (value) {
       this._set('active', value)
-      if (value) {
-        djDomStyle.set(this.domNode, 'display', '')
-      } else {
-        djDomStyle.set(this.domNode, 'display', 'none')
-      }
+      this._gui.hidden = value
     },
     animate: function (x) {
       var that = this
       window.requestAnimationFrame(function () {
         if (x && x > that.get('offset')) {
-          djDomStyle.set(that.domNode, 'width', Math.abs(x - that.get('clickPoint')))
+          djDomStyle.set(that.currentDom, 'width', Math.abs(x - that.get('clickPoint')))
           if (that.get('clickPoint') < x) {
-            djDomStyle.set(that.domNode, 'left', that.get('clickPoint'))
+            djDomStyle.set(that.currentDom, 'left', that.get('clickPoint'))
           } else {
-            djDomStyle.set(that.domNode, 'left', x)
+            djDomStyle.set(that.currentDom, 'left', x)
           }
         }
         that.set('enable')
-        djDomStyle.set(that.domNode, 'position', 'absolute')
+        djDomStyle.set(that.currentDom, 'position', 'absolute')
       })
     },
     _setStartAttr: function (value) {
@@ -338,6 +382,7 @@ define([
       this._set('deliveryEnd', value)
     },
     _setSupAttr: function (sup) {
+      if (this.sup === sup) { return }
       this._set('sup', sup)
       if (this.currentDom) {
         fastdom.mutate(djLang.hitch(this, function () {
@@ -370,6 +415,7 @@ define([
       return this.end
     },
     _getCompactAttr: function () {
+      if (!this.sup) { return false }
       return this.sup.get('compact')
     },
     _getTrueBeginAttr: function () {
@@ -653,21 +699,26 @@ define([
     },
 
     _getTargetAttr: function () {
+      if (!this.sup) { return null }
       return this.sup.get('target')
     },
     _getOffsetAttr: function () {
+      if (!this.sup) { return 0 }
       return this.sup.get('offset')
     },
     _getBlockSizeAttr: function () {
+      if (!this.sup) { return 0 }
       return this.sup.get('blockSize')
     },
     _getDateRangeAttr: function () {
+      if (!this.sup) { return null }
       return this.sup.get('dateRange')
     },
     _setIntervalZoomFactor: function (arr) {
       console.log('Not implemented')
     },
     timeFromX: function (x) {
+      if (!this.sup) { return 0 }
       var blockTime = this.get('blockSize') / 24 /* block is a day, day is 24 hours */
       var hoursToX = Math.ceil((x - this.get('offset')) / blockTime)
       var d = djDate.add(this.get('dateRange').begin, 'hour', hoursToX)
@@ -675,20 +726,21 @@ define([
       return d
     },
     xFromTime: function (x) {
+      if (!this.sup) { return 0 }
       var diff = djDate.difference(this.get('dateRange').begin, x, 'hour')
       return (diff * this.get('blockSize') / 24) + this.get('offset')
     },
     remove: function () {
       if (confirm('Vraiment supprimer la réservation ' + this.get('IDent'))) {
         this.set('deleted', true)
-
-        this.resize()
+        this.modified()
         return true
       }
 
       return false
     },
     computeIntervalOffset: function (date) {
+      if (!this.sup) { return 0 }
       return this.sup.computeIntervalOffset(date)
     },
 
@@ -835,8 +887,18 @@ define([
     },
 
     destroy: function () {
+      fastdom.mutate(function () {
+        if (this.currentDom) {
+          if (this.currentDom.parentNode) {
+            this.currentDom.parentNode.removeChild(this.currentDom)
+          }
+        }
+      }.bind(this))
+      this.destroyed = true
       this.hide()
       this.inherited(arguments)
+      this.sup.overlap()
+      this.sup.resize()
     },
 
     show: function () {
@@ -848,6 +910,12 @@ define([
     },
 
     resize: function () {
+      if (this.deleted) {
+        if (!this.destroyed) {
+          this.destroy()
+        }
+        return
+      }
       if (!this.sup) { return }
       if (!this.get('begin') || !this.get('end')) {
         this.hide()
@@ -858,9 +926,12 @@ define([
 
       /* Verify  if we keep this ourself */
       if (djDate.compare(this.get('trueBegin'), this.get('dateRange').end, 'date') >= 0 ||
-        djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0 ||
-        this.deleted) {
-        this.hide()
+        djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0) {
+        if (!this._gui.hidden) {
+          this.currentDom.setAttribute('style', 'display: none')
+          this.hide()
+        }
+        return
       } else {
         this.show()
       }
@@ -960,9 +1031,6 @@ define([
         domstyle.push('left: ' + startPoint + 'px')
         domstyle.push('top: ' + top + 'px')
         domstyle.push('height: ' + height + 'px')
-        if (this._gui.hidden) {
-          domstyle.push('display: none')
-        }
 
         var tools = document.createElement('DIV')
         tools.setAttribute('style', 'background-color:' + bgcolor)
@@ -998,13 +1066,18 @@ define([
     },
 
     highlight: function () {
-      this.sup.highlight(this.domNode)
+      if (this.sup) {
+        this.sup.highlight(this.currentDom)
+      }
     },
     _getEntriesAttr: function () {
+      if (!this.sup) { return [] }
       return this.sup.get('entries')
     },
     destroyReservation: function (reservation) {
-      this.sup.destroyReservation(reservation)
+      if (this.sup) {
+        this.sup.destroyReservation(reservation)
+      }
     },
     destroyMe: function () {
       this.destroyReservation(this)
@@ -1014,6 +1087,10 @@ define([
       var values = this.get('return')
       var suffix = ''
       var method = 'post'
+
+      if (!values) {
+        return
+      }
 
       if (values['id']) {
         suffix = '/' + values['id']
@@ -1037,51 +1114,15 @@ define([
     },
 
     save: function () {
-      var method = 'post'
-      var query = {}
-      var suffix = ''
-      var that = this
-      var def = new DjDeferred()
-      if (this.get('IDent') != null) {
-        method = 'put'
-        suffix = '/' + this.get('IDent')
-        query['id'] = this.get('IDent')
-      }
-
-      this.attrs.forEach((attr) => {
-        query[attr] = that[attr]
-      })
-
-      ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach((attr) => {
-        if (that[attr]) {
-          query[attr] = djDateStamp.toISOString(that[attr])
-        } else {
-          query[attr] = ''
-        }
-      })
-      query['target'] = this.get('target')
-
-      window.App.setModify(query['id'])
-      Req[method](locationConfig.store + '/Reservation' + suffix, { query: query }).then(djLang.hitch(this, function (result) {
-        if (result.type === 'results') {
-          if (result.data.success) {
-            var val
-            if ((val = this.get('return')) != null) {
-              val.target = result.data.id
-              this.set('return', val)
-              this.saveReturn()
-              this.set('_hash', '')
-            }
-          }
-        }
-        def.resolve(result)
-      }))
-
-      return def.promise
+      var object = this.toObject()
+      this.Channel.postMessage({op: 'put', data: object, localid: this.localid})
+      this.saveReturn()
     },
 
     copy: function () {
-      this.sup.copy(this)
+      var object = this.toObject()
+      delete object['id']
+      this.Channel.postMessage({op: 'put', data: object})
     },
 
     extend7: function (e) {

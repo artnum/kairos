@@ -161,8 +161,12 @@ define([
       this.displayOrder = []
       this.runningRequest = []
       this.extension = false
+      this.LocalReservations = {}
 
       this.zoomCss = document.createElement('style')
+
+      this.Reservation = new Worker('/location/js/ww/reservations.js')
+
       this.Cleaner = new Worker('/location/js/ww/cleaner.js')
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
@@ -1104,6 +1108,7 @@ define([
           node.removeChild(node.firstChild)
         }
         node.appendChild(newBuffer)
+        this.resize()
       })
     },
 

@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global locationConfig */
+/* global locationConfig, getElementRect, fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -38,7 +38,7 @@ define([
   djDeclare,
   djLang,
   djEvented,
-  djDeferred,
+  DjDeferred,
   dtWidgetBase,
   dtTemplatedMixin,
   dtWidgetsInTemplateMixin,
@@ -81,7 +81,6 @@ define([
     target: null,
     newReservation: null,
     intervalZoomFactors: [],
-    power: true,
     waiters: 0, /* number of nested "waiting" func */
     originalHeight: 0,
     tags: [],
@@ -91,21 +90,18 @@ define([
 
     constructor: function (args) {
       this.waiters = 0
-      this.childs = new Object()
-      this.power = true
+      this.childs = {}
       this.newReservation = null
       this.target = null
       this.isParent = false
       this.sup = null
-      this.stores = new Object()
-      this.runUpdate = 0
+      this.stores = {}
       this.originalHeight = 0
-      this.tags = new Array()
-      this.entries = new Object()
+      this.tags = []
+      this.entries = {}
       this.currentLocation = ''
 
-      var that = this
-      this.loaded = new djDeferred()
+      this.loaded = new DjDeferred()
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
       if (dtRegistry.byId('location_entry_' + args['target'])) {
@@ -131,6 +127,24 @@ define([
       if (hour <= 7) { return bs * hour }
       if (hour > 7 && hour <= 17) { return (7 * bs) + ((hour - 7) * 3.8 * bs) }
       return (7 * bs) + ((17 - 7) * 3.8 * bs) + ((hour - 17) * bs)
+    },
+
+    load: function () {
+      window.App.DB.transaction('reservations').objectStore('reservations').index('by_target').getAll(this.get('target')).onsuccess = function (event) {
+        var entries = event.target.result
+        if (entries) {
+          for (var i = 0; i < entries.length; i++) {
+            try {
+              this.entries[entries[i].id] = new Reservation({sup: this, id: entries[i].id})
+              this.entries[entries[i].id].fromJson(entries[i])
+            } catch (e) {
+              console.log(e)
+              console.log(entries[i])
+            }
+          }
+          this.resize()
+        }
+      }.bind(this)
     },
 
     update: function () {
@@ -177,8 +191,32 @@ define([
 
     postCreate: function () {
       var that = this
-
+      this.load()
       this.update()
+      this.Channel = new BroadcastChannel('reservations')
+      this.Channel.onmessage = function (msg) {
+        if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target) && msg.data.new) {
+          var local = false
+          if (msg.data.localid) {
+            if (window.App.LocalReservations) {
+              if (window.App.LocalReservations[msg.data.localid]) {
+                this.entries[msg.data.id] = window.App.LocalReservations[msg.data.localid]
+                this.entries[msg.data.id].set('sup', this)
+                delete window.App.LocalReservations[msg.data.localid]
+                local = true
+              }
+            }
+          }
+          if (!local) {
+            if (!this.entries[msg.data.id]) {
+              this.entries[msg.data.id] = new Reservation({sup: this, id: msg.data.data.id})
+            }
+          }
+          this.entries[msg.data.id].fromJson(msg.data.data)
+          this.entries[msg.data.id].syncForm()
+        }
+        this.resize()
+      }.bind(this)
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
@@ -235,14 +273,14 @@ define([
     },
 
     displayTags: function (tags) {
-      var def = new djDeferred()
+      var def = new DjDeferred()
 
       var notag = true
       var that = this
       var frag = document.createDocumentFragment()
       if (tags.length > 0) {
         tags.forEach(function (tag) {
-          if (tag != '') {
+          if (tag !== '') {
             notag = false
             var s = document.createElement('A')
             s.setAttribute('class', 'tag ' + tag.tagify())
@@ -261,7 +299,7 @@ define([
     },
 
     clearTags: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var that = this
 
       that.nTags.setAttribute('class', 'tags')
@@ -294,7 +332,8 @@ define([
           tags[i] = tags[i].trim()
         }
         that.tags = tags
-        var q = new Object(); q[that.url] = tags
+        var q = {}
+        q[that.url] = tags
         Req.post(locationConfig.store + '/Tags/?!=' + that.url, { query: q }).then(function () {
           that.clearTags().then(() => { that.displayTags(tags) })
         })
@@ -312,7 +351,9 @@ define([
     },
 
     displayLocation: function () {
-      var that = this, frag = document.createDocumentFragment(), i = document.createElement('I')
+      var that = this
+      var frag = document.createDocumentFragment()
+      var i = document.createElement('I')
       i.setAttribute('class', 'fas fa-warehouse'); frag.appendChild(i)
       frag.appendChild(document.createTextNode(' ' + this.currentLocation))
 
@@ -326,7 +367,7 @@ define([
     },
 
     clearLocation: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var that = this
       window.requestAnimationFrame(() => {
         while (that.nLocation.firstChild) {
@@ -340,7 +381,10 @@ define([
     },
 
     eEditLocation: function (event) {
-      var that = this, form = document.createElement('FORM'), input = document.createElement('INPUT'), button = document.createElement('BUTTON')
+      var that = this
+      var form = document.createElement('FORM')
+      var input = document.createElement('INPUT')
+      var button = document.createElement('BUTTON')
       form.appendChild(input); form.appendChild(button)
       button.appendChild(document.createTextNode('Ok'))
       input.setAttribute('value', this.currentLocation)
@@ -348,7 +392,7 @@ define([
       djOn.once(form, 'submit', (event) => {
         event.preventDefault()
 
-        Req.post(locationConfig.store + '/Entry', { query: { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then(() => {
+        Req.post(locationConfig.store + '/Entry', {query: { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then(() => {
           that.currentLocation = input.value
           that.clearLocation(); that.displayLocation()
         })
@@ -385,9 +429,9 @@ define([
 
       if (n) {
         var w = dtRegistry.byId(n.getAttribute('widgetid'))
-        if (w.baseClass == 'reservation') {
-          //			w.popMeUp();
-        } else if (w.baseClass == 'entry') {
+        if (w.baseClass === 'reservation') {
+          // w.popMeUp();
+        } else if (w.baseClass === 'entry') {
           w.createReservation(this.dayFromX(event.clientX))
         }
       }
@@ -404,6 +448,7 @@ define([
       var r = { start: day,
         o: new Reservation({ sup: this, begin: day, end: end })
       }
+      window.App.LocalReservations[r.o.localid] = r.o
       r.o.popMeUp()
       this.defaultStatus().then((s) => {
         r.o.set('status', s)
@@ -414,22 +459,24 @@ define([
     },
 
     copy: function (original) {
+      /*
       var store = window.App.DB.transaction('reservations').objectStore('reservations')
       var query = store.get(original.get('id'))
       query.onsuccess = djLang.hitch(this, function (e) {
         if (!e || !e.target || !e.target.result) { return }
         var json = e.target.result
         if (json == null) { return }
-        var copy = new Reservation({ sup: this })
+        var copy = new Reservation()
         copy.fromJson(json)
         copy.set('status', original.get('status'))
         copy.set('color', original.get('color'))
         copy.set('return', null)
-        copy.set('IDent', null)
         copy.set('previous', null)
+        delete copy.id
         copy.popMeUp()
+        copy.save()
         this.store(copy).then(djLang.hitch(this, (id) => {
-          var subRequests = new Array()
+          var subRequests = []
           for (var k in json.contacts) {
             for (var i = 0; i < json.contacts[k].length; i++) {
               var entry = json.contacts[k][i]
@@ -441,33 +488,21 @@ define([
             }
           }
 
-          for (var i = 0; i < json.complements.length; i++) {
-            var entry = json.complements[i]
-            var q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null }
+          for (i = 0; i < json.complements.length; i++) {
+            entry = json.complements[i]
+            q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null }
             if (entry.begin !== '') { q.begin = djDateStamp.toISOString(new Date(entry.begin)) }
             if (entry.end !== '') { q.end = djDateStamp.toISOString(new Date(entry.end)) }
             subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }))
           }
           djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close() })
         }))
-      })
+      }) */
     },
 
     store: function (reservation) {
-      var def = new djDeferred()
-      var that = this
-      reservation.save().then(function (result) {
-        if (result.type == 'error') {
-          window.App.error("Impossible d'enregistrer les données")
-        } else {
-          reservation.fromJson(result.data)
-          reservation.syncForm()
-          that.entries[reservation.get('id')] = reservation
-          that.show()
-          def.resolve(reservation.get('id'))
-        }
-      })
-
+      var def = new DjDeferred()
+      reservation.save()
       return def.promise
     },
 
@@ -476,7 +511,7 @@ define([
     },
 
     lock: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       def.resolve(true)
       return def.promise
     },
@@ -491,7 +526,7 @@ define([
     },
 
     unlock: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       def.resolve(true)
       return def.promise
     },
@@ -517,10 +552,11 @@ define([
         this.lock().then(djLang.hitch(this, function (locked) {
           this.defaultStatus().then(djLang.hitch(this, function (s) {
             if (locked) {
-              var dBegin = this.dayFromX(event.clientX), dEnd = new Date(dBegin)
+              var dBegin = this.dayFromX(event.clientX)
+              var dEnd = new Date(dBegin)
               dBegin.setHours(8, 0, 0, 0)
               dEnd.setHours(17, 0, 0, 0)
-              this.newReservation = {start: dBegin }
+              this.newReservation = {start: dBegin}
               this.newReservation.o = new Reservation({ sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX })
 
               djOn.once(this.newReservation.o.domNode, 'click', djLang.hitch(this, this.eClick))
@@ -549,7 +585,7 @@ define([
         }
 
         r.o.save().then(djLang.hitch(this, function (result) {
-          if (result.type == 'error') {
+          if (result.type === 'error') {
             this.error("Impossible d'enregistrer les données", 300)
             this.unlock()
           } else {
@@ -591,7 +627,9 @@ define([
     },
 
     resize: function () {
-      this.view.rectangle = getElementRect(this.domNode)
+      fastdom.measure(function () {
+        this.view.rectangle = getElementRect(this.domNode)
+      }.bind(this))
       this.resizeChild()
     },
 
@@ -628,21 +666,22 @@ define([
 
     show: function () {
       var frag = document.createDocumentFragment()
-      var that = this
-      var entries = new Array()
+      var entries = []
 
       for (var k in this.entries) {
         if (!this.entries[k].get('displayed')) {
           frag.appendChild(this.entries[k].domNode)
           this.entries[k].set('displayed', true)
         }
-        this.entries[k].overlap = { elements: new Array(), level: 0, order: 0, do: false }
+        this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
         entries.push(this.entries[k])
       }
 
       this.overlap(entries)
-      var that = this
-      window.requestAnimationFrame(function () { that.data.appendChild(frag); that.resize() })
+      window.requestAnimationFrame(function () {
+        this.data.appendChild(frag)
+        this.resize()
+      }.bind(this))
     },
 
     overlap: function () {
@@ -650,6 +689,7 @@ define([
       if (arguments[0]) { entries = arguments[0] } else {
         entries = []
         for (var k in this.entries) {
+          this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
           entries.push(this.entries[k])
         }
       }
@@ -667,7 +707,7 @@ define([
             } else {
               entries[i].overlap.elements = overlapRoot[j].overlap.elements.slice()
               entries[i].overlap.elements.push(overlapRoot[j])
-              overlapRoot[j].elements = new Array()
+              overlapRoot[j].elements = []
               overlapRoot[j] = entries[i]
             }
             root = false; break
@@ -678,11 +718,11 @@ define([
         }
       }
 
-      for (var i = 0; i < overlapRoot.length; i++) {
+      for (i = 0; i < overlapRoot.length; i++) {
         overlapRoot[i].overlap.order = 1
         overlapRoot[i].overlap.level = overlapRoot[i].overlap.elements.length + 1
         overlapRoot[i].overlap.do = true
-        for (var j = 0; j < overlapRoot[i].overlap.elements.length; j++) {
+        for (j = 0; j < overlapRoot[i].overlap.elements.length; j++) {
           overlapRoot[i].overlap.elements[j].overlap.order = j + 2
           overlapRoot[i].overlap.elements[j].overlap.level = overlapRoot[i].overlap.elements.length + 1
           overlapRoot[i].overlap.elements[j].overlap.do = true
@@ -699,7 +739,7 @@ define([
     },
 
     _getActiveReservationsAttr: function () {
-      var active = new Array()
+      var active = []
       for (var k in this.entries) {
         if (this.entries[k].get('active')) {
           active.push(this.entries[k])

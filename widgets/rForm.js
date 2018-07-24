@@ -765,7 +765,7 @@ define([
                   var e = c.first()
                   e.linkId = results.first().id
                   that.createContact(e, type, true)
-                  that.reservation.refresh()
+                  that.reservation.modified()
                 }))
               }))
           }
@@ -781,7 +781,7 @@ define([
               if (result.success()) {
                 options.linkId = result.first().id
                 that.createContact(options, type, true)
-                that.reservation.refresh()
+                that.reservation.modified()
               }
             })
           }
@@ -1007,8 +1007,7 @@ define([
           var oldEntry = window.App.getEntry(changeMachine)
           if (entry) {
             reservation.set('sup', entry)
-            reservation.fromJson(result.data)
-            reservation.syncForm()
+            reservation.modified()
             window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée')
             delete oldEntry.entries[reservation.get('id')]
             entry.entries[reservation.get('id')] = reservation

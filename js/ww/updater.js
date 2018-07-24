@@ -8,6 +8,8 @@ self.onmessage = function (msg) {
   msgs.push(msg)
 }
 
+var RChannel = new BroadcastChannel('reservations')
+
 new IdxDB().then(function (DB) {
   var req = new XMLHttpRequest()
   var last = { 'modification': null, 'id': 0 }
@@ -56,7 +58,6 @@ new IdxDB().then(function (DB) {
   }
 
   var handleResults = function (txt) {
-    var ids = []
     var r
     try {
       r = JSON.parse(txt)
@@ -64,50 +65,53 @@ new IdxDB().then(function (DB) {
       console.log(e)
     }
     if (r && r.data && r.data.length > 0) {
-      var tx = DB.transaction('reservations', 'readwrite')
-      var store = tx.objectStore('reservations')
-      for (var i = 0; i < r.data.length; i++) {
-        if (r.data[i].target) {
-          var mod = new Date()
-          mod.setTime(Date.parse(r.data[i].modification))
-          if (mod) {
-            if (last.modification == null) {
-              last.modification = mod
-            } else {
-              if (last.modification.getTime() < mod.getTime()) {
-                last.modification = mod
-              }
-            }
-          }
-          if (last.id == null) {
-            last.id = Number(r.data[i].id)
+      for (let i = 0; i < r.data.length; i++) {
+        var mod = new Date()
+        mod.setTime(Date.parse(r.data[i].modification))
+        if (mod) {
+          if (last.modification == null) {
+            last.modification = mod
           } else {
-            if (last.id < Number(r.data[i].id)) {
-              last.id = Number(r.data[i].id)
+            if (last.modification.getTime() < mod.getTime()) {
+              last.modification = mod
             }
           }
-          if (ids.indexOf(r.data[i].target) === -1) {
-            ids.push(r.data[i].target)
-          }
+        }
 
-          if (r.data[i].previous) {
-            if (ids.indexOf(r.data[i].previous) === -1) {
-              ids.push(r.data[i].previous)
-            }
-          }
+        if (r.data[i].target) {
           r.data[i]._hash = objectHash.sha1(r.data[i])
           r.data[i]._atime = new Date().toISOString()
-          store.put(r.data[i])
+
+          let reservation = r.data[i]
+          try {
+            var g = DB.transaction('reservations').objectStore('reservations').get(reservation.id)
+            g.onerror = function (event) {
+              console.log(event)
+            }
+            g.onsuccess = function (event) {
+              var result = event.target.result
+              if (!result) {
+                RChannel.postMessage({op: 'response', id: reservation.id, new: true, unchanged: false, deleted: false, data: reservation})
+                DB.transaction('reservations', 'readwrite').objectStore('reservations').put(reservation)
+              } else {
+                if (result._hash !== reservation._hash) {
+                  DB.transaction('reservations', 'readwrite').objectStore('reservations').put(reservation)
+                  RChannel.postMessage({op: 'response', new: false, unchanged: false, deleted: false, data: reservation})
+                }
+              }
+            }
+          } catch (e) {
+            console.log(e)
+          }
         }
       }
     }
-    postMessage({ type: 'entries', content: ids })
   }
 
   var checker = function () {
     var url = '/location/store/DeepReservation'
     var parameters = ''
-    if (last.modification == null && last.id === 0) {
+    if (last.modification == null) {
       setTimeout(checker, 2500)
       return
     }
@@ -115,12 +119,6 @@ new IdxDB().then(function (DB) {
     var params = []
     if (last.modification != null) {
       params.push('search.modification=' + encodeURIComponent('>' + last.modification.toISOString()))
-    }
-    if (last.id !== 0) {
-      params.push('search.id=' + encodeURIComponent('>' + String(last.id)))
-      if (params.length > 1) {
-        params.push('search._rules=' + encodeURIComponent('modification OR id'))
-      }
     }
 
     if (params.length > 0) {
