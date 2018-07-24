@@ -202,6 +202,10 @@ define([
       var bc = new BroadcastChannel('reservations')
       this.Channel = bc
       bc.onmessage = function (msg) {
+        if (msg.data && msg.data.copyfrom && msg.data.copyfrom === this.get('id')) {
+          this.copyExt(msg.data.data.id)
+          return
+        }
         if (msg.data && msg.data.data && msg.data.op === 'response' && String(msg.data.data.id) === String(this.get('id'))) {
           if (!msg.data.unchanged) {
             this.fromJson(msg.data.data)
@@ -1122,7 +1126,51 @@ define([
     copy: function () {
       var object = this.toObject()
       delete object['id']
-      this.Channel.postMessage({op: 'put', data: object})
+      this.Channel.postMessage({op: 'put', data: object, copyfrom: this.get('id')})
+    },
+
+    copyExt: function (toid) {
+      var allReqs = []
+      var complements = this.get('complements')
+      if (complements.length > 0) {
+        for (var i = 0; i < complements.length; i++) {
+          var query = {
+            begin: complements[i].begin ? djDateStamp.toISOString(complements[i].begin) : '',
+            end: complements[i].end ? djDateStamp.toISOString(complements[i].end) : '',
+            comment: String(complements[i].comment),
+            reservation: String(toid),
+            target: complements[i].target,
+            type: complements[i].type ? (complements[i].type.id ? '/location/store/Status/' + String(complements[i].type.id) : '') : '',
+            number: String(complements[i].number),
+            follow: String(complements[i].follow)
+          }
+          allReqs.push(fetch('/location/store/Association/', {method: 'POST', body: JSON.stringify(query)}))
+        }
+      }
+      var contacts = this.get('contacts')
+      for (var k in contacts) {
+        for (i = 0; i < contacts[k].length; i++) {
+          var contact = contacts[k][i]
+          query = {
+            comment: contact.comment,
+            freeform: contact.freeform,
+            reservation: String(toid),
+            target: contact.target ? (contact.target.IDent ? '/Contacts/' + contact.target.IDent : '') : ''
+          }
+          allReqs.push(fetch('/location/store/ReservationContact', {method: 'POST', body: JSON.stringify(query)}))
+        }
+      }
+      djAll(allReqs).then(function () {
+        for (k in window.App.Entries) {
+          if (window.App.Entries[k].openReservation(toid)) {
+            break
+          }
+        }
+        /* wait 1.5 sec as db as a mod time granularity of 1 second ... */
+        setTimeout(function () {
+          this.Channel.postMessage({op: 'touch', id: this.get('id')})
+        }.bind(this), 1500)
+      }.bind(this))
     },
 
     extend7: function (e) {

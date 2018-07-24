@@ -730,6 +730,14 @@ define([
       }
     },
 
+    openReservation: function (id) {
+      if (this.entries[id]) {
+        this.entries[id].popMeUp()
+        return true
+      }
+      return false
+    },
+
     destroyReservation: function (reservation) {
       if (reservation) {
         reservation.destroy()

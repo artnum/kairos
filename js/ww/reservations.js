@@ -76,6 +76,11 @@ new IdxDB().then(function (db) {
 
     var forceServer = false
     switch (msg.data.op) {
+      case 'touch':
+        if (msg.data.id) {
+          fetch('/location/store/Reservation/' + String(msg.data.id), {method: 'PUT', body: JSON.stringify({id: msg.data.id})})
+        }
+        break
       case 'put':
         var result = {op: 'response', id: null, new: false, deleted: false, unchanged: false, data: null}
         write(msg.data.data).then(function (response) {
@@ -85,6 +90,9 @@ new IdxDB().then(function (db) {
             result.data = data.data
             if (msg.data.localid) {
               result.localid = msg.data.localid
+            }
+            if (msg.data.copyfrom) {
+              result.copyfrom = msg.data.copyfrom
             }
             bc.postMessage(result)
           })
