@@ -682,6 +682,14 @@ define([
 
     toggleConfirmed: function () {
       if (this.nConfirmed.get('checked')) {
+        var retVal = this.reservation.get('return')
+        if (retVal && retVal.reported) {
+          this.nReturnDate.set('value', retVal.reported)
+          this.nReturnTime.set('value', retVal.reported)
+        } else {
+          this.nReturnDate.set('value', new Date())
+          this.nReturnTime.set('value', new Date())
+        }
         this.nBack.setAttribute('style', '')
         this.endTime.set('readOnly', true)
         this.endDate.set('readOnly', true)
