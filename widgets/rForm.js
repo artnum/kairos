@@ -653,6 +653,9 @@ define([
         if (retval.comment) {
           this.nReturnComment.set('value', retval.comment)
         }
+        if (retval.creator) {
+          this.nReturnCreator.set('value', retval.creator)
+        }
       }
     },
 
@@ -959,6 +962,7 @@ define([
         retVal.contact = f.returnAddress
         retVal.locality = f.returnLocality
         retVal.other = f.returnKeys
+        retVal.creator = f.returnCreator
         if (f.returnDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
         } else if (f.returnDone.length <= 0 && currentRet.done) {
