@@ -174,7 +174,7 @@ define([
     },
 
     modified: function () {
-      this.Channel.postMessage({op: 'modify', id: this.get('id'), hash: this.get('hash')})
+      setTimeout(function () { this.Channel.postMessage({op: 'touch', id: this.get('id')}) }.bind(this), 1500)
     },
 
     update: function () {

@@ -719,6 +719,7 @@ define([
           if (confirm('Supprimer le contact ' + this.contactCard.getType(this.contactType))) {
             request.del(locationConfig.store + '/ReservationContact/' + this.contactLinkId).then(function () {
               event.removeChild(this)
+              this.contactSup.reservation.modified()
               for (var i in sup.contacts) {
                 if (sup.contacts[i].contactLinkId === this.contactLinkId) {
                   sup.contacts[i].destroy()
