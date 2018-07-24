@@ -852,7 +852,7 @@ define([
 
     validate: function () {
       [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach(function (c) {
-        c.set('state', 'Normale')
+        c.set('state', 'Normal')
       })
 
       var f = this.nForm.get('value')
@@ -860,17 +860,21 @@ define([
       if (f.beginDate == null || f.endDate == null || f.beginTime == null || f.endTime == null) {
         this.beginDate.set('state', 'Error')
         this.endDate.set('state', 'Error')
-        return false
+        return ['Début ou fin manquante', false]
+      }
+
+      if (!f.creator) {
+        this.nCreator.set('state', 'Error')
+        return ['Champs responsable de la location manquant', false]
       }
 
       var begin = f.beginDate.join(f.beginTime)
       var end = f.endDate.join(f.endTime)
 
       if (djDate.compare(begin, end) >= 0) {
-        window.App.error('La fin de réservation est avant le début')
         this.beginDate.set('state', 'Error')
         this.endDate.set('state', 'Error')
-        return false
+        return ['La fin de réservation est avant le début', false]
       }
 
       if (this.nDelivery.get('checked')) {
@@ -880,32 +884,29 @@ define([
         if (djDate.compare(deliveryBegin, deliveryEnd) >= 0) {
           this.nDeliveryBeginDate.set('state', 'Error')
           this.nDeliveryEndDate.set('state', 'Error')
-          window.App.error('La fin de la livraison est avant le début')
-          return false
+          return ['La fin de la livraison est avant le début', false]
         }
 
         if (djDate.compare(deliveryBegin, begin) === 0 && djDate.compare(deliveryEnd, end) === 0) {
           this.nDelivery.set('checked', false)
           this.toggleDelivery()
-          return false
+          return ['Date de livraison identique à la date de location', false]
         }
 
         if (djDate.compare(deliveryBegin, begin) > 0) {
           this.beginDate.set('state', 'Error')
           this.nDeliveryBeginDate.set('state', 'Error')
-          window.App.error('La fin de la livraison est avant la fin de la location')
-          return false
+          return ['La fin de la livraison est avant la fin de la location', false]
         }
 
         if (djDate.compare(deliveryEnd, end) < 0) {
           this.nDeliveryEndDate.set('state', 'Error')
           this.endDate.set('state', 'Error')
-          window.App.error('Début de livraison est après le début de la location')
-          return false
+          return ['Début de livraison est après le début de la location', false]
         }
       }
 
-      return true
+      return ['Pas d\'erreur', true]
     },
 
     doCopy: function (event) {
@@ -913,17 +914,22 @@ define([
     },
 
     doSaveAndQuit: function (event) {
-      this.doSave()
-      this.hide()
+      if (this.doSave()) {
+        this.hide()
+      }
     },
     doSave: function (event) {
-      if (!this.validate()) { return }
+      var err = this.validate()
+      if (!err[1]) {
+        window.App.error(err[0])
+        return false
+      }
       var changeMachine = false
       if (this.reservation.get('target') !== this.nMachineChange.get('value')) {
         var newEntry = window.App.getEntry(this.nMachineChange.get('value'))
         if (newEntry == null) {
           alert('Déplacement vers machine inexistante')
-          return
+          return false
         }
         changeMachine = this.reservation.get('target')
         this.reservation.set('sup', newEntry)
@@ -1027,6 +1033,8 @@ define([
           }
         })
       }
+
+      return true
     },
 
     destroyReservation: function (reservation) {
