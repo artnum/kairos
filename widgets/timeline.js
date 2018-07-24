@@ -561,13 +561,13 @@ define([
 
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
-          djDomStyle.set(this.domNode, 'display', 'block')
+          djDomStyle.set(this.domNode.parentNode, 'display', 'block')
         }
       }, true)
 
       djAspect.after(tContainer, 'removeChild', function (child) {
         if (!this.hasChildren()) {
-          djDomStyle.set(this.domNode, 'display', 'none')
+          djDomStyle.set(this.domNode.parentNode, 'display', 'none')
         }
       }, true)
 
@@ -1574,6 +1574,33 @@ define([
       if (n) {
         window.requestAnimationFrame(() => {
           document.body.removeChild(n)
+        })
+      }
+    },
+    minimizeMaximize: function (event) {
+      var node = event.target
+      var inode = node
+      if (inode.nodeName !== 'I') {
+        for (inode = inode.firstChild; inode.nodeName !== 'I'; inode = inode.nextSibling) ;
+      }
+      while (node && !node.getAttribute('data-artnum-maximize')) {
+        node = node.parentNode
+      }
+      if (node.getAttribute('data-artnum-maximize') === 'yes') {
+        node.setAttribute('data-artnum-maximize', 'no')
+        fastdom.mutate(function () {
+          inode.setAttribute('class', 'fas fa-window-maximize')
+          djDomStyle.set(node, 'bottom', '')
+          djDomStyle.set(node, 'height', '32px')
+          djDomStyle.set(node, 'overflow', 'hidden')
+        })
+      } else {
+        node.setAttribute('data-artnum-maximize', 'yes')
+        fastdom.mutate(function () {
+          inode.setAttribute('class', 'fas fa-window-minimize')
+          djDomStyle.set(node, 'bottom', '0')
+          djDomStyle.set(node, 'height', '')
+          djDomStyle.set(node, 'overflow', '')
         })
       }
     }

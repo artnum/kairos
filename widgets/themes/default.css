@@ -11,6 +11,39 @@ html {
 	color: red;
 }
 
+.leftpane {
+  position: fixed;
+  width: 680px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 600;
+  background-color: white;
+}
+
+.titleBar {
+  width: 100%;
+  height: 31px;
+  color: gray;
+  border-bottom: 1px solid black;
+}
+
+.titleBar .button {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  float: right;
+  cursor: pointer;
+}
+
+.titleBar .button i {
+  font-size: 24px;
+}
+
+.nohandle {
+  cursor: initial; 
+}
+
 /* Menu */
 #AppHeader {
 	z-index: 460;
