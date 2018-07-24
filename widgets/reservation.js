@@ -404,13 +404,13 @@ define([
         return this.deliveryBegin
       }
 
-      return this.begin
+      return null
     },
     _getDeliveryEndAttr: function () {
       if (this.deliveryEnd) {
         return this.deliveryEnd
       }
-      return this.end
+      return null
     },
     _getBeginAttr: function () {
       return this.begin
@@ -983,24 +983,28 @@ define([
       stopPoint += this.computeIntervalOffset(end)
 
       var toolsOffsetBegin = 0
-      if (djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') !== 0) {
-        toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'))
+      if (this.get('deliveryBegin')) {
+        if (djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour') !== 0) {
+          toolsOffsetBegin = Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('begin'), 'hour'))
+        }
+        if (djDate.compare(this.get('begin'), this.get('dateRange').begin) <= 0) { toolsOffsetBegin = 0 }
+        if (djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin) < 0) {
+          toolsOffsetBegin -= Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, 'hour'))
+        }
+        toolsOffsetBegin *= this.get('blockSize') / 24
       }
-      if (djDate.compare(this.get('begin'), this.get('dateRange').begin) <= 0) { toolsOffsetBegin = 0 }
-      if (djDate.compare(this.get('deliveryBegin'), this.get('dateRange').begin) < 0) {
-        toolsOffsetBegin -= Math.abs(djDate.difference(this.get('deliveryBegin'), this.get('dateRange').begin, 'hour'))
-      }
-      toolsOffsetBegin *= this.get('blockSize') / 24
 
       var toolsOffsetEnd = 0
-      if (djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') !== 0) {
-        toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'))
+      if (this.get('deliveryEnd')) {
+        if (djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour') !== 0) {
+          toolsOffsetEnd = Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('end'), 'hour'))
+        }
+        if (djDate.compare(this.get('end'), this.get('dateRange').end) >= 0) { toolsOffsetEnd = 0 }
+        if (djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) > 0) {
+          toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'))
+        }
+        toolsOffsetEnd *= this.get('blockSize') / 24
       }
-      if (djDate.compare(this.get('end'), this.get('dateRange').end) >= 0) { toolsOffsetEnd = 0 }
-      if (djDate.compare(this.get('deliveryEnd'), this.get('dateRange').end) > 0) {
-        toolsOffsetEnd -= Math.abs(djDate.difference(this.get('deliveryEnd'), this.get('dateRange').end, 'hour'))
-      }
-      toolsOffsetEnd *= this.get('blockSize') / 24
       var domclass = ['reservation']
 
       if (this.overlap.do > 0) {
@@ -1185,13 +1189,13 @@ define([
       var newEnd = djDate.add(this.end, 'day', days)
       if (newEnd) {
         var newDEnd = ''
-        if (this.deliveryEnd !== '') {
+        if (this.deliveryEnd) {
           newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')))
         }
 
         this.end = newEnd
         this.deliveryEnd = newDEnd
-        this.save().then(() => { window.App.info('Prolongation effectuée') })
+        this.save()
       }
     }
   })

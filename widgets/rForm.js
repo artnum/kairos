@@ -121,29 +121,29 @@ define([
       this.beginDate.set('value', value.toISOString())
       this.beginTime.set('value', value.toISOString())
       this._set('begin', value)
-      if (!this.get('deliveryBegin')) {
-        this.set('deliveryBegin', value)
-      }
     },
 
     _setEndAttr: function (value) {
       this.endDate.set('value', value.toISOString())
       this.endTime.set('value', value.toISOString())
       this._set('end', value)
-      if (!this.get('deliveryEnd')) {
-        this.set('deliveryEnd', value)
-      }
     },
 
     _setDeliveryBeginAttr: function (value) {
-      if (!value) { return }
+      if (!value) {
+        this._set('deliveryBegin', null)
+        return
+      }
       this.nDeliveryBeginDate.set('value', value.toISOString())
       this.nDeliveryBeginTime.set('value', value.toISOString())
       this._set('deliveryBegin', value)
     },
 
     _setDeliveryEndAttr: function (value) {
-      if (!value) { return }
+      if (!value) {
+        this._set('deliveryEnd', null)
+        return
+      }
       this.nDeliveryEndDate.set('value', value.toISOString())
       this.nDeliveryEndTime.set('value', value.toISOString())
       this._set('deliveryEnd', value)
@@ -465,6 +465,9 @@ define([
     },
 
     changeBegin: function (e) {
+      if (!this.nDelivery.get('checked')) {
+        return
+      }
       if (this.reservation.get('deliveryBegin')) {
         var newDate = this.beginDate.get('value').join(this.beginTime.get('value'))
         var diff = djDate.difference(newDate, this.reservation.get('begin'), 'second')
@@ -475,6 +478,9 @@ define([
     },
 
     changeEnd: function (e) {
+      if (!this.nDelivery.get('checked')) {
+        return
+      }
       if (this.reservation.get('deliveryEnd')) {
         var newDate = this.endDate.get('value').join(this.endTime.get('value'))
         var diff = djDate.difference(newDate, this.reservation.get('end'), 'second')
@@ -612,8 +618,10 @@ define([
       }
       this.toggleConfirmed()
 
-      if (this.reservation.is('deliverydate')) {
+      if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
         this.nDelivery.set('checked', true)
+      } else {
+        this.nDelivery.set('checked', false)
       }
       this.toggleDelivery()
 
@@ -967,16 +975,14 @@ define([
       let begin = f.beginDate.join(f.beginTime)
       let end = f.endDate.join(f.endTime)
 
-      this.reservation.setIs('deliverydate', this.nDelivery.get('checked'))
-
       let deliveryBegin = begin
       let deliveryEnd = end
-      if (this.reservation.is('deliverydate')) {
+      if (this.nDelivery.get('checked')) {
         deliveryBegin = f.deliveryBeginDate.join(f.deliveryBeginTime)
         deliveryEnd = f.deliveryEndDate.join(f.deliveryEndTime)
       } else {
-        deliveryBegin = null
-        deliveryEnd = null
+        deliveryBegin = ''
+        deliveryEnd = ''
       }
 
       if (this.nConfirmed.get('checked')) {
