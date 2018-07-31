@@ -4,10 +4,14 @@ include('artnum/autoload.php');
 header('Cache-Control', 'no-cache, max-age=0');
 
 class LocationPDF extends artnum\PDF {
-   function __construct() {
+   function __construct($options = array()) {
       parent::__construct();
 
-      $this->SetMargins(20, 10, 10);
+      if (isset($options['margins'])) {
+         $this->SetMargins(20, 10, 10);
+      } else {
+         $this->SetMargins($options['margins'][0], $options['margins'][1], $options['margins'][2]);
+      }
       $this->addTaggedFont('c', 'century-gothic', '', 'century-gothic.ttf', true);
       $this->addTaggedFont('cb', 'century-gothic-bold', '', 'century-gothic-bold.ttf', true);
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);

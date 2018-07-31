@@ -68,10 +68,10 @@ foreach($addrs as $k => $v) {
 }
 
 /* PDF Generation */
-$PDF = new LocationPDF();
+$PDF = new LocationPDF(array('margins' => array(10, 10, 10)));
 $PDF->addVTab(18);
-$PDF->addVTab(34);
-$PDF->addVTab(67);
+$PDF->addVTab(25);
+$PDF->addVTab(58);
 $PDF->addVTab(242);
 $PDF->addVTab(246);
 $PDF->addTab('right', 'right');
@@ -80,20 +80,22 @@ $PDF->addTab(62);
 $PDF->addTab(123);
 
 $PDF->AddPage();
-$PDF->vtab(1);
+$PDF->setPosition(60);
+$PDF->setFontSize(5);
+
+if(! is_null($addrs['client'])) {
+   $PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb', ' pour ' . $addrs['client'][0], '%c'), array('align' => 'right'));
+} else {
+   $PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb'), array('align' => 'right'));
+}
 
 $PDF->SetFont('century-gothic');
+
 $PDF->setFontSize(2);
+$PDF->vtab(1);
 $PDF->tab(1);
 $PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
          $reservation['created']->format('H:i'));
-$PDF->setFontSize(5);
-$PDF->hr();
-$PDF->printTaggedLn(array('%cb', 'Location ', $reservation['id'], '%c'), array('break' => false));
-if(! is_null($addrs['client'])) {
-   $PDF->printLn(' pour ' . $addrs['client'][0], array('break' => false));
-}
-$PDF->br();
 $PDF->setFontSize(3.2);
 $PDF->hr();
 $PDF->SetFont('century-gothic');
@@ -120,6 +122,9 @@ if(!is_null($addrs['facturation'])) {
 } else {
    $PDF->vtab(2);
    $PDF->tab(3); 
+   $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
+   $PDF->vtab(2); 
+   $PDF->tab(3); 
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
 }
 
@@ -131,8 +136,10 @@ $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 
 $PDF->vtab(3);
 $PDF->hr();
 
+$b1Empty = true;
 if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
+   $b1Empty = false;
 }
 
 if(!empty($reservation['address']) || !empty($resevation['locality'])) {
@@ -152,10 +159,12 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
    if($line != '') {
       $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
    }
+   $b1Empty = false;
 }
 
 if(!empty($reservation['gps'])) {
    $PDF->printTaggedLn(array('%c', 'GPS : ', '%cb', $reservation['gps']));
+   $b1Empty = false;
 }
 
 
@@ -166,8 +175,13 @@ if($addrs['responsable'] != null) {
       $res .= $r;
    }
    $PDF->printTaggedLn(array('%c', 'Responsable : ', '%cb', $res));
+   $b1Empty = false;
 }
-$PDF->br();
+if (!$b1Empty) {
+   $PDF->br();
+   $PDF->hr();
+   $PDF->br();
+}
 $PDF->printTaggedLn(array(
          '%c', 'Début de location : ', '%cb', 
          $reservation['begin']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['begin']->format('H:i'), 
@@ -214,8 +228,7 @@ $PDF->SetX(155);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Décompte intermédiaire'));
 
 $PDF->br();
-$PDF->br();
-$PDF->squaredFrame(88, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
+$PDF->squaredFrame(68, array('color' => '#DDD', 'line' => 0.1, 'border-color' => 'black', 'border-line' => 0.2, 'border' => true));
 
 /* On the grid */
 $PDF->vspace(2);
@@ -226,7 +239,7 @@ if(!empty($reservation['title'])) {
    $PDF->printTaggedLn(array('%c', 'Commandée : ', $reservation['title']));
 }
 
-$PDF->vspace(80);
+$PDF->vspace(60);
 if(isset($reservation['equipment'])) {
    $equipment = array();
    $eq = explode("\n", $reservation['equipment']);
@@ -284,6 +297,16 @@ if(is_array($reservation['complements']) && count($reservation['complements']) >
       $PDF->br();
    }
 }
+
+if ($reservation['folder']) {
+   $PDF->printTaggedLn(array('%cb', 'Dossier'), array('underline' => true));
+   $PDF->printTaggedLn(array('%c',  $reservation['folder']));
+}
+if ($reservation['creator']) {
+   $PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
+   $PDF->printTaggedLn(array('%c',  $reservation['creator']));
+}
+
 
 $PDF->vtab(4);
 $PDF->printTaggedLn(array('%a', '', '%c', ' Plein d\'essence effectué'), array('break' => false));
