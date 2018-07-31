@@ -898,7 +898,7 @@ define([
         if (event.type === 'mouseup') {
           domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
           this.timelineMoving = false
-          this.update()
+          this.refresh()
         } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
           this.timelineMoving = true
@@ -1376,24 +1376,29 @@ define([
       }
     },
 
+    refresh: function () {
+      if (!this.timelineMoving) {
+        var begin = new Date()
+        var end = new Date()
+
+        begin.setTime(this.get('dateRange').begin.getTime())
+        end.setTime(this.get('dateRange').end.getTime())
+        begin.setTime(begin.getTime() - 604800000)
+        end.setTime(end.getTime() + 604800000)
+
+        this.Updater.postMessage({type: 'move',
+          content: [this.getUrl(locationConfig.store + '/DeepReservation'), {
+            query: { 'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
+              'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
+              'search.deleted': '-'}}]
+        })
+      }
+    },
+
     update: function (force = false) {
       var def = new djDeferred()
-      var begin = new Date()
-      var end = new Date()
 
-      begin.setTime(this.get('dateRange').begin.getTime())
-      end.setTime(this.get('dateRange').end.getTime())
-      begin.setTime(begin.getTime() - 604800000)
-      end.setTime(end.getTime() + 604800000)
-
-      if (!this.timelineMoving) {
-        this.Updater.postMessage({type: 'move',
-          content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query: {
-            'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
-            'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
-            'search.deleted': '-' }
-          }]})
-      }
+      this.refresh()
       this.resize()
       def.resolve()
 
