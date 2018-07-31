@@ -210,6 +210,7 @@ define([
             }
           }
         }
+        this.resize()
         this.unwait()
       })
 
@@ -738,7 +739,6 @@ define([
               {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end'}},
               {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
             ]})
-            this.update()
           }))
           x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
@@ -751,6 +751,7 @@ define([
     filterNone: function () {
       this.searchMenu.filterNone.set('disabled', true)
       this.filterReset()
+      this.resize()
     },
 
     filterFamily: function (event) {
