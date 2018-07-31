@@ -7,7 +7,7 @@ class LocationPDF extends artnum\PDF {
    function __construct($options = array()) {
       parent::__construct();
 
-      if (isset($options['margins'])) {
+      if (!isset($options['margins'])) {
          $this->SetMargins(20, 10, 10);
       } else {
          $this->SetMargins($options['margins'][0], $options['margins'][1], $options['margins'][2]);

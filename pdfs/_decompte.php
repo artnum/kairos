@@ -69,8 +69,8 @@ foreach($addrs as $k => $v) {
 
 /* PDF Generation */
 $PDF = new LocationPDF(array('margins' => array(10, 10, 10)));
-$PDF->addVTab(18);
-$PDF->addVTab(25);
+$PDF->addVTab(21);
+$PDF->addVTab(28);
 $PDF->addVTab(58);
 $PDF->addVTab(242);
 $PDF->addVTab(246);
