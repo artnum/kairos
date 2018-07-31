@@ -30,6 +30,7 @@ new IdxDB().then(function (db) {
         fetch('/location/store/DeepReservation/' + id).then(function (response) {
           response.json().then(function (data) {
             try {
+              data['_lastfetch'] = new Date().toISOString()
               db.transaction('reservations').objectStore('reservations', 'readwrite').put(data)
             } catch (e) {
               /* nothing */
@@ -53,6 +54,8 @@ new IdxDB().then(function (db) {
           } else {
             queryServer()
           }
+        } else {
+          queryServer()
         }
       }
       req.onerror = function (event) {

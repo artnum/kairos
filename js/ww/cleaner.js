@@ -5,13 +5,42 @@ importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 
 var Entries = {}
+var today = new Date().toISOString().split('T')[0]
 
 new IdxDB().then(function (db) {
-  function cleaner (db) {
-    var st = db.transaction('reservations').objectStore('reservations')
-    st.getAllKeys().onsuccess = function (event) {
-      var keys = event.target.result
+  function deleteold (db) {
+    return new Promise(function (resolve, reject) {
+      var keys = []
+      var now = new Date()
+      var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+      st.openCursor().onsuccess = function (event) {
+        var cursor = event.target.result
 
+        if (!cursor) {
+          resolve(keys)
+          return
+        }
+
+        if (cursor.value._lastfetch) {
+          if (now.getTime() - 172800000 > new Date(cursor.value._lastfetch).getTime()) {
+            cursor.delete()
+          } else {
+            keys.push(cursor.value.id)
+          }
+        } else {
+          var newValue = Object.assign({}, cursor.value)
+          newValue._lastfetch = now.toISOString()
+          cursor.update(newValue)
+          keys.push(newValue.id)
+        }
+
+        cursor.continue()
+      }
+    })
+  }
+
+  function cleaner (db) {
+    deleteold(db).then(function (keys) {
       if (keys.length === 0) { return }
 
       do {
@@ -21,7 +50,7 @@ new IdxDB().then(function (db) {
         fetch('/location/store/Reservation/|' + strkeys).then(function (response) {
           response.json().then(function (data) {
             var entries = data.data
-            st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+            var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
             for (var i = 0; i < entries.length; i++) {
               if (entries[i].deleted != null && entries[i].deleted !== '') {
                 st.delete(entries[i].id)
@@ -39,9 +68,29 @@ new IdxDB().then(function (db) {
           })
         })
       } while (keys.length > 0)
-      setTimeout(function () { cleaner(db) }, 15000)
-    }
+      setTimeout(function () { cleaner(db) }, 600000)
+    })
   }
 
+  function deleted (db) {
+    fetch('/location/store/Reservation?search.deleted=>=' + today).then(function (response) {
+      response.json().then(function (data) {
+        if (data.type === 'results' && data.data.length > 0) {
+          var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+          data.data.forEach(function (reservation) {
+            try {
+              st.delete(reservation.id)
+            } catch (e) {
+              // nothing
+            }
+          })
+        }
+      })
+      setTimeout(function () { deleted(db) }, 15000)
+    })
+  }
+
+
   cleaner(db)
+  deleted(db)
 })

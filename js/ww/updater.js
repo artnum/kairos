@@ -80,7 +80,7 @@ new IdxDB().then(function (DB) {
 
         if (r.data[i].target) {
           r.data[i]._hash = objectHash.sha1(r.data[i])
-          r.data[i]._atime = new Date().toISOString()
+          r.data[i]._lastfetch = new Date().toISOString()
 
           let reservation = r.data[i]
           try {
