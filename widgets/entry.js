@@ -214,8 +214,8 @@ define([
           }
           this.entries[msg.data.id].fromJson(msg.data.data)
           this.entries[msg.data.id].syncForm()
+          this.resize()
         }
-        this.resize()
       }.bind(this)
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))

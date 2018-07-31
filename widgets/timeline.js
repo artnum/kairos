@@ -162,6 +162,7 @@ define([
       this.runningRequest = []
       this.extension = false
       this.LocalReservations = {}
+      this.timelineMovine = false
 
       this.zoomCss = document.createElement('style')
 
@@ -896,10 +897,13 @@ define([
         var domNode = document.getElementsByTagName('body')[0]
         if (event.type === 'mouseup') {
           domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
+          this.timelineMoving = false
+          this.update()
         } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
+          this.timelineMoving = true
         }
-      })
+      }.bind(this))
     },
 
     mouseOver: function (event) {
@@ -1382,12 +1386,14 @@ define([
       begin.setTime(begin.getTime() - 604800000)
       end.setTime(end.getTime() + 604800000)
 
-      this.Updater.postMessage({type: 'move',
-        content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query: {
-          'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
-          'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
-          'search.deleted': '-' }
-        }]})
+      if (!this.timelineMoving) {
+        this.Updater.postMessage({type: 'move',
+          content: [this.getUrl(locationConfig.store + '/DeepReservation'), { query: {
+            'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
+            'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
+            'search.deleted': '-' }
+          }]})
+      }
       this.resize()
       def.resolve()
 
