@@ -9,7 +9,7 @@ var Return = function () {
   } else {
     document.body.appendChild(table)
   }
-  table.innerHTML = '<thead><tr><th>Machine</th><th>Ref</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Contact</th><th>Clef</th><th>Divers</th></tr></thead>'
+  table.innerHTML = '<thead><tr><th>Machine</th><th>Ref</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Client</th><th>Contact</th><th>Clef</th><th>Divers</th><th></th></tr></thead>'
   table.appendChild(document.createElement('tbody'))
   this.parent = table.lastChild
 
@@ -131,15 +131,54 @@ Return.prototype.html = {
   },
 
   button: function (value) {
-    var button = document.createElement('BUTTON')
+    var button = document.createElement('DIV')
+    button.setAttribute('class', 'button')
     button.appendChild(document.createTextNode(value))
 
     return button
+  },
+
+  cell: function () {
+    var td = document.createElement('TD')
+    if (arguments[0]) {
+      if (Array.isArray(arguments[0])) {
+        for (var i = 0; i < arguments[0].length; i++) {
+          if (arguments[0][i] instanceof HTMLElement) {
+            td.appendChild(arguments[0][i])
+          }
+        }
+      } else if (arguments[0] instanceof HTMLElement) {
+        td.appendChild(arguments[0])
+      }
+    }
+    return td
   }
 }
 
-Return.prototype.nextStep = function (event) {
+Return.prototype.done = function (event) {
   event.stopPropagation()
+  var req = { id: this.id }
+  if (this.done) {
+    req.done = ''
+  } else {
+    var now = new Date()
+    req.done = now.toISOString()
+  }
+
+  fetch('/location/store/Return/' + req.id, {method: 'PUT', body: JSON.stringify(req)})
+}
+
+Return.prototype.progress = function (event) {
+  event.stopPropagation()
+  var req = { id: this.id }
+  if (this.inprogress) {
+    req.inprogress = ''
+  } else {
+    var now = new Date()
+    req.inprogress = now.toISOString()
+  }
+
+  fetch('/location/store/Return/' + req.id, {method: 'PUT', body: JSON.stringify(req)})
 }
 
 Return.prototype.expandDetails = function (event) {
@@ -219,9 +258,6 @@ Return.prototype.add = function (retval) {
   if (retval.inprogress) {
     className += ' inprogress'
   }
-  if (retval._target.contacts && retval._target.contacts._client) {
-    className += ' expandable'
-  }
 
   dom.setAttribute('class', className)
   dom.setAttribute('id', 'return_' + retval.id)
@@ -234,8 +270,14 @@ Return.prototype.add = function (retval) {
   dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
   dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
   dom.appendChild(this.html.label(new Date(retval._target.end)))
+  if (retval._target.contacts && retval._target.contacts._client && retval._target.contacts._client[0]) {
+    var addr = new Address(retval._target.contacts._client[0])
+    dom.appendChild(this.html.label(addr.toArray()[0]))
+  } else {
+    dom.appendChild(this.html.label(''))
+  }
   if (retval._target.contacts && retval._target.contacts._retour) {
-    var addr = new Address(retval._target.contacts._retour[0])
+    addr = new Address(retval._target.contacts._retour[0])
     dom.appendChild(this.html.label(addr.toArray()))
   } else if (retval._target.contacts && retval._target.contacts._place) {
     addr = new Address(retval._target.contacts._place[0])
@@ -249,29 +291,22 @@ Return.prototype.add = function (retval) {
   dom.appendChild(this.html.label(retval.other))
   dom.appendChild(this.html.label(retval.comment))
 
-  /*
   if (retval.inprogress && !retval.done) {
-    var x = this.html.button('Fait')
   } else if (!retval.inprogress && !retval.done) {
-    x = this.html.button('En cours')
   }
-  dom.appendChild(x)
-  x.addEventListener('click', this.nextStep.bind(this))
-  */
+  var doneBtn = this.html.button('Fait')
+  var progBtn = this.html.button('En cours')
+  if (retval.inprogress) {
+    progBtn.setAttribute('class', 'button selected')
+  }
+  dom.appendChild(this.html.cell([progBtn, doneBtn]))
+  doneBtn.addEventListener('click', this.done.bind(retval))
+  progBtn.addEventListener('click', this.progress.bind(retval))
+
   dom.addEventListener('click', function () {
     this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
     this.bc.postMessage({what: 'window', type: 'close'})
   }.bind(this))
 
   this.parent.appendChild(dom)
-  /* if (retval._target.contacts && retval._target.contacts._client) {
-    var x = document.createElement('tr')
-    x.setAttribute('data-parent-id', 'return_' + retval.id)
-    x.setAttribute('class', 'details')
-    x.appendChild(document.createElement('th'))
-    x.firstChild.appendChild(document.createTextNode('Client'))
-    x.appendChild(this.html.label(new Address(retval._target.contacts._client[0]).toArray()))
-    x.lastChild.setAttribute('colspan', '8')
-    this.parent.appendChild(x)
-  } */
 }
