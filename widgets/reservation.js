@@ -917,7 +917,7 @@ define([
       this._gui.hidden = true
     },
 
-    resize: function () {
+    resize: function (fromEntry = false) {
       if (this.deleted) {
         if (!this.destroyed) {
           this.destroy()
@@ -930,6 +930,10 @@ define([
         return
       } else {
         this.show()
+      }
+
+      if (!fromEntry) {
+        this.sup.overlap()
       }
 
       /* Verify  if we keep this ourself */

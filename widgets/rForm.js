@@ -1049,20 +1049,18 @@ define([
         }
       }
 
-      var save = this.reservation.save()
+      this.reservation.save()
       var reservation = this.reservation
       if (changeMachine) {
-        save.then((result) => {
-          var entry = window.App.getEntry(reservation.get('target'))
-          var oldEntry = window.App.getEntry(changeMachine)
-          if (entry) {
-            reservation.set('sup', entry)
-            reservation.modified()
-            window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée')
-            delete oldEntry.entries[reservation.get('id')]
-            entry.entries[reservation.get('id')] = reservation
-          }
-        })
+        var entry = window.App.getEntry(reservation.get('target'))
+        var oldEntry = window.App.getEntry(changeMachine)
+        if (entry) {
+          window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée')
+          delete oldEntry.entries[reservation.get('id')]
+          entry.entries[reservation.get('id')] = reservation
+          entry.resize()
+          oldEntry.resize()
+        }
       }
 
       return true

@@ -622,11 +622,12 @@ define([
 
     resizeChild: function () {
       for (var k in this.entries) {
-        this.entries[k].resize()
+        this.entries[k].resize(true)
       }
     },
 
     resize: function () {
+      this.overlap()
       fastdom.measure(function () {
         this.view.rectangle = getElementRect(this.domNode)
       }.bind(this))
