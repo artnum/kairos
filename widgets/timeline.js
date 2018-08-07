@@ -174,7 +174,7 @@ define([
         if (e.data.op) {
           switch (e.data.op.toLowerCase()) {
             case 'rebuild':
-              window.location.reload()
+              window.location.reload(true)
               break
             case 'loaded':
               this.revision()
