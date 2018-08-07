@@ -671,7 +671,9 @@ define([
 
       for (var k in this.entries) {
         if (!this.entries[k].get('displayed')) {
-          frag.appendChild(this.entries[k].domNode)
+          if(this.entries[k].domNode) {
+            frag.appendChild(this.entries[k].domNode)
+          }
           this.entries[k].set('displayed', true)
         }
         this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
