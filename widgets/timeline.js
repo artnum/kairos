@@ -1607,6 +1607,12 @@ define([
         x.appendChild(y)
         x.setAttribute('id', 'WaitDisplay')
         x.setAttribute('style', 'font-size: 80px; text-align: center; position: absolute; z-index: 99999999; left: ' + w + 'px; top: 0; left: 0; bottom: 0; right: 0; background-color: rgba(255,255,255,0.5)')
+        if (arguments[0]) {
+          var z = document.createElement('DIV')
+          z.setAttribute('style', 'font-size: 18pt; font-family: sans-serif; position: relative; top: 150px;')
+          z.appendChild(document.createTextNode(arguments[0]))
+          x.appendChild(z)
+        }
         window.requestAnimationFrame(() => {
           document.body.appendChild(x)
         })
@@ -1649,7 +1655,7 @@ define([
     },
 
     reinit: function () {
-      this.wait()
+      this.wait('Mise à jour du programme')
       window.localStorage.setItem('revision', this.currentRevision)
       this.Cleaner.postMessage({op: 'rebuild'})
     }
