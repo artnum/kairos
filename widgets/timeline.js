@@ -162,7 +162,7 @@ define([
       this.runningRequest = []
       this.extension = false
       this.LocalReservations = {}
-      this.timelineMovine = false
+      this.timelineMoving = false
 
       this.zoomCss = document.createElement('style')
 
@@ -171,12 +171,27 @@ define([
       this.Cleaner = new Worker('/location/js/ww/cleaner.js')
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
+        if (e.data.op) {
+          switch (e.data.op.toLowerCase()) {
+            case 'rebuild':
+              window.location.reload()
+              break
+            case 'loaded':
+              this.revision()
+              this.update()
+              break
+          }
+
+          this.unwait()
+          return
+        }
         for (var i = 0; i < e.data.length; i++) {
           if (this.Entries[e.data[i]]) {
             console.log('Cleaning ' + e.data[i])
             this.Entries[e.data[i]].update()
           }
         }
+        this.unwait()
       })
 
       this.Updater = new Worker('/location/js/ww/updater.js')
@@ -593,6 +608,22 @@ define([
       this.bc.onmessage = function (event) {
         this.handleBCMessage(event)
       }.bind(this)
+    },
+
+    revision: function () {
+      fetch('/location/revision.php').then(function (response) {
+        response.json().then(function (data) {
+          this.currentRevision = data.revision
+          var currentRevision = window.localStorage.getItem('revision')
+          if (!currentRevision) {
+            this.reinit()
+          } else {
+            if (currentRevision !== this.currentRevision) {
+              this.reinit()
+            }
+          }
+        }.bind(this))
+      }.bind(this))
     },
 
     mask: function (state, callback) {
@@ -1615,6 +1646,12 @@ define([
           djDomStyle.set(node, 'overflow', '')
         })
       }
+    },
+
+    reinit: function () {
+      this.wait()
+      window.localStorage.setItem('revision', this.currentRevision)
+      this.Cleaner.postMessage({op: 'rebuild'})
     }
   })
 })

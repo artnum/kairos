@@ -7,7 +7,53 @@ importScripts('../object-hash/dist/object_hash.js')
 var Entries = {}
 var today = new Date().toISOString().split('T')[0]
 
+function rebuild (db) {
+  var x = new Promise(function (resolve, reject) {
+    var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
+    st.openCursor().onsuccess = function (event) {
+      if (event.target.result) {
+        event.target.result.delete()
+        event.target.result.continue()
+      } else {
+        resolve()
+      }
+    }
+  })
+  var y = new Promise(function (resolve, reject) {
+    var st = db.transaction('return', 'readwrite').objectStore('return')
+    st.openCursor().onsuccess = function (event) {
+      if (event.target.result) {
+        event.target.result.delete()
+        event.target.result.continue()
+      } else {
+        resolve()
+      }
+    }
+  })
+
+  return new Promise(function (resolve, reject) {
+    x.then(function () {
+      y.then(function () { resolve() })
+    })
+  })
+}
+
 new IdxDB().then(function (db) {
+  postMessage({op: 'loaded'})
+  self.onmessage = function (msg) {
+    if (!msg.data || !msg.data.op) {
+      return
+    }
+    switch (msg.data.op.toLowerCase()) {
+      case 'rebuild':
+        rebuild(db).then(function () {
+          console.log('end rebuild')
+          postMessage({op: 'rebuild'})
+        })
+        break
+    }
+  }
+
   function deleteold (db) {
     return new Promise(function (resolve, reject) {
       var keys = []
