@@ -613,6 +613,10 @@ define([
       this.bc.onmessage = function (event) {
         this.handleBCMessage(event)
       }.bind(this)
+
+      window.setTimeout(function () {
+        this.update()
+      }.bind(this), 5000)
     },
 
     revision: function () {
