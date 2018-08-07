@@ -108,6 +108,12 @@ function filterBetween (value, params) {
     return false
   }
 
+  if (params.dayonly) {
+    date.setHours(0, 0, 0)
+    begin.setHours(0, 0, 0)
+    end.setHours(0, 0, 0)
+  }
+
   if (date != null && begin != null && end != null) {
     if (begin.getTime() <= date.getTime() && end.getTime() >= date.getTime()) {
       return true

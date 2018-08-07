@@ -736,7 +736,7 @@ define([
             date.setHours(0, 0, 0)
             this.Filter.postMessage({ ops: [
               {filter: 'date', on: 'entry', params: { date: date, type: [ 'deliveryBegin', 'begin' ] }},
-              {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end'}},
+              {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end', dayonly: true}},
               {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
             ]})
           }))
