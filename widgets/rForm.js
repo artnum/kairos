@@ -580,10 +580,10 @@ define([
         this.gLink.parentNode.insertBefore(a, this.gLink)
       }
 
-      r = request.get(locationConfig.store + '/Status/', {query: {'search.type': 0}})
-      this.initRequests.push(r)
-
       if (!this.loaded.status) {
+        r = request.get(locationConfig.store + '/Status/', {query: {'search.type': 0}})
+        this.initRequests.push(r)
+
         r.then(djLang.hitch(this, function (results) {
           if (results.type === 'results') {
             var def
@@ -600,18 +600,20 @@ define([
         }))
       }
 
-      r = request.get(locationConfig.store + '/Status/', {query: { 'search.type': 1 }})
-      this.initRequests.push(r)
-      r.then(function (results) {
-        if (results.type === 'results') {
-          results.data.forEach(function (d) {
-            that.nAssociationType.addOption({
-              label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-              value: locationConfig.store + '/Status/' + d.id
+      if (!this.loaded.status) {
+        r = request.get(locationConfig.store + '/Status/', {query: { 'search.type': 1 }})
+        this.initRequests.push(r)
+        r.then(function (results) {
+          if (results.type === 'results') {
+            results.data.forEach(function (d) {
+              that.nAssociationType.addOption({
+                label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
+                value: locationConfig.store + '/Status/' + d.id
+              })
             })
-          })
-        }
-      })
+          }
+        })
+      }
 
       if (this.reservation.is('confirmed') || (this.reservation.get('return') && !this.reservation.get('return').deleted)) {
         this.nConfirmed.set('checked', true)
