@@ -579,7 +579,12 @@ define([
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
           djDomStyle.set(this.domNode.parentNode, 'display', 'block')
+          window.App.minimizeMaximize(null, true)
         }
+      }, true)
+
+      djAspect.after(tContainer, 'selectChild', function () {
+        window.App.minimizeMaximize(null, true)
       }, true)
 
       djAspect.after(tContainer, 'removeChild', function (child) {
@@ -1627,15 +1632,19 @@ define([
       }
     },
     minimizeMaximize: function (event) {
-      var node = event.target
+      var node = this.nMinimizeMaximize
       var inode = node
+      var max = false
+      if (arguments[1]) {
+        max = true
+      }
       if (inode.nodeName !== 'I') {
         for (inode = inode.firstChild; inode.nodeName !== 'I'; inode = inode.nextSibling) ;
       }
       while (node && !node.getAttribute('data-artnum-maximize')) {
         node = node.parentNode
       }
-      if (node.getAttribute('data-artnum-maximize') === 'yes') {
+      if (!max && node.getAttribute('data-artnum-maximize') === 'yes') {
         node.setAttribute('data-artnum-maximize', 'no')
         fastdom.mutate(function () {
           inode.setAttribute('class', 'fas fa-window-maximize')
