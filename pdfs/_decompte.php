@@ -140,6 +140,11 @@ $b1Empty = true;
 if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
    $b1Empty = false;
+} else {
+   $PDF->printTaggedLn(array('%c', 'Référence : '), array('break' => false));
+   $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
+   $PDF->br();
+   $b1Empty = false;
 }
 
 if(!empty($reservation['address']) || !empty($resevation['locality'])) {
