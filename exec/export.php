@@ -199,5 +199,12 @@ foreach ($entries as $entry) {
 }
 
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-$writer->writeToStdout();
+$path = './reservations.xlsx';
+if (getenv('LOCATION_EXPORT_PATH')) {
+   if (is_file(getenv('LOCATION_EXPORT_PATH')) && is_writable(getenv('LOCATION_EXPORT_PATH'))) {
+      $path = getenv('LOCATION_EXPORT_PATH');
+   }
+}
+
+$writer->writeToFile($path);
 ?>
