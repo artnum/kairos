@@ -147,22 +147,26 @@ if(!empty($reservation['reference'])) {
    $b1Empty = false;
 }
 
-if(!empty($reservation['address']) || !empty($resevation['locality'])) {
-   $line = '';
-   if(!empty($reservation['address'])) {
-      $l = explode("\n", $reservation['address']);
-      foreach($l as $_l)  {
+if(!empty($reservation['address']) || !empty($reservation['locality']) || !empty($reservation['warehouse'])) {
+   if (!empty($reservation['warehouse'])) {
+      $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' ,$reservation['wname']));
+   } else {
+      $line = '';
+      if(!empty($reservation['address'])) {
+         $l = explode("\n", $reservation['address']);
+         foreach($l as $_l)  {
+            if($line != '') { $line .= ', '; }
+            $line .= trim($_l);
+         }    
+      }
+      if(!empty($reservation['locality'])) {
          if($line != '') { $line .= ', '; }
-         $line .= trim($_l);
-      }    
-   }
-   if(!empty($reservation['locality'])) {
-      if($line != '') { $line .= ', '; }
-      $line .= $reservation['locality'];
-   }
+         $line .= $reservation['locality'];
+      }
 
-   if($line != '') {
-      $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
+      if($line != '') {
+         $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
+      }
    }
    $b1Empty = false;
 }
