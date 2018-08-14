@@ -488,21 +488,7 @@ define([
         i.setAttribute('class', 'far fa-circle')
       }
 
-      djOn(span, 'click', djLang.hitch(this, this.doConfirm))
-
       return span
-    },
-
-    doConfirm: function () {
-      if (this.return) {
-        Req.del(locationConfig.store + '/Return/' + this.return.id)
-        this.set('return', null)
-      } else {
-        this.return = {}
-        this.return.target = this.get('id')
-        this.return.reported = djDateStamp.toISOString(new Date())
-        this.saveReturn()
-      }
     },
 
     contactDom: function () {

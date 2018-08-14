@@ -914,7 +914,7 @@ define([
     },
 
     validate: function () {
-      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach(function (c) {
+      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate, this.nCreator, this.nReturnCreator ].forEach(function (c) {
         c.set('state', 'Normal')
       })
 
@@ -966,6 +966,12 @@ define([
           this.nDeliveryEndDate.set('state', 'Error')
           this.endDate.set('state', 'Error')
           return ['Début de livraison est après le début de la location', false]
+        }
+      }
+      if (this.nConfirmed.get('checked')) {
+        if (f.returnCreator === '') {
+          this.nReturnCreator.set('state', 'Error')
+          return ['Le responsable pour la confirmation de fin est manquant', false]
         }
       }
 
