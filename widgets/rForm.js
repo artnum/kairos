@@ -33,6 +33,7 @@ define([
   'dijit/form/Select',
   'dijit/form/FilteringSelect',
   'dijit/form/CheckBox',
+  'dijit/form/ComboBox',
   'dijit/Dialog',
   'dijit/layout/TabContainer',
   'dijit/layout/ContentPane',
@@ -68,7 +69,7 @@ define([
   djDomClass,
   djDomForm,
   djXhr,
-  djMemory,
+  DjMemory,
   djAll,
 
   dtForm,
@@ -80,6 +81,7 @@ define([
   dtSelect,
   dtFilteringSelect,
   dtCheckBox,
+  dtComboBox,
   dtDialog,
   dtTabContainer,
   DtContentPane,
@@ -119,7 +121,15 @@ define([
 
     _setWarehouseAttr: function (value) {
       this._set('warehouse', value)
-      this.nWarehouse.set('value', this.get('warehouse'))
+      if (this.loaded.warehouse) {
+        var store = this.nLocality.get('store')
+        if (store) {
+          var item = store.get(value)
+          if (item) {
+            this.nLocality.set('value', item.name)
+          }
+        }
+      }
     },
 
     _setBeginAttr: function (value) {
@@ -623,17 +633,14 @@ define([
         r = request.get(locationConfig.store + '/Warehouse/')
         this.initRequests.push(r)
         r.then(function (results) {
-          that.nWarehouse.addOption({label: '', value: 'null'})
+          var data = []
           results.data.forEach(function (d) {
-            var label = d.name
-            if (d.color) {
-              label = '<span style="color: ' + d.color + ';">' + d.name + '</span>'
-            }
-            that.nWarehouse.addOption({
-              label: label,
-              value: d.id
+            data.push({
+              name: 'Dépôt ' + d.name,
+              id: d.id
             })
           })
+          that.nLocality.set('store', new DjMemory({data: data}))
           that.loaded.warehouse = true
           if (that.reservation.get('warehouse')) {
             that.set('warehouse', that.reservation.get('warehouse'))
@@ -1071,12 +1078,20 @@ define([
       this.reservation.set('address', f.nAddress)
       this.reservation.set('reference', f.nReference)
       this.reservation.set('equipment', f.nEquipment)
-      this.reservation.set('locality', f.nLocality)
+
+      var store = this.nLocality.get('store')
+      var item = store.query({name: this.nLocality.get('value')})
+      if (item.length === 1) {
+        this.reservation.set('warehouse', item[0].id)
+        this.reservation.set('locality', '')
+      } else {
+        this.reservation.set('warehouse', '')
+        this.reservation.set('locality', f.nLocality)
+      }
       this.reservation.set('comment', f.nComments)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
       this.reservation.set('creator', f.creator)
-      this.reservation.set('warehouse', f.warehouse !== 'null' ? f.warehouse : '')
 
       if (f.title !== '') {
         this.reservation.set('title', f.title)
