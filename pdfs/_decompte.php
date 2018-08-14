@@ -185,40 +185,31 @@ if (!$b1Empty) {
    $PDF->hr();
    $PDF->br();
 }
-$PDF->printTaggedLn(array(
-         '%c', 'Début de location : ', '%cb', 
-         $reservation['begin']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['begin']->format('H:i'), 
-         '%c'),
-      array('break' => false));
+
+$PDF->printTaggedLn(array('%c', 'Début de location : '), array('break' => false));
+$XDatePos[0] = $PDF->GetX();
+$PDF->printTaggedLn(array('%cb', $reservation['begin']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['begin']->format('H:i'), '%c'), array('break' => false));
 
 if(!is_null($reservation['deliveryBegin'])) {
    if(!is_null($reservation['deliveryBegin'])) {
       $PDF->tab(2);
-      $PDF->printTaggedLn(array(
-               '%c', 'Livraison : ', '%cb',
-               $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' Heure : ', '%cb',
-               $reservation['deliveryBegin']->format('H:i')
-               ),
-            array('break' => true));
+      $PDF->printTaggedLn(array('%c', 'Livraison : '), array('break' => false));
+      $XDatePos[1] = $PDF->GetX();
+      $PDF->printTaggedLn(array('%cb', $reservation['deliveryBegin']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['deliveryBegin']->format('H:i')), array('break' => true));
    }
 } else {
    $PDF->br();
 }
-$PDF->printTaggedLn(array(
-         '%c', 'Fin de location : ', '%cb', 
-         $reservation['end']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['end']->format('H:i'), 
-         '%c'),
-      array('break' => false));
+$PDF->printTaggedLn(array('%c', 'Fin de location : '), array('break' => false));
+$PDF->SetX($XDatePos[0]);
+$PDF->printTaggedLn(array('%cb', $reservation['end']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['end']->format('H:i'), '%c'), array('break' => false));
 
 if(!is_null($reservation['deliveryEnd'])) {
    if(!is_null($reservation['deliveryEnd'])) {
       $PDF->tab(2);
-      $PDF->printTaggedLn(array(
-               '%c', 'Retour : ', '%cb',
-               $reservation['deliveryEnd']->format('d.m.Y'), '%c', ' Heure : ', '%cb',
-               $reservation['deliveryEnd']->format('H:i')
-               ),
-            array('break' => true));
+      $PDF->printTaggedLn(array('%c', 'Retour : '), array('break' => false));
+      $PDF->SetX($XDatePos[1]);
+      $PDF->printTaggedLn(array('%cb',$reservation['deliveryEnd']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['deliveryEnd']->format('H:i')), array('break' => true));
    }
 } else {
    $PDF->br();
