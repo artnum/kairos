@@ -110,11 +110,16 @@ define([
       this.reservation = args.reservation
       this.contacts = {}
       this.initRequests = []
-      this.loaded = { status: false }
+      this.loaded = { status: false, warehouse: false, association: false }
     },
 
     _setDescriptionAttr: function (value) {
       this.description = value
+    },
+
+    _setWarehouseAttr: function (value) {
+      this._set('warehouse', value)
+      this.nWarehouse.set('value', this.get('warehouse'))
     },
 
     _setBeginAttr: function (value) {
@@ -460,8 +465,6 @@ define([
     },
 
     evChangeForm: function (event) {
-      console.log(event)
-      console.log(this)
     },
 
     changeBegin: function (e) {
@@ -600,7 +603,7 @@ define([
         }))
       }
 
-      if (!this.loaded.status) {
+      if (!this.loaded.association) {
         r = request.get(locationConfig.store + '/Status/', {query: { 'search.type': 1 }})
         this.initRequests.push(r)
         r.then(function (results) {
@@ -612,7 +615,32 @@ define([
               })
             })
           }
+          that.loaded.association = true
         })
+      }
+
+      if (!this.loaded.warehouse) {
+        r = request.get(locationConfig.store + '/Warehouse/')
+        this.initRequests.push(r)
+        r.then(function (results) {
+          that.nWarehouse.addOption({label: '', value: 'null'})
+          results.data.forEach(function (d) {
+            var label = d.name
+            if (d.color) {
+              label = '<span style="color: ' + d.color + ';">' + d.name + '</span>'
+            }
+            that.nWarehouse.addOption({
+              label: label,
+              value: d.id
+            })
+          })
+          that.loaded.warehouse = true
+          if (that.reservation.get('warehouse')) {
+            that.set('warehouse', that.reservation.get('warehouse'))
+          }
+        })
+      } else {
+        that.set('warehouse', that.reservation.get('warehouse'))
       }
 
       if (this.reservation.is('confirmed') || (this.reservation.get('return') && !this.reservation.get('return').deleted)) {
@@ -1042,6 +1070,7 @@ define([
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
       this.reservation.set('creator', f.creator)
+      this.reservation.set('warehouse', f.warehouse !== 'null' ? f.warehouse : '')
 
       if (f.title !== '') {
         this.reservation.set('title', f.title)

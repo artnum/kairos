@@ -116,7 +116,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -154,7 +154,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator'].forEach(djLang.hitch(this, function (attr) {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -537,20 +537,48 @@ define([
       var ident = document.createElement('SPAN')
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
-        ident.appendChild(document.createTextNode(' '))
-        ident.appendChild(document.createElement('I'))
-        ident.lastChild.setAttribute('class', 'fas fa-folder')
+        ident.appendChild(document.createElement('SPAN'))
+        ident.lastChild.appendChild(document.createTextNode(' '))
+        var i = document.createElement('I')
+        i.setAttribute('class', 'fas fa-folder')
+
+        ident.lastChild.appendChild(i)
       }
       if (this.get('equipment') !== '' && this.get('equipment') != null) {
-        ident.appendChild(document.createTextNode(' '))
-        ident.appendChild(document.createElement('I'))
-        ident.lastChild.setAttribute('class', 'fas fa-wrench')
+        ident.appendChild(document.createElement('SPAN'))
+        ident.lastChild.appendChild(document.createTextNode(' '))
+        i = document.createElement('I')
+        i.setAttribute('class', 'fas fa-wrench')
+
+        ident.lastChild.appendChild(i)
       }
 
       if (this.get('title') !== '' && this.get('title') != null) {
-        ident.appendChild(document.createTextNode(' '))
-        ident.appendChild(document.createElement('I'))
-        ident.lastChild.setAttribute('class', 'fas fa-exchange-alt')
+        ident.appendChild(document.createElement('SPAN'))
+        ident.lastChild.appendChild(document.createTextNode(' '))
+        i = document.createElement('I')
+        i.setAttribute('class', 'fas fa-exchange-alt')
+
+        ident.lastChild.setAttribute('data-balloon', this.get('title'))
+        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
+
+        ident.lastChild.appendChild(i)
+      }
+
+      if (this.get('warehouse') !== '' && this.get('warehouse') != null) {
+        ident.appendChild(document.createElement('SPAN'))
+        ident.lastChild.appendChild(document.createTextNode(' '))
+        i = document.createElement('I')
+        i.setAttribute('class', 'fas fa-bullseye')
+        if (this.get('wcolor')) {
+          i.setAttribute('style', 'color: ' + this.get('wcolor'))
+        }
+        if (this.get('wname')) {
+          ident.lastChild.setAttribute('data-balloon', this.get('wname'))
+          ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
+        }
+
+        ident.lastChild.appendChild(i)
       }
 
       frag.lastChild.appendChild(ident)
@@ -695,7 +723,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder' ].forEach(djLang.hitch(this, (e) => {
+        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse' ].forEach(djLang.hitch(this, (e) => {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()

@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS reservation		( reservation_id INTEGER PRIMARY KEY AUT
 						  reservation_folder TEXT DEFAULT NULL,
 						  reservation_gps TEXT DEFAULT NULL, 
 						  reservation_creator TEXT DEFAULT NULL,
-						  reservation_previous TEXT DEFAULT NULL 
+						  reservation_previous TEXT DEFAULT NULL,
+						  reservation_warehouse TEXT DEFAULT NULL
 						);
 
 CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY,
@@ -55,6 +56,11 @@ CREATE TABLE IF NOT EXISTS association		( association_id INTEGER PRIMARY KEY,
 						  association_number INTEGER DEFAULT 1,
 						  association_follow INTEGER DEFAULT 0
 						);
+
+CREATE TABLE IF NOT EXISTS warehouse		( warehouse_id INTEGER PRIMARY KEY,
+						  warehouse_name TEXT,
+						  warehouse_color TEXT );
+
 
 CREATE TABLE IF NOT EXISTS tags 		( tags_value TEXT,
 						  tags_target TEXT

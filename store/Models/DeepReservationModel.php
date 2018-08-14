@@ -36,7 +36,7 @@ class DeepReservationModel extends ReservationModel {
    }
 
    function get($id) {
-      $pre_statement = 'SELECT * FROM reservation WHERE reservation_id = :id';
+      $pre_statement = 'SELECT warehouse.warehouse_name AS w_wname, warehouse.warehouse_color AS w_wcolor, warehouse.warehouse_id AS w_wid, reservation.* FROM reservation LEFT JOIN warehouse ON reservation_warehouse = warehouse_id WHERE reservation_id = :id';
       try {
          $st = $this->DB->prepare($pre_statement);
          $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
