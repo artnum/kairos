@@ -167,12 +167,6 @@ if(!empty($reservation['address']) || !empty($resevation['locality'])) {
    $b1Empty = false;
 }
 
-if(!empty($reservation['gps'])) {
-   $PDF->printTaggedLn(array('%c', 'GPS : ', '%cb', $reservation['gps']));
-   $b1Empty = false;
-}
-
-
 if($addrs['responsable'] != null) {
    $res = '';
    foreach($addrs['responsable'] as $r) {
