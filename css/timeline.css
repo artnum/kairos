@@ -286,15 +286,6 @@ div.contact > div:first-child {
 	text-decoration: underline;	
 }
 
-.rForm legend {
-	font-weight: bold;	
-}
-
-.rForm div.flex {
-	display: flex;
-	flex-wrap: wrap;
-		
-}
 
 .dijitReadOnly {
 	background-color: #ccc !important;	

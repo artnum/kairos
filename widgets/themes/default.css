@@ -471,6 +471,15 @@ html {
 	font-size: 16px;
 }
 
+.rForm div.flex {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.rForm legend {
+  font-weight: bold;
+}
+
 .rForm label.fixedSize {
 	width: 100px;
 	display: inline-block;
