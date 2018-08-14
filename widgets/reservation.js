@@ -513,6 +513,12 @@ define([
     },
 
     _setTextDesc: function (root) {
+      if (this._lasthash) {
+        if (this._lasthash === this._hash) {
+          return this._currentTextDesc
+        }
+      }
+      this._lasthash = this._hash
       var frag = document.createElement('DIV')
 
       frag.appendChild(document.createElement('DIV'))
@@ -645,7 +651,8 @@ define([
       details.firstChild.appendChild(extender)
       details.firstChild.appendChild(frag)
 
-      return details
+      this._currentTextDesc = details
+      return this._currentTextDesc
     },
 
     eDetails: function (event) {
