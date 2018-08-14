@@ -218,12 +218,6 @@ define([
       }.bind(this)
 
       this.currentDom = document.createElement('DIV')
-      this.currentDom.setAttribute('style', 'display: none')
-      if (this.sup) {
-        fastdom.mutate(djLang.hitch(this, function () {
-          this.sup.data.appendChild(this.currentDom)
-        }))
-      }
       this._gui.hidden = true
 
       this.originalTop = djDomStyle.get(this.currentDom, 'top')
@@ -480,7 +474,7 @@ define([
       var ret = this.get('return')
       if (this.is('confirmed') || (ret && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
-        if (ret.creator) {
+        if (ret && ret.creator) {
           span.setAttribute('data-balloon', ret.creator)
           span.setAttribute('data-balloon-pos', 'down-left')
         }
@@ -931,9 +925,19 @@ define([
 
     show: function () {
       this._gui.hidden = false
+      if (!this.currentDom.parentNode) {
+        fastdom.mutate(function () {
+          this.sup.data.appendChild(this.currentDom)
+        }.bind(this))
+      }
     },
 
     hide: function () {
+      fastdom.mutate(function () {
+        if (this.currentDom.parentNode) {
+          this.currentDom.parentNode.removeChild(this.currentDom)
+        }
+      }.bind(this))
       this._gui.hidden = true
     },
 
@@ -960,7 +964,6 @@ define([
       if (djDate.compare(this.get('trueBegin'), this.get('dateRange').end, 'date') >= 0 ||
         djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0) {
         if (!this._gui.hidden) {
-          this.currentDom.setAttribute('style', 'display: none')
           this.hide()
         }
         return
