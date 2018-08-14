@@ -474,17 +474,23 @@ define([
     },
 
     confirmedDom: function () {
+      var span = document.createElement('SPAN')
       var i = document.createElement('I')
+      span.appendChild(i)
       var ret = this.get('return')
       if (this.is('confirmed') || (ret && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
+        if (ret.creator) {
+          span.setAttribute('data-balloon', ret.creator)
+          span.setAttribute('data-balloon-pos', 'down-left')
+        }
       } else {
         i.setAttribute('class', 'far fa-circle')
       }
 
-      djOn(i, 'click', djLang.hitch(this, this.doConfirm))
+      djOn(span, 'click', djLang.hitch(this, this.doConfirm))
 
-      return i
+      return span
     },
 
     doConfirm: function () {
