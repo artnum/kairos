@@ -681,6 +681,15 @@ define([
 
       this.nCreator.set('store', this.get('userStore'))
       this.nReturnCreator.set('store', this.get('userStore'))
+
+      var changeCreator = function (event) {
+        if (this.get('item')) {
+          window.localStorage.setItem('user', JSON.stringify(this.get('item').id))
+        }
+      }
+      djOn(this.nCreator, 'change', changeCreator.bind(this.nCreator))
+      djOn(this.nReturnCreator, 'change', changeCreator.bind(this.nReturnCreator))
+
       if (!this.loaded.user) {
         fetch(Path.url('store/User')).then(function (response) { return response.json() }).then(function (json) {
           if (json.type === 'results' && json.data && json.data.length > 0) {
