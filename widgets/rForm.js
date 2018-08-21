@@ -140,6 +140,7 @@ define([
         if (store && value) {
           var item = store.get(value)
           if (item) {
+            window.localStorage.setItem('user', JSON.stringify(value))
             this.nCreator.set('item', item)
           }
         }
@@ -153,6 +154,7 @@ define([
         if (store && value) {
           var item = store.get(value)
           if (item) {
+            window.localStorage.setItem('user', JSON.stringify(value))
             this.nReturnCreator.set('item', item)
           }
         }
@@ -690,9 +692,17 @@ define([
           }
           if (that.reservation.get('creator')) {
             that.set('creator', that.reservation.get('creator'))
+          } else {
+            if (window.localStorage.getItem('user')) {
+              that.set('creator', JSON.parse(window.localStorage.getItem('user')))
+            }
           }
           if (that.reservation.get('_return') && that.reservation.get('_return').creator) {
             that.set('returnCreator', that.reservation.get('_return').creator)
+          } else {
+            if (window.localStorage.getItem('user')) {
+              that.set('creator', JSON.parse(window.localStorage.getItem('user')))
+            }
           }
         })
       } else {
@@ -817,6 +827,9 @@ define([
         this.endDate.set('readOnly', true)
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
+        if (window.localStorage.getItem('user')) {
+          this.set('returnCreator', JSON.parse(window.localStorage.getItem('user')))
+        }
       } else {
         this.nBack.setAttribute('style', 'display: none')
         this.endTime.set('readOnly', false)
