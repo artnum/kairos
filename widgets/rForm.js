@@ -124,7 +124,7 @@ define([
       if (this.loaded.warehouse) {
         var store = this.nLocality.get('store')
         if (store) {
-          var item = store.get(value)
+          var item = store.get(value.id)
           if (item) {
             this.nLocality.set('value', item.name)
           }
@@ -643,11 +643,11 @@ define([
           that.nLocality.set('store', new DjMemory({data: data}))
           that.loaded.warehouse = true
           if (that.reservation.get('warehouse')) {
-            that.set('warehouse', that.reservation.get('warehouse'))
+            that.set('warehouse', that.reservation.get('_warehouse'))
           }
         })
       } else {
-        that.set('warehouse', that.reservation.get('warehouse'))
+        that.set('warehouse', that.reservation.get('_warehouse'))
       }
 
       if (this.reservation.is('confirmed') || (this.reservation.get('return') && !this.reservation.get('return').deleted)) {

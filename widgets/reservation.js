@@ -557,16 +557,17 @@ define([
         ident.lastChild.appendChild(i)
       }
 
-      if (this.get('warehouse') !== '' && this.get('warehouse') != null) {
+      if (this.get('warehouse')) {
+        var warehouse = this.get('_warehouse')
         ident.appendChild(document.createElement('SPAN'))
         ident.lastChild.appendChild(document.createTextNode(' '))
         i = document.createElement('I')
         i.setAttribute('class', 'fas fa-bullseye')
-        if (this.get('wcolor')) {
-          i.setAttribute('style', 'color: ' + this.get('wcolor'))
+        if (warehouse.color) {
+          i.setAttribute('style', 'color: ' + warehouse.color)
         }
-        if (this.get('wname')) {
-          ident.lastChild.setAttribute('data-balloon', this.get('wname'))
+        if (warehouse.name) {
+          ident.lastChild.setAttribute('data-balloon', warehouse.name)
           ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
         }
 

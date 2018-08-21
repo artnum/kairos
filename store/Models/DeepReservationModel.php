@@ -36,7 +36,11 @@ class DeepReservationModel extends ReservationModel {
    }
 
    function get($id) {
-      $pre_statement = 'SELECT warehouse.warehouse_name AS w_wname, warehouse.warehouse_color AS w_wcolor, warehouse.warehouse_id AS w_wid, reservation.* FROM reservation LEFT JOIN warehouse ON reservation_warehouse = warehouse_id WHERE reservation_id = :id';
+      $pre_statement = '
+         SELECT warehouse.*, reservation.*, return.* FROM reservation
+               LEFT JOIN warehouse ON reservation.reservation_warehouse = warehouse.warehouse_id
+               LEFT JOIN return ON reservation.reservation_id = return.return_target
+            WHERE reservation_id = :id';
       try {
          $st = $this->DB->prepare($pre_statement);
          $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
@@ -87,7 +91,7 @@ class DeepReservationModel extends ReservationModel {
             $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
             $st->execute();
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $complement) {
-               $ux = $this->unprefix($complement);
+               $ux = $this->unprefix($complement, 'association');
                $ux = $this->_postprocess($ux);
                $pathType = explode('/', str_replace('//', '/', $ux['type']));
                $table = strtolower($pathType[count($pathType) - 2]);
@@ -114,7 +118,7 @@ class DeepReservationModel extends ReservationModel {
             $CModel = new ContactsModel($this->dbs['ldap'], null);
             $contacts = array();
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
-               $contact = $this->unprefix($contact);
+               $contact = $this->unprefix($contact, 'contacts');
                
                /* Request contact */ 
                if($contact['target']) {
@@ -145,7 +149,7 @@ class DeepReservationModel extends ReservationModel {
             /* nothing */
          }
 
-         try {
+         /*try {
             $st = $this->DB->prepare('SELECT * FROM `return` WHERE `return_target` = :target');
             $st->bindParam(':target', $entry['id'], \PDO::PARAM_INT);
             $st->execute();
@@ -159,7 +163,7 @@ class DeepReservationModel extends ReservationModel {
             }
          } catch (\Exception $e) {
 
-         }
+         }*/
          $entry['id'] = (string)$entry['id'];
          return $entry;
       }
