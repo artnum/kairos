@@ -470,7 +470,7 @@ define([
       var i = document.createElement('I')
       span.appendChild(i)
       var ret = this.get('_return')
-      if (this.is('confirmed') || (ret && !ret.deleted)) {
+      if (this.is('confirmed') || (ret && ret.id && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
         if (ret && ret.creator) {
           span.setAttribute('data-balloon', ret.creator)
