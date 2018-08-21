@@ -103,7 +103,7 @@ class DeepReservationModel extends ReservationModel {
                   $subst->bindParam(':value', $subid, \PDO::PARAM_STR);
                   $subst->execute();
                   if($type = $subst->fetchAll(\PDO::FETCH_ASSOC)[0]) {
-                     $_ux = $this->unprefix($type);
+                     $_ux = $this->unprefix($type, $table);
                      $ux['type'] = $_ux;
                   }
                } catch (\Exception $e) {
