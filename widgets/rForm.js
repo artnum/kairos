@@ -47,7 +47,7 @@ define([
   'location/dateentry',
 
   'artnum/dojo/Request',
-  'artnum/dojo/Join'
+  'artnum/Path'
 ], function (
   djDeclare,
   djLang,
@@ -95,7 +95,7 @@ define([
   dateentry,
 
   Req,
-  Join
+  Path
 ) {
   return djDeclare('location.rForm', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
@@ -112,7 +112,7 @@ define([
       this.reservation = args.reservation
       this.contacts = {}
       this.initRequests = []
-      this.loaded = { status: false, warehouse: false, association: false }
+      this.loaded = {status: false, warehouse: false, association: false}
     },
 
     _setDescriptionAttr: function (value) {
@@ -650,7 +650,7 @@ define([
         that.set('warehouse', that.reservation.get('_warehouse'))
       }
 
-      if (this.reservation.is('confirmed') || (this.reservation.get('return') && !this.reservation.get('return').deleted)) {
+      if (this.reservation.is('confirmed') || (this.reservation.get('_return') && !this.reservation.get('_return').deleted)) {
         this.nConfirmed.set('checked', true)
       }
       this.toggleConfirmed()
@@ -702,7 +702,7 @@ define([
     refresh: function () {
       var retval = null
       /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
-      if ((retval = this.reservation.get('return'))) {
+      if ((retval = this.reservation.get('_return'))) {
         if (!retval.deleted) {
           this.nConfirmed.set('checked', true)
         }
@@ -755,7 +755,7 @@ define([
 
     toggleConfirmed: function () {
       if (this.nConfirmed.get('checked')) {
-        var retVal = this.reservation.get('return')
+        var retVal = this.reservation.get('_return')
         if (retVal && retVal.reported) {
           this.nReturnDate.set('value', retVal.reported)
           this.nReturnTime.set('value', retVal.reported)
@@ -908,7 +908,7 @@ define([
     },
 
     doDelete: function (event) {
-      var retval = this.reservation.get('return')
+      var retval = this.reservation.get('_return')
       if (this.reservation.remove()) {
         var that = this
         request.put(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { data: { 'deleted': new Date().toISOString(), 'id': this.reservation.get('IDent') } }).then(function () {
@@ -1029,7 +1029,7 @@ define([
       }
 
       if (this.nConfirmed.get('checked')) {
-        var currentRet = this.reservation.get('return') ? this.reservation.get('return') : {}
+        var currentRet = this.reservation.get('_return') ? this.reservation.get('_return') : {}
         var retVal = {}
         if (f.returnDate) {
           if (f.returnTime) {
@@ -1061,12 +1061,12 @@ define([
         if (currentRet.id) {
           retVal.id = currentRet.id
         }
-        this.reservation.set('return', retVal)
+        this.reservation.set('_return', retVal)
       } else {
-        currentRet = this.reservation.get('return')
+        currentRet = this.reservation.get('_return')
         if (currentRet) {
           Req.del('/location/store/Return/' + currentRet.id)
-          this.reservation.set('return', null)
+          this.reservation.set('_return', null)
         }
       }
 

@@ -469,7 +469,7 @@ define([
       var span = document.createElement('SPAN')
       var i = document.createElement('I')
       span.appendChild(i)
-      var ret = this.get('return')
+      var ret = this.get('_return')
       if (this.is('confirmed') || (ret && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
         if (ret && ret.creator) {
@@ -978,7 +978,7 @@ define([
       }
       var nobegin = false
       var noend = false
-      var returnDone = this.get('return') ? Boolean(this.get('return').done) : false
+      var returnDone = this.get('_return') ? Boolean(this.get('_return').done) : false
 
       /* Last day included */
       var bgcolor = '#FFFFFF'
@@ -1129,7 +1129,7 @@ define([
     },
 
     saveReturn: function () {
-      var values = this.get('return')
+      var values = this.get('_return')
       var suffix = ''
       var method = 'post'
 
