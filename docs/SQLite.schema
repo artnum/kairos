@@ -40,10 +40,8 @@ CREATE TABLE IF NOT EXISTS reservation		( reservation_id INTEGER PRIMARY KEY AUT
 						  reservation_warehouse TEXT DEFAULT NULL
 						);
 
-CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY,
-						  user_name TEXT,
-						  user_password TEXT,
-						  user_salt TEXT
+CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+						  user_name TEXT
 						);
 
 CREATE TABLE IF NOT EXISTS association		( association_id INTEGER PRIMARY KEY,
@@ -93,4 +91,3 @@ CREATE TABLE IF NOT EXISTS return               ( return_id INTEGER PRIMARY KEY,
                                                   return_locality TEXT,
                                                   return_creator TEXT
                                                  );
-

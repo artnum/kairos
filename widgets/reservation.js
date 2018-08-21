@@ -978,7 +978,7 @@ define([
       }
       var nobegin = false
       var noend = false
-      var returnDone = this.get('_return') ? Boolean(this.get('_return').done) : false
+      var returnDone = this.get('_return') ? (this.get('_return').deleted ? false : Boolean(this.get('_return').done)) : false
 
       /* Last day included */
       var bgcolor = '#FFFFFF'

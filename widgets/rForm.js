@@ -112,7 +112,8 @@ define([
       this.reservation = args.reservation
       this.contacts = {}
       this.initRequests = []
-      this.loaded = {status: false, warehouse: false, association: false}
+      this.loaded = {status: false, warehouse: false, association: false, user: false}
+      this.userStore = new DjMemory()
     },
 
     _setDescriptionAttr: function (value) {
@@ -123,10 +124,36 @@ define([
       this._set('warehouse', value)
       if (this.loaded.warehouse) {
         var store = this.nLocality.get('store')
-        if (store) {
+        if (store && value && value.id) {
           var item = store.get(value.id)
           if (item) {
             this.nLocality.set('value', item.name)
+          }
+        }
+      }
+    },
+
+    _setCreatorAttr: function (value) {
+      this._set('creator', value)
+      if (this.loaded.user) {
+        var store = this.nCreator.get('store')
+        if (store && value) {
+          var item = store.get(value)
+          if (item) {
+            this.nCreator.set('item', item)
+          }
+        }
+      }
+    },
+
+    _setReturnCreatorAttr: function (value) {
+      this._set('returnCreator', value)
+      if (this.loaded.user) {
+        var store = this.nReturnCreator.get('store')
+        if (store && value) {
+          var item = store.get(value)
+          if (item) {
+            this.nReturnCreator.set('item', item)
           }
         }
       }
@@ -650,7 +677,29 @@ define([
         that.set('warehouse', that.reservation.get('_warehouse'))
       }
 
-      if (this.reservation.is('confirmed') || (this.reservation.get('_return') && !this.reservation.get('_return').deleted)) {
+      this.nCreator.set('store', this.get('userStore'))
+      this.nReturnCreator.set('store', this.get('userStore'))
+      if (!this.loaded.user) {
+        fetch(Path.url('store/User')).then(function (response) { return response.json() }).then(function (json) {
+          if (json.type === 'results' && json.data && json.data.length > 0) {
+            that.loaded.user = true
+            var store = that.get('userStore')
+            for (var i = 0; i < json.data.length; i++) {
+              store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+            }
+          }
+          if (that.reservation.get('creator')) {
+            that.set('creator', that.reservation.get('creator'))
+          }
+          if (that.reservation.get('_return') && that.reservation.get('_return').creator) {
+            that.set('returnCreator', that.reservation.get('_return').creator)
+          }
+        })
+      } else {
+        that.set('creator', that.reservation.get('creator'))
+      }
+
+      if (this.reservation.is('confirmed') || (this.reservation.get('_return') && this.reservation.get('_return').id && !this.reservation.get('_return').deleted)) {
         this.nConfirmed.set('checked', true)
       }
       this.toggleConfirmed()
@@ -703,7 +752,7 @@ define([
       var retval = null
       /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
       if ((retval = this.reservation.get('_return'))) {
-        if (!retval.deleted) {
+        if (retval.id && !retval.deleted) {
           this.nConfirmed.set('checked', true)
         }
         this.nReturnDone.set('checked', Boolean(retval.done))
@@ -756,7 +805,7 @@ define([
     toggleConfirmed: function () {
       if (this.nConfirmed.get('checked')) {
         var retVal = this.reservation.get('_return')
-        if (retVal && retVal.reported) {
+        if (retVal && retVal.id && retVal.reported) {
           this.nReturnDate.set('value', retVal.reported)
           this.nReturnTime.set('value', retVal.reported)
         } else {
@@ -933,9 +982,9 @@ define([
         return ['Début ou fin manquante', false]
       }
 
-      if (!f.creator) {
+      if (!this.nCreator.get('item')) {
         this.nCreator.set('state', 'Error')
-        return ['Champs responsable de la location manquant', false]
+        return ['Champs responsable de la location manquant ou inconnu', false]
       }
 
       var begin = f.beginDate.join(f.beginTime)
@@ -976,9 +1025,9 @@ define([
         }
       }
       if (this.nConfirmed.get('checked')) {
-        if (f.returnCreator === '') {
+        if (!this.nReturnCreator.get('item')) {
           this.nReturnCreator.set('state', 'Error')
-          return ['Le responsable pour la confirmation de fin est manquant', false]
+          return ['Le responsable pour la confirmation de fin est manquant ou inconnu', false]
         }
       }
 
@@ -1042,7 +1091,9 @@ define([
         retVal.contact = f.returnAddress
         retVal.locality = f.returnLocality
         retVal.other = f.returnKeys
-        retVal.creator = f.returnCreator
+        if (this.nReturnCreator.get('item')) {
+          retVal.creator = this.nReturnCreator.get('item').id
+        }
         if (f.returnDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
         } else if (f.returnDone.length <= 0 && currentRet.done) {
@@ -1091,7 +1142,11 @@ define([
       this.reservation.set('comment', f.nComments)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
-      this.reservation.set('creator', f.creator)
+      if (this.nCreator.get('item')) {
+        this.reservation.set('creator', this.nCreator.get('item').id)
+      } else {
+        this.reservation.set('creator', this.nCreator.get('value'))
+      }
 
       if (f.title !== '') {
         this.reservation.set('title', f.title)
