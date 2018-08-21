@@ -1,3 +1,4 @@
+/* eslint-env browser,amd */
 /* Timeline app -> popup code */
 define([
   'dojo/_base/declare',
@@ -18,7 +19,7 @@ define([
   'dijit/registry',
   'dijit/Dialog',
 
-  'artnum/Request'
+  'artnum/dojo/Request'
 
 ], function (
   djDeclare,

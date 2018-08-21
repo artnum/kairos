@@ -52,7 +52,7 @@ define([
   'location/timeline/filters',
   'location/update',
 
-  'artnum/Request'
+  'artnum/dojo/Request'
 
 ], function (
   djDeclare,

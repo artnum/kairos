@@ -1,7 +1,6 @@
 <?PHP
 require('artnum/autoload.php');
 
-
 $http_request = new artnum\HTTP\JsonRequest();
 $store = new artnum\JStore\Generic($http_request, true);
 

@@ -46,8 +46,8 @@ define([
   'location/bitsfield',
   'location/dateentry',
 
-  'artnum/Request',
-  'artnum/Join'
+  'artnum/dojo/Request',
+  'artnum/dojo/Join'
 ], function (
   djDeclare,
   djLang,

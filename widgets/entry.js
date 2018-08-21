@@ -32,7 +32,7 @@ define([
   'location/_Request',
   'location/update',
 
-  'artnum/Request'
+  'artnum/dojo/Request'
 
 ], function (
   djDeclare,

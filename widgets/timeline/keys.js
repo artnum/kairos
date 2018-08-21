@@ -16,7 +16,7 @@ define([
   'dojo/window',
   'dijit/registry',
 
-  'artnum/Request'
+  'artnum/dojo/Request'
 
 ], function (
   djDeclare,

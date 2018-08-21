@@ -24,9 +24,8 @@ define([
 
   'location/rForm',
   'location/_Mouse',
-  'location/_Request',
 
-  'artnum/Request'
+  'artnum/dojo/Request'
 ], function (
   djDeclare,
   djLang,
@@ -52,7 +51,6 @@ define([
 
   RForm,
   Mouse,
-  request,
 
   Req
 ) {
