@@ -297,8 +297,14 @@ if ($reservation['folder']) {
    $PDF->printTaggedLn(array('%c',  $reservation['folder']));
 }
 if ($reservation['creator']) {
-   $PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
-   $PDF->printTaggedLn(array('%c',  $reservation['creator']));
+   $creator = explode('/', $reservation['creator']);
+   if (count($creator) > 0) {
+      $r = $JClient->get($creator[count($creator) - 1], 'User');
+      if ($r['type'] == 'results') {
+         $PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
+         $PDF->printTaggedLn(array('%c',  $r['data']['name']));
+      }
+   }
 }
 
 

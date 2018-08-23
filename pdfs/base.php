@@ -40,7 +40,7 @@ class LocationPDF extends artnum\PDF {
    }
 }
 
-function format_address($addr) {
+function format_address($addr, $options = array()) {
    $lines = array();
 
    if($addr['type'] == 'db') {
@@ -92,7 +92,11 @@ function format_address($addr) {
       }
 
       if(isset($addr['mobile']) || isset($addr['telephonenumber'])) {
-         $lines[] = isset($addr['mobile']) ?  trim($addr['mobile']) : trim($addr['telephonenumber']);
+         if (!isset($options['prefer-telephone']) && !$options['prefer-telephone']) {
+            $lines[] = isset($addr['mobile']) ?  trim($addr['mobile']) : trim($addr['telephonenumber']);
+         } else {
+            $lines[] = isset($addr['telephonenumber']) ?  trim($addr['telephonenumber']) : trim($addr['mobile']);
+         }
       }
       if(isset($addr['mail'])) {
          $lines[] = trim($addr['mail']);
