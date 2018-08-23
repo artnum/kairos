@@ -160,9 +160,9 @@ if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
 
-if(!empty($reservation['address']) || !empty($reservation['locality']) || !empty($reservation['warehouse'])) {
-   if (!empty($reservation['warehouse'])) {
-      $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' ,$reservation['wname']));
+if(!empty($reservation['address']) || !empty($reservation['locality']) || !empty($reservation['_warehouse'])) {
+   if (!empty($reservation['_warehouse'])) {
+      $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' ,$reservation['_warehouse']['name']));
    } else {
       $line = '';
       if(!empty($reservation['address'])) {
