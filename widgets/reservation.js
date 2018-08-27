@@ -172,7 +172,9 @@ define([
     },
 
     modified: function () {
-      setTimeout(function () { this.Channel.postMessage({op: 'touch', id: this.get('id')}) }.bind(this), 1500)
+      if (!this.get('deleted')) {
+        setTimeout(function () { this.Channel.postMessage({op: 'touch', id: this.get('id')}) }.bind(this), 1500)
+      }
     },
 
     update: function () {

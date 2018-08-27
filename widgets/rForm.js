@@ -41,8 +41,6 @@ define([
 
   'location/contacts',
   'location/card',
-  'location/_Cluster',
-  'location/_Request',
   'location/bitsfield',
   'location/dateentry',
 
@@ -90,8 +88,6 @@ define([
 
   Contacts,
   Card,
-  _Cluster,
-  request,
   bitsfield,
   dateentry,
 
@@ -100,7 +96,7 @@ define([
   Query
 ) {
   return djDeclare('location.rForm', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
+    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
     baseClass: 'rForm',
     templateString: _template,
     contacts: {},
@@ -412,7 +408,8 @@ define([
       }
 
       if (id != null) {
-        request.del(locationConfig.store + '/Association/' + id).then(function () {
+        var url = Path.url('store/Association/' + id)
+        Query.exec(url, {method: 'DELETE'}).then(function () {
           that.associationRefresh()
         })
       }
@@ -492,11 +489,13 @@ define([
       }
 
       if (query['id'] == null) {
-        request.post('/location/store/Association/', {query: query}).then(function () {
+        var url = Path.url('store/Association')
+        Query.exec(url, {method: 'post', body: query}).then(function () {
           that.associationRefresh().then(() => { that.reservation.resize() })
         })
       } else {
-        request.put(locationConfig.store + '/Association/' + query['id'], { query: query }).then(() => {
+        url = Path.url('store/Association/' + query['id'])
+        Query.exec(url, {method: 'patch', body: query}).then(() => {
           that.associationRefresh().then(() => { that.reservation.resize() })
 
           that.nComplementId.value = ''
@@ -576,7 +575,6 @@ define([
       this.initCancel()
 
       var that = this
-      var r
       this.nMachineChange.set('value', this.reservation.get('target'))
 
       if (this.reservation.get('creator')) {
@@ -625,58 +623,53 @@ define([
       }
 
       if (!this.loaded.status) {
-        r = request.get(locationConfig.store + '/Status/', {query: {'search.type': 0}})
-        this.initRequests.push(r)
-
-        r.then(djLang.hitch(this, function (results) {
-          if (results.type === 'results') {
-            var def
-            for (var i = 0; i < results.data.length; i++) {
-              var d = results.data[i]
-              if (d.default === '1') { def = d.id }
-              this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id })
-            }
+        url = Path.url('store/Status')
+        url.searchParams.set('search.type', 0)
+        var results = await Query.exec(url)
+        if (results.type === 'results') {
+          var def
+          for (var i = 0; i < results.data.length; i++) {
+            var d = results.data[i]
+            if (d.default === '1') { def = d.id }
+            this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id })
           }
-          if (def) {
-            this.nStatus.set('value', def)
-          }
-          this.loaded.status = true
-        }))
+        }
+        if (def) {
+          this.nStatus.set('value', def)
+        }
+        this.loaded.status = true
       }
 
       if (!this.loaded.association) {
-        r = request.get(locationConfig.store + '/Status/', {query: { 'search.type': 1 }})
-        this.initRequests.push(r)
-        r.then(function (results) {
-          if (results.type === 'results') {
-            results.data.forEach(function (d) {
-              that.nAssociationType.addOption({
-                label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-                value: locationConfig.store + '/Status/' + d.id
-              })
+        url = Path.url('store/Status')
+        url.searchParams.set('search.type', 1)
+        results = await Query.exec(url)
+        if (results.type === 'results') {
+          results.data.forEach(function (d) {
+            that.nAssociationType.addOption({
+              label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
+              value: locationConfig.store + '/Status/' + d.id
             })
-          }
-          that.loaded.association = true
-        })
+          })
+        }
+        that.loaded.association = true
       }
 
       if (!this.loaded.warehouse) {
-        r = request.get(locationConfig.store + '/Warehouse/')
-        this.initRequests.push(r)
-        r.then(function (results) {
-          var data = []
-          results.data.forEach(function (d) {
-            data.push({
-              name: 'Dépôt ' + d.name,
-              id: d.id
-            })
+        url = Path.url('store/Warehouse')
+        results = await Query.exec(url)
+        var data = []
+        results.data.forEach(function (d) {
+          data.push({
+            name: 'Dépôt ' + d.name,
+            id: d.id
           })
-          that.nLocality.set('store', new DjMemory({data: data}))
-          that.loaded.warehouse = true
-          if (that.reservation.get('warehouse')) {
-            that.set('warehouse', that.reservation.get('_warehouse'))
-          }
         })
+        that.nLocality.set('store', new DjMemory({data: data}))
+        that.loaded.warehouse = true
+        if (that.reservation.get('warehouse')) {
+          that.set('warehouse', that.reservation.get('_warehouse'))
+        }
       } else {
         that.set('warehouse', that.reservation.get('_warehouse'))
       }
@@ -738,22 +731,20 @@ define([
       url.searchParams.set('search.reservation', this.reservation.get('id'))
       var res = await Query.exec(url)
       if (res.length > 0) {
-        res.data.forEach(djLang.hitch(this, function (contact) {
+        res.data.forEach(djLang.hitch(this, async function (contact) {
           if (contact.freeform) {
             contact.linkId = contact.id
             this.createContact(contact, contact.comment)
           } else {
             var linkId = contact.id
             var comment = contact.comment
-            r = request.get(locationConfig.store + contact.target)
-            this.initRequests.push(r)
-            r.then(djLang.hitch(this, function (entry) {
-              if (entry.success()) {
-                var e = entry.first()
-                e.linkId = linkId
-                this.createContact(e, comment)
-              }
-            }))
+            url = Path.url('store/' + contact.target)
+            results = await Query.exec(url)
+            if (results.length > 0) {
+              var e = results.data[0]
+              e.linkId = linkId
+              this.createContact(e, comment)
+            }
           }
         }))
       }
@@ -872,7 +863,8 @@ define([
         onClose: function (event) {
           var sup = this.contactSup
           if (confirm('Supprimer le contact ' + this.contactCard.getType(this.contactType))) {
-            request.del(locationConfig.store + '/ReservationContact/' + this.contactLinkId).then(function () {
+            var url = Path.url('store/ReservationContact/' + this.contactLinkId)
+            Query.exec(url, {method: 'delete'}).then(function () {
               event.removeChild(this)
               this.contactSup.reservation.modified()
               for (var i in sup.contacts) {
@@ -909,33 +901,37 @@ define([
       }
 
       if (id != null) {
-        request.get(locationConfig.store + '/ReservationContact/', { query: {
-          'search.reservation': this.reservation.get('id'),
-          'search.target': id,
-          'search.comment': type
-        }}).then(djLang.hitch(this, function (results) {
-          if (results.count() === 0) {
-            request.post(locationConfig.store + '/ReservationContact/', {method: 'post', query: { reservation: that.reservation.get('id'), comment: type, freeform: null, target: id }})
-              .then(djLang.hitch(this, function (results) {
-                request.get(locationConfig.store + '/' + id, { skipCache: true }).then(djLang.hitch(this, function (c) {
-                  var e = c.first()
-                  e.linkId = results.first().id
+        var url = Path.url('store/ReservationContact')
+        url.searchParams.set('search.reservation', this.reservation.get('id'))
+        url.searchParams.set('search.target', id)
+        url.searchParams.set('search.comment', type)
+        Query.exec(url).then(djLang.hitch(this, function (results) {
+          if (results.length === 0) {
+            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: that.reservation.get('id'), comment: type, freeform: null, target: id}}).then(djLang.hitch(this, function (result) {
+              if (!result.success) {
+                return
+              }
+              Query.exec('store/' + id).then(djLang.hitch(this, function (c) {
+                if (c.length > 0) {
+                  var e = c.data[0]
+                  e.linkId = result.data.id
                   that.createContact(e, type, true)
                   that.reservation.modified()
-                }))
+                }
               }))
+            }))
           }
         }))
       } else {
-        request.get(locationConfig.store + '/ReservationContact', { query: {
-          'search.reservation': this.reservation.get('id'),
-          'search.comment': type,
-          'search.freeform': options.freeform}}).then(djLang.hitch(this, function (results) {
-          if (results.count() === 0) {
-            request.post(locationConfig.store + '/ReservationContact/', { query: {
-              reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
-              if (result.success()) {
-                options.linkId = result.first().id
+        url = Path.url('store/ReservationContact')
+        url.searchParams.set('search.reservation', this.reservation.get('id'))
+        url.searchParams.set('search.target', id)
+        url.searchParams.set('search.freeform', options.freeform)
+        Query.exec(url).then(djLang.hitch(this, function (results) {
+          if (results.length === 0) {
+            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
+              if (result.success) {
+                options.linkId = result.id
                 that.createContact(options, type, true)
                 that.reservation.modified()
               }
@@ -984,13 +980,13 @@ define([
     doDelete: function (event) {
       var retval = this.reservation.get('_return')
       if (this.reservation.remove()) {
-        var that = this
-        request.put(locationConfig.store + '/Reservation/' + this.reservation.get('IDent'), { data: { 'deleted': new Date().toISOString(), 'id': this.reservation.get('IDent') } }).then(function () {
-          if (retval && retval.id) {
-            request.del(locationConfig.store + '/Return/' + retval.id)
-          }
-          that.hide()
-        })
+        if (retval && retval.id) {
+          Query.exec(Path.url('store/Return/' + retval.id), {method: 'delete'})
+        }
+        Query.exec(Path.url('store/Reservation/' + this.reservation.get('id')), {method: 'delete'}).then(function (result) {
+          this.reservation.destroy()
+          this.hide()
+        }.bind(this))
       }
     },
 

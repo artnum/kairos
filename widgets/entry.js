@@ -28,8 +28,6 @@ define([
 
   'location/reservation',
   'location/rForm',
-  'location/_Cluster',
-  'location/_Request',
   'location/update',
 
   'artnum/dojo/Request'
@@ -62,15 +60,12 @@ define([
   Reservation,
   rForm,
 
-  _Cluster,
-  request,
   update,
 
   Req
 
 ) {
-  return djDeclare('location.entry', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster, update ], {
+  return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
 
     baseClass: 'entry',
     templateString: _template,
@@ -671,7 +666,7 @@ define([
 
       for (var k in this.entries) {
         if (!this.entries[k].get('displayed')) {
-          if(this.entries[k].domNode) {
+          if (this.entries[k].domNode) {
             frag.appendChild(this.entries[k].domNode)
           }
           this.entries[k].set('displayed', true)

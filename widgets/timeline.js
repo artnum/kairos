@@ -44,8 +44,6 @@ define([
   'dijit/Calendar',
   'dijit/Dialog',
 
-  'location/_Cluster',
-  'location/_Request',
   'location/entry',
   'location/timeline/popup',
   'location/timeline/keys',
@@ -98,8 +96,6 @@ define([
   dtCalendar,
   Dialog,
 
-  _Cluster,
-  request,
   entry,
 
   tlPopup, tlKeys, update, Filters,
@@ -109,7 +105,7 @@ define([
   Query
 ) {
   return djDeclare('location.timeline', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster,
+    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters ], {
 
     center: null,
@@ -1315,10 +1311,10 @@ define([
       this.currentPosition = 0
       this.update()
 
-      request.get('https://aircluster.local.airnace.ch/store/Machine').then(function (response) {
-        that.setServers(locationConfig.servers)
-        if (response.success()) {
-          var whole = response.whole()
+      Query.exec(new URL('https://aircluster.local.airnace.ch/store/Machine')).then(function (response) {
+        /* TODO when updated completly use new fetch api */
+        if (response.data) {
+          var whole = response.data
           whole.sort(function (a, b) {
             if (parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };
             if (parseInt(a.description, 10) > parseInt(b.description, 10)) { return 1 };
@@ -1326,7 +1322,7 @@ define([
           })
 
           var inc = 0
-          var category = new Object()
+          var category = {}
           for (var i = 0; i < whole.length; i++) {
             var machine = whole[i]
             var groupName = 'group' + (inc % 2)
@@ -1373,7 +1369,6 @@ define([
               }
 
               djDomClass.add(e.domNode, groupName)
-              e.setServers(locationConfig.servers)
               that.addEntry(e)
               loaded.push(e.loaded)
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
@@ -1387,7 +1382,6 @@ define([
                   }
                   djDomClass.add(e.domNode, groupName)
 
-                  e.setServers(locationConfig.servers)
                   that.addEntry(e)
                   loaded.push(e.loaded)
                 })
@@ -1401,7 +1395,6 @@ define([
                 }
 
                 djDomClass.add(e.domNode, groupName)
-                e.setServers(locationConfig.servers)
                 that.addEntry(e)
                 loaded.push(e.loaded)
               }
@@ -1437,7 +1430,7 @@ define([
         end.setTime(end.getTime() + 604800000)
 
         this.Updater.postMessage({type: 'move',
-          content: [this.getUrl(locationConfig.store + '/DeepReservation'), {
+          content: [String(Path.url('store/DeepReservation')), {
             query: { 'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
               'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
               'search.deleted': '-'}}]

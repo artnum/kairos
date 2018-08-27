@@ -32,8 +32,8 @@ define([
   'dijit/registry',
 
   'location/card',
-  'location/_Request'
-
+  'artnum/Path',
+  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
@@ -66,7 +66,8 @@ define([
   dtRegistry,
 
   Card,
-  request
+  Path,
+  Query
 ) {
   return djDeclare('location.contacts', [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
     baseClass: 'contacts',
@@ -117,18 +118,17 @@ define([
         terms[i] = '=*' + terms[i] + '*'
       }
 
-      request.get(locationConfig.store + '/Contacts/',
-        { query: {
-          'search.sn': terms,
-          'search.givenname': terms,
-          'search.o': terms,
-          'search._sn': 'or',
-          'search._givenname': 'or'
-        } }).then(djLang.hitch(this, function (res) {
+      var url = Path.url('store/Contacts')
+      url.searchParams.set('search.sn', terms)
+      url.searchParams.set('search.givenname', terms)
+      url.searchParams.set('search.o', terms)
+      url.searchParams.set('search._sn', 'or')
+      url.searchParams.set('search._givenname', 'or')
+      Query.exec(url).then(djLang.hitch(this, function (res) {
         var frag = document.createDocumentFragment()
         frag.appendChild(document.createElement('DIV'))
         frag.lastChild.setAttribute('class', 'results')
-        if (res.data.length === 0) {
+        if (res.length === 0) {
           frag.lastChild.appendChild(document.createTextNode('Pas de résultats'))
         } else {
           res.data.forEach(djLang.hitch(this, function (entry) {

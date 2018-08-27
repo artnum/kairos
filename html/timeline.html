@@ -74,10 +74,9 @@ dojoConfig = {
 		"location/entry",
 		"dojo/request/xhr",
 		"dijit/registry",
-		"location/_Request",
 		"dijit/Dialog",
 		"dojo/domReady!"
-	], function (djLang, timeline, entry, djXhr, dtRegistry, request, dtDialog) {
+	], function (djLang, timeline, entry, djXhr, dtRegistry, dtDialog) {
 		wantdb( () => {
 			window.App = new timeline();
 			window.App.DB = DB;
