@@ -217,16 +217,8 @@ define([
         }
       }.bind(this)
 
-      this.currentDom = document.createElement('DIV')
       this._gui.hidden = true
-
-      this.originalTop = djDomStyle.get(this.currentDom, 'top')
       this.set('active', false)
-      djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
-      djOn(this.currentDom, 'mousedown', djLang.hitch(this, this.isolateMe))
-      djOn(this.currentDom, 'mouseup', djLang.hitch(this, this.cancelIsolation))
-      djOn(this.currentDom, 'mousemove', djLang.hitch(this, this.cancelIsolation))
-
       this.resize()
     },
 
@@ -922,6 +914,7 @@ define([
           if (this.currentDom.parentNode) {
             this.currentDom.parentNode.removeChild(this.currentDom)
           }
+          delete this.currentDom
         }
       }.bind(this))
       this.destroyed = true
@@ -933,16 +926,30 @@ define([
 
     show: function () {
       this._gui.hidden = false
+      if (!this.currentDom) {
+        this.currentDom = document.createElement('DIV')
+      }
+
+      djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
+      djOn(this.currentDom, 'mousedown', djLang.hitch(this, this.isolateMe))
+      djOn(this.currentDom, 'mouseup', djLang.hitch(this, this.cancelIsolation))
+      djOn(this.currentDom, 'mousemove', djLang.hitch(this, this.cancelIsolation))
+
       if (!this.currentDom.parentNode) {
         fastdom.mutate(function () {
           this.sup.data.appendChild(this.currentDom)
+          if (!this.originalTop) {
+            fastdom.measure(function () {
+              this.originalTop = djDomStyle.get(this.currentDom, 'top')
+            }.bind(this))
+          }
         }.bind(this))
       }
     },
 
     hide: function () {
       fastdom.mutate(function () {
-        if (this.currentDom.parentNode) {
+        if (this.currentDom && this.currentDom.parentNode) {
           this.currentDom.parentNode.removeChild(this.currentDom)
         }
       }.bind(this))
@@ -960,8 +967,6 @@ define([
       if (!this.get('begin') || !this.get('end')) {
         this.hide()
         return
-      } else {
-        this.show()
       }
 
       if (!fromEntry) {
@@ -975,9 +980,9 @@ define([
           this.hide()
         }
         return
-      } else {
-        this.show()
       }
+
+      this.show()
       var nobegin = false
       var noend = false
       var returnDone = this.get('_return') ? (this.get('_return').deleted ? false : Boolean(this.get('_return').done)) : false
