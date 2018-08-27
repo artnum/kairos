@@ -13,6 +13,7 @@ if (!file_exists($sigfile) && $file->writable($sigfile)) {
 }
 
 $pdo_db = new PDO('sqlite:location.sqlite');
+$pdo_db->exec('PRAGMA foreign_keys = YES;');
 $ldap_db = new artnum\LDAPDB(
          array(
                array('uri' => 'ldap://airserve01.local.airnace.ch', 
