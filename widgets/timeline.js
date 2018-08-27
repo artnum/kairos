@@ -52,7 +52,9 @@ define([
   'location/timeline/filters',
   'location/update',
 
-  'artnum/dojo/Request'
+  'artnum/dojo/Request',
+  'artnum/Path',
+  'artnum/Query'
 
 ], function (
   djDeclare,
@@ -102,7 +104,9 @@ define([
 
   tlPopup, tlKeys, update, Filters,
 
-  Req
+  Req,
+  Path,
+  Query
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster,
@@ -299,12 +303,17 @@ define([
 
     defaultStatus: function () {
       var def = new djDeferred()
-      request.get(locationConfig.store + '/Status/', {query: {'search.default': 1, 'search.type': 0}}).then(function (result) {
-        if (result.success()) {
-          def.resolve(result.whole()[0].id)
+      var url = Path.url('store/Status')
+      url.searchParams.set('search.default', 1)
+      url.searchParams.set('search.type', 0)
+      Query.exec(url).then(function (result) {
+        if (result.length > 0) {
+          def.resolve(result.data[0].id)
+        } else {
+          def.resolve('0')
         }
-        def.resolve('0')
       })
+
       return def.promise
     },
 

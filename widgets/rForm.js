@@ -47,7 +47,8 @@ define([
   'location/dateentry',
 
   'artnum/dojo/Request',
-  'artnum/Path'
+  'artnum/Path',
+  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
@@ -95,7 +96,8 @@ define([
   dateentry,
 
   Req,
-  Path
+  Path,
+  Query
 ) {
   return djDeclare('location.rForm', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, _Cluster ], {
@@ -570,7 +572,7 @@ define([
       this.load()
     },
 
-    load: function () {
+    load: async function () {
       this.initCancel()
 
       var that = this
@@ -696,7 +698,9 @@ define([
             that.loaded.user = true
             var store = that.get('userStore')
             for (var i = 0; i < json.data.length; i++) {
-              store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+              if (!store.get('/store/User/' + json.data[i].id)) {
+                store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+              }
             }
           }
           if (that.reservation.get('creator')) {
@@ -730,30 +734,29 @@ define([
       }
       this.toggleDelivery()
 
-      r = request.get(locationConfig.store + '/ReservationContact/', {query: { 'search.reservation': this.reservation.get('id') }})
-      this.initRequests.push(r)
-      r.then(djLang.hitch(this, function (res) {
-        if (res.success()) {
-          res.whole().forEach(djLang.hitch(this, function (contact) {
-            if (contact.freeform) {
-              contact.linkId = contact.id
-              this.createContact(contact, contact.comment)
-            } else {
-              var linkId = contact.id
-              var comment = contact.comment
-              r = request.get(locationConfig.store + contact.target)
-              this.initRequests.push(r)
-              r.then(djLang.hitch(this, function (entry) {
-                if (entry.success()) {
-                  var e = entry.first()
-                  e.linkId = linkId
-                  this.createContact(e, comment)
-                }
-              }))
-            }
-          }))
-        }
-      }))
+      url = Path.url('store/ReservationContact')
+      url.searchParams.set('search.reservation', this.reservation.get('id'))
+      var res = await Query.exec(url)
+      if (res.length > 0) {
+        res.data.forEach(djLang.hitch(this, function (contact) {
+          if (contact.freeform) {
+            contact.linkId = contact.id
+            this.createContact(contact, contact.comment)
+          } else {
+            var linkId = contact.id
+            var comment = contact.comment
+            r = request.get(locationConfig.store + contact.target)
+            this.initRequests.push(r)
+            r.then(djLang.hitch(this, function (entry) {
+              if (entry.success()) {
+                var e = entry.first()
+                e.linkId = linkId
+                this.createContact(e, comment)
+              }
+            }))
+          }
+        }))
+      }
 
       djAll(this.initRequests).then(djLang.hitch(this, () => {
         if (this.reservation.get('status')) {

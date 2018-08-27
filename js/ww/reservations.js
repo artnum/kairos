@@ -13,7 +13,7 @@ new IdxDB().then(function (db) {
     return new Promise(function (resolve, reject) {
       var method = data.id ? 'PUT' : 'POST'
       var url = data.id ? '/' + String(data.id) : '/'
-      fetch('/location/store/Reservation/' + url, Object.assign(fetchInit, {method: method, body: JSON.stringify(data)})).then(function (response) {
+      fetch('/location/store/Reservation/' + url, Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
         response.json().then(function (data) {
           if (data.type === 'results') {
             if (data.data.success) {
@@ -82,7 +82,7 @@ new IdxDB().then(function (db) {
     switch (msg.data.op) {
       case 'touch':
         if (msg.data.id) {
-          fetch('/location/store/Reservation/' + String(msg.data.id), Object.assign(fetchInit, {method: 'PUT', body: JSON.stringify({id: msg.data.id})}))
+          fetch('/location/store/Reservation/' + String(msg.data.id), Object.assign({method: 'PUT', body: JSON.stringify({id: msg.data.id})}, fetchInit))
         }
         break
       case 'put':
