@@ -223,7 +223,7 @@ if(isset($reservation['equipment']) || ( is_array($reservation['complements']) &
 if( is_array($reservation['complements']) && count($reservation['complements']) > 0) {
    $association = array();
    foreach($reservation['complements'] as $complement) {
-      if($association[$complement['type']['name']]) {
+      if(isset($association[$complement['type']['name']])) {
          $association[$complement['type']['name']][] = $complement;
       } else {
          $association[$complement['type']['name']] = array($complement);
