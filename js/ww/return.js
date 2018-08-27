@@ -1,8 +1,9 @@
 /* eslint-env worker */
-/* global IdxDB */
+/* global IdxDB, Artnum */
 'use strict'
 
 importScripts('../localdb.js')
+importScripts('https://artnum.ch/code/js/Path.js')
 
 var findLastMod = function (db) {
   return new Promise(function (resolve, reject) {
@@ -32,7 +33,10 @@ var findLastMod = function (db) {
 }
 
 var fetchLastMod = function (lastmod, db) {
-  fetch('/location/store/Return?long=1&search.modification=>' + lastmod).then(function (response) {
+  var url = Artnum.Path.url('store/Return')
+  url.searchParams.append('long', '1')
+  url.searchParams.append('search.modification', '>' + lastmod)
+  fetch(url).then(function (response) {
     if (response.ok) {
       response.json().then(function (values) {
         if (values.type === 'results') {

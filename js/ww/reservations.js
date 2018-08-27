@@ -3,6 +3,7 @@
 'use strict'
 importScripts('../localdb.js')
 
+var fetchInit = {credentials: 'same-origin'}
 new IdxDB().then(function (db) {
   console.log('Start reservation thread')
 
@@ -12,7 +13,7 @@ new IdxDB().then(function (db) {
     return new Promise(function (resolve, reject) {
       var method = data.id ? 'PUT' : 'POST'
       var url = data.id ? '/' + String(data.id) : '/'
-      fetch('/location/store/Reservation/' + url, {method: method, body: JSON.stringify(data)}).then(function (response) {
+      fetch('/location/store/Reservation/' + url, Object.assign(fetchInit, {method: method, body: JSON.stringify(data)})).then(function (response) {
         response.json().then(function (data) {
           if (data.type === 'results') {
             if (data.data.success) {
@@ -27,7 +28,7 @@ new IdxDB().then(function (db) {
   var get = function (id, force = false) {
     return new Promise(function (resolve, reject) {
       var queryServer = function () {
-        fetch('/location/store/DeepReservation/' + id).then(function (response) {
+        fetch('/location/store/DeepReservation/' + id, fetchInit).then(function (response) {
           response.json().then(function (data) {
             try {
               data['_lastfetch'] = new Date().toISOString()
@@ -81,7 +82,7 @@ new IdxDB().then(function (db) {
     switch (msg.data.op) {
       case 'touch':
         if (msg.data.id) {
-          fetch('/location/store/Reservation/' + String(msg.data.id), {method: 'PUT', body: JSON.stringify({id: msg.data.id})})
+          fetch('/location/store/Reservation/' + String(msg.data.id), Object.assign(fetchInit, {method: 'PUT', body: JSON.stringify({id: msg.data.id})}))
         }
         break
       case 'put':

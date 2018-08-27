@@ -4,6 +4,7 @@
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 
+var fetchInit = {credentials: 'same-origin'}
 var Entries = {}
 var today = new Date().toISOString().split('T')[0]
 
@@ -93,7 +94,7 @@ new IdxDB().then(function (db) {
         var subkeys = keys.splice(0, 200)
         var strkeys = subkeys.join('|')
 
-        fetch('/location/store/Reservation/|' + strkeys).then(function (response) {
+        fetch('/location/store/Reservation/|' + strkeys, fetchInit).then(function (response) {
           response.json().then(function (data) {
             var entries = data.data
             var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
@@ -119,7 +120,7 @@ new IdxDB().then(function (db) {
   }
 
   function deleted (db) {
-    fetch('/location/store/Reservation?search.deleted=>=' + today).then(function (response) {
+    fetch('/location/store/Reservation?search.deleted=>=' + today, fetchInit).then(function (response) {
       response.json().then(function (data) {
         if (data.type === 'results' && data.data.length > 0) {
           var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
@@ -135,7 +136,6 @@ new IdxDB().then(function (db) {
       setTimeout(function () { deleted(db) }, 15000)
     })
   }
-
 
   cleaner(db)
   deleted(db)

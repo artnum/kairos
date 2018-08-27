@@ -691,7 +691,7 @@ define([
       djOn(this.nReturnCreator, 'change', changeCreator.bind(this.nReturnCreator))
 
       if (!this.loaded.user) {
-        fetch(Path.url('store/User')).then(function (response) { return response.json() }).then(function (json) {
+        fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
           if (json.type === 'results' && json.data && json.data.length > 0) {
             that.loaded.user = true
             var store = that.get('userStore')
