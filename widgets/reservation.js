@@ -931,10 +931,6 @@ define([
       }
 
       djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
-      djOn(this.currentDom, 'mousedown', djLang.hitch(this, this.isolateMe))
-      djOn(this.currentDom, 'mouseup', djLang.hitch(this, this.cancelIsolation))
-      djOn(this.currentDom, 'mousemove', djLang.hitch(this, this.cancelIsolation))
-
       if (!this.currentDom.parentNode) {
         fastdom.mutate(function () {
           this.sup.data.appendChild(this.currentDom)
@@ -1106,14 +1102,16 @@ define([
         var compdiv = this._drawComplement()
         txtdiv.appendChild(tools)
 
-        fastdom.mutate(djLang.hitch(this, function () {
-          this.currentDom.innerHTML = ''
-          this.currentDom.setAttribute('style', domstyle.join(';'))
-          this.currentDom.setAttribute('class', domclass.join(' '))
-          this.currentDom.appendChild(compdiv)
-          this.currentDom.appendChild(txtdiv)
-          this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
-        }))
+        if (this.currentDom) {
+          fastdom.mutate(djLang.hitch(this, function () {
+            this.currentDom.innerHTML = ''
+            this.currentDom.setAttribute('style', domstyle.join(';'))
+            this.currentDom.setAttribute('class', domclass.join(' '))
+            this.currentDom.appendChild(compdiv)
+            this.currentDom.appendChild(txtdiv)
+            this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
+          }))
+        }
       }))
     },
 
