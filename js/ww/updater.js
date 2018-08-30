@@ -67,6 +67,7 @@ new IdxDB().then(function (DB) {
     if (r && r.data && r.data.length > 0) {
       for (let i = 0; i < r.data.length; i++) {
         var mod = new Date()
+        if (!r.data[i]) { continue }
         mod.setTime(Date.parse(r.data[i].modification))
         if (mod) {
           if (last.modification == null) {
@@ -96,7 +97,7 @@ new IdxDB().then(function (DB) {
               } else {
                 if (result._hash !== reservation._hash) {
                   DB.transaction('reservations', 'readwrite').objectStore('reservations').put(reservation)
-                  RChannel.postMessage({op: 'response', new: false, unchanged: false, deleted: false, data: reservation})
+                  RChannel.postMessage({op: 'response', id: reservation.id, new: false, unchanged: false, deleted: false, data: reservation})
                 }
               }
             }

@@ -49,6 +49,7 @@ define([
   'location/timeline/keys',
   'location/timeline/filters',
   'location/update',
+  'location/count',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -58,7 +59,7 @@ define([
   djDeclare,
   djLang,
   djEvented,
-  djDeferred,
+  DjDeferred,
   dtWidgetBase,
   dtTemplatedMixin,
   dtWidgetsInTemplateMixin,
@@ -81,25 +82,26 @@ define([
   djWindow,
   djAll,
   dtRegistry,
-  dtDateTextBox,
+  DtDateTextBox,
   dtNumberTextBox,
   dtButton,
   dtMenuBar,
   dtMenuBarItem,
   dtPopupMenuBarItem,
-  dtDropDownMenu,
+  DtDropDownMenu,
   DtMenuItem,
-  dtMenuSeparator,
+  DtMenuSeparator,
   dtCheckedMenuItem,
   dtRadioMenuItem,
-  dtPopupMenuItem,
-  dtCalendar,
+  DtPopupMenuItem,
+  DtCalendar,
   Dialog,
 
-  entry,
+  Entry,
 
   tlPopup, tlKeys, update, Filters,
 
+  Count,
   Req,
   Path,
   Query
@@ -298,7 +300,7 @@ define([
     },
 
     defaultStatus: function () {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var url = Path.url('store/Status')
       url.searchParams.set('search.default', 1)
       url.searchParams.set('search.type', 0)
@@ -601,14 +603,21 @@ define([
       djOn(window, 'keypress', djLang.hitch(this, this.keys))
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
-      window.addEventListener('wheel', djLang.hitch(this, this.eWheel))
-      window.addEventListener('mousemove', djLang.hitch(this, this.mouseOver))
+      djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
+      djOn(this.domNode, 'mousemove', djLang.hitch(this, this.mouseOver))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
           if (window.location.hash) {
             if (Number(window.location.hash.substr(1))) {
               that.doSearchLocation(window.location.hash.substr(1))
+            } else {
+              var sub = window.location.hash.substr(1)
+              switch (String(sub.substr(0, 3)).toLowerCase()) {
+                case 'dec':
+                  new Count({'data-id': sub.substr(3)})
+                  break
+              }
             }
           }
         }, 500)
@@ -664,7 +673,7 @@ define([
       that.searchMenu.addChild(item)
       that.searchMenu.filterNone = item
 
-      that.searchMenu.addChild(new dtMenuSeparator())
+      that.searchMenu.addChild(new DtMenuSeparator())
 
       Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
         if (response && response.data && response.data.length > 0) {
@@ -675,13 +684,13 @@ define([
 
           for (var key in that.categories) {
             if (names[key]) {
-              var item = new dtPopupMenuItem({label: names[key], popup: new dtDropDownMenu()})
+              var item = new DtPopupMenuItem({label: names[key], popup: new DtDropDownMenu()})
               that.searchMenu.addChild(item)
 
               var all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
               djOn(all, 'click', djLang.hitch(that, that.filterFamily))
               item.popup.addChild(all)
-              item.popup.addChild(new dtMenuSeparator())
+              item.popup.addChild(new DtMenuSeparator())
 
               for (var subkey in that.categories[key]) {
                 if (names[subkey]) {
@@ -695,21 +704,20 @@ define([
           }
         }
 
-        that.searchMenu.addChild(new dtMenuSeparator())
+        that.searchMenu.addChild(new DtMenuSeparator())
 
         /* */
 
         Req.get(locationConfig.store + '/Status/').then((results) => {
           if (results && results.data && results.data.length > 0) {
-            var p = new dtPopupMenuItem({label: 'Par status', popup: new dtDropDownMenu()})
+            var p = new DtPopupMenuItem({label: 'Par status', popup: new DtDropDownMenu()})
             results.data.forEach(djLang.hitch(this, function (entry) {
-              if (entry.type === "0") {
+              if (entry.type === '0') {
                 var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
                 var item = new DtMenuItem({label: html, value: entry})
                 djOn(item, 'click', djLang.hitch(that, (event) => {
                   var node = dtRegistry.byNode(event.selectorTarget)
                   this.wait()
-                  var date = dtRegistry.byId('menuTodoDay').get('value')
                   this.Filter.postMessage({ ops: [
                     {filter: 'equal', params: { value: Number(node.value.id), attribute: 'status' }}
                   ]})
@@ -721,7 +729,7 @@ define([
             }))
             that.searchMenu.addChild(p)
 
-            p = new dtPopupMenuItem({label: 'Par complément', popup: new dtDropDownMenu()})
+            p = new DtPopupMenuItem({label: 'Par complément', popup: new DtDropDownMenu()})
             results.data.forEach((entry) => {
               if (entry.type === 1) {
                 var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
@@ -741,12 +749,12 @@ define([
             that.searchMenu.addChild(p)
           }
 
-          that.searchMenu.addChild(new dtMenuSeparator())
+          that.searchMenu.addChild(new DtMenuSeparator())
 
           var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
           var item = new DtMenuItem({label: 'Commence le '})
-          var x = new dtDateTextBox({value: now, id: 'menuStartDay'})
+          var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           djOn(item, 'click', djLang.hitch(that, (e) => {
@@ -766,12 +774,12 @@ define([
             this.update()
             that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
           }))
-          x = new dtDateTextBox({ value: now, id: 'menuEndDay' })
+          x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           that.searchMenu.addChild(item)
 
-          that.searchMenu.addChild(new dtMenuSeparator())
+          that.searchMenu.addChild(new DtMenuSeparator())
 
           item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
@@ -785,7 +793,7 @@ define([
               {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
             ]})
           }))
-          x = new dtDateTextBox({ value: now, id: 'menuTodoDay' })
+          x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
           item.own(x)
           that.searchMenu.addChild(item)
@@ -1065,8 +1073,8 @@ define([
     },
 
     chooseDay: function () {
-      var calendar = new dtCalendar({ value: this.center })
-      var dialog = new Dialog({ title: 'Choisir une date'})
+      var calendar = new DtCalendar({ value: this.center })
+      var dialog = new Dialog({title: 'Choisir une date'})
 
       dialog.addChild(calendar)
       dialog.startup()
@@ -1172,7 +1180,8 @@ define([
     },
 
     toggle: function (attr) {
-      var targetNode = this.currentTopEntry(), delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1]
+      var targetNode = this.currentTopEntry()
+      var delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1]
       switch (attr) {
         case 'compact':
           if (this.get('compact')) {
@@ -1205,7 +1214,12 @@ define([
 
     drawTimeline: function () {
       var avWidth = this.domNode.offsetWidth
-      var currentWeek = 0, dayCount = 0, currentMonth = -1, dayMonthCount = 0, currentYear = -1, months = new Array(), weeks = new Array()
+      var currentWeek = 0
+      var dayCount = 0
+      var currentMonth = -1
+      var dayMonthCount = 0
+      var currentYear = -1
+      var months = []
       this.todayOffset = -1
       this.weekOffset = -1
       this.destroyWeekNumber()
@@ -1222,26 +1236,26 @@ define([
 
       this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
-        if (djDate.compare(day, new Date(), 'date') == 0) {
+        if (djDate.compare(day, new Date(), 'date') === 0) {
           this.todayOffset = i
         }
 
-        if (currentWeek != day.getWeek()) {
-          if (currentWeek == 0) {
+        if (currentWeek !== day.getWeek()) {
+          if (currentWeek === 0) {
             currentWeek = day.getWeek()
           } else {
-            if (this.weekOffset == -1) { this.weekOffset = i }
+            if (this.weekOffset === -1) { this.weekOffset = i }
             this.createWeekNumber(currentWeek, dayCount, hFrag)
             dayCount = 0
             currentWeek = day.getWeek()
           }
         }
-        if (currentMonth != day.getMonth()) {
-          if (currentMonth == -1) {
+        if (currentMonth !== day.getMonth()) {
+          if (currentMonth === -1) {
             currentMonth = day.getMonth()
             if (currentMonth % 2) { months.push(i) }
             currentYear = day.getFullYear()
-          }	else {
+          } else {
             this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
             dayMonthCount = 0
             currentMonth = day.getMonth()
@@ -1252,7 +1266,7 @@ define([
         var d = this.makeDay(day)
         this.days.push(d)
         if (this.get('blockSize') > 20) {
-            djDomConstruct.place(d.domNode, docFrag, 'last')
+          djDomConstruct.place(d.domNode, docFrag, 'last')
         }
         day = djDate.add(day, 'day', 1)
         this.lastDay = day
@@ -1344,7 +1358,7 @@ define([
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description })
+              var e = new Entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
 
               var families = []
               var types = []
@@ -1374,7 +1388,7 @@ define([
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim() })
+                  var e = new Entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
                       category[families[j]][types[k]].push(e.target)
@@ -1386,10 +1400,10 @@ define([
                   loaded.push(e.loaded)
                 })
               } else if (machine.airaltref) {
-                var name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                var e = new entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim() })
-                for (var j = 0; j < families.length; j++) {
-                  for (var k = 0; k < types.length; k++) {
+                name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
+                e = new Entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
+                for (j = 0; j < families.length; j++) {
+                  for (k = 0; k < types.length; k++) {
                     category[families[j]][types[k]].push(e.target)
                   }
                 }
@@ -1415,7 +1429,8 @@ define([
 
     updateChild: function () {
       for (var k in this.Entries) {
-        this.Entries[k].update()
+        let update = this.Entries[k].update
+        setTimeout(update, 1)
       }
     },
 
@@ -1439,7 +1454,7 @@ define([
     },
 
     update: function (force = false) {
-      var def = new djDeferred()
+      var def = new DjDeferred()
 
       this.refresh()
       this.resize()
@@ -1460,8 +1475,6 @@ define([
     },
 
     highlight: function (domNode) {
-      var that = this
-
       if (this.Highlighting) {
         djDomStyle.set(this.Highlighting[0], 'box-shadow', '')
         window.clearTimeout(this.Highlighting[1])
@@ -1477,7 +1490,7 @@ define([
     },
 
     goToReservation: function (data, center) {
-      var def = new djDeferred()
+      var def = new DjDeferred()
       var that = this
       var middle = window.innerHeight / 3
       var widget = null
@@ -1542,7 +1555,7 @@ define([
         if (result && result.data) {
           var data = result.data
           that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
-            //that.highlight(widget.domNode)
+            // that.highlight(widget.domNode)
             widget.popMeUp()
           })
         }

@@ -23,16 +23,16 @@ class DeepReservationModel extends ReservationModel {
          $ret = array();
          if($st->execute()) {
             foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $v) {
-               $ret[] = $this->read($this->unprefix($v)['id']);
+               $ret[] = $this->read($this->unprefix($v)['id'])[0];
             }
          }
 
-         return $ret;
+         return array($ret, count($ret));
       } catch (\Exception $e) {
-         return NULL;
+         return array(NULL , 0);
       }
 
-      return NULL;
+      return array(NULL, 0);
    }
 
    function get($id) {
@@ -125,13 +125,16 @@ class DeepReservationModel extends ReservationModel {
                   $target = $this->unstorify($contact['target']);
                   if($target[0] == 'Contacts') {
                      $c = $CModel->read($target[1]);
-                     if(count($c) > 0) {
-                        $contact['target'] = $c[0];
+                     if (!isset($c[1])) {
+                        error_log(var_export($c, true));
+                     }
+                     if($c[1] > 0) {
+                        $contact['target'] = $c[0][0];
                      }
                   } else {
                      $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
                      $res = $jrc->direct($_SERVER['SERVER_NAME'] . '/location/store/' . $contact['target']);
-                     if($res['data'] && count($res['data']) > 0) {
+                     if($res['lenght'] > 0) {
                         $contact['target'] = $res['data'][0];
                      }
                   }
@@ -165,7 +168,7 @@ class DeepReservationModel extends ReservationModel {
 
          }*/
          $entry['id'] = (string)$entry['id'];
-         return $entry;
+         return array($entry, 1);
       }
       return array();
    }

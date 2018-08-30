@@ -42,7 +42,7 @@ class TagsModel extends artnum\SQL {
          return array();
       }
       
-      return $results;
+      return array($results, count($results));
    }
 
    function get($id) {
@@ -76,7 +76,8 @@ class TagsModel extends artnum\SQL {
    }
 
    function read($id) {
-      return $this->get($id);
+      $res = $this->get($id);
+      return array(array($res), 1);
    }
 
    function write($data) {

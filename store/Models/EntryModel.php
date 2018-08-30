@@ -27,10 +27,10 @@ class EntryModel extends artnum\SQL {
             return parent::write($data);
          }
       } catch(\Exception $e) {
-         return FALSE;
+         return array(NULL, 0);
       }
    
-      return FALSE;
+      return array(NULL, 0);
    }
 }
 

@@ -139,6 +139,7 @@ define([
         this.sup.overlap()
         this.sup.resize()
       }
+      this.syncForm()
     },
 
     toObject: function () {
@@ -202,12 +203,19 @@ define([
       var bc = new BroadcastChannel('reservations')
       this.Channel = bc
       bc.onmessage = function (msg) {
-        if (msg.data && msg.data.copyfrom && msg.data.copyfrom === this.get('id')) {
+        if (!msg.data && msg.data.data) {
+          return
+        }
+        if (msg.data.copyfrom && msg.data.copyfrom === this.get('id')) {
           this.copyExt(msg.data.data.id)
           return
         }
-        if (msg.data && msg.data.data && msg.data.op === 'response' && String(msg.data.data.id) === String(this.get('id'))) {
-          if (!msg.data.unchanged) {
+        if (msg.data.op === 'response') {
+          if (this.get('localid') !== String(msg.data.localid) && this.get('id') !== String(msg.data.id)) {
+            return
+          }
+
+          if (!msg.data.unchanged || msg.data.new) {
             this.fromJson(msg.data.data)
             return
           }
@@ -672,9 +680,9 @@ define([
     },
     popMeUp: function () {
       var tContainer = dtRegistry.byId('tContainer')
-      if (this.get('id') == null) { return }
-      if (dtRegistry.byId('ReservationTab_' + this.get('id'))) {
-        tContainer.selectChild('ReservationTab_' + this.get('id'))
+      if (this.get('localid') == null) { return }
+      if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
+        tContainer.selectChild('ReservationTab_' + this.get('localid'))
         return
       }
       window.App.setOpen(this.get('IDent'))
@@ -684,7 +692,7 @@ define([
       var cp = new DtContentPane({
         title: '<i class="fas fa-spinner fa-spin"></i> Réservation ' + this.get('id'),
         closable: true,
-        id: 'ReservationTab_' + this.get('id'),
+        id: 'ReservationTab_' + this.get('localid'),
         content: f.domNode})
       cp.own(f)
       tContainer.addChild(cp)
@@ -965,10 +973,6 @@ define([
         return
       }
 
-      if (!fromEntry) {
-        this.sup.overlap()
-      }
-
       /* Verify  if we keep this ourself */
       if (djDate.compare(this.get('trueBegin'), this.get('dateRange').end, 'date') >= 0 ||
         djDate.compare(this.get('trueEnd'), this.get('dateRange').begin, 'date') < 0) {
@@ -976,6 +980,10 @@ define([
           this.hide()
         }
         return
+      }
+
+      if (!fromEntry) {
+        this.sup.overlap()
       }
 
       this.show()
@@ -1102,16 +1110,16 @@ define([
         var compdiv = this._drawComplement()
         txtdiv.appendChild(tools)
 
-        if (this.currentDom) {
-          fastdom.mutate(djLang.hitch(this, function () {
+        fastdom.mutate(djLang.hitch(this, function () {
+          if (this.currentDom) {
             this.currentDom.innerHTML = ''
             this.currentDom.setAttribute('style', domstyle.join(';'))
             this.currentDom.setAttribute('class', domclass.join(' '))
             this.currentDom.appendChild(compdiv)
             this.currentDom.appendChild(txtdiv)
             this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
-          }))
-        }
+          }
+        }))
       }))
     },
 
@@ -1165,7 +1173,7 @@ define([
 
     save: function () {
       var object = this.toObject()
-      this.Channel.postMessage({op: 'put', data: object, localid: this.localid})
+      this.Channel.postMessage({op: 'put', data: object, localid: this.get('localid')})
       this.saveReturn()
     },
 

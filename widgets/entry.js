@@ -31,7 +31,6 @@ define([
   'location/update',
 
   'artnum/dojo/Request'
-
 ], function (
   djDeclare,
   djLang,
@@ -161,14 +160,15 @@ define([
             if (that.entries[cursor.value.id]._hash !== cursor.value._hash) {
               if (window.App.isOpen(cursor.value.id)) {
                 if (!window.App.isModify(cursor.value.id)) {
-                  var n = new Notification('La réservation ' + cursor.value.id + ' a été modifiée par un autre utilisateur', { requireInteraction: true })
-                  n.onclick = djLang.hitch(that.entries[cursor.value.id], function () {
-                    this.syncForm()
-                  })
+                  that.syncForm()
                 }
                 window.App.unsetModify(cursor.value.id)
               }
-              that.entries[cursor.value.id].fromJson(cursor.value)
+              try {
+                that.entries[cursor.value.id].fromJson(cursor.value)
+              } catch (e) {
+                console.log(e)
+              }
             }
           }
           cursor.continue()
@@ -227,9 +227,9 @@ define([
       this.view = { rectangle: getElementRect(this.domNode) }
       this.verifyLock()
       Req.get(locationConfig.store + '/Tags/?!=' + this.url).then((tags) => {
-        if (tags && tags.data) {
-          for (var i in tags.data) {
-            tags.data[i].forEach(function (tag) {
+        if (tags.length > 0) {
+          for (var i in tags.data[0]) {
+            tags.data[0][i].forEach(function (tag) {
               that.tags.push(tag)
             })
           }
@@ -440,65 +440,16 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      var r = { start: day,
-        o: new Reservation({ sup: this, begin: day, end: end })
-      }
-      window.App.LocalReservations[r.o.localid] = r.o
-      r.o.popMeUp()
-      this.defaultStatus().then((s) => {
-        r.o.set('status', s)
-        this.store(r.o).then(djLang.hitch(this, (id) => {
-          window.App.info('Réservation ' + id + ' correctement créée')
-        }))
+      var newReservation = new Reservation({ sup: this, begin: day, end: end })
+      window.App.LocalReservations[newReservation.localid] = newReservation
+      this.defaultStatus().then(function (s) {
+        newReservation.set('status', s)
+        newReservation.save()
+        newReservation.popMeUp()
       })
     },
 
     copy: function (original) {
-      /*
-      var store = window.App.DB.transaction('reservations').objectStore('reservations')
-      var query = store.get(original.get('id'))
-      query.onsuccess = djLang.hitch(this, function (e) {
-        if (!e || !e.target || !e.target.result) { return }
-        var json = e.target.result
-        if (json == null) { return }
-        var copy = new Reservation()
-        copy.fromJson(json)
-        copy.set('status', original.get('status'))
-        copy.set('color', original.get('color'))
-        copy.set('return', null)
-        copy.set('previous', null)
-        delete copy.id
-        copy.popMeUp()
-        copy.save()
-        this.store(copy).then(djLang.hitch(this, (id) => {
-          var subRequests = []
-          for (var k in json.contacts) {
-            for (var i = 0; i < json.contacts[k].length; i++) {
-              var entry = json.contacts[k][i]
-              var q = { comment: entry.comment, reservation: id, freeform: entry.freeform }
-              if (entry.target != null) {
-                q.target = '/Contacts/' + entry.target.IDent
-              }
-              subRequests.push(Req.post(locationConfig.store + '/ReservationContact/', { query: q }))
-            }
-          }
-
-          for (i = 0; i < json.complements.length; i++) {
-            entry = json.complements[i]
-            q = { number: entry.number, follow: entry.follow, target: entry.target, comment: entry.comment, reservation: id, type: '/location/store//Status/' + entry.type.id, id: null }
-            if (entry.begin !== '') { q.begin = djDateStamp.toISOString(new Date(entry.begin)) }
-            if (entry.end !== '') { q.end = djDateStamp.toISOString(new Date(entry.end)) }
-            subRequests.push(Req.post(locationConfig.store + '/Association/', { query: q }))
-          }
-          djAll(subRequests).then(() => { window.App.info('Réservation ' + id + ' correctement copiée'); copy.popMeUp(); original.close() })
-        }))
-      }) */
-    },
-
-    store: function (reservation) {
-      var def = new DjDeferred()
-      reservation.save()
-      return def.promise
     },
 
     _getOffsetAttr: function () {

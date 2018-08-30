@@ -16,8 +16,8 @@ new IdxDB().then(function (db) {
       fetch('/location/store/Reservation/' + url, Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
         response.json().then(function (data) {
           if (data.type === 'results') {
-            if (data.data.success) {
-              resolve({id: data.data.id, new: method === 'POST'})
+            if (data.success) {
+              resolve({id: data.data[0].id, new: method === 'POST'})
             }
           }
         })
@@ -78,6 +78,7 @@ new IdxDB().then(function (db) {
       return
     }
 
+    var localid = msg.data.localid
     var forceServer = false
     switch (msg.data.op) {
       case 'touch':
@@ -86,15 +87,13 @@ new IdxDB().then(function (db) {
         }
         break
       case 'put':
-        var result = {op: 'response', id: null, new: false, deleted: false, unchanged: false, data: null}
+        var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: false, data: null}
         write(msg.data.data).then(function (response) {
           get(response.id, true).then(function (data) {
+            result.localid = localid
             result.id = response.id
             result.new = response.new
             result.data = data.data
-            if (msg.data.localid) {
-              result.localid = msg.data.localid
-            }
             if (msg.data.copyfrom) {
               result.copyfrom = msg.data.copyfrom
             }
@@ -112,7 +111,7 @@ new IdxDB().then(function (db) {
           return
         }
         get(msg.data.id, forceServer).then(function (data) {
-          var result = {op: 'response', id: null, new: false, deleted: false, unchanged: true, data: null}
+          var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: true, data: null}
           if (data) {
             if (data.deleted) {
               result = Object.assign(result, {id: data.id, deleted: true, unchanged: false})
