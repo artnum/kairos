@@ -1,3 +1,0 @@
-RewriteEngine on
-RewriteBase /location/
-RewriteRule "^backlog$" "debug/backlog.php" [L]
