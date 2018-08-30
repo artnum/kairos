@@ -208,7 +208,9 @@ if(!is_null($reservation['deliveryEnd'])) {
    if(!is_null($reservation['deliveryEnd'])) {
       $PDF->tab(2);
       $PDF->printTaggedLn(array('%c', 'Retour : '), array('break' => false));
-      $PDF->SetX($XDatePos[1]);
+      if (isset($XDatePos[1])) {
+         $PDF->SetX($XDatePos[1]);
+      }
       $PDF->printTaggedLn(array('%cb',$reservation['deliveryEnd']->format('d.m.Y'), '%c', ' Heure : ', '%cb', $reservation['deliveryEnd']->format('H:i')), array('break' => true));
    }
 } else {
