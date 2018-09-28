@@ -8,5 +8,4 @@ class ReservationModel extends artnum\SQL {
       $this->conf('datetime', array('created', 'deleted', 'modification', 'begin', 'end', 'deliveryBegin', 'deliveryEnd'));
    }
 }
-
 ?>

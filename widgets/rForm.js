@@ -43,6 +43,7 @@ define([
   'location/card',
   'location/bitsfield',
   'location/dateentry',
+  'location/count',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -90,6 +91,7 @@ define([
   Card,
   bitsfield,
   dateentry,
+  Count,
 
   Req,
   Path,
@@ -1196,6 +1198,11 @@ define([
 
     destroyReservation: function (reservation) {
       this.reservation.destroyReservation(reservation)
+    },
+
+    openCount: async function () {
+      var count = new Count({})
+      count.addReservation(this.reservation.get('id'))
     }
 
   })

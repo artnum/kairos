@@ -87,8 +87,6 @@ $PDF->vtab(1);
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
 $PDF->tab(1);
-$PDF->printLn('Réservation ' . $reservation['id'] . ', créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
-         $reservation['created']->format('H:i'));
 $PDF->setFontSize(5);
 $PDF->hr();
 $PDF->printTaggedLn(array('%cb', $machine['cn']), array('break' => false));

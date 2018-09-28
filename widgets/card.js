@@ -59,6 +59,7 @@ define([
       identity: [ 'IDent', null ] },
     constructor: function (idprefix) {
       this._set('idprefix', idprefix)
+      return this
     },
 
     getType: function (value) {

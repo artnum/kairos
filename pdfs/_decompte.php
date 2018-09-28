@@ -98,21 +98,24 @@ $PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
          $reservation['created']->format('H:i'));
 $PDF->setFontSize(3.2);
 $PDF->hr();
+$PDF->br();
+
+$PDF->block('address');
 $PDF->SetFont('century-gothic');
 
 if(!is_null($addrs['client'])) {
-   $PDF->vtab(2);
+   $PDF->block('address');
    $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
    foreach($addrs['client'] as $c) {
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
 } else {
-   $PDF->vtab(2); 
+   $PDF->block('address');
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 53, 'square' => 6));
 }
 
 if(!is_null($addrs['facturation'])) {
-   $PDF->vtab(2);
+   $PDF->block('address');
    $PDF->tab(3);
    $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
    foreach($addrs['facturation'] as $c) {
@@ -120,20 +123,23 @@ if(!is_null($addrs['facturation'])) {
       $PDF->printTaggedLn(array('%c', $c), array('max-width' => 50));
    }  
 } else {
-   $PDF->vtab(2);
+   $PDF->block('address');
    $PDF->tab(3); 
    $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
-   $PDF->vtab(2); 
+   $PDF->block('address');
    $PDF->tab(3); 
    $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6, 'length' => 53));
 }
 
 
-$PDF->vtab(2);
+$PDF->block('address');
 $PDF->tab(4);
 $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'square' => 6));
 
-$PDF->vtab(3);
+$PDF->to_block_end();
+$PDF->br();
+
+$PDF->block('details1', 'address');
 $PDF->hr();
 
 $b1Empty = true;

@@ -3,6 +3,14 @@ include('artnum/autoload.php');
 
 header('Cache-Control', 'no-cache, max-age=0');
 
+function e404($msg = 'aucun') {
+   ob_end_clean();
+   header('HTTP/1.1 404 Not Found');
+   echo '<!DOCTYPE html><html><head><title>Inexistant</title></head><body><h1>Inexistant</h1><p>L\'entrée est incomplète ou inexistante</p><p>Détails : ' . $msg . '</p></body></html>';
+   flush();
+   exit(0);
+}
+
 class LocationPDF extends artnum\PDF {
    function __construct($options = array()) {
       parent::__construct();
@@ -24,9 +32,10 @@ class LocationPDF extends artnum\PDF {
       if(!empty($this->title)) {
          $this->setFontSize(10);
          $this->SetFont('century-gothic');
-         $this->printLn('Mission', array( 'align' => 'right'));
+         $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
+      $this->SetY(36);
    }
 
    function Footer() {
@@ -68,6 +77,13 @@ function format_address($addr, $options = array()) {
          $lines[] = $cn;
       }
 
+      if (isset($addr['postaladdress'])) {
+         $l = explode("\n", $addr['postaladdress']);
+         foreach ($l as $_l) {
+            $lines[] = trim($_l);
+         }
+      }
+
       if(isset($addr['l']) || isset($addr['postalcode'])) {
          $locality = '';
          if(isset($addr['postalcode'])) {
@@ -92,7 +108,7 @@ function format_address($addr, $options = array()) {
       }
 
       if(isset($addr['mobile']) || isset($addr['telephonenumber'])) {
-         if (!isset($options['prefer-telephone']) && !$options['prefer-telephone']) {
+         if (!isset($options['prefer-telephone']) || !$options['prefer-telephone']) {
             $lines[] = isset($addr['mobile']) ?  trim($addr['mobile']) : trim($addr['telephonenumber']);
          } else {
             $lines[] = isset($addr['telephonenumber']) ?  trim($addr['telephonenumber']) : trim($addr['mobile']);

@@ -592,3 +592,118 @@ html {
 .contacts .dijitTextBox {
 	width: 180px;
 }
+
+.DocCount {
+	margin: 24px 24px 24px 24px;
+}
+
+.DocCount textarea {
+  width: 100%;
+	height: 8em;
+}
+
+.DocCount table {
+	width: 100%;
+	font-size: auto;
+}
+
+.DocCount thead {
+	font-weight: bold;
+}
+
+.DocCount tbody, .DocCount thead, .DocCount tfoot {
+	font-size: 1.4em;
+}
+
+.DocCount tbody {
+  background-color: white;
+}
+
+.DocCount tr td {
+	padding: 8px;
+}
+
+.DocCount tr[data-edit] td {
+	padding: 0;
+}
+
+.DocCount label:after{
+  content: ' : ';
+}
+.DocCount tfoot {
+  font-style: italic;
+}
+
+.DocCount td input {
+  font-size: 1em;
+  width: 100%;
+}
+
+.DocCount .short {
+  width: 12ch;
+}
+
+.DocCount fieldset legend {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.DocCount input, .DocCount textarea {
+	padding: 5px;
+	border: 1px solid black;
+	border-bottom: 2px gray solid;
+}
+
+.DocCount input:focus, .DocCount textarea:focus {
+	border: 2px #F88D00 solid;
+}
+
+.DocCount input[data-changed] {
+  border-bottom: 2px #9045A0 solid;
+}
+
+.DocCount input:invalid, .DocCount input:out-of-range {
+  border-bottom: 2px #FF0000 solid;
+	box-shadow: none;
+}
+
+.DocCount fieldset {
+  display: flex;
+}
+
+.DocCount fieldset[name=contacts] {
+	display: block;
+	overflow: auto;
+}
+
+.DocCount fieldset[name=contacts] > div {
+	display: inline-block;
+}
+
+.DocCount div[data-address-id] {
+  border: 2px solid transparent;
+  padding: 4px;
+  margin: 4px;
+}
+
+.DocCount div[data-selected] {
+  border: 2px solid black;
+  background-color: white;
+}
+
+.DocCount form[name=details] {
+	display: block;
+	width: 50%;
+}
+
+/* Remove spinner for input type number element */
+/* For Firefox */
+input[type='number'] {
+  -moz-appearance:textfield;
+}
+/* Webkit browsers like Safari and Chrome */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

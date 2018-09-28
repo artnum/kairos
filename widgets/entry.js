@@ -440,10 +440,10 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      var newReservation = new Reservation({ sup: this, begin: day, end: end })
-      window.App.LocalReservations[newReservation.localid] = newReservation
+      var sup = this
       this.defaultStatus().then(function (s) {
-        newReservation.set('status', s)
+        var newReservation = new Reservation({ sup: sup, begin: day, end: end, status: s })
+        window.App.LocalReservations[newReservation.localid] = newReservation
         newReservation.save()
         newReservation.popMeUp()
       })
