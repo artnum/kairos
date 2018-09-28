@@ -173,6 +173,11 @@ $PDF->hr();
 unset($PDF->left);
 unset($PDF->right);
 
+$single = false;
+if (count($reservations) == 1) {
+   $single = true;
+}
+
 $previous = 'remarks';
 foreach($reservations as $reservation) {
    $PDF->block('r' . $reservation['id'], $previous);
@@ -202,7 +207,7 @@ foreach($reservations as $reservation) {
 
    $PDF->br();
    foreach ($entries as $entry) {
-      if ($entry['reservation'] == $reservation['id']) {
+      if ($single || ($entry['reservation'] == $reservation['id'])) {
          $PDF->block('e' . $entry['id'], $previous);
          $previous = 'e' . $entry['id'];
          if (!isset($entry['total'])) {
