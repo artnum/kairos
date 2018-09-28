@@ -295,7 +295,12 @@ define([
       save.setAttribute('type', 'button')
       save.setAttribute('value', 'Sauvegarder')
       save.addEventListener('click', this.save.bind(this))
+      var print = document.createElement('input')
+      print.setAttribute('type', 'button')
+      print.setAttribute('value', 'Imprimer')
+      print.addEventListener('click', this.print.bind(this))
       this.domNode.appendChild(save)
+      this.domNode.appendChild(print)
 
       this.refresh()
 
@@ -553,6 +558,11 @@ define([
         query[inputs[i].getAttribute('name')] = val
       }
       await Query.exec(Path.url('store/Count/' + this.get('data-id')), {method: 'patch', body: JSON.stringify(query)})
+    },
+
+    print: async function (event) {
+      await this.save(event)
+      window.open(Path.url('pdfs/count/' + this.get('data-id')))
     },
 
     click: function (event) {

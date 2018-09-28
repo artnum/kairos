@@ -87,15 +87,6 @@ foreach (array('created', 'modified', 'deleted', 'end', 'begin', 'date', 'printe
    }
 }
 
-/*
-print_r($count);
-print_r($machines);
-print_r($reservations);
-print_r($contacts);
-
-var_dump($JClient->patch(array('id' => $count['id'], 'printed' => (new DateTime())->format('c')), $count['id'], 'Count'));
-exit(0); */ 
-
 /* PDF Generation */
 $PDF = new LocationPDF(array('margins' => array(10, 10, 10)));
 $PDF->addVTab(28);
@@ -242,4 +233,6 @@ $PDF->SetFontSize(6);
 $PDF->printTaggedLn(array('%cb', 'Total'), array('break' => false));
 $PDF->printTaggedLn(array('%cb', $count['total']), array('align' => 'right'));
 $PDF->Output($count['id'] .  '.pdf', 'I'); 
+
+$JClient->patch(array('id' => $count['id'], 'printed' => (new DateTime())->format('c')), $count['id'], 'Count');
 ?>
