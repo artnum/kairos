@@ -61,7 +61,7 @@ foreach($addrs as $k => $v) {
          }
       } else {
          if(! empty($res['data'][0]['freeform'])) { 
-            $addrs[$k] = format_address(array('type' => 'freeform', 'data' => $res['data'][0]));
+            $addrs[$k] = format_address(array('type' => 'freeform', 'data' => $res['data'][0]['freeform']));
          }
       }
    }
@@ -82,6 +82,8 @@ $PDF->addTab(123);
 $PDF->AddPage();
 $PDF->setPosition(60);
 $PDF->setFontSize(5);
+
+$PDF->SetY($PDF->tMargin);
 
 if(! is_null($addrs['client'])) {
    $PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb', ' pour ' . $addrs['client'][0], '%c'), array('align' => 'right'));
