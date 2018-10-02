@@ -35,7 +35,7 @@ class LocationPDF extends artnum\PDF {
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
-      $this->SetY(36);
+      $this->SetY(40);
    }
 
    function Footer() {
@@ -115,10 +115,14 @@ function format_address($addr, $options = array()) {
          }
       }
       if(isset($addr['mail'])) {
-         $lines[] = trim($addr['mail']);
+         if (is_string($addr['mail'])) {
+            $lines[] = trim($addr['mail']);
+         } else if(is_array($addr['mail'])) {
+            $lines[] = trim($addr['mail'][0]);
+         }
       }
    } else {
-      $l = explode("\n", $addr['data']['freeform']);
+      $l = explode("\n", $addr['data']);
       foreach($l as $_l) {
          if(!empty($_l)) {
             $lines[] = trim($_l);

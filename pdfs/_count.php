@@ -102,7 +102,6 @@ $PDF->AddPage();
 $PDF->hr();
 $PDF->setPosition(60);
 $PDF->setFontSize(5);
-
 $y = $PDF->GetY();
 $PDF->SetY($PDF->tMargin);
 /* Title block */
@@ -179,8 +178,10 @@ if (count($reservations) == 1) {
 }
 
 $previous = 'remarks';
+$first = true;
 foreach($reservations as $reservation) {
    $PDF->block('r' . $reservation['id'], $previous);
+   if (!$first) { $PDF->br(); } $first = false;
    $previous = 'r' . $reservation['id'];
 
    $PDF->printTaggedLn(array('%cb', 'Réservation ° ' . $reservation['id']), array('underline' => true));
@@ -206,28 +207,40 @@ foreach($reservations as $reservation) {
    unset($PDF->right);
 
    $PDF->br();
+   $PDF->block('e' . $reservation['id'], $previous);
+   $PDF->background_block('#DDDDDD');
+   $previous = 'e' . $reservation['id'];
+   $subtotal = 0;
    foreach ($entries as $entry) {
       if ($single || ($entry['reservation'] == $reservation['id'])) {
-         $PDF->block('e' . $entry['id'], $previous);
-         $previous = 'e' . $entry['id'];
          if (!isset($entry['total'])) {
             $entry['total'] = floatval($entry['quantity']) * floatval($entry['price']);
          }
-         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 99, 'multiline' => true, 'break' => false));
-         $PDF->SetX(100);
-         $PDF->printTaggedLn(array('%c', $entry['quantity']), array('max-width' => 15, 'multiline' => true, 'break' => false));
-         $PDF->SetX(116);
-         $PDF->printTaggedLn(array('%c', $entry['price']), array('max-width' => 15, 'multiline' => true, 'break' => false));
-         
-         $PDF->SetX($PDF->right);
-         $PDF->printTaggedLn(array('%c', $entry['total']), array('max-width' => 15, 'multiline' => true, 'break' => false, 'align' => 'right'));
 
+         $subtotal += $entry['total'];
+
+         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 99, 'multiline' => true, 'break' => false));
+         if (isset($entry['quantity']) && $entry['quantity'] != 0) {
+            $PDF->SetX(112);
+            $PDF->printTaggedLn(array('%c', sprintf('%.02F', $entry['quantity'])), array('max-width' => 15, 'multiline' => true, 'break' => false, 'align' => 'right'));
+         }
+         if (isset($entry['price']) && $entry['price'] != 0) {
+            $PDF->SetX(136);
+            $PDF->printTaggedLn(array('%c', sprintf('%.02F', $entry['price'])), array('max-width' => 15, 'align' => 'right', 'multiline' => true, 'break' => false));
+         }
+         if (isset($entry['total']) && $entry['total'] != 0) {
+            $PDF->printTaggedLn(array('%c', sprintf('%.02F', floatval($entry['total']))), array('multiline' => true, 'break' => false, 'align' => 'right'));
+         }
 
          $PDF->br();
       }
    }
-
+   $PDF->hr();
+   $PDF->printTaggedLn(array('%cb', 'Total pour réservation N°' . $reservation['id']), array('max-width' => 99, 'multiline' => true, 'break' => false));
+   $PDF->SetX($PDF->right);
+   $PDF->printTaggedLn(array('%cb', sprintf('%.02F', $subtotal)), array('multiline' => true, 'break' => false, 'align' => 'right'));
    $PDF->br();
+   $PDF->close_block();
 }
 
 $PDF->br();
