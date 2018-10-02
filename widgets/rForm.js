@@ -222,6 +222,11 @@ define([
         this.nComments.set('value', value)
       }
     },
+    _setNoteAttr: function (value) {
+      if (value) {
+        this.nNote.set('value', value)
+      }
+    },
 
     associationEntries: function (entries) {
       var frag = document.createDocumentFragment()
@@ -1163,6 +1168,7 @@ define([
         this.reservation.set('locality', f.nLocality)
       }
       this.reservation.set('comment', f.nComments)
+      this.reservation.set('note', f.nNote)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
       if (this.nCreator.get('item')) {

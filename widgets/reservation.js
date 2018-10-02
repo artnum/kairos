@@ -114,7 +114,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -153,7 +153,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse'].forEach(djLang.hitch(this, function (attr) {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -288,6 +288,10 @@ define([
     _setStatusAttr: function (value) {
       this.addAttr('status')
       this._set('status', value)
+    },
+    _setNoteAttr: function (value) {
+      this.addAttr('note')
+      this._set('note', value)
     },
     _setIDentAttr: function (value) {
       this.IDent = value
@@ -717,7 +721,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse' ].forEach(djLang.hitch(this, (e) => {
+        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, (e) => {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()
