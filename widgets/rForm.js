@@ -148,7 +148,7 @@ define([
     },
 
     _setArrivalCreatorAttr: function (value) {
-      this._set('Creator', value)
+      this._set('arrivalCreator', value)
       if (this.loaded.user) {
         var store = this.nArrivalCreator.get('store')
         if (store && value) {
@@ -922,7 +922,6 @@ define([
                 if (c.length > 0) {
                   var e = c.data[0]
                   e.linkId = result.data.id
-                  that.createContact(e, type, true)
                   that.reservation.modified()
                 }
               }))
@@ -939,7 +938,6 @@ define([
             Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
               if (result.success) {
                 options.linkId = result.id
-                that.createContact(options, type, true)
                 that.reservation.modified()
               }
             })

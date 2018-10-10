@@ -1,5 +1,4 @@
 /* eslint-env browser, amd */
-/* global locationConfig */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -98,6 +97,7 @@ define([
           type: f.cType,
           comment: f.details,
           freeform: f.freeform})
+        this.nFreeform.value = ''
       }
     },
     resetResults: function () {

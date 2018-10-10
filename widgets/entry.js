@@ -148,6 +148,9 @@ define([
       idx.openCursor(this.target).onsuccess = function (e) {
         var cursor = e.target.result
         if (cursor) {
+          if (typeof that.entries === 'undefined') {
+            return
+          }
           entries.push(cursor.value.id)
           if (!that.entries[cursor.value.id]) {
             try {
