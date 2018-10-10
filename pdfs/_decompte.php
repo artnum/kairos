@@ -1,5 +1,6 @@
 <?PHP
 include('base.php');
+include('../lib/format.php');
 
 $JClient = new artnum\JRestClient('http://localhost/location/store');
 $Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
@@ -12,35 +13,7 @@ if($res['type'] != 'results') {
 if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
    exit(0);
 }
-$reservation = isset($res['data'][0]) ? $res['data'][0] : $res['data'];
-if(!empty($reservation['deliveryBegin'])) {
-   if($reservation['deliveryBegin'] != $reservation['begin']) {
-      $reservation['deliveryBegin'] = new DateTime($reservation['deliveryBegin']);
-      $reservation['deliveryBegin']->setTimezone(new DateTimeZone(date_default_timezone_get()));
-   } else {
-      $reservation['deliveryBegin'] = null;
-   }
-} else {
-   $reservation['deliveryBegin'] = null;
-}
-
-if(!empty($reservation['deliveryEnd'])) {
-   if($reservation['deliveryEnd'] != $reservation['end']) {
-      $reservation['deliveryEnd'] = new DateTime($reservation['deliveryEnd']);
-      $reservation['deliveryEnd']->setTimezone(new DateTimeZone(date_default_timezone_get()));
-   } else {
-      $reservation['deliveryEnd'] = null;
-   }
-} else {
-   $reservation['deliveryEnd'] = null;
-}
-
-$reservation['begin'] = new DateTime($reservation['begin']);
-$reservation['begin']->setTimezone(new DateTimeZone(date_default_timezone_get()));
-$reservation['end'] = new DateTime($reservation['end']);
-$reservation['end']->setTimezone(new DateTimeZone(date_default_timezone_get()));
-$reservation['created'] = new DateTime($reservation['created']);
-$reservation['created']->setTimezone(new DateTimeZone(date_default_timezone_get()));
+$reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['data']);
 
 $res = $Machine->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;
@@ -96,8 +69,7 @@ $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
 $PDF->vtab(1);
 $PDF->tab(1);
-$PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.
-         $reservation['created']->format('H:i'));
+$PDF->printLn('créée le ' . $reservation['created']->format('d.m.Y') . ' à '.  $reservation['created']->format('H:i'));
 $PDF->setFontSize(3.2);
 $PDF->hr();
 $PDF->br();

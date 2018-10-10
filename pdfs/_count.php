@@ -1,5 +1,6 @@
 <?PHP
 include('base.php');
+include('../lib/format.php');
 
 $JClient = new artnum\JRestClient('http://localhost/location/store');
 $Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
@@ -9,16 +10,14 @@ if (!$res['success'] || $res['length'] != 1) {
    e404('décompte inexistant');
 }
 $count = $res['data'];
-
 $res = $JClient->search(array('search.count' =>  $count['id']), 'CountReservation');
 if (!$res['success'] || $res['length'] <= 0) {
 }
-
 $reservations = array();
 foreach($res['data'] as $item) {
    $_r = $JClient->get($item['reservation'], 'DeepReservation');
    if ($_r['success'] && $_r['length'] == 1) {
-      $reservations[] = $_r['data'];
+      $reservations[] = FReservation($_r['data']);
    }
 }
 
@@ -44,17 +43,6 @@ $machines = array();
 
 /* Preprocess reservation */
 foreach ($reservations as $k => $reservation) {
-   foreach (array('deliveryBegin', 'deliveryEnd', 'begin', 'end', 'created', 'deleted', 'modification', 'closed') as $key) {
-      if (!empty($reservations[$k][$key])) {
-         try {
-            $reservations[$k][$key] = new DateTime($reservations[$k][$key]);
-            $reservations[$k][$key]->setTimezone(new DateTimeZone(date_default_timezone_get()));
-         } catch (Exception $e) {
-            $reservation[$k][$key] = '';
-         }
-      }
-   }
-
    if (!isset($machines[$reservations[$k]['target']])) {
       $res = $Machine->search(array('search.description' => $reservations[$k]['target'], 'search.airaltref' => $reservations[$k]['target']), 'Machine');
       if ($res['type'] == 'results') {
