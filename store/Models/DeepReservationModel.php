@@ -5,7 +5,7 @@ class DeepReservationModel extends ReservationModel {
    function __construct($dbs, $config) {
       parent::__construct($dbs['sql'], $config);
       $this->dbs = $dbs;
-      $this->conf('datetime', array('created', 'deleted', 'modification', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
+      $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
    }
 
    function set_db($dbs) {

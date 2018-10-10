@@ -12,7 +12,7 @@ var RChannel = new BroadcastChannel('reservations')
 
 new IdxDB().then(function (DB) {
   var req = new XMLHttpRequest()
-  var last = { 'modification': null, 'id': 0 }
+  var last = { 'modification': 0, 'id': 0 }
 
   var handleReqLoad = function (e) {
     if (req.readyState === 4) {
@@ -23,7 +23,6 @@ new IdxDB().then(function (DB) {
   }
 
   req.onload = handleReqLoad
-
   var msgHandle = function (msg) {
     if (req.readyState > 0 && req.readyState < 3) {
       req.abort()
@@ -66,22 +65,13 @@ new IdxDB().then(function (DB) {
     }
     if (r && r.data && r.data.length > 0) {
       for (let i = 0; i < r.data.length; i++) {
-        var mod = new Date()
         if (!r.data[i]) { continue }
-        mod.setTime(Date.parse(r.data[i].modification))
-        if (mod) {
-          if (last.modification == null) {
-            last.modification = mod
-          } else {
-            if (last.modification.getTime() < mod.getTime()) {
-              last.modification = mod
-            }
-          }
-        }
-
         if (r.data[i].target) {
           r.data[i]._hash = objectHash.sha1(r.data[i])
           r.data[i]._lastfetch = new Date().toISOString()
+          if (parseInt(r.data[i].modification) > last.modification) {
+            last.modification = parseInt(r.data[i].modification)
+          }
 
           let reservation = r.data[i]
           try {
@@ -112,14 +102,15 @@ new IdxDB().then(function (DB) {
   var checker = function () {
     var url = '/location/store/DeepReservation'
     var parameters = ''
-    if (last.modification == null) {
+    console.log(last)
+    if (last.modification === 0) {
       setTimeout(checker, 2500)
       return
     }
 
     var params = []
-    if (last.modification != null) {
-      params.push('search.modification=' + encodeURIComponent('>' + last.modification.toISOString()))
+    if (last.modification !== 0) {
+      params.push('search.modification=' + encodeURIComponent('>' + last.modification))
     }
 
     if (params.length > 0) {
