@@ -834,6 +834,17 @@ define([
               color = '#' + entry.type.color
             }
 
+            for (var x = begin; djDate.compare(x, end, 'date') <= 0; x = djDate.add(x, 'day', 1)) {
+              var date = djDateStamp.toISOString(x, {selector: 'date'})
+              if (typeof window.Rent.Days[date] === 'undefined') {
+                window.Rent.Days[date] = {}
+              }
+              if (typeof window.Rent.Days[date][entry.type.color] === 'undefined') {
+                window.Rent.Days[date][entry.type.color] = {}
+              }
+              window.Rent.Days[date][entry.type.color][that.get('id')] = parseInt(entry.number)
+            }
+
             /* Not in view as the end of this entry is after the beginning of the timeline */
             if (djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
               display = false

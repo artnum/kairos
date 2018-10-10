@@ -241,6 +241,13 @@ define([
           }
         }
       })
+
+      if (typeof window.Rent === 'undefined') {
+        window.Rent = {}
+      }
+      if (typeof window.Rent.Days === 'undefined') {
+        window.Rent.Days = {}
+      }
     },
 
     createWindow: function () {
@@ -491,6 +498,7 @@ define([
       for (var k in this.Entries) {
         this.Entries[k].resize()
       }
+      this.drawSubline()
     },
 
     createMonthName: function (month, year, days, frag) {
@@ -615,7 +623,7 @@ define([
               var sub = window.location.hash.substr(1)
               switch (String(sub.substr(0, 3)).toLowerCase()) {
                 case 'dec':
-                  new Count({'data-id': sub.substr(3)})
+                  new Count({'data-id': sub.substr(3)}) // eslint-disable-line
                   break
               }
             }
@@ -1264,10 +1272,15 @@ define([
           }
         }
         var d = this.makeDay(day)
+        if (typeof window.Rent.Days[d.stamp] === 'undefined') {
+          window.Rent.Days[d.stamp] = {}
+        }
+
         this.days.push(d)
         if (this.get('blockSize') > 20) {
           djDomConstruct.place(d.domNode, docFrag, 'last')
         }
+
         day = djDate.add(day, 'day', 1)
         this.lastDay = day
         dayCount++; dayMonthCount++
@@ -1283,6 +1296,28 @@ define([
         this.header.appendChild(hFrag)
         this.supHeader.appendChild(shFrag)
       }))
+    },
+
+    drawSubline: function () {
+      var sublineFrag = document.createDocumentFragment()
+      for (var i = this.get('dateRange').begin; djDate.compare(i, this.get('dateRange').end, 'date') < 0; i = djDate.add(i, 'day', 1)) {
+        var span = document.createElement('SPAN')
+        var stamp = djDateStamp.toISOString(i, {selector: 'date'})
+        var val = window.Rent.Days[stamp]
+        for (var k in val) {
+          var total = 0
+          for (var j in val[k]) {
+            total += val[k][j]
+          }
+          span.innerHTML += total + ' <i class="fas fa-square-full" style="color: #' + k + '"></i>'
+        }
+        sublineFrag.appendChild(span)
+      }
+
+      fastdom.mutate(function () {
+        this.subline.innerHTML = ''
+        this.subline.appendChild(sublineFrag)
+      }.bind(this))
     },
 
     drawVerticalLine: function () {
