@@ -26,19 +26,19 @@ CREATE TABLE IF NOT EXISTS reservation		( reservation_id INTEGER PRIMARY KEY AUT
 						  reservation_deliveryEnd DATETIME,
 						  reservation_special INTEGER,
 						  reservation_withWorker TEXT,
-						  reservation_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-						  reservation_deleted TIMESTAMP DEFAULT NULL,
 						  reservation_closed TIMESTAMP DEFAULT NULL,
 						  reservation_reference TEXT DEFAULT NULL,
 						  reservation_equipment TEXT DEFAULT NULL,
-						  reservation_modification DATETIME,
 						  reservation_title TEXT DEFAULT NULL,
 						  reservation_folder TEXT DEFAULT NULL,
 						  reservation_gps TEXT DEFAULT NULL, 
 						  reservation_creator TEXT DEFAULT NULL,
 						  reservation_previous TEXT DEFAULT NULL,
 						  reservation_warehouse TEXT DEFAULT NULL,
-						  reservation_note TEXT DEFAULT NULL
+						  reservation_note TEXT DEFAULT NULL,
+						  reservation_created INTEGER DEFAULT NULL,
+						  reservation_deleted INTEGER DEFAULT NULL,
+						  reservation_modification INTEGER DEFAULT NULL
 						);
 
 CREATE TABLE IF NOT EXISTS user 		( user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,9 +86,9 @@ CREATE TABLE IF NOT EXISTS return               ( return_id INTEGER PRIMARY KEY,
                                                   return_where TEXT,
                                                   return_comment TEXT,
                                                   return_other TEXT
-						  return_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-						  return_deleted TIMESTAMP DEFAULT NULL,
-						  return_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
                                                   return_locality TEXT,
-                                                  return_creator TEXT
+                                                  return_creator TEXT,
+						  return_created INTEGER DEFAULT NULL,
+						  return_deleted INTEGER DEFAULT NULL,
+						  return_modification INTEGER DEFAULT NULL
                                                  );

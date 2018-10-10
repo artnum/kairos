@@ -2,7 +2,8 @@
 /* global IdxDB, Address */
 'use strict'
 
-var Return = function () {
+var Arrival = function () {
+  this.RChannel = new BroadcastChannel('reservations')
   var table = document.createElement('table')
   if (arguments[1]) {
     arguments[1].appendChild(table)
@@ -55,7 +56,7 @@ var Return = function () {
   this.bc = new BroadcastChannel('artnum/location')
 }
 
-Return.prototype.query = function (retval) {
+Arrival.prototype.query = function (retval) {
   return new Promise(function (resolve, reject) {
     fetch('/location/store/DeepReservation/' + retval.target).then(function (response) {
       if (response.ok) {
@@ -77,7 +78,7 @@ Return.prototype.query = function (retval) {
   })
 }
 
-Return.prototype.run = function () {
+Arrival.prototype.run = function () {
   var st = this.db.transaction('return').objectStore('return')
   st.openCursor().onsuccess = function (event) {
     var cursor = event.target.result
@@ -94,7 +95,7 @@ Return.prototype.run = function () {
   }.bind(this)
 }
 
-Return.prototype.html = {
+Arrival.prototype.html = {
   _txt: function (value) {
     var txt = value
     if (value == null) {
@@ -155,7 +156,7 @@ Return.prototype.html = {
   }
 }
 
-Return.prototype.done = function (event) {
+Arrival.prototype.done = function (event) {
   event.stopPropagation()
   var req = { id: this.id }
   if (this.done) {
@@ -165,10 +166,12 @@ Return.prototype.done = function (event) {
     req.done = now.toISOString()
   }
 
-  fetch('/location/store/Return/' + req.id, {method: 'PUT', body: JSON.stringify(req)})
+  fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+    this.RChannel.postMessage({op: 'touch', id: this.target})
+  })
 }
 
-Return.prototype.progress = function (event) {
+Arrival.prototype.progress = function (event) {
   event.stopPropagation()
   var req = { id: this.id }
   if (this.inprogress) {
@@ -178,10 +181,12 @@ Return.prototype.progress = function (event) {
     req.inprogress = now.toISOString()
   }
 
-  fetch('/location/store/Return/' + req.id, {method: 'PUT', body: JSON.stringify(req)})
+  fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+    this.RChannel.postMessage({op: 'touch', id: this.target})
+  })
 }
 
-Return.prototype.expandDetails = function (event) {
+Arrival.prototype.expandDetails = function (event) {
   var node = event.target
 
   while (node.nodeName !== 'TR') {
@@ -208,7 +213,7 @@ Return.prototype.expandDetails = function (event) {
   }
 }
 
-Return.prototype.sort = function (idx, direction = 'asc') {
+Arrival.prototype.sort = function (idx, direction = 'asc') {
   var i = 1
   var getValue = function (row, col) {
     return this.parent.childNodes[row].childNodes[col].getAttribute('data-artnum-sort')
@@ -229,7 +234,7 @@ Return.prototype.sort = function (idx, direction = 'asc') {
   }
 }
 
-Return.prototype.add = function (retval) {
+Arrival.prototype.add = function (retval) {
   var now = new Date()
   if (this.entry[retval.id] && this.entry[retval.id].domNode) {
     this.parent.removeChild(this.entry[retval.id].domNode)

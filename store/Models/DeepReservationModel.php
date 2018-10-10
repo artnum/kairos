@@ -37,9 +37,9 @@ class DeepReservationModel extends ReservationModel {
 
    function get($id) {
       $pre_statement = '
-         SELECT warehouse.*, reservation.*, return.* FROM reservation
+         SELECT warehouse.*, reservation.*, arrival.* FROM reservation
                LEFT JOIN warehouse ON reservation.reservation_warehouse = warehouse.warehouse_id
-               LEFT JOIN return ON reservation.reservation_id = return.return_target
+               LEFT JOIN arrival ON reservation.reservation_id = arrival.arrival_target
             WHERE reservation_id = :id';
       try {
          $st = $this->DB->prepare($pre_statement);

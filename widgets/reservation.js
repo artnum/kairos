@@ -475,7 +475,7 @@ define([
       var span = document.createElement('SPAN')
       var i = document.createElement('I')
       span.appendChild(i)
-      var ret = this.get('_return')
+      var ret = this.get('_arrival')
       if (this.is('confirmed') || (ret && ret.id && !ret.deleted)) {
         i.setAttribute('class', 'far fa-check-circle')
         if (ret && ret.creator) {
@@ -995,7 +995,7 @@ define([
       this.show()
       var nobegin = false
       var noend = false
-      var returnDone = this.get('_return') ? (this.get('_return').deleted ? false : Boolean(this.get('_return').done)) : false
+      var returnDone = this.get('_arrival') ? (this.get('_arrival').deleted ? false : Boolean(this.get('_arrival').done)) : false
 
       /* Last day included */
       var bgcolor = '#FFFFFF'
@@ -1147,8 +1147,8 @@ define([
       this.destroyReservation(this)
     },
 
-    saveReturn: function () {
-      var values = this.get('_return')
+    saveArrival: function () {
+      var values = this.get('_arrival')
       var suffix = ''
       var method = 'post'
 
@@ -1173,14 +1173,14 @@ define([
         values.inprogress = ''
       }
 
-      Req[method](locationConfig.store + '/Return' + suffix, {query: values}).then(djLang.hitch(function (result) {
+      Req[method](locationConfig.store + '/Arrival' + suffix, {query: values}).then(djLang.hitch(function (result) {
       }))
     },
 
     save: function () {
       var object = this.toObject()
       this.Channel.postMessage({op: 'put', data: object, localid: this.get('localid')})
-      this.saveReturn()
+      this.saveArrival()
     },
 
     copy: function () {

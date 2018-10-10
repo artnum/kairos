@@ -147,15 +147,15 @@ define([
       }
     },
 
-    _setReturnCreatorAttr: function (value) {
-      this._set('returnCreator', value)
+    _setArrivalCreatorAttr: function (value) {
+      this._set('Creator', value)
       if (this.loaded.user) {
-        var store = this.nReturnCreator.get('store')
+        var store = this.nArrivalCreator.get('store')
         if (store && value) {
           var item = store.get(value)
           if (item) {
             window.localStorage.setItem('user', JSON.stringify(value))
-            this.nReturnCreator.set('item', item)
+            this.nArrivalCreator.set('item', item)
           }
         }
       }
@@ -682,7 +682,7 @@ define([
       }
 
       this.nCreator.set('store', this.get('userStore'))
-      this.nReturnCreator.set('store', this.get('userStore'))
+      this.nArrivalCreator.set('store', this.get('userStore'))
 
       var changeCreator = function (event) {
         if (this.get('item')) {
@@ -690,7 +690,7 @@ define([
         }
       }
       djOn(this.nCreator, 'change', changeCreator.bind(this.nCreator))
-      djOn(this.nReturnCreator, 'change', changeCreator.bind(this.nReturnCreator))
+      djOn(this.nArrivalCreator, 'change', changeCreator.bind(this.nArrivalCreator))
 
       if (!this.loaded.user) {
         fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
@@ -710,8 +710,8 @@ define([
               that.set('creator', JSON.parse(window.localStorage.getItem('user')))
             }
           }
-          if (that.reservation.get('_return') && that.reservation.get('_return').creator) {
-            that.set('returnCreator', that.reservation.get('_return').creator)
+          if (that.reservation.get('_arrival') && that.reservation.get('_arrival').creator) {
+            that.set('arrivalCreator', that.reservation.get('_arrival').creator)
           } else {
             if (window.localStorage.getItem('user')) {
               that.set('creator', JSON.parse(window.localStorage.getItem('user')))
@@ -722,7 +722,7 @@ define([
         that.set('creator', that.reservation.get('creator'))
       }
 
-      if (this.reservation.is('confirmed') || (this.reservation.get('_return') && this.reservation.get('_return').id && !this.reservation.get('_return').deleted)) {
+      if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
         this.nConfirmed.set('checked', true)
       }
       this.toggleConfirmed()
@@ -771,29 +771,29 @@ define([
     refresh: function () {
       var retval = null
       /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
-      if ((retval = this.reservation.get('_return'))) {
+      if ((retval = this.reservation.get('_arrival'))) {
         if (retval.id && !retval.deleted) {
           this.nConfirmed.set('checked', true)
         }
-        this.nReturnDone.set('checked', Boolean(retval.done))
-        this.nReturnInprogress.set('checked', Boolean(retval.inprogress))
+        this.nArrivalDone.set('checked', Boolean(retval.done))
+        this.nArrivalInprogress.set('checked', Boolean(retval.inprogress))
         if (retval.reported) {
           var reported = djDateStamp.fromISOString(retval.reported)
-          this.nReturnDate.set('value', djDateStamp.toISOString(reported, {selector: 'date'}))
-          this.nReturnTime.set('value', djDateStamp.toISOString(reported, {selector: 'time'}))
+          this.nArrivalDate.set('value', djDateStamp.toISOString(reported, {selector: 'date'}))
+          this.nArrivalTime.set('value', djDateStamp.toISOString(reported, {selector: 'time'}))
         }
 
         if (retval.contact) {
-          this.nReturnAddress.set('value', retval.contact)
+          this.nArrivalAddress.set('value', retval.contact)
         }
         if (retval.other) {
-          this.nReturnKeys.set('value', retval.other)
+          this.nArrivalKeys.set('value', retval.other)
         }
         if (retval.comment) {
-          this.nReturnComment.set('value', retval.comment)
+          this.nArrivalComment.set('value', retval.comment)
         }
         if (retval.creator) {
-          this.nReturnCreator.set('value', retval.creator)
+          this.nArrivalCreator.set('value', retval.creator)
         }
       }
     },
@@ -815,7 +815,7 @@ define([
       }
     },
 
-    saveReturn: function (retForm) {
+    saveArrival: function (retForm) {
       var tx = window.App.DB.transaction('return', 'readwrite')
       var store = tx.objectStore('return')
       retForm._hash = ''
@@ -824,13 +824,13 @@ define([
 
     toggleConfirmed: function () {
       if (this.nConfirmed.get('checked')) {
-        var retVal = this.reservation.get('_return')
+        var retVal = this.reservation.get('_arrival')
         if (retVal && retVal.id && retVal.reported) {
-          this.nReturnDate.set('value', retVal.reported)
-          this.nReturnTime.set('value', retVal.reported)
+          this.nArrivalDate.set('value', retVal.reported)
+          this.nArrivalTime.set('value', retVal.reported)
         } else {
-          this.nReturnDate.set('value', new Date())
-          this.nReturnTime.set('value', new Date())
+          this.nArrivalDate.set('value', new Date())
+          this.nArrivalTime.set('value', new Date())
         }
         this.nBack.setAttribute('style', '')
         this.endTime.set('readOnly', true)
@@ -838,7 +838,7 @@ define([
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
         if (window.localStorage.getItem('user')) {
-          this.set('returnCreator', JSON.parse(window.localStorage.getItem('user')))
+          this.set('arrivalCreator', JSON.parse(window.localStorage.getItem('user')))
         }
       } else {
         this.nBack.setAttribute('style', 'display: none')
@@ -985,10 +985,10 @@ define([
     },
 
     doDelete: function (event) {
-      var retval = this.reservation.get('_return')
+      var retval = this.reservation.get('_arrival')
       if (this.reservation.remove()) {
         if (retval && retval.id) {
-          Query.exec(Path.url('store/Return/' + retval.id), {method: 'delete'})
+          Query.exec(Path.url('store/Arrival/' + retval.id), {method: 'delete'})
         }
         Query.exec(Path.url('store/Reservation/' + this.reservation.get('id')), {method: 'delete'}).then(function (result) {
           this.reservation.destroy()
@@ -998,7 +998,7 @@ define([
     },
 
     validate: function () {
-      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate, this.nCreator, this.nReturnCreator ].forEach(function (c) {
+      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate, this.nCreator, this.nArrivalCreator ].forEach(function (c) {
         c.set('state', 'Normal')
       })
 
@@ -1053,8 +1053,8 @@ define([
         }
       }
       if (this.nConfirmed.get('checked')) {
-        if (!this.nReturnCreator.get('item')) {
-          this.nReturnCreator.set('state', 'Error')
+        if (!this.nArrivalCreator.get('item')) {
+          this.nArrivalCreator.set('state', 'Error')
           return ['Le responsable pour la confirmation de fin est manquant ou inconnu', false]
         }
       }
@@ -1106,32 +1106,32 @@ define([
       }
 
       if (this.nConfirmed.get('checked')) {
-        var currentRet = this.reservation.get('_return') ? this.reservation.get('_return') : {}
+        var currentRet = this.reservation.get('_arrival') ? this.reservation.get('_arrival') : {}
         var retVal = {}
-        if (f.returnDate) {
-          if (f.returnTime) {
-            retVal.reported = f.returnDate.join(f.returnTime)
+        if (f.arrivalDate) {
+          if (f.arrivalTime) {
+            retVal.reported = f.arrivalDate.join(f.arrivalTime)
           } else {
-            retVal.reported = f.returnDate
+            retVal.reported = f.arrivalDate
           }
         }
-        retVal.comment = f.returnComment
-        retVal.contact = f.returnAddress
-        retVal.locality = f.returnLocality
-        retVal.other = f.returnKeys
-        if (this.nReturnCreator.get('item')) {
-          retVal.creator = this.nReturnCreator.get('item').id
+        retVal.comment = f.arrivalComment
+        retVal.contact = f.arrivalAddress
+        retVal.locality = f.arrivalLocality
+        retVal.other = f.arrivalKeys
+        if (this.nArrivalCreator.get('item')) {
+          retVal.creator = this.nArrivalCreator.get('item').id
         }
-        if (f.returnDone.length > 0 && !currentRet.done) {
+        if (f.arrivalDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
-        } else if (f.returnDone.length <= 0 && currentRet.done) {
+        } else if (f.arrivalDone.length <= 0 && currentRet.done) {
           retVal.done = null
         } else {
           retVal.done = currentRet.done
         }
-        if (f.returnInprogress.length > 0 && !currentRet.inprogress) {
+        if (f.arrivalInprogress.length > 0 && !currentRet.inprogress) {
           retVal.inprogress = djDateStamp.toISOString(new Date())
-        } else if (f.returnInprogress.length <= 0 && currentRet.inprogress) {
+        } else if (f.arrivalInprogress.length <= 0 && currentRet.inprogress) {
           retVal.inprogress = null
         } else {
           retVal.inprogress = currentRet.inprogress
@@ -1140,12 +1140,12 @@ define([
         if (currentRet.id) {
           retVal.id = currentRet.id
         }
-        this.reservation.set('_return', retVal)
+        this.reservation.set('_arrival', retVal)
       } else {
-        currentRet = this.reservation.get('_return')
+        currentRet = this.reservation.get('_arrival')
         if (currentRet) {
-          Req.del('/location/store/Return/' + currentRet.id)
-          this.reservation.set('_return', null)
+          Req.del('/location/store/Arrival/' + currentRet.id)
+          this.reservation.set('_arrival', null)
         }
       }
 

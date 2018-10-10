@@ -23,7 +23,7 @@ var findLastMod = function (db) {
         return
       }
 
-      var ts = Math.round(new Date(cursor.value.modification).getTime() / 1000)
+      var ts = parseInt(cursor.value.modification)
       if (lastmod < ts) {
         lastmod = ts
       }
@@ -33,7 +33,7 @@ var findLastMod = function (db) {
 }
 
 var fetchLastMod = function (lastmod, db) {
-  var url = Artnum.Path.url('store/Return')
+  var url = Artnum.Path.url('store/Arrival')
   url.searchParams.append('long', '1')
   url.searchParams.append('search.modification', '>' + lastmod)
   fetch(url).then(function (response) {
@@ -51,7 +51,7 @@ var fetchLastMod = function (lastmod, db) {
             } else {
               st.put(e)
             }
-            var ts = Math.round(new Date(e.modification).getTime() / 1000)
+            var ts = parseInt(e.modification)
             if (ts > newest) {
               newest = ts
             }
@@ -72,7 +72,7 @@ function clean (db) {
     do {
       var subkeys = keys.splice(0, 200)
       var strkeys = subkeys.join('|')
-      fetch('/location/store/Return/|' + strkeys).then(function (response) {
+      fetch('/location/store/Arrival/|' + strkeys).then(function (response) {
         response.json().then(function (data) {
           var entries = data.data
           var found = []
