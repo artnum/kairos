@@ -588,12 +588,8 @@ define([
         this.nCreator.set('value', this.reservation.get('creator'))
       }
 
-      if (this.reservation.get('title') == null) {
-        this.nTitle.set('placeholder', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label)
-        this.set('originalTitle', this.nMachineChange.getOptions(this.nMachineChange.get('value')).label)
-      } else {
+      if (this.reservation.get('title') != null) {
         this.nTitle.set('value', this.reservation.get('title'))
-        this.set('originalTitle', null)
       }
 
       if (this.reservation.get('folder')) {
@@ -1086,7 +1082,6 @@ define([
         this.reservation.set('sup', newEntry)
         this.reservation.set('previous', changeMachine)
         this.reservation.set('target', this.nMachineChange.get('value'))
-        this.reservation.set('title', this.get('originalTitle'))
       }
 
       let f = this.nForm.get('value')
@@ -1177,10 +1172,6 @@ define([
 
       if (f.title !== '') {
         this.reservation.set('title', f.title)
-      } else {
-        if (!this.get('originalTitle')) {
-          this.reservation.set('title', '')
-        }
       }
 
       this.reservation.save()
