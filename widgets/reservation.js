@@ -563,19 +563,21 @@ define([
 
       if (this.get('warehouse')) {
         var warehouse = this.get('_warehouse')
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-bullseye')
-        if (warehouse.color) {
-          i.setAttribute('style', 'color: ' + warehouse.color)
-        }
-        if (warehouse.name) {
-          ident.lastChild.setAttribute('data-balloon', warehouse.name)
-          ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-        }
+        if (warehouse) {
+          ident.appendChild(document.createElement('SPAN'))
+          ident.lastChild.appendChild(document.createTextNode(' '))
+          i = document.createElement('I')
+          i.setAttribute('class', 'fas fa-bullseye')
+          if (warehouse.color) {
+            i.setAttribute('style', 'color: ' + warehouse.color)
+          }
+          if (warehouse.name) {
+            ident.lastChild.setAttribute('data-balloon', warehouse.name)
+            ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
+          }
 
-        ident.lastChild.appendChild(i)
+          ident.lastChild.appendChild(i)
+        }
       }
 
       frag.lastChild.appendChild(ident)
