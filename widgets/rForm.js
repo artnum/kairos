@@ -112,6 +112,7 @@ define([
       this.reservation = args.reservation
       this.contacts = {}
       this.initRequests = []
+      this.LocalData = {}
       this.loaded = {status: false, warehouse: false, association: false, user: false}
       this.userStore = new DjMemory()
     },
@@ -915,9 +916,10 @@ define([
                 return
               }
               Query.exec('store/' + id).then(djLang.hitch(this, function (c) {
-                if (c.length > 0) {
+                if (c.success && c.length === 1) {
                   var e = c.data[0]
-                  e.linkId = result.data.id
+                  e.linkId = result.data[0].id
+                  that.createContact(e, type, true)
                   that.reservation.modified()
                 }
               }))
@@ -932,8 +934,9 @@ define([
         Query.exec(url).then(djLang.hitch(this, function (results) {
           if (results.length === 0) {
             Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
-              if (result.success) {
-                options.linkId = result.id
+              if (result.success && result.length === 1) {
+                options.linkId = result.data[0].id
+                that.createContact(options, type, true)
                 that.reservation.modified()
               }
             })
