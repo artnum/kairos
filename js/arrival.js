@@ -3,7 +3,6 @@
 'use strict'
 
 var Arrival = function () {
-  this.RChannel = new BroadcastChannel('reservations')
   var table = document.createElement('table')
   if (arguments[1]) {
     arguments[1].appendChild(table)
@@ -54,6 +53,7 @@ var Arrival = function () {
   }.bind(this))
 
   this.bc = new BroadcastChannel('artnum/location')
+  this.RChannel = new BroadcastChannel('reservations')
 }
 
 Arrival.prototype.query = function (retval) {
@@ -165,10 +165,9 @@ Arrival.prototype.done = function (event) {
     var now = new Date()
     req.done = now.toISOString()
   }
-
   fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
     this.RChannel.postMessage({op: 'touch', id: this.target})
-  })
+  }.bind(this))
 }
 
 Arrival.prototype.progress = function (event) {
@@ -183,7 +182,7 @@ Arrival.prototype.progress = function (event) {
 
   fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
     this.RChannel.postMessage({op: 'touch', id: this.target})
-  })
+  }.bind(this))
 }
 
 Arrival.prototype.expandDetails = function (event) {
@@ -304,6 +303,8 @@ Arrival.prototype.add = function (retval) {
   if (retval.inprogress) {
     progBtn.setAttribute('class', 'button selected')
   }
+
+  retval.RChannel = this.RChannel
   dom.appendChild(this.html.cell([progBtn, doneBtn]))
   doneBtn.addEventListener('click', this.done.bind(retval))
   progBtn.addEventListener('click', this.progress.bind(retval))
