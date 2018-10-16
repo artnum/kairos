@@ -28,8 +28,10 @@ function FReservation($reservation) {
                error_log('Exception caught : ' . $e->getMessage());
             }
          } else {
-            $reservations[$k] = null;
+            $reservation[$k] = null;
          }
+      } else {
+            $reservation[$k] = null;
       }
    }
 
