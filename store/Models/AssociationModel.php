@@ -8,10 +8,10 @@ class AssociationModel extends artnum\SQL {
    function write($data) {
       $results = parent::write($data);
       if($results) {
-         $now = new \DateTime('now', new \DateTimeZone('UTC')); $now = $now->format('c');
+         $now = time();
          try {
             $st = $this->DB->prepare('UPDATE reservation SET reservation_modification = :time WHERE reservation_id = :target');
-            $st->bindParam(':time', $now, \PDO::PARAM_STR);
+            $st->bindParam(':time', $now, \PDO::PARAM_INT);
             $st->bindParam(':target', $data['reservation'], \PDO::PARAM_INT);
             $st->execute();
          } catch (\Exception $e) {
