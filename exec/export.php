@@ -82,7 +82,7 @@ $RHeader = array(
    '   ' => 'string', 
    'L Fin' => 'date',
    '    ' => 'string', 
-   'Ref' => 'integer',
+   'Ref' => 'string',
    'Machine' => 'string',
    'Adresse' => 'string',
    'Localité' => 'string',
@@ -117,7 +117,7 @@ foreach ($entries as $entry) {
       $today = true;
    }
 
-   foreach (array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'created', 'deleted', 'closed', 'modification') as $attr) {
+   foreach (array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'closed') as $attr) {
       if (!empty($entry[$attr])) {
          $entry[$attr . '_date'] = (new DateTime($entry[$attr]))->format('Y-m-d');
          $entry[$attr . '_time'] = (new DateTime($entry[$attr]))->format('H:i');
