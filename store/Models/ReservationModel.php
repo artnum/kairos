@@ -11,6 +11,17 @@ class ReservationModel extends artnum\SQL {
       $this->conf('delete', 'reservation_deleted');
       $this->conf('delete.ts', true);
       $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd'));
+      $this->conf('force-type', array(
+         'reservation_reference' => 'string',
+         'reservation_title' => 'string',
+         'reservation_comment' => 'string',
+         'reservation_note' => 'string',
+         'reservation_folder' => 'string',
+         'reservation_gps' => 'string',
+         'reservation_equipment' => 'string',
+         'reservation_locality' => 'string',
+         'reservation_address' => 'string'
+      ));
    }
 }
 ?>
