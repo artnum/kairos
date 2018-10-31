@@ -6,7 +6,7 @@ define([
   'dojo/Evented',
   'artnum/Path',
   'artnum/Query',
-  'artnum/Doc',
+  'artnumd/Doc',
   'location/card'
 ], function (
   djDeclare,
@@ -158,7 +158,6 @@ define([
         cfield.innerHTML = ''
         cfield.appendChild(frag)
       })
-      console.log(inform)
     },
 
     _toInputDate: function (date) {
@@ -203,7 +202,6 @@ define([
 
     list: async function () {
       this.doc = new Doc({style: 'background-color: #FFFFCF'})
-
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
 
@@ -248,7 +246,6 @@ define([
             while (tr && tr.nodeName !== 'TR') {
               tr = tr.parentNode
             }
-            this.doc.close()
             window.location.hash = tr.getAttribute('data-url')
           }.bind(this))
         }
