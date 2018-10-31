@@ -519,9 +519,10 @@ define([
     _setTextDesc: function (root) {
       if (this._lasthash) {
         if (this._lasthash === this._hash) {
-          return this._currentTextDesc
+          return null
         }
       }
+
       this._lasthash = this._hash
       var frag = document.createElement('DIV')
 
@@ -1125,7 +1126,6 @@ define([
 
         var txtdiv = this._setTextDesc()
         var compdiv = this._drawComplement()
-        txtdiv.appendChild(tools)
 
         fastdom.mutate(djLang.hitch(this, function () {
           if (this.currentDom) {
@@ -1133,7 +1133,12 @@ define([
             this.currentDom.setAttribute('style', domstyle.join(';'))
             this.currentDom.setAttribute('class', domclass.join(' '))
             this.currentDom.appendChild(compdiv)
-            this.currentDom.appendChild(txtdiv)
+            if (txtdiv == null) {
+              this.currentDom.appendChild(this._currentTextDesc)
+            } else {
+              this.currentDom.appendChild(txtdiv)
+              txtdiv.appendChild(tools)
+            }
             this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
           }
         }))
