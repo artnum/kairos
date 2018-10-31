@@ -6,7 +6,7 @@ define([
   'dojo/Evented',
   'artnum/Path',
   'artnum/Query',
-  'artnumd/Doc',
+  'artnum/Doc',
   'location/card'
 ], function (
   djDeclare,
