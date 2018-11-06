@@ -671,13 +671,18 @@ html {
   display: flex;
 }
 
-.DocCount fieldset[name=contacts] {
+.DocCount fieldset[name=contacts], .DocCount fieldset[name=reference] {
 	display: block;
 	overflow: auto;
 }
 
 .DocCount fieldset[name=contacts] > div {
 	display: inline-block;
+}
+
+.DocCount div[data-reference-value] {
+  padding: 4px;
+  cursor: pointer;
 }
 
 .DocCount div[data-address-id] {

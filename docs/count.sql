@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "count" (
 	"count_begin" DATETIME DEFAULT NULL,
 	"count_end" DATETIME DEFAULT NULL,
 	"count_total" FLOAT DEFAULT 0,
+	"count_reference" TEXT DEFAULT NULL,
 	"count_comment" TEXT,
 	"count_printed" DATETIME DEFAULT NULL,
 	"count_deleted" TIMESTAMP DEFAULT NULL,

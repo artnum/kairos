@@ -93,8 +93,10 @@ define([
 
         for (var i = 0; i < r.length; i++) {
           var url = Path.url('store/ReservationContact')
-          url.searchParams.set('search.comment', '_facturation')
+          url.searchParams.set('search.comment:1', '_facturation')
+          url.searchParams.set('search.comment:2', '_client')
           url.searchParams.set('search.reservation', r[i])
+          url.searchParams.set('search._rules', '(comment:1 OR comment:2) AND reservation')
           var data = await Query.exec(url)
           if (data.success && data.length > 0) {
             for (var j = 0; j < data.length; j++) {
@@ -247,19 +249,50 @@ define([
               tr = tr.parentNode
             }
             window.location.hash = tr.getAttribute('data-url')
-          }.bind(this))
+          })
         }
       }
       this.doc.content(this.domNode)
     },
 
-    start: function () {
+    getReservations: async function () {
+      var r = this.get('reservations')
+      var reservations = []
+      for (var i = 0; i < r.length; i++) {
+        var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
+        if (x.success) {
+          x = x.data
+          if (!x.reference && x.address) {
+            x.reference = x.address
+          } else if (x.reference && x.address) {
+            x.reference = x.reference + ' / ' + x.address.split('\n').join(', ')
+          }
+          reservations.push(x)
+        }
+      }
+
+      return reservations
+    },
+
+    start: async function () {
       this.doc = new Doc({style: 'background-color: #FFFFCF'})
       this.Total = 0
       this.Entries = {}
 
+      var reservations = await this.getReservations()
+      var references = '<fieldset name="reference"><legend>Référence</legend>'
+      if (reservations.length > 0) {
+        for (var i = 0; i < reservations.length; i++) {
+          if (reservations[i].reference) {
+            references += '<div data-reference-value="' + reservations[i].reference + '"><b>Réservation ' + reservations[i].id + '</b>&nbsp;: ' + reservations[i].reference + '</div>'
+          }
+        }
+      }
+      references += '<input type="text" name="reference" value="' + (this.get('data').reference ? this.get('data').reference : '') + '"></fieldset>'
+
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
+
       div.innerHTML = '<h1>Décompte N°' + String(this.get('data-id')) + '</h1>' +
         '<form name="details"><ul>' +
         (this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '') +
@@ -269,8 +302,19 @@ define([
         '<fieldset><legend>Période</legend><label for="begin">Début</label>' +
         '<input type="date" value="' + (this.get('data').begin ? this._toInputDate(this.get('data').begin) : '') + '" name="begin" /><label for="end">Fin</label>' +
         '<input type="date" name="end" value="' + (this.get('data').end ? this._toInputDate(this.get('data').end) : '') + '" /></fieldset>' +
-        '<textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea></form>' +
+        '<label for="comment">Remarque interne</label><textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea>' +
+        references +
+        '</form>' +
         '<form name="invoice"><fieldset name="contacts"><fieldset></form>'
+
+      div.addEventListener('click', function (event) {
+        var node = event.target
+        if (node.getAttribute('data-reference-value')) {
+          var value = node.getAttribute('data-reference-value')
+          while (node.tagName !== 'INPUT') { node = node.nextSibling }
+          node.value = value
+        }
+      })
 
       this.domNode = div
       this.table = document.createElement('TABLE')
@@ -302,7 +346,7 @@ define([
       this.refresh()
 
       var forms = this.domNode.getElementsByTagName('FORM')
-      for (var i = 0; i < forms.length; i++) {
+      for (i = 0; i < forms.length; i++) {
         forms[i].addEventListener('submit', this.save.bind(this))
         this['form_' + forms[i].getAttribute('name')] = forms[i]
       }
@@ -364,7 +408,7 @@ define([
       } else {
         var reservations = this.get('reservations')
         if (reservations.length > 1) {
-          var rselect = '<select name="reservation">'
+          var rselect = '<select name="reservation"><option value=""></option>'
           reservations.forEach(function (r) {
             rselect += '<option value="' + r + '">' + r + '</option>'
           })
@@ -372,7 +416,7 @@ define([
         } else {
           rselect = ''
         }
-        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() + '" /></td><td><input step="any" name="quantity" type="number" value="' + String(value.quantity ? value.quantity : '').html() + '" /></td><td>---</td><td><input name="price" step="any" type="number" value="' + String(value.price ? value.price : '').html() + '" /></td><td><input name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() + '" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
+        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() + '" /></td><td><input step="any" name="quantity" type="number" lang="en" value="' + String(value.quantity ? value.quantity : '').html() + '" /></td><td>---</td><td><input name="price" lang="en" step="any" type="number" value="' + String(value.price ? value.price : '').html() + '" /></td><td><input lang="en" name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() + '" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter') {
             this.save(event)
@@ -536,7 +580,7 @@ define([
 
       var invoice = await Query.exec(Path.url(url), {method: method, body: JSON.stringify(query)})
 
-      query = {comment: this.form_details.getElementsByTagName('TEXTAREA')[0].value, total: this.Total, id: this.get('data-id')}
+      query = {comment: this.form_details.getElementsByTagName('TEXTAREA')[0].value, total: this.Total, id: this.get('data-id'), reference: null}
       if (invoice.success && invoice.length > 0) {
         if (invoice.data[0].id) {
           query.invoice = invoice.data[0].id

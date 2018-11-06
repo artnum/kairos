@@ -37,4 +37,31 @@ function FReservation($reservation) {
 
    return $reservation;
 }
+
+function fprice(float $price) {
+   if ($price - (intval($price)) > 0) {
+      return sprintf('%.2F', $price);
+   } else {
+      return sprintf('%d.–', intval($price));
+   }
+}
+
+function ffloat(float $value) {
+   if ($value - (intval($value)) > 0) {
+      return sprintf('%.2F', $value);
+   } else {
+      return sprintf('%d', intval($value));
+   }
+}
+
+function flat_text($txt) {
+   $txt = explode("\n", $txt);
+   $new_txt = array();
+   foreach($txt as $t) {
+      if (!empty(trim($t))) {
+         $new_txt[] = trim($t);
+      }
+   }
+   return join(", ", $new_txt);
+}
 ?>
