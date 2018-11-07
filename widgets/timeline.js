@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global locationConfig, getPageRect, getElementRect,fastdom */
+/* global getPageRect, getElementRect,fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -234,7 +234,7 @@ define([
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
-      djXhr.get(locationConfig.store + '/Status/', {handleAs: 'json', query: {'search.type': 0}}).then(function (results) {
+      djXhr.get(String(Path.url('store/Status/')), {handleAs: 'json', query: {'search.type': 0}}).then(function (results) {
         if (results && results.type === 'results') {
           for (var i = 0; i < results.data.length; i++) {
             sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
@@ -716,7 +716,7 @@ define([
 
         /* */
 
-        Req.get(locationConfig.store + '/Status/').then((results) => {
+        Req.get(String(Path.url('store/Status/'))).then((results) => {
           if (results && results.data && results.data.length > 0) {
             var p = new DtPopupMenuItem({label: 'Par status', popup: new DtDropDownMenu()})
             results.data.forEach(djLang.hitch(this, function (entry) {
@@ -1586,7 +1586,7 @@ define([
     doSearchLocation: function (loc) {
       var that = this
 
-      Req.get(locationConfig.store + '/Reservation/' + loc, {query: {'search.delete': '-'}}).then(function (result) {
+      Req.get(String(Path.url('store/Reservation/' + loc)), {query: {'search.delete': '-'}}).then(function (result) {
         if (result && result.data) {
           var data = result.data
           that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {

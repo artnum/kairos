@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global pSBC, locationConfig */
+/* global pSBC */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -368,7 +368,7 @@ define([
         }
 
         this.nMComment.set('value', c.comment)
-        this.nAssociationType.set('value', locationConfig.store + '/Status/' + c.type.id)
+        this.nAssociationType.set('value', String(Path.url('store/Status/' + c.type.id)))
 
         for (i = event.target; i; i = i.parentNode) {
           if (i.hasAttribute('class')) {
@@ -426,7 +426,7 @@ define([
     associationRefresh: function () {
       var def = new DjDeferred()
       var that = this
-      Req.get(locationConfig.store + '/Association/', { query: { 'search.reservation': this.reservation.get('id') } }).then(function (results) {
+      Req.get(String(Path.url('store/Association/')), { query: { 'search.reservation': this.reservation.get('id') } }).then(function (results) {
         if (results && results.data && results.data.length > 0) {
           var types = []
           results.data.forEach(function (r) {
@@ -652,7 +652,7 @@ define([
           results.data.forEach(function (d) {
             that.nAssociationType.addOption({
               label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-              value: locationConfig.store + '/Status/' + d.id
+              value: String(Path.url('store/Status/' + d.id))
             })
           })
         }
@@ -834,8 +834,12 @@ define([
         this.endDate.set('readOnly', true)
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
-        if (window.localStorage.getItem('user')) {
-          this.set('arrivalCreator', JSON.parse(window.localStorage.getItem('user')))
+        if (this.get('arrivalCreator')) {
+
+        } else {
+          if (window.localStorage.getItem('user')) {
+            this.set('arrivalCreator', JSON.parse(window.localStorage.getItem('user')))
+          }
         }
       } else {
         this.nBack.setAttribute('style', 'display: none')

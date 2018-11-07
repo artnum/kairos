@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, locationConfig, pSBC, fastdom */
+/* global DateRange, pSBC, fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -25,7 +25,8 @@ define([
   'location/rForm',
   'location/_Mouse',
 
-  'artnum/dojo/Request'
+  'artnum/dojo/Request',
+  'artnum/Path'
 ], function (
   djDeclare,
   djLang,
@@ -52,7 +53,8 @@ define([
   RForm,
   Mouse,
 
-  Req
+  Req,
+  Path
 ) {
   return djDeclare('location.reservation', [
     dtWidgetBase, djEvented, Mouse], {
@@ -1189,7 +1191,7 @@ define([
         values.inprogress = ''
       }
 
-      Req[method](locationConfig.store + '/Arrival' + suffix, {query: values}).then(djLang.hitch(function (result) {
+      Req[method](String(Path.url('store/Arrival' + suffix)), {query: values}).then(djLang.hitch(function (result) {
       }))
     },
 

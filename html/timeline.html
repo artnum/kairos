@@ -39,12 +39,6 @@ if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
   document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
 }
 
-locationConfig = { 
-	servers : [ ],
-	store: '/location/store/',
-	dlm: '/location/lock.php',
-	skipCache: true
-};
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",
 	parseOnLoad: true,

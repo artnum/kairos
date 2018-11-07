@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global locationConfig, getElementRect, fastdom */
+/* global getElementRect, fastdom */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -30,7 +30,8 @@ define([
   'location/rForm',
   'location/update',
 
-  'artnum/dojo/Request'
+  'artnum/dojo/Request',
+  'artnum/Path'
 ], function (
   djDeclare,
   djLang,
@@ -61,8 +62,8 @@ define([
 
   update,
 
-  Req
-
+  Req,
+  Path
 ) {
   return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
 
@@ -229,7 +230,7 @@ define([
 
       this.view = { rectangle: getElementRect(this.domNode) }
       this.verifyLock()
-      Req.get(locationConfig.store + '/Tags/?!=' + this.url).then((tags) => {
+      Req.get(String(Path.url('store/Tags/?!=' + this.url))).then((tags) => {
         if (tags.length > 0) {
           for (var i in tags.data[0]) {
             tags.data[0][i].forEach(function (tag) {
@@ -241,7 +242,7 @@ define([
         that.displayTags(that.tags)
       })
 
-      Req.get(locationConfig.store + '/Entry/', {query: { 'search.ref': this.target }}).then((result) => {
+      Req.get(String(Path.url('store/Entry')), {query: { 'search.ref': this.target }}).then((result) => {
         if (result && result.data) {
           result.data.forEach(function (attrs) {
             that[attrs.name] = attrs.value
@@ -332,7 +333,7 @@ define([
         that.tags = tags
         var q = {}
         q[that.url] = tags
-        Req.post(locationConfig.store + '/Tags/?!=' + that.url, { query: q }).then(function () {
+        Req.post(String(Path.url('store/Tags/?!=' + that.url)), { query: q }).then(function () {
           that.clearTags().then(() => { that.displayTags(tags) })
         })
       })
@@ -390,7 +391,7 @@ define([
       djOn.once(form, 'submit', (event) => {
         event.preventDefault()
 
-        Req.post(locationConfig.store + '/Entry', {query: { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then(() => {
+        Req.post(String(Path.url('store/Entry')), {query: { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then(() => {
           that.currentLocation = input.value
           that.clearLocation(); that.displayLocation()
         })
