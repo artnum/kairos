@@ -24,7 +24,7 @@ var findLastMod = function (db) {
       }
 
       var ts = parseInt(cursor.value.modification)
-      if (lastmod < ts) {
+      if (ts < Math.round((new Date()).getTime() / 1000) && lastmod < ts) {
         lastmod = ts
       }
       cursor.continue()
@@ -49,6 +49,9 @@ var fetchLastMod = function (lastmod, db) {
                 st.delete(e.id)
               }
             } else {
+              if (e.modification > Math.round((new Date()).getTime() / 1000)) {
+                e.modification = Math.round((new Date()).getTime() / 1000)
+              }
               st.put(e)
             }
             var ts = parseInt(e.modification)
