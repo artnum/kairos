@@ -34,6 +34,10 @@ td, th {
 	padding: 2px;
 }
 
+td.wide {
+  min-width: 18ch;
+}
+
 th {
 	cursor: pointer;
 }

@@ -9,7 +9,7 @@ var Arrival = function () {
   } else {
     document.body.appendChild(table)
   }
-  table.innerHTML = '<thead><tr><th>Machine</th><th>Ref</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Client</th><th>Contact</th><th>Clef</th><th>Divers</th><th></th></tr></thead>'
+  table.innerHTML = '<thead><tr><th>Machine</th><th>Ref</th><th>Localité</th><th>Adresse</th><th>Fin</th><th>Client</th><th>Contact</th><th>Clef</th><th>Matériel</th><th>Divers</th><th>Progression</th></tr></thead>'
   table.appendChild(document.createElement('tbody'))
   this.parent = table.lastChild
 
@@ -126,7 +126,11 @@ Arrival.prototype.html = {
     var span = document.createElement('td')
 
     span.innerHTML = this._txt(value)
-    span.setAttribute('class', 'label')
+    var className = 'label'
+    if (arguments[1]) {
+      className += ' ' + arguments[1]
+    }
+    span.setAttribute('class', className)
     span.setAttribute('data-artnum-sort', this._value(value))
     return span
   },
@@ -151,6 +155,9 @@ Arrival.prototype.html = {
       } else if (arguments[0] instanceof HTMLElement) {
         td.appendChild(arguments[0])
       }
+    }
+    if (arguments[1]) {
+      td.setAttribute('data-artnum-sort', arguments[1])
     }
     return td
   }
@@ -256,11 +263,14 @@ Arrival.prototype.add = function (retval) {
   this.entry[retval.id] = { domNode: document.createElement('tr'), data: retval }
   var dom = this.entry[retval.id].domNode
   var className = 'return'
+  var magnitude = 0
   if (now.getTime() < new Date(retval._target.end).getTime() && !retval.inprogress) {
     className += ' later'
+    magnitude = 1
   }
   if (retval.inprogress) {
     className += ' inprogress'
+    magnitude = 2
   }
 
   dom.setAttribute('class', className)
@@ -293,7 +303,26 @@ Arrival.prototype.add = function (retval) {
     dom.appendChild(this.html.label(''))
   }
   dom.appendChild(this.html.label(retval.other))
-  dom.appendChild(this.html.label(retval.comment))
+  var equipment = ''
+  if (retval._target.complements.length > 0) {
+    retval._target.complements.forEach(function (c) {
+      var duration = ''
+      if (c.follow === '1') {
+        duration = 'toute la réservation'
+      } else {
+        c.begin = new Date(c.begin)
+        c.end = new Date(c.end)
+        duration = 'du ' + c.begin.fullDate() + ' ' + c.begin.shortHour() + ' au ' + c.end.fullDate() + ' ' + c.end.shortHour()
+      }
+
+      equipment += '— ' + c.number + ' ' + c.type.name + ' ' + duration + '\n'
+    })
+  }
+  if (retval._target.equipment) {
+    equipment += retval._target.equipment
+  }
+  dom.appendChild(this.html.label(equipment, 'wide'))
+  dom.appendChild(this.html.label(retval.comment, 'wide'))
 
   if (retval.inprogress && !retval.done) {
   } else if (!retval.inprogress && !retval.done) {
@@ -305,7 +334,7 @@ Arrival.prototype.add = function (retval) {
   }
 
   retval.RChannel = this.RChannel
-  dom.appendChild(this.html.cell([progBtn, doneBtn]))
+  dom.appendChild(this.html.cell([progBtn, doneBtn], magnitude))
   doneBtn.addEventListener('click', this.done.bind(retval))
   progBtn.addEventListener('click', this.progress.bind(retval))
 
