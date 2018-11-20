@@ -40,18 +40,20 @@ function FReservation($reservation) {
 
 function fprice(float $price) {
    if ($price - (intval($price)) > 0) {
-      return sprintf('%.2F', $price);
+      $p = number_format($price, 2, '.', ' ');
    } else {
-      return sprintf('%d.–', intval($price));
+      $p = number_format($price, 0, '.', ' ') . '.–';
    }
+   return $p;
 }
 
 function ffloat(float $value) {
    if ($value - (intval($value)) > 0) {
-      return sprintf('%.2F', $value);
+      $p = number_format($value, 2, '.', ' ');
    } else {
-      return sprintf('%d', intval($value));
+      $p = number_format($value, 0, '.', ' ');
    }
+   return $p;
 }
 
 function flat_text($txt) {

@@ -124,9 +124,8 @@ define([
       }
     },
     raw: function (txt) {
-      var e = document.createElement('P')
+      var e = document.createElement('DIV')
       var first = true
-      this.own(e)
       txt.split(/(?:\r\n|\r|\n)/g).forEach(function (line) {
         if (!first) { e.appendChild(document.createElement('BR')) }
         e.appendChild(document.createTextNode(line))

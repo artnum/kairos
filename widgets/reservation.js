@@ -395,10 +395,6 @@ define([
         }))
       }
     },
-    _setWithWorkerAttr: function (value) {
-      this.addAttr('withWorker')
-      this._set('withWorker', value)
-    },
     _getDeliveryBeginAttr: function () {
       if (this.deliveryBegin) {
         return this.deliveryBegin

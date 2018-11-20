@@ -671,7 +671,11 @@ html {
   display: flex;
 }
 
-.DocCount fieldset[name=contacts], .DocCount fieldset[name=reference] {
+.DocCount fieldset[name=contacts] {
+	flex-wrap: wrap;
+}
+
+.DocCount fieldset[name=reference] {
 	display: block;
 	overflow: auto;
 }

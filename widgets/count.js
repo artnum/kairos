@@ -21,7 +21,22 @@ define([
     constructor: function () {
       this.inherited(arguments)
       var args = arguments
+
       this._initialized = new Promise(async function (resolve, reject) {
+        var units = await Query.exec(Path.url('store/Unit'))
+        if (units.success && units.length > 0) {
+          this.set('units', units.data)
+        } else {
+          this.set('units', [])
+        }
+
+        var articles = await Query.exec(Path.url('store/Article'))
+        if (articles.success && articles.length > 0) {
+          this.set('articles', articles.data)
+        } else {
+          this.set('articles', [])
+        }
+
         if (args[0]['data-id'] === '*') {
           var url = Path.url('store/Count')
           url.searchParams.set('search.deleted', '-')
@@ -41,14 +56,6 @@ define([
             }
           }
 
-          Query.exec(Path.url('store/Unit')).then(function (unit) {
-            if (unit.length > 0) {
-              this.set('units', unit.data)
-            } else {
-              this.set('units', [])
-            }
-          }.bind(this))
-
           if (create) {
             data = await Query.exec(Path.url('store/Count'), {method: 'post', body: JSON.stringify({date: new Date().toISOString()})})
             if (data.success) {
@@ -66,12 +73,20 @@ define([
           data = await Query.exec(url)
           if (data.success && data.length > 0) {
             var r = []
+            var deleted = []
             for (var i = 0; i < data.length; i++) {
-              r.push(data.data[i].reservation)
+              var exists = await Query.exec(Path.url('store/Reservation/' + data.data[i].reservation), {method: 'head'})
+              if (exists.success && exists.data.exists === '1') {
+                r.push(data.data[i].reservation)
+              } else {
+                deleted.push(data.data[i].reservation)
+              }
             }
             this.set('reservations', r)
+            this.set('deleted-reservation', deleted)
           } else {
             this.set('reservations', [])
+            this.set('deleted-reservation', [])
           }
 
           if (this.get('data').invoice) {
@@ -100,7 +115,7 @@ define([
           var data = await Query.exec(url)
           if (data.success && data.length > 0) {
             for (var j = 0; j < data.length; j++) {
-              if (data.data.freeform) {
+              if (data.data[j].freeform) {
                 if (!contacts[data.data[j].id]) {
                   contacts[data.data[j].id] = new Card()
                   contacts[data.data[j].id].entry(data.data[i])
@@ -210,7 +225,7 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><td>Numéro</td><td>Réservation</td><td>Période</td><td>Remarque</td><td>Facture</td><td>Montant</td><td>Impression</td></tr></thead>' +
+        '<thead><tr><td>Numéro</td><td>Facture</td><td>Réservation</td><td>Période</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
         '<tbody>'
 
       var data = this.get('data')
@@ -228,11 +243,11 @@ define([
           reservations = ''
         }
 
-        txt += '<tr data-url="#DEC' + String(data[i].id) + '"><td>' + data[i].id + '</td>' +
+        txt += '<tr data-url="#DEC' + String(data[i].id) + '" data-count-id="' + String(data[i].id) + '"><td>' + data[i].id + '</td>' +
+          '<td tabindex data-edit="0" data-invoice="' + (data[i].invoice ? data[i].invoice : '') + '">' + (data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '') + '</td>' +
           '<td>' + reservations + '</td>' +
           '<td>' + this._toHtmlRange(data[i].begin, data[i].end) + '</td>' +
           '<td>' + (data[i].comment ? this._shortDesc(data[i].comment) : '') + '</td>' +
-          '<td>' + (data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '') + '</td>' +
           '<td>' + (data[i].total ? data[i].total : '') + '</td>' +
           '<td>' + (data[i].printed ? this._toHtmlDate(data[i].printed) : '') + '</td>' +
           '</tr>'
@@ -245,10 +260,51 @@ define([
         if (trs[i].getAttribute('data-url')) {
           trs[i].addEventListener('click', function (event) {
             var tr = event.target
+            var td = event.target
             while (tr && tr.nodeName !== 'TR') {
+              if (tr.nodeName === 'TD') { td = tr }
               tr = tr.parentNode
             }
-            window.location.hash = tr.getAttribute('data-url')
+            if (td.getAttribute('data-invoice') !== null) {
+              if (td.getAttribute('data-edit') === '0') {
+                td.setAttribute('data-edit', '1')
+                var fn = async function (event) {
+                  var td = event.target
+                  while (td.nodeName !== 'TD') { td = td.parentNode }
+                  var invoice = td.getAttribute('data-invoice')
+                  if (invoice) {
+                    var result = await Query.exec(Path.url('store/Invoice/' + invoice), {method: 'PATCH', body: {id: invoice, winbiz: event.target.value}})
+                  } else {
+                    var tr = event.target
+                    while (tr.nodeName !== 'TR') { tr = tr.parentNode }
+                    var countid = tr.getAttribute('data-count-id')
+                    result = await Query.exec(Path.url('store/Invoice'), {method: 'POST', body: {winbiz: event.target.value}})
+                    if (result.success) {
+                      invoice = result.data[0].id
+                      td.setAttribute('data-invoice', invoice)
+                      result = await Query.exec(Path.url('store/Count/' + countid), {method: 'PATCH', body: {id: countid, invoice: result.data[0].id}})
+                    }
+                  }
+                  if (result.success) {
+                    td.setAttribute('data-edit', '0')
+                    result = await Query.exec(Path.url('store/Invoice/' + invoice))
+                    var winbiz = result.data.winbiz
+                    window.requestAnimationFrame(function () {
+                      td.innerHTML = winbiz
+                    })
+                  }
+                }
+                var input = document.createElement('INPUT')
+                input.addEventListener('blur', fn)
+                input.addEventListener('keypress', function (event) { if (event.key === 'Enter') { fn(event) } })
+                window.requestAnimationFrame(function () {
+                  td.innerHTML = ''
+                  td.appendChild(input)
+                })
+              }
+            } else {
+              window.location.hash = tr.getAttribute('data-url')
+            }
           })
         }
       }
@@ -260,7 +316,7 @@ define([
       var reservations = []
       for (var i = 0; i < r.length; i++) {
         var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
-        if (x.success) {
+        if (x.success && x.length) {
           x = x.data
           if (!x.reference && x.address) {
             x.reference = x.address
@@ -293,10 +349,18 @@ define([
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
 
+      var htmlReservation = []
+      this.get('reservations').forEach(function (r) {
+        htmlReservation.push(r)
+      })
+      this.get('deleted-reservation').forEach(function (d) {
+        htmlReservation.push('<del>' + d + '</del>')
+      })
+
       div.innerHTML = '<h1>Décompte N°' + String(this.get('data-id')) + '</h1>' +
         '<form name="details"><ul>' +
         (this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '') +
-        '<li>Réservation : ' + (this.get('reservations') ? this.get('reservations').join(', ') : '') + '</li>' +
+        '<li>Réservation : ' + (htmlReservation.length > 0 ? htmlReservation.join(', ') : '') + '</li>' +
         (this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '') +
         '</ul>' +
         '<fieldset><legend>Période</legend><label for="begin">Début</label>' +
@@ -305,8 +369,7 @@ define([
         '<label for="comment">Remarque interne</label><textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea>' +
         references +
         '</form>' +
-        '<form name="invoice"><fieldset name="contacts"><fieldset></form>'
-
+        '<form name="invoice"' + (this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '') + '><fieldset name="contacts"><fieldset></form>'
       div.addEventListener('click', function (event) {
         var node = event.target
         if (node.getAttribute('data-reference-value')) {
@@ -403,20 +466,69 @@ define([
       this.Total += value.total
 
       if (!edit) {
-        var txt = '<td>' + String(value.id ? value.id : '&#10022;') + '</td><td>' + String(value.reservation ? value.reservation : '') + '</td><td>' + String(value.description ? value.description : '-').html() + '</td><td>' + String(value.quantity ? value.quantity : '-').html() + '</td><td>' + String(value.unity ? value.unity : '').html() + '</td><td>' + String(value.price ? value.price : '').html() + '</td><td>' + String(value.total ? value.total : '0').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
+        var unit = ''
+        if (value.unit) {
+          this.get('units').forEach(function (u) {
+            if (u.id === value.unit) {
+              if (value.quantity > 1) {
+                unit = u.names
+              } else {
+                unit = u.name
+              }
+            }
+          })
+        }
+        var txt = '<td>' + String(value.id ? value.id : '&#10022;') + '</td><td>' + String(value.reservation ? value.reservation : '') + '</td><td>' +
+          String(value.description ? value.description : '-').html() + '</td><td>' + String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
+          String(unit).html() + '</td><td>' + String(value.price ? value.price : '').html() + '</td><td>' +
+          String(value.total ? value.total : '0').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('focus', this.edit.bind(this))
       } else {
         var reservations = this.get('reservations')
         if (reservations.length > 1) {
           var rselect = '<select name="reservation"><option value=""></option>'
           reservations.forEach(function (r) {
-            rselect += '<option value="' + r + '">' + r + '</option>'
+            var selected = ''
+            if (r === value.reservation) {
+              selected = 'selected'
+            }
+            rselect += '<option value="' + r + '" ' + selected + '>' + r + '</option>'
           })
           rselect += '</select>'
         } else {
           rselect = ''
         }
-        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() + '" /></td><td><input step="any" name="quantity" type="number" lang="en" value="' + String(value.quantity ? value.quantity : '').html() + '" /></td><td>---</td><td><input name="price" lang="en" step="any" type="number" value="' + String(value.price ? value.price : '').html() + '" /></td><td><input lang="en" name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() + '" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
+
+        var units = '<select name="unit"><option value=""></option>'
+        var optgroups = {}
+        this.get('units').forEach(function (u) {
+          var str = ''
+          var selected = ''
+          if (u.id === value.unit) {
+            selected = 'selected'
+          }
+          str = '<option value="' + u.id + '" ' + selected + '>' + u.name + (u.symbol ? ' [' + u.symbol + ']' : '') + '</option>'
+          console.log(u)
+          if (u.collection) {
+            if (!optgroups[u.collection]) {
+              optgroups[u.collection] = document.createElement('OPTGROUP')
+              optgroups[u.collection].setAttribute('label', u._collection.name)
+            }
+            optgroups[u.collection].innerHTML += str
+          } else {
+            units += str
+          }
+        })
+        for (var opts in optgroups) {
+          units += optgroups[opts].outerHTML
+        }
+        units += '</select>'
+
+        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() +
+          '" /></td><td><input step="any" name="quantity" type="number" lang="en" value="' + String(value.quantity ? value.quantity : '').html() +
+          '" /></td><td>' + units + '</td><td><input name="price" lang="en" step="any" type="number" value="' + String(value.price ? value.price : '').html() +
+          '" /></td><td><input lang="en" name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() +
+          '" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter') {
             this.save(event)
@@ -513,6 +625,7 @@ define([
           parent = parent.nextSibling
           continue
         }
+        this.calculate({target: parent})
         var id = parent.getAttribute('data-id')
 
         var inputs = parent.getElementsByTagName('INPUT')
@@ -584,6 +697,7 @@ define([
       if (invoice.success && invoice.length > 0) {
         if (invoice.data[0].id) {
           query.invoice = invoice.data[0].id
+          this.form_invoice.setAttribute('data-invoice', query.invoice)
         }
       }
       inputs = this.form_details.getElementsByTagName('INPUT')
