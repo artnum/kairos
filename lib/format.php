@@ -60,8 +60,9 @@ function flat_text($txt) {
    $txt = explode("\n", $txt);
    $new_txt = array();
    foreach($txt as $t) {
-      if (!empty(trim($t))) {
-         $new_txt[] = trim($t);
+      $_t = trim($t);
+      if (!empty($_t)) {
+         $new_txt[] = trim($_t);
       }
    }
    return join(", ", $new_txt);
