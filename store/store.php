@@ -4,6 +4,7 @@ $file = new \artnum\Files();
 $rand = new \artnum\Random();
 $http_request = new \artnum\HTTP\JsonRequest();
 $store = new \artnum\JStore\Generic($http_request, true);
+$lock = new \artnum\Lock('location', '../private/');
 
 $sigfile = getcwd() . '/../private/sig.txt';
 if (!file_exists($sigfile) && $file->writable($sigfile)) {
@@ -26,6 +27,7 @@ $ldap_db = new artnum\LDAPDB(
 /*$usersrc = new \artnum\JStore\User($pdo_db, 'User', array('username' => 'user_nick', 'key' => 'user_key'));
 $store->add_auth('\artnum\JStore\Auth', $usersrc, $file->fromFile($sigfile)); */
 
+$store->set('lockmanager', $lock);
 $store->add_db('sql', $pdo_db);
 $store->add_db('ldap', $ldap_db);
 

@@ -248,6 +248,13 @@ define([
       if (typeof window.Rent.Days === 'undefined') {
         window.Rent.Days = {}
       }
+
+      window.UnloadCall = {}
+      window.addEventListener('beforeunload', function (event) {
+        for (var i in window.UnloadCall) {
+          window.UnloadCall[i]()
+        }
+      })
     },
 
     createWindow: function () {

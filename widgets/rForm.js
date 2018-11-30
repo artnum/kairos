@@ -109,6 +109,7 @@ define([
     },
 
     constructor: function (args) {
+      this.Disabled = false
       this.reservation = args.reservation
       this.contacts = {}
       this.initRequests = []
@@ -332,6 +333,7 @@ define([
     },
 
     doEditComplement: function (event) {
+      if (this.Disabled) { return }
       var id = null
       var node
       var c
@@ -406,6 +408,7 @@ define([
     },
 
     doRemoveComplement: function (event) {
+      if (this.Disabled) { return }
       var id = null
       var that = this
       for (var i = event.target; i; i = i.parentNode) {
@@ -572,6 +575,25 @@ define([
       this.nMBeginTime.set('value', this.beginTime.get('value'))
       this.nMEndDate.set('value', this.endDate.get('value'))
       this.nMEndTime.set('value', this.endTime.get('value'))
+    },
+
+    disable: function (v) {
+      this.Disabled = v
+      ;[ 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON' ].forEach(function (type) {
+        var inputs = this.domNode.getElementsByTagName(type)
+        for (var i = 0; i < inputs.length; i++) {
+          var widget = dtRegistry.getEnclosingWidget(inputs[i])
+          if (widget) {
+            widget.set('disabled', v)
+          } else {
+            if (v) {
+              inputs[i].setAttribute('disabled', 'disabled')
+            } else {
+              inputs[i].removeAttribute('disabled')
+            }
+          }
+        }
+      }.bind(this))
     },
 
     startup: function () {
@@ -758,10 +780,9 @@ define([
           this.nStatus.set('value', this.reservation.get('status'))
         }
 
-        that.doResetComplement()
-        that._pane[0].set('title', 'Réservation ' + that.reservation.get('id'))
+        this.doResetComplement()
         this.refresh()
-        that.initRequests = []
+        this.initRequests = []
       }))
     },
 
@@ -862,7 +883,7 @@ define([
       var contact = new DtContentPane({
         title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
         content: c.domNode,
-        closable: true,
+        closable: !this.Disabled,
         contactType: type,
         contactCard: c,
         contactLinkId: entry.linkId,

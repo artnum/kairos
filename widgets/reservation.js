@@ -24,6 +24,7 @@ define([
 
   'location/rForm',
   'location/_Mouse',
+  'location/lock',
 
   'artnum/dojo/Request',
   'artnum/Path'
@@ -52,6 +53,7 @@ define([
 
   RForm,
   Mouse,
+  Lock,
 
   Req,
   Path
@@ -83,6 +85,8 @@ define([
       this._gui = {
         hidden: false
       }
+      this.Lock = new Lock(null)
+      this.own(this.Lock)
     },
 
     fromJson: function (json) {
@@ -133,7 +137,7 @@ define([
       }
       if (!this.color) { this.color = 'FFF' }
       if (!this.complements) { this.complements = [] }
-      if (!this.IDent) { this.IDent = this.id }
+      if (!this.IDent) { this.set('IDent', this.id) }
 
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
       this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
@@ -141,7 +145,6 @@ define([
         this.sup.overlap()
         this.sup.resize()
       }
-      this.syncForm()
     },
 
     toObject: function () {
@@ -219,6 +222,7 @@ define([
 
           if (!msg.data.unchanged || msg.data.new) {
             this.fromJson(msg.data.data)
+            this.Lock.lock()
             return
           }
           if (!msg.data.deleted) {
@@ -298,6 +302,7 @@ define([
     _setIDentAttr: function (value) {
       this.IDent = value
       this.id = value
+      this.Lock.on('Reservation/' + this.id)
     },
     _setEquipmentAttr: function (value) {
       this.addAttr('equipment')
@@ -683,7 +688,9 @@ define([
       }
       this.popMeUp()
     },
-    popMeUp: function () {
+    popMeUp: async function () {
+      var locked = await this.Lock.lock()
+
       var tContainer = dtRegistry.byId('tContainer')
       if (this.get('localid') == null) { return }
       if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
@@ -694,8 +701,13 @@ define([
       var f = new RForm({ reservation: this })
       this.highlight()
 
+      var title = 'Réservation ' + this.get('id')
+      if (!locked) {
+        title = '<i class="fas fa-lock"></i> ' + title
+      }
+
       var cp = new DtContentPane({
-        title: '<i class="fas fa-spinner fa-spin"></i> Réservation ' + this.get('id'),
+        title: title,
         closable: true,
         id: 'ReservationTab_' + this.get('localid'),
         content: f.domNode})
@@ -708,6 +720,9 @@ define([
       this.myContentPane = cp
       f.set('_pane', [cp, tContainer])
       this.syncForm()
+      if (!locked) {
+        this.myForm.disable(true)
+      }
     },
 
     close: function () {
@@ -718,6 +733,7 @@ define([
     },
     closeForm: function () {
       this.myForm = null
+      this.Lock.unlock()
     },
 
     syncForm: function () {
@@ -954,7 +970,9 @@ define([
         this.currentDom = document.createElement('DIV')
       }
 
-      djOn(this.currentDom, 'dblclick', djLang.hitch(this, (e) => { e.stopPropagation(); this.popMeUp() }))
+      if (!this.DblClick) {
+        this.DblClick = djOn(this.currentDom, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
+      }
       if (!this.currentDom.parentNode) {
         fastdom.mutate(function () {
           this.sup.data.appendChild(this.currentDom)
