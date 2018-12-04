@@ -1,5 +1,5 @@
 /* eslint-env worker */
-/* global IdxDB, objectHash, Path */
+/* global IdxDB, objectHash, Artnum */
 'use strict'
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
@@ -95,7 +95,7 @@ new IdxDB().then(function (db) {
         var subkeys = keys.splice(0, 200)
         var strkeys = subkeys.join('|')
 
-        fetch(Path.url('/store/Reservation/|' + strkeys), fetchInit).then(function (response) {
+        fetch(Artnum.Path.url('/store/Reservation/|' + strkeys), fetchInit).then(function (response) {
           response.json().then(function (data) {
             var entries = data.data
             var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
@@ -121,7 +121,7 @@ new IdxDB().then(function (db) {
   }
 
   function deleted (db) {
-    fetch(Path.url('/store/Reservation', {params: {'search.deleted': '=>=' + today}}), fetchInit).then(function (response) {
+    fetch(Artnum.Path.url('/store/Reservation', {params: {'search.deleted': '=>=' + today}}), fetchInit).then(function (response) {
       response.json().then(function (data) {
         if (data.type === 'results' && data.data.length > 0) {
           var st = db.transaction('reservations', 'readwrite').objectStore('reservations')

@@ -1,5 +1,5 @@
 /* eslint-env worker */
-/* global IdxDB, objectHash, Path */
+/* global IdxDB, objectHash, Artnum */
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 importScripts('https://artnum.ch/code/js/Path.js')
@@ -101,7 +101,7 @@ new IdxDB().then(function (DB) {
   }
 
   var checker = function () {
-    var url = String(Path.url('/store/DeepReservation'))
+    var url = String(Artnum.Path.url('/store/DeepReservation'))
     var parameters = ''
     console.log(last)
     if (last.modification === 0) {

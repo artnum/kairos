@@ -1,5 +1,5 @@
 /* eslint-env worker */
-/* global IdxDB, Artnum, Path */
+/* global IdxDB, Artnum */
 'use strict'
 
 importScripts('../localdb.js')
@@ -75,7 +75,7 @@ function clean (db) {
     do {
       var subkeys = keys.splice(0, 200)
       var strkeys = subkeys.join('|')
-      fetch(Path.url('/store/Arrival/|' + strkeys)).then(function (response) {
+      fetch(Artnum.Path.url('/store/Arrival/|' + strkeys)).then(function (response) {
         response.json().then(function (data) {
           var entries = data.data
           var found = []
