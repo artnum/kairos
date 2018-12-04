@@ -1,7 +1,8 @@
 /* eslint-env worker */
-/* global IdxDB */
+/* global IdxDB, Path */
 'use strict'
 importScripts('../localdb.js')
+importScripts('https://artnum.ch/code/js/Path.js')
 
 var fetchInit = {credentials: 'same-origin'}
 new IdxDB().then(function (db) {
@@ -13,7 +14,7 @@ new IdxDB().then(function (db) {
     return new Promise(function (resolve, reject) {
       var method = data.id ? 'PUT' : 'POST'
       var url = data.id ? '/' + String(data.id) : '/'
-      fetch('/location/store/Reservation/' + url, Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
+      fetch(Path.url('/store/Reservation/' + url), Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
         response.json().then(function (data) {
           if (data.type === 'results') {
             if (data.success) {
@@ -28,7 +29,7 @@ new IdxDB().then(function (db) {
   var get = function (id, force = false) {
     return new Promise(function (resolve, reject) {
       var queryServer = function () {
-        fetch('/location/store/DeepReservation/' + id, fetchInit).then(function (response) {
+        fetch(Path.url('/store/DeepReservation/' + id), fetchInit).then(function (response) {
           response.json().then(function (data) {
             try {
               data['_lastfetch'] = new Date().toISOString()
@@ -83,7 +84,7 @@ new IdxDB().then(function (db) {
     switch (msg.data.op) {
       case 'touch':
         if (msg.data.id) {
-          fetch('/location/store/Reservation/' + String(msg.data.id), Object.assign({method: 'PUT', body: JSON.stringify({id: msg.data.id})}, fetchInit))
+          fetch(Path.url('/store/Reservation/' + String(msg.data.id)), Object.assign({method: 'PUT', body: JSON.stringify({id: msg.data.id})}, fetchInit))
         }
         break
       case 'put':

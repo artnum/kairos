@@ -1165,7 +1165,7 @@ define([
       } else {
         currentRet = this.reservation.get('_arrival')
         if (currentRet) {
-          Req.del('/location/store/Arrival/' + currentRet.id)
+          Req.del(Path.url('/store/Arrival/' + currentRet.id))
           this.reservation.set('_arrival', null)
         }
       }

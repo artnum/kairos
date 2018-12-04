@@ -168,9 +168,9 @@ define([
 
       this.zoomCss = document.createElement('style')
 
-      this.Reservation = new Worker('/location/js/ww/reservations.js')
+      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
 
-      this.Cleaner = new Worker('/location/js/ww/cleaner.js')
+      this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
         if (e.data.op) {
@@ -196,7 +196,7 @@ define([
         this.unwait()
       })
 
-      this.Updater = new Worker('/location/js/ww/updater.js')
+      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
         switch (e.data.type) {
@@ -215,7 +215,7 @@ define([
         }
       })
 
-      this.Filter = new Worker('/location/js/ww/filter.js')
+      this.Filter = new Worker(Path.url('/js/ww/filter.js'))
       this.Filter.onmessage = djLang.hitch(this, function (event) {
         this.searchMenu.filterNone.set('disabled', false)
         if (event.data) {
@@ -649,7 +649,7 @@ define([
     },
 
     revision: function () {
-      fetch('/location/revision.php').then(function (response) {
+      fetch(Path.url('/revision.php')).then(function (response) {
         response.json().then(function (data) {
           this.currentRevision = data.revision
           var currentRevision = window.localStorage.getItem('revision')

@@ -1232,11 +1232,11 @@ define([
             comment: String(complements[i].comment),
             reservation: String(toid),
             target: complements[i].target,
-            type: complements[i].type ? (complements[i].type.id ? '/location/store/Status/' + String(complements[i].type.id) : '') : '',
+            type: complements[i].type ? (complements[i].type.id ? Path.url('/store/Status/' + String(complements[i].type.id)) : '') : '',
             number: String(complements[i].number),
             follow: String(complements[i].follow)
           }
-          allReqs.push(fetch('/location/store/Association/', {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
+          allReqs.push(fetch(Path.url('/store/Association/'), {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
         }
       }
       var contacts = this.get('contacts')
@@ -1249,7 +1249,7 @@ define([
             reservation: String(toid),
             target: contact.target ? (contact.target.IDent ? '/Contacts/' + contact.target.IDent : '') : ''
           }
-          allReqs.push(fetch('/location/store/ReservationContact', {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
+          allReqs.push(fetch(Path.url('/store/ReservationContact'), {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
         }
       }
       djAll(allReqs).then(function () {

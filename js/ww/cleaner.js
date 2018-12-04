@@ -1,8 +1,9 @@
 /* eslint-env worker */
-/* global IdxDB, objectHash */
+/* global IdxDB, objectHash, Path */
 'use strict'
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
+importScripts('https://artnum.ch/code/js/Path.js')
 
 var fetchInit = {credentials: 'same-origin'}
 var Entries = {}
@@ -94,7 +95,7 @@ new IdxDB().then(function (db) {
         var subkeys = keys.splice(0, 200)
         var strkeys = subkeys.join('|')
 
-        fetch('/location/store/Reservation/|' + strkeys, fetchInit).then(function (response) {
+        fetch(Path.url('/store/Reservation/|' + strkeys), fetchInit).then(function (response) {
           response.json().then(function (data) {
             var entries = data.data
             var st = db.transaction('reservations', 'readwrite').objectStore('reservations')
@@ -120,7 +121,7 @@ new IdxDB().then(function (db) {
   }
 
   function deleted (db) {
-    fetch('/location/store/Reservation?search.deleted=>=' + today, fetchInit).then(function (response) {
+    fetch(Path.url('/store/Reservation', {params: {'search.deleted': '=>=' + today}}), fetchInit).then(function (response) {
       response.json().then(function (data) {
         if (data.type === 'results' && data.data.length > 0) {
           var st = db.transaction('reservations', 'readwrite').objectStore('reservations')

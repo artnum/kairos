@@ -1,5 +1,7 @@
 <?PHP
 require('artnum/autoload.php');
+require('../lib/url.php');
+
 $file = new \artnum\Files();
 $rand = new \artnum\Random();
 $http_request = new \artnum\HTTP\JsonRequest();

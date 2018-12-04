@@ -2,7 +2,7 @@
 include('base.php');
 include('../lib/format.php');
 
-$JClient = new artnum\JRestClient('http://localhost/location/store');
+$JClient = new artnum\JRestClient(base_url('/store'));
 $Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
 $res = $JClient->get($_GET['id'], 'Count');

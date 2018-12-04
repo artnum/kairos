@@ -1,5 +1,5 @@
 /* eslint-env browser */
-/* global IdxDB, Address */
+/* global IdxDB, Address, Path */
 'use strict'
 
 var Arrival = function () {
@@ -30,7 +30,7 @@ var Arrival = function () {
     }.bind(this))
   }
 
-  this.ww = new Worker('/location/js/ww/return.js')
+  this.ww = new Worker(Path.url('/js/ww/return.js'))
   this.ww.onmessage = function (msg) {
     if (msg && msg.data) {
       if (msg.data.delete && msg.data.id) {
@@ -58,7 +58,7 @@ var Arrival = function () {
 
 Arrival.prototype.query = function (retval) {
   return new Promise(function (resolve, reject) {
-    fetch('/location/store/DeepReservation/' + retval.target).then(function (response) {
+    fetch(Path.url('/store/DeepReservation/' + retval.target)).then(function (response) {
       if (response.ok) {
         response.json().then(function (reservation) {
           if (reservation.type === 'results' && reservation.data !== null) {
@@ -172,7 +172,7 @@ Arrival.prototype.done = function (event) {
     var now = new Date()
     req.done = now.toISOString()
   }
-  fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+  fetch(Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
     this.RChannel.postMessage({op: 'touch', id: this.target})
   }.bind(this))
 }
@@ -187,7 +187,7 @@ Arrival.prototype.progress = function (event) {
     req.inprogress = now.toISOString()
   }
 
-  fetch('/location/store/Arrival/' + req.id, {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+  fetch(Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
     this.RChannel.postMessage({op: 'touch', id: this.target})
   }.bind(this))
 }

@@ -1,7 +1,8 @@
 /* eslint-env worker */
-/* global IdxDB, objectHash */
+/* global IdxDB, objectHash, Path */
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
+importScripts('https://artnum.ch/code/js/Path.js')
 
 var msgs = []
 self.onmessage = function (msg) {
@@ -100,7 +101,7 @@ new IdxDB().then(function (DB) {
   }
 
   var checker = function () {
-    var url = '/location/store/DeepReservation'
+    var url = String(Path.url('/store/DeepReservation'))
     var parameters = ''
     console.log(last)
     if (last.modification === 0) {

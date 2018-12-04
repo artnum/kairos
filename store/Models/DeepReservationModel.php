@@ -133,7 +133,7 @@ class DeepReservationModel extends ReservationModel {
                      }
                   } else {
                      $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
-                     $res = $jrc->direct($_SERVER['SERVER_NAME'] . '/location/store/' . $contact['target']);
+                     $res = $jrc->direct(base_url('/store/' . $contact['target']));
                      if($res['lenght'] > 0) {
                         $contact['target'] = $res['data'][0];
                      }

@@ -62,7 +62,7 @@ function flat_text($txt) {
    foreach($txt as $t) {
       $_t = trim($t);
       if (!empty($_t)) {
-         $new_txt[] = trim($_t);
+         $new_txt[] = $_t;
       }
    }
    return join(", ", $new_txt);
