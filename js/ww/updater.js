@@ -9,7 +9,7 @@ self.onmessage = function (msg) {
   msgs.push(msg)
 }
 
-var RChannel = new BroadcastChannel('reservations')
+var RChannel = new BroadcastChannel(Artnum.Path.bcname('reservations'))
 
 new IdxDB().then(function (DB) {
   var req = new XMLHttpRequest()

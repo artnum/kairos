@@ -593,7 +593,7 @@ define([
 
     postCreate: function () {
       var tContainer = dtRegistry.byId('tContainer')
-      this.bc = new BroadcastChannel('artnum/location')
+      this.bc = new BroadcastChannel(Path.bcname('artnum/location'))
       this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()

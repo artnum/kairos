@@ -52,8 +52,8 @@ var Arrival = function () {
     this.run()
   }.bind(this))
 
-  this.bc = new BroadcastChannel('artnum/location')
-  this.RChannel = new BroadcastChannel('reservations')
+  this.bc = new BroadcastChannel(Artnum.Path.bcname('artnum/location'))
+  this.RChannel = new BroadcastChannel(Artnum.Path.bcname('reservations'))
 }
 
 Arrival.prototype.query = function (retval) {

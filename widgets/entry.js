@@ -192,7 +192,7 @@ define([
       var that = this
       this.load()
       this.update()
-      this.Channel = new BroadcastChannel('reservations')
+      this.Channel = new BroadcastChannel(Path.bcname('reservations'))
       this.Channel.onmessage = function (msg) {
         if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target) && msg.data.new) {
           var local = false

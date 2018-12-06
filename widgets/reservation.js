@@ -205,7 +205,7 @@ define([
       }
     },
     postCreate: function () {
-      var bc = new BroadcastChannel('reservations')
+      var bc = new BroadcastChannel(Path.bcname('reservations'))
       this.Channel = bc
       bc.onmessage = function (msg) {
         if (!msg.data && msg.data.data) {

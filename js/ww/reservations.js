@@ -8,7 +8,7 @@ var fetchInit = {credentials: 'same-origin'}
 new IdxDB().then(function (db) {
   console.log('Start reservation thread')
 
-  var bc = new BroadcastChannel('reservations')
+  var bc = new BroadcastChannel(Artnum.Path.bcname('reservations'))
 
   var write = function (data) {
     return new Promise(function (resolve, reject) {
