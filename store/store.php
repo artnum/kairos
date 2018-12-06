@@ -15,7 +15,7 @@ if (!file_exists($sigfile) && $file->writable($sigfile)) {
    throw new Exception('No signature file');
 }
 
-$pdo_db = new PDO('sqlite:location.sqlite');
+$pdo_db = new PDO('sqlite:../private/location.sqlite');
 $pdo_db->exec('PRAGMA foreign_keys = YES;');
 $ldap_db = new artnum\LDAPDB(
          array(
