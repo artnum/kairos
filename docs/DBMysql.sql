@@ -44,9 +44,9 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_modification" INTEGER DEFAULT NULL -- unix ts
 	);
-CREATE INDEX IF NOT EXISTS "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
-CREATE INDEX IF NOT EXISTS "reservationEndIdx" ON "reservation"("reservation_end"(32));
-CREATE INDEX IF NOT EXISTS "reservationDeletedIdx" ON "reservation"("reservation_deleted");
+CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
+CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
+CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT
@@ -74,14 +74,14 @@ CREATE TABLE IF NOT EXISTS "warehouse"		( "warehouse_id" INTEGER PRIMARY KEY AUT
 CREATE TABLE IF NOT EXISTS "tags" 		( "tags_value" TEXT,
 						  "tags_target" TEXT
 						);
-CREATE INDEX IF NOT EXISTS "tagsTargetIdx" ON "tags"("tags_target"(16)); -- target are reference which are, actually, up to 4 letters
+CREATE INDEX "tagsTargetIdx" ON "tags"("tags_target"(16)); -- target are reference which are, actually, up to 4 letters
 
 CREATE TABLE IF NOT EXISTS "entry"		( "entry_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "entry_ref" TEXT, 
 						  "entry_name" TEXT,
 						  "entry_value" TEXT
 						);
-CREATE INDEX IF NOT EXISTS "entryRefIdx" ON "entry"("entry_ref"(16)); -- as tagsTargetIdx
+CREATE INDEX "entryRefIdx" ON "entry"("entry_ref"(16)); -- as tagsTargetIdx
 
 
 -- this table is not used yet and might never be
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS "arrival" (
 		ON UPDATE CASCADE
 		ON DELETE CASCADE
         );
-CREATE INDEX IF NOT EXISTS "arrivalTargetIdx" ON "arrival"("arrival_target");
+CREATE INDEX "arrivalTargetIdx" ON "arrival"("arrival_target");
 
 -- Invoices
 CREATE TABLE IF NOT EXISTS "invoice" (
