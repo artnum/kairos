@@ -7,7 +7,11 @@ importScripts('https://artnum.ch/code/js/Path.js')
 
 var fetchInit = {credentials: 'same-origin'}
 var Entries = {}
-var today = new Date().toISOString().split('T')[0]
+var today = new Date()
+today.setUTCHours(0)
+today.setUTCMinutes(0)
+today.setUTCSeconds(0)
+today = Math.floor(today.getTime() / 1000) - 1
 
 function rebuild (db) {
   var x = new Promise(function (resolve, reject) {
@@ -121,7 +125,7 @@ new IdxDB().then(function (db) {
   }
 
   function deleted (db) {
-    fetch(Artnum.Path.url('/store/Reservation', {params: {'search.deleted': '=>=' + today}}), fetchInit).then(function (response) {
+    fetch(Artnum.Path.url('/store/Reservation', {params: {'search.deleted': '>=' + today}}), fetchInit).then(function (response) {
       response.json().then(function (data) {
         if (data.type === 'results' && data.data.length > 0) {
           var st = db.transaction('reservations', 'readwrite').objectStore('reservations')

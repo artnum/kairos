@@ -1488,8 +1488,8 @@ define([
 
         this.Updater.postMessage({type: 'move',
           content: [String(Path.url('store/DeepReservation')), {
-            query: { 'search.begin': '<' + djDateStamp.toISOString(end, { selector: 'date', zulu: true }),
-              'search.end': '>' + djDateStamp.toISOString(begin, { selector: 'date', zulu: true }),
+            query: { 'search.begin': '<' + djDateStamp.toISOString(end, { zulu: true }),
+              'search.end': '>' + djDateStamp.toISOString(begin, { zulu: true }),
               'search.deleted': '-'}}]
         })
       }
