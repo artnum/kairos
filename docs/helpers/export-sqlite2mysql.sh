@@ -10,9 +10,9 @@ if [ -z "$DBNAME" ]; then
 fi
 
 echo "SET sql_mode = 'ANSI';" > "$IMPORT"
-echo "USE '$DBNAME';" >> "$IMPORT"
+echo "USE \"$DBNAME\";" >> "$IMPORT"
 echo "SET FOREIGN_KEY_CHECKS=0;" >> "$IMPORT"
 php sqlify.php "$DATABASE" >> "$IMPORT"
-echo "SET FOREIGN_KEY_CHECKS=0;" >> "$IMPORT"
+echo "SET FOREIGN_KEY_CHECKS=1;" >> "$IMPORT"
 
 echo "$IMPORT"
