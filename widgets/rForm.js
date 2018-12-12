@@ -47,7 +47,7 @@ define([
 
   'artnum/dojo/Request',
   'artnum/Path',
-  'artnumd/Query'
+  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
