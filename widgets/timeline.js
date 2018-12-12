@@ -652,7 +652,7 @@ define([
       fetch(Path.url('/revision.php')).then(function (response) {
         response.json().then(function (data) {
           this.currentRevision = data.revision
-          var currentRevision = window.localStorage.getItem('revision')
+          var currentRevision = window.localStorage.getItem(Path.bcname('revision'))
           if (!currentRevision) {
             this.reinit()
           } else {
@@ -1726,7 +1726,7 @@ define([
 
     reinit: function () {
       this.wait('Mise à jour du programme')
-      window.localStorage.setItem('revision', this.currentRevision)
+      window.localStorage.setItem(Path.bcname('revision'), this.currentRevision)
       this.Cleaner.postMessage({op: 'rebuild'})
     }
   })

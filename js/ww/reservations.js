@@ -14,7 +14,8 @@ new IdxDB().then(function (db) {
     return new Promise(function (resolve, reject) {
       var method = data.id ? 'PUT' : 'POST'
       var url = data.id ? '/' + String(data.id) : '/'
-      fetch(Artnum.Path.url('/store/Reservation/' + url), Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
+      var qid = (new Date()).getTime()
+      fetch(Artnum.Path.url('/store/Reservation/' + url, {params: {'_qid': qid}}), Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
         response.json().then(function (data) {
           if (data.type === 'results') {
             if (data.success) {
