@@ -4,6 +4,13 @@ require('../lib/url.php');
 
 $ini_conf = parse_ini_file('../conf/location.ini', true);
 
+if (!isset($ini_conf['general'])) {
+   $ini_conf['general'];
+}
+if (!isset($ini_conf['general']['disable-locking'])) {
+   $ini_conf['general']['disable-locking'] = false;
+}
+
 $file = new \artnum\Files();
 $rand = new \artnum\Random();
 $http_request = new \artnum\HTTP\JsonRequest();
@@ -31,7 +38,11 @@ $ldap_db = new artnum\LDAPDB(
             )
       );
 
-$store->set('lockmanager', $lock);
+if (!$ini_conf['general']['disable-locking']) {
+   $store->set('lockmanager', $lock);
+} else {
+   $store->set('lockmanager', 'void');
+}
 $store->add_db('sql', $pdo_db);
 $store->add_db('ldap', $ldap_db);
 
