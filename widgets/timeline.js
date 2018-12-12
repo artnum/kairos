@@ -92,7 +92,7 @@ define([
   DtMenuItem,
   DtMenuSeparator,
   dtCheckedMenuItem,
-  dtRadioMenuItem,
+  DtRadioMenuItem,
   DtPopupMenuItem,
   DtCalendar,
   Dialog,
@@ -251,7 +251,10 @@ define([
 
       window.UnloadCall = {}
       window.addEventListener('beforeunload', function (event) {
+        event.preventDefault()
+        event.returnValue = ''
         for (var i in window.UnloadCall) {
+          console.log(i, window.UnloadCall[i])
           window.UnloadCall[i]()
         }
       })
@@ -680,7 +683,7 @@ define([
       }
     },
 
-    buildMenu: function () {
+    buildMenu: async function () {
       var that = this
 
       var item = new DtMenuItem({label: 'Tout', disabled: true})
@@ -722,6 +725,33 @@ define([
         that.searchMenu.addChild(new DtMenuSeparator())
 
         /* */
+
+        Query.exec(Path.url('store/User')).then(function (users) {
+          var currentUser = null
+          if (window.localStorage.getItem(Path.bcname('user'))) {
+            try {
+              currentUser = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+            } catch (e) {
+              currentUser = null
+            }
+          }
+          if (!currentUser) {
+            if (users.success && users.length > 0) {
+              currentUser = users.data[0]
+              window.localStorage.setItem(Path.bcname('user'), JSON.stringify(currentUser))
+            }
+          }
+
+          if (users.success && users.length > 0) {
+            users.data.forEach(function (user) {
+              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser.id === user.id, group: 'user'})
+              this.userSelectMenu.addChild(radio)
+              radio.on('click', function (event) {
+                window.localStorage.setItem(Path.bcname('user'), this)
+              }.bind(JSON.stringify(user)))
+            }.bind(this))
+          }
+        }.bind(this))
 
         Req.get(String(Path.url('store/Status/'))).then((results) => {
           if (results && results.data && results.data.length > 0) {

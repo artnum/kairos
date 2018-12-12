@@ -2,6 +2,15 @@
 <div class="fixed headerContainer" data-dojo-attach-point="fixedHeader" id="AppHeader">
 
 <div data-dojo-type="dijit/MenuBar" data-dojo-attach-point="menu" id="AppMenu">
+  <div data-dojo-type="dijit/PopupMenuBarItem">
+    <label>Paramètres</label>
+    <div data-dojo-type="dijit/DropDownMenu">
+      <div data-dojo-type="dijit/PopupMenuItem">
+        <label>Utilisateur</label>
+        <div data-dojo-type="dijit/DropDownMenu" data-dojo-attach-point="userSelectMenu"></div>
+      </div>
+    </div>
+  </div>
 	<div data-dojo-type="dijit/PopupMenuBarItem">
 		<label><li class="fas fa-tv"></li> Affichage</label>
 		<div data-dojo-type="dijit/DropDownMenu" id="displayMenu">

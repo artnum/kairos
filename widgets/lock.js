@@ -54,7 +54,7 @@ define([
       if (this.Timeout) {
         clearTimeout(this.Timeout) // clear current timeout
       }
-      var result = Query.exec(Path.url('store/.lock/' + this.Target), {method: 'POST', body: {operation: 'unlock', key: this.Key, 'timestamp': Math.round((new Date()).getTime() / 1000)}})
+      var result = await Query.exec(Path.url('store/.lock/' + this.Target), {method: 'POST', body: {operation: 'unlock', key: this.Key, 'timestamp': Math.round((new Date()).getTime() / 1000)}})
       if (result.state === 'unlocked') {
         delete window.UnloadCall[this.Target]
         this.Key = null

@@ -85,6 +85,7 @@ define([
       this._gui = {
         hidden: false
       }
+
       this.Lock = new Lock(null)
       this.own(this.Lock)
     },
@@ -166,6 +167,14 @@ define([
         }
       }))
 
+      if (!object.creator) {
+        var currentUser = window.localStorage.getItem(Path.bcname('user'))
+        if (currentUser) {
+          currentUser = JSON.parse(currentUser)
+          object.creator = 'store/User/' + currentUser.id
+          this.set('creator', object.creator)
+        }
+      }
       if (this.sup) {
         object['target'] = this.sup.get('target')
       }
@@ -738,7 +747,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, (e) => {
+        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()
@@ -1191,6 +1200,15 @@ define([
       if (values['id']) {
         suffix = '/' + values['id']
         method = 'put'
+      }
+
+      if (!values.creator) {
+        var currentUser = window.localStorage.getItem(Path.bcname('user'))
+        if (currentUser) {
+          currentUser = JSON.parse(currentUser)
+          values.creator = 'store/User/' + currentUser.id
+          this.set('arrivalCreator', values.creator)
+        }
       }
 
       if (values.reported) {

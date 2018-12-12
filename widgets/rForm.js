@@ -47,7 +47,7 @@ define([
 
   'artnum/dojo/Request',
   'artnum/Path',
-  'artnum/Query'
+  'artnumd/Query'
 ], function (
   djDeclare,
   djLang,
@@ -116,6 +116,7 @@ define([
       this.LocalData = {}
       this.loaded = {status: false, warehouse: false, association: false, user: false}
       this.userStore = new DjMemory()
+      this.userStore_bis = new DjMemory()
     },
 
     _setDescriptionAttr: function (value) {
@@ -135,32 +136,32 @@ define([
       }
     },
 
-    _setCreatorAttr: function (value) {
-      this._set('creator', value)
-      if (this.loaded.user) {
-        var store = this.nCreator.get('store')
-        if (store && value) {
-          var item = store.get(value)
-          if (item) {
-            window.localStorage.setItem('user', JSON.stringify(value))
-            this.nCreator.set('item', item)
-          }
-        }
+    getUser: async function (value) {
+      if (!value) { return null }
+      var user = await Query.exec(Path.url(value))
+      if (user.success && user.length === 1) {
+        return user.data
       }
+
+      return null
+    },
+
+    _setCreatorAttr: function (value) {
+      this.getUser(value).then(function (user) {
+        if (user) {
+          this._set('creator', value)
+          this.nCreator.innerHTML = user.name
+        }
+      }.bind(this))
     },
 
     _setArrivalCreatorAttr: function (value) {
-      this._set('arrivalCreator', value)
-      if (this.loaded.user) {
-        var store = this.nArrivalCreator.get('store')
-        if (store && value) {
-          var item = store.get(value)
-          if (item) {
-            window.localStorage.setItem('user', JSON.stringify(value))
-            this.nArrivalCreator.set('item', item)
-          }
+      this.getUser(value).then(function (user) {
+        if (user) {
+          this._set('arrivalCreator', value)
+          this.nArrivalCreator.innerHTML = user.name
         }
-      }
+      }.bind(this))
     },
 
     _setBeginAttr: function (value) {
@@ -608,7 +609,7 @@ define([
       this.nMachineChange.set('value', this.reservation.get('target'))
 
       if (this.reservation.get('creator')) {
-        this.nCreator.set('value', this.reservation.get('creator'))
+      //  this.nCreator.set('value', this.reservation.get('creator'))
       }
 
       if (this.reservation.get('title') != null) {
@@ -700,40 +701,43 @@ define([
         that.set('warehouse', that.reservation.get('_warehouse'))
       }
 
-      this.nCreator.set('store', this.get('userStore'))
-      this.nArrivalCreator.set('store', this.get('userStore'))
-
-      var changeCreator = function (event) {
+/*      var changeCreator = function (event) {
         if (this.get('item')) {
           window.localStorage.setItem('user', JSON.stringify(this.get('item').id))
         }
       }
       djOn(this.nCreator, 'change', changeCreator.bind(this.nCreator))
-      djOn(this.nArrivalCreator, 'change', changeCreator.bind(this.nArrivalCreator))
+      djOn(this.nArrivalCreator, 'change', changeCreator.bind(this.nArrivalCreator))*/
 
       if (!this.loaded.user) {
         fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
           if (json.type === 'results' && json.data && json.data.length > 0) {
             that.loaded.user = true
             var store = that.get('userStore')
+            var storeBis = that.get('userStore_bis')
             for (var i = 0; i < json.data.length; i++) {
               if (!store.get('/store/User/' + json.data[i].id)) {
                 store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+              }
+              if (!storeBis.get('/store/User/' + json.data[i].id)) {
+                storeBis.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
               }
             }
           }
           if (that.reservation.get('creator')) {
             that.set('creator', that.reservation.get('creator'))
           } else {
-            if (window.localStorage.getItem('user')) {
-              that.set('creator', JSON.parse(window.localStorage.getItem('user')))
+            if (window.localStorage.getItem(Path.bcname('user'))) {
+              var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+              that.set('creator', 'store/User/' + _c.id)
             }
           }
           if (that.reservation.get('_arrival') && that.reservation.get('_arrival').creator) {
             that.set('arrivalCreator', that.reservation.get('_arrival').creator)
           } else {
-            if (window.localStorage.getItem('user')) {
-              that.set('creator', JSON.parse(window.localStorage.getItem('user')))
+            if (window.localStorage.getItem(Path.bcname('user'))) {
+              _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+              that.set('arrivalCreator', 'store/User/' + _c.id)
             }
           }
         })
@@ -811,7 +815,7 @@ define([
           this.nArrivalComment.set('value', retval.comment)
         }
         if (retval.creator) {
-          this.nArrivalCreator.set('value', retval.creator)
+          console.log(retval.creator)
         }
       }
     },
@@ -1020,7 +1024,7 @@ define([
     },
 
     validate: function () {
-      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate, this.nCreator, this.nArrivalCreator ].forEach(function (c) {
+      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach(function (c) {
         c.set('state', 'Normal')
       })
 
@@ -1032,11 +1036,11 @@ define([
         return ['Début ou fin manquante', false]
       }
 
-      if (!this.nCreator.get('item')) {
+/*      if (!this.nCreator.get('item')) {
         this.nCreator.set('state', 'Error')
         return ['Champs responsable de la location manquant ou inconnu', false]
       }
-
+*/
       var begin = f.beginDate.join(f.beginTime)
       var end = f.endDate.join(f.endTime)
 
@@ -1075,10 +1079,10 @@ define([
         }
       }
       if (this.nConfirmed.get('checked')) {
-        if (!this.nArrivalCreator.get('item')) {
+        /*if (!this.nArrivalCreator.get('item')) {
           this.nArrivalCreator.set('state', 'Error')
           return ['Le responsable pour la confirmation de fin est manquant ou inconnu', false]
-        }
+        }*/
       }
 
       return ['Pas d\'erreur', true]
@@ -1140,9 +1144,11 @@ define([
         retVal.contact = f.arrivalAddress
         retVal.locality = f.arrivalLocality
         retVal.other = f.arrivalKeys
-        if (this.nArrivalCreator.get('item')) {
+/*        if (this.nArrivalCreator.get('item')) {
           retVal.creator = this.nArrivalCreator.get('item').id
-        }
+        } else {
+          retVal.creator = this.nArrivalCreator.get('value')
+        }*/
         if (f.arrivalDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
         } else if (f.arrivalDone.length <= 0 && currentRet.done) {
@@ -1192,12 +1198,12 @@ define([
       this.reservation.set('note', f.nNote)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
-      if (this.nCreator.get('item')) {
+/*      if (this.nCreator.get('item')) {
         this.reservation.set('creator', this.nCreator.get('item').id)
       } else {
         this.reservation.set('creator', this.nCreator.get('value'))
       }
-
+*/
       if (f.title !== '') {
         this.reservation.set('title', f.title)
       }
