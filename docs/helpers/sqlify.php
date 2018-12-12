@@ -102,8 +102,11 @@ $tables = array (
    );
 
 foreach ($tables as $name => $content) {
-   $stmt = $db->prepare('SELECT * FROM "' . $name . '"');
-   $res = $stmt->execute();
+   $stmt = @$db->prepare('SELECT * FROM "' . $name . '"');
+   if (!$stmt) { continue; }
+   $res = @$stmt->execute();
+   if (!$res) { continue; }
+
    $first = true;
    $values = array();
    $qhead = '';

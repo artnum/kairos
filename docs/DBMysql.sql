@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTO_INC
 						  "status_color" VARCHAR(8),
 						  "status_default" BOOL,
 						  "status_type" INTEGER DEFAULT 0
-						);
+						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "contacts_reservation" INTEGER,
 						  "contacts_target" TEXT,
 						  "contacts_comment" TEXT,
 						  "contacts_freeform" TEXT
-						);
+						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_created" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_modification" INTEGER DEFAULT NULL -- unix ts
-	);
+	) CHARACTER SET "utf8mb4";
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT
-						);
+						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "association_reservation" INTEGER,
@@ -64,23 +64,23 @@ CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY 
 						  FOREIGN KEY("association_reservation") REFERENCES "reservation"("reservation_id") 
 							ON UPDATE CASCADE
 							ON DELETE CASCADE
-						);
+						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "warehouse"		( "warehouse_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "warehouse_name" TEXT,
-						  "warehouse_color" TEXT );
+						  "warehouse_color" TEXT ) CHARACTER SET "utf8mb4";
 
 
 CREATE TABLE IF NOT EXISTS "tags" 		( "tags_value" TEXT,
 						  "tags_target" TEXT
-						);
+						) CHARACTER SET "utf8mb4";
 CREATE INDEX "tagsTargetIdx" ON "tags"("tags_target"(16)); -- target are reference which are, actually, up to 4 letters
 
 CREATE TABLE IF NOT EXISTS "entry"		( "entry_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "entry_ref" TEXT, 
 						  "entry_name" TEXT,
 						  "entry_value" TEXT
-						);
+						) CHARACTER SET "utf8mb4";
 CREATE INDEX "entryRefIdx" ON "entry"("entry_ref"(16)); -- as tagsTargetIdx
 
 
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS "extendedReservation" ( "extendedReservation_id" INTE
 						  "extendedReservation_reservation" INTEGER,
 						  "extendedReservation_name" TEXT,
 						  "extendedReservation_content" TEXT
-						);
+						) CHARACTER SET "utf8mb4";
 -- Arrival progress
 CREATE TABLE IF NOT EXISTS "arrival" (
 	"arrival_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS "arrival" (
 	FOREIGN KEY("arrival_target") REFERENCES "reservation"("reservation_id")
 		ON UPDATE CASCADE
 		ON DELETE CASCADE
-        );
+        ) CHARACTER SET "utf8mb4";
 CREATE INDEX "arrivalTargetIdx" ON "arrival"("arrival_target");
 
 -- Invoices
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 	FOREIGN KEY("invoice_address") REFERENCES "contacts"("contacts_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL
-	);
+	) CHARACTER SET "utf8mb4";
 
 -- Basis for invoice creation
 CREATE TABLE IF NOT EXISTS "count" (
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS "count" (
 	"count_modified" INTEGER DEFAULT NULL, -- unix ts
 	FOREIGN KEY("count_invoice") REFERENCES "invoice"("invoice_id")
 		ON UPDATE CASCADE
-		ON DELETE CASCADE );
+		ON DELETE CASCADE ) CHARACTER SET "utf8mb4";
 
 -- Associate reservation to count
 CREATE TABLE IF NOT EXISTS "countReservation" (
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS "countReservation" (
 		ON DELETE CASCADE,
 	FOREIGN KEY("countReservation_reservation") REFERENCES "reservation"("reservation_id")
 		ON UPDATE CASCADE
-		ON DELETE CASCADE );
+		ON DELETE CASCADE ) CHARACTER SET "utf8mb4";
 
 -- Generic group to group things under a name
 CREATE TABLE IF NOT EXISTS "collection" (
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS "collection" (
 	"collection_deleted" INTEGER DEFAULT NULL,
 	"collection_created" INTEGER DEFAULT NULL,
 	"collection_modified" INTEGER DEFAULT NULL
-	);
+	) CHARACTER SET "utf8mb4";
 
 -- Units ...
 CREATE TABLE IF NOT EXISTS "unit" (
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS "unit" (
 	FOREIGN KEY ("unit_collection") REFERENCES "collection"("collection_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL
-	);
+	) CHARACTER SET "utf8mb4";
 
 -- Articles 
 CREATE TABLE IF NOT EXISTS "article" (
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS "article" (
 	FOREIGN KEY("article_ucollection") REFERENCES "collection"("collection_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL
-	);
+	) CHARACTER SET "utf8mb4";
 -- Entries for count
 CREATE TABLE IF NOT EXISTS "centry" (
 	"centry_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -227,4 +227,4 @@ CREATE TABLE IF NOT EXISTS "centry" (
 		ON DELETE CASCADE,
 	FOREIGN KEY ("centry_article") REFERENCES "article"("article_id")
 		ON UPDATE CASCADE
-		ON DELETE SET NULL );
+		ON DELETE SET NULL ) CHARACTER SET "utf8mb4";
