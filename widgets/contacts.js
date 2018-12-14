@@ -73,6 +73,7 @@ define([
     templateString: _template,
     mapping: { firstname: ['givenname', ' '],
       familyname: ['sn', ' '],
+      displayname: ['displayname', ' '],
       organization: ['o', ' '],
       locality: ['l', null],
       npa: ['postalcode', null],
@@ -122,6 +123,7 @@ define([
       url.searchParams.set('search.sn', terms)
       url.searchParams.set('search.givenname', terms)
       url.searchParams.set('search.o', terms)
+      url.searchParams.set('search.displayname', terms)
       url.searchParams.set('search._sn', 'or')
       url.searchParams.set('search._givenname', 'or')
       Query.exec(url).then(djLang.hitch(this, function (res) {

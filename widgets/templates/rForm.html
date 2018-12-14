@@ -6,13 +6,11 @@
 <div class="group">
 <fieldset><legend>Machine</legend>
 <input data-dojo-type="dijit/form/Select" name="machine" data-dojo-attach-point="nMachineChange" /><br />
-<label for="title" class="fixedSize">Commandée : </label><input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" />
+<label for="title" class="fixedSize">Commandée : </label><input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" /><br />
+<label for="o-critic" class="fixedSize">Critique : </label><input data-dojo-type="dijit/form/TextBox" name="o-critic" />
 </fieldset>
 </div>
 
-<div class="group">
-  <legend>Décompte</legend>
-</div>
 
 <div class="group twocol">
 <fieldset><legend>Location</legend>
@@ -104,6 +102,14 @@
 </fieldset>
 </div>
 
+<div class="group">
+  <legend>Décompte</legend>
+  <table>
+    <thead><tr><th>Numéro</th><th>Référence</th><th>Période</th></tr></thead>
+    <tbody data-dojo-attach-point="nCountList"></tbody>
+  </table>
+</div>
+
 <fieldset class="command">
 <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
  type="button" data-dojo-attach-event="click:doSave" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder</button>
@@ -116,7 +122,7 @@
 <button data-dojo-type="dijit/form/Button" value="Décompte"
    type="button" data-dojo-attach-event="click:doPrint" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
 <button data-dojo-type="dijit/form/Button" value="Décompte"
- type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Décompte</button>
+ type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
 
 <br/ >
 <button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"

@@ -38,7 +38,8 @@ function FReservation($reservation) {
    return $reservation;
 }
 
-function fprice(float $price) {
+function fprice($price) {
+   $price = floatval($price);
    if ($price - (intval($price)) > 0) {
       $p = number_format($price, 2, '.', ' ');
    } else {
@@ -47,7 +48,8 @@ function fprice(float $price) {
    return $p;
 }
 
-function ffloat(float $value) {
+function ffloat($value) {
+   $value = floatval($value);
    if ($value - (intval($value)) > 0) {
       $p = number_format($value, 2, '.', ' ');
    } else {

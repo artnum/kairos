@@ -51,6 +51,7 @@ define([
     baseClass: 'card',
     templateString: _template,
     mapping: { firstname: ['givenname', ' '],
+      displayname: ['displayname', ' '],
       familyname: ['sn', ' '],
       organization: ['o', ' '],
       locality: ['l', null],
@@ -72,6 +73,8 @@ define([
       }
       return value
     },
+    displayname: '',
+    _setDisplaynameAttr: { node: 'nDisplayname', type: 'innerHTML' },
     organization: '',
     _setOrganizationAttr: { node: 'nOrganization', type: 'innerHTML' },
     familyname: '',

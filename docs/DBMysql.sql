@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_previous" TEXT DEFAULT NULL,
 	"reservation_warehouse" TEXT DEFAULT NULL,
 	"reservation_note" TEXT DEFAULT NULL,
+	"reservation_other" TEXT DEFAULT NULL, -- json data
 	"reservation_created" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_modification" INTEGER DEFAULT NULL -- unix ts

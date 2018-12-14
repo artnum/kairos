@@ -127,6 +127,10 @@ define([
         }
       }))
 
+      if (json['other']) {
+        this.set('other', JSON.parse(json['other']))
+      }
+
       if (this.contacts && this.contacts['_client']) {
         if (this.contacts['_client'][0].target) {
           this.dbContact = this.contacts['_client'][0].target
@@ -166,6 +170,10 @@ define([
           object[attr] = null
         }
       }))
+
+      if (this.get('other')) {
+        object['other'] = JSON.stringify(this.get('other'))
+      }
 
       if (!object.creator) {
         var currentUser = window.localStorage.getItem(Path.bcname('user'))
@@ -508,19 +516,24 @@ define([
         if (contact.freeform) {
           content.appendChild(document.createTextNode(String(contact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')))
         } else {
-          if (contact.o) {
-            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names')
-            content.lastChild.appendChild(document.createTextNode(contact.o))
-          }
+          if (contact.displayname) {
+            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'displayname names')
+            content.lastChild.appendChild(document.createTextNode(contact.displayname))
+          } else {
+            if (contact.o) {
+              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names')
+              content.lastChild.appendChild(document.createTextNode(contact.o))
+            }
 
-          if (contact.givenname) {
-            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'givenname names')
-            content.lastChild.appendChild(document.createTextNode(contact.givenname))
-          }
+            if (contact.givenname) {
+              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'givenname names')
+              content.lastChild.appendChild(document.createTextNode(contact.givenname))
+            }
 
-          if (contact.sn) {
-            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'sn names')
-            content.lastChild.appendChild(document.createTextNode(contact.sn))
+            if (contact.sn) {
+              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'sn names')
+              content.lastChild.appendChild(document.createTextNode(contact.sn))
+            }
           }
         }
       }
@@ -747,7 +760,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
+        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()

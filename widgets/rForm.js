@@ -701,14 +701,6 @@ define([
         that.set('warehouse', that.reservation.get('_warehouse'))
       }
 
-/*      var changeCreator = function (event) {
-        if (this.get('item')) {
-          window.localStorage.setItem('user', JSON.stringify(this.get('item').id))
-        }
-      }
-      djOn(this.nCreator, 'change', changeCreator.bind(this.nCreator))
-      djOn(this.nArrivalCreator, 'change', changeCreator.bind(this.nArrivalCreator))*/
-
       if (!this.loaded.user) {
         fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
           if (json.type === 'results' && json.data && json.data.length > 0) {
@@ -788,6 +780,22 @@ define([
         this.refresh()
         this.initRequests = []
       }))
+
+      var inputs = this.domNode.getElementsByTagName('input')
+      for (var j = 0; j < inputs.length; j++) {
+        var name = inputs[j].getAttribute('name')
+        if (name && name.substr(0, 2) === 'o-') {
+          var other = this.get('other')
+          if (other && other[name.substr(2)]) {
+            var w = dtRegistry.byNode(inputs[i])
+            if (w) {
+              w.set('value', other[name.substr(2)])
+            } else {
+              inputs[j].value = other[name.substr(2)]
+            }
+          }
+        }
+      }
     },
 
     refresh: function () {
@@ -818,6 +826,8 @@ define([
           console.log(retval.creator)
         }
       }
+
+      this.refreshCount()
     },
 
     toggleDelivery: function () {
@@ -1036,11 +1046,6 @@ define([
         return ['Début ou fin manquante', false]
       }
 
-/*      if (!this.nCreator.get('item')) {
-        this.nCreator.set('state', 'Error')
-        return ['Champs responsable de la location manquant ou inconnu', false]
-      }
-*/
       var begin = f.beginDate.join(f.beginTime)
       var end = f.endDate.join(f.endTime)
 
@@ -1078,12 +1083,6 @@ define([
           return ['Début de livraison est après le début de la location', false]
         }
       }
-      if (this.nConfirmed.get('checked')) {
-        /*if (!this.nArrivalCreator.get('item')) {
-          this.nArrivalCreator.set('state', 'Error')
-          return ['Le responsable pour la confirmation de fin est manquant ou inconnu', false]
-        }*/
-      }
 
       return ['Pas d\'erreur', true]
     },
@@ -1117,6 +1116,14 @@ define([
       }
 
       let f = this.nForm.get('value')
+      var other = {}
+      for (var k in f) {
+        console.log(k)
+        if (k.substr(0, 2) === 'o-') {
+          other[k.substr(2)] = f[k]
+        }
+      }
+      this.reservation.set('other', other)
       let begin = f.beginDate.join(f.beginTime)
       let end = f.endDate.join(f.endTime)
 
@@ -1144,11 +1151,7 @@ define([
         retVal.contact = f.arrivalAddress
         retVal.locality = f.arrivalLocality
         retVal.other = f.arrivalKeys
-/*        if (this.nArrivalCreator.get('item')) {
-          retVal.creator = this.nArrivalCreator.get('item').id
-        } else {
-          retVal.creator = this.nArrivalCreator.get('value')
-        }*/
+
         if (f.arrivalDone.length > 0 && !currentRet.done) {
           retVal.done = djDateStamp.toISOString(new Date())
         } else if (f.arrivalDone.length <= 0 && currentRet.done) {
@@ -1156,6 +1159,7 @@ define([
         } else {
           retVal.done = currentRet.done
         }
+
         if (f.arrivalInprogress.length > 0 && !currentRet.inprogress) {
           retVal.inprogress = djDateStamp.toISOString(new Date())
         } else if (f.arrivalInprogress.length <= 0 && currentRet.inprogress) {
@@ -1163,6 +1167,7 @@ define([
         } else {
           retVal.inprogress = currentRet.inprogress
         }
+
         retVal.target = this.reservation.get('id')
         if (currentRet.id) {
           retVal.id = currentRet.id
@@ -1198,12 +1203,7 @@ define([
       this.reservation.set('note', f.nNote)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
-/*      if (this.nCreator.get('item')) {
-        this.reservation.set('creator', this.nCreator.get('item').id)
-      } else {
-        this.reservation.set('creator', this.nCreator.get('value'))
-      }
-*/
+
       if (f.title !== '') {
         this.reservation.set('title', f.title)
       }
@@ -1232,7 +1232,35 @@ define([
     openCount: async function () {
       var count = new Count({})
       count.addReservation(this.reservation.get('id'))
-    }
+    },
 
+    refreshCount: async function () {
+      Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.get('id')}})).then(async function (counts) {
+        var frag = document.createDocumentFragment()
+        if (counts.success && counts.length > 0) {
+          for (var i = 0; i < counts.length; i++) {
+            var count = await Query.exec(Path.url('store/Count/' + counts.data[i].count))
+            if (count.success && count.length === 1) {
+              count = count.data
+              var tr = document.createElement('TR')
+              count.period = ''
+              if (count.begin) {
+                count.period = (new Date(count.begin)).fullDate()
+              }
+              if (count.end) {
+                if (count.period !== '') { count.period += ' - ' }
+                count.period += (new Date(count.end)).fullDate()
+              }
+              tr.innerHTML = '<td>' + count.id + '</td><td>' + count.reference + '</td><td>' + count.period + '</td>'
+              frag.appendChild(tr)
+            }
+          }
+        }
+        window.requestAnimationFrame(function () {
+          this.nCountList.innerHTML = ''
+          this.nCountList.appendChild(frag)
+        }.bind(this))
+      }.bind(this))
+    }
   })
 })
