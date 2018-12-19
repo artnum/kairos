@@ -20,8 +20,7 @@ define([
   'dojo/dom-style',
   'dojo/dom-class',
   'dojo/dom-form',
-  'dojo/dom-attr',
-  'dojo/request/xhr'
+  'dojo/dom-attr'
 
 ], function (
   djDeclare,
@@ -43,9 +42,8 @@ define([
   djDomStyle,
   djDomClass,
   djDomForm,
-  djDomAttr,
+  djDomAttr
 
-  djXhr
 ) {
   return djDeclare('location.card', [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
     baseClass: 'card',

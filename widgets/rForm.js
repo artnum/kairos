@@ -954,7 +954,7 @@ define([
               if (!result.success) {
                 return
               }
-              Query.exec('store/' + id).then(djLang.hitch(this, function (c) {
+              Query.exec(Path.url('store/' + id)).then(djLang.hitch(this, function (c) {
                 if (c.success && c.length === 1) {
                   var e = c.data[0]
                   e.linkId = result.data[0].id
