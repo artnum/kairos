@@ -9,6 +9,8 @@
         <label>Utilisateur</label>
         <div data-dojo-type="dijit/DropDownMenu" data-dojo-attach-point="userSelectMenu"></div>
       </div>
+      <div data-dojo-type="dijit/MenuSeparator"></div>
+			<div data-dojo-attach-point="paramAutoprint" data-dojo-type="dijit/CheckedMenuItem" data-dojo-props="onClick: () => { window.App.toggle('autoprint'); }">Impression automatique</div>
     </div>
   </div>
 	<div data-dojo-type="dijit/PopupMenuBarItem">

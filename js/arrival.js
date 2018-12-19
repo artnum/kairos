@@ -173,6 +173,9 @@ Arrival.prototype.done = function (event) {
     req.done = now.toISOString()
   }
   fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+    if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
+      fetch(Artnum.Path.url('exec/auto-print.php', {params: {file: 'pdfs/decompte/' + req.id}}))
+    }
     this.RChannel.postMessage({op: 'touch', id: this.target})
   }.bind(this))
 }

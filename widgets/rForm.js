@@ -1261,6 +1261,17 @@ define([
           this.nCountList.appendChild(frag)
         }.bind(this))
       }.bind(this))
+    },
+
+    autoprint: function (event) {
+      console.log(event)
+      switch (event.target.getAttribute('name')) {
+        case 'arrivalDone':
+          if (event.target.checked) {
+            window.App.autoprint('pdfs/decompte/' + this.reservation.get('id'))
+          }
+          break
+      }
     }
   })
 })

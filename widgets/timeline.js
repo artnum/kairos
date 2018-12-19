@@ -691,6 +691,9 @@ define([
       that.searchMenu.addChild(item)
       that.searchMenu.filterNone = item
 
+      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
+        this.paramAutoprint.set('checked', true)
+      }
       that.searchMenu.addChild(new DtMenuSeparator())
 
       Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
@@ -1250,6 +1253,12 @@ define([
             djDomClass.add(window.App.domNode, 'noextender')
           }
           break
+        case 'autoprint':
+          if (window.localStorage.getItem(Path.bcname('autoprint'))) {
+            window.localStorage.removeItem(Path.bcname('autoprint'))
+          } else {
+            window.localStorage.setItem(Path.bcname('autoprint'), '1')
+          }
       }
       this.update(true).then(() => {
         var pos = getElementRect(targetNode.domNode)
@@ -1758,6 +1767,12 @@ define([
       this.wait('Mise à jour du programme')
       window.localStorage.setItem(Path.bcname('revision'), this.currentRevision)
       this.Cleaner.postMessage({op: 'rebuild'})
+    },
+
+    autoprint: function (path) {
+      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
+        fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
+      }
     }
   })
 })
