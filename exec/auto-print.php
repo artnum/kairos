@@ -8,6 +8,12 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
    }
 
    $cmd = $ini_conf['printing']['print-command'];
+   if (isset($_GET['type']) && is_string($_GET['type'])) {
+      if (isset($ini_conf['printing']['print-command-' + $_GET['type']])) {
+         $cmd = $ini_conf['printing']['print-command-' + $_GET['type']];
+      }
+   }
+
    if (!isset($_GET['file'])) {
       exit(0);
    }

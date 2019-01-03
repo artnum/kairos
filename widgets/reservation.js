@@ -933,7 +933,7 @@ define([
               }
 
               var div = document.createElement('DIV')
-              div.setAttribute('style', 'position: absolute; background-color: ' + pSBC(0.75, color) + '; left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;')
+              div.setAttribute('style', 'position: absolute; background-color: ' + color + '; left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;')
               div.setAttribute('class', 'stabiloLine')
 
               var numDiv = document.createElement('DIV')

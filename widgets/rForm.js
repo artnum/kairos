@@ -150,7 +150,19 @@ define([
       this.getUser(value).then(function (user) {
         if (user) {
           this._set('creator', value)
-          this.nCreator.innerHTML = user.name
+          this.nCreator.innerHTML = user.name + ' '
+          var current = window.localStorage.getItem(Path.bcname('user'))
+          if (current) {
+            current = JSON.parse(current)
+            if ('store/User/' + current.id !== value) {
+              var b = document.createElement('BUTTON')
+              b.innerHTML = 'S\'attribuer'
+              b.setAttribute('type', 'button')
+              b.setAttribute('data-target', 'c')
+              b.addEventListener('click', this.eChangeUser.bind(this))
+              this.nCreator.appendChild(b)
+            }
+          }
         }
       }.bind(this))
     },
@@ -159,9 +171,38 @@ define([
       this.getUser(value).then(function (user) {
         if (user) {
           this._set('arrivalCreator', value)
-          this.nArrivalCreator.innerHTML = user.name
+          this.nArrivalCreator.innerHTML = user.name + ' '
+          var current = window.localStorage.getItem(Path.bcname('user'))
+          if (current) {
+            current = JSON.parse(current)
+            if ('store/User/' + current.id !== value) {
+              var b = document.createElement('BUTTON')
+              b.innerHTML = 'S\'attribuer'
+              b.setAttribute('type', 'button')
+              b.setAttribute('data-target', 'ac')
+              b.addEventListener('click', this.eChangeUser.bind(this))
+              this.nArrivalCreator.appendChild(b)
+            }
+          }
         }
       }.bind(this))
+    },
+
+    eChangeUser: async function (event) {
+      if (window.localStorage.getItem(Path.bcname('user'))) {
+        var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+        if (event.target.getAttribute('data-target') === 'c') {
+          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.get('id'), {method: 'PATCH', body: JSON.stringify({ creator: _c })}))
+          if (mod.success && mod.length === 1) {
+            this.set('creator', 'store/User/' + _c.id)
+          }
+        } else {
+          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id, {method: 'PATCH', body: JSON.stringify({ creator: _c })}))
+          if (mod.success && mod.length === 1) {
+            this.set('arrivalCreator', 'store/User/' + _c.id)
+          }
+        }
+      }
     },
 
     _setBeginAttr: function (value) {
@@ -608,10 +649,6 @@ define([
       var that = this
       this.nMachineChange.set('value', this.reservation.get('target'))
 
-      if (this.reservation.get('creator')) {
-      //  this.nCreator.set('value', this.reservation.get('creator'))
-      }
-
       if (this.reservation.get('title') != null) {
         this.nTitle.set('value', this.reservation.get('title'))
       }
@@ -1015,7 +1052,7 @@ define([
 
     doPrint: function (event) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        fetch(Path.url('exec/auto-print.php', {params: {file: 'pdfs/decompte/' + this.reservation.get('IDent')}}))
+        fetch(Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + this.reservation.get('IDent')}}))
       } else {
         window.App.print('../pdfs/decompte/' + this.reservation.get('IDent'))
       }
