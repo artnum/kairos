@@ -7,17 +7,17 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
       exit(0);
    }
 
-   $cmd = $ini_conf['printing']['print-command'];
-   if (isset($_GET['type']) && is_string($_GET['type'])) {
-      if (isset($ini_conf['printing']['print-command-' + $_GET['type']])) {
-         $cmd = $ini_conf['printing']['print-command-' + $_GET['type']];
-      }
-   }
-
    if (!isset($_GET['file'])) {
       exit(0);
    }
-   
+
+   $cmd = $ini_conf['printing']['print-command'];
+   if (isset($_GET['type']) && is_string($_GET['type'])) {
+      if (isset($ini_conf['printing']['print-command-' . $_GET['type']])) {
+         $cmd = $ini_conf['printing']['print-command-' . $_GET['type']];
+      }
+   }
+
    $tmp = tempnam(sys_get_temp_dir(), 'auto-print-file');
    $ctx = curl_init(base_url($_GET['file']));
    if ($ctx) {
@@ -30,8 +30,6 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
          if ($o !== FALSE && $o > 0) {
             $cmd = str_replace('__FILE__', escapeshellarg($tmp), $cmd);
             exec($cmd, $retstr, $retval);
-            print_r($retstr);
-            print_r($retval);
          }
       }
    }
