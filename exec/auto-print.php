@@ -1,13 +1,13 @@
 <?PHP
 require_once('../lib/url.php');
 
-if (is_file('../conf/print.ini') && is_readable('../conf/print.ini')) {
-   $ini_conf = parse_ini_file('../conf/print.ini', true);
-   if (!isset($ini_conf['print-command'])) {
+if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
+   $ini_conf = parse_ini_file('../conf/location.ini', true);
+   if (!isset($ini_conf['printing']['print-command'])) {
       exit(0);
    }
 
-   $cmd = $ini_conf['print-command'];
+   $cmd = $ini_conf['printing']['print-command'];
    if (!isset($_GET['file'])) {
       exit(0);
    }
