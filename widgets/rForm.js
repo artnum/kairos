@@ -1014,10 +1014,18 @@ define([
     },
 
     doPrint: function (event) {
-      window.App.print('../pdfs/decompte/' + this.reservation.get('IDent'))
+      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
+        fetch(Path.url('exec/auto-print.php', {params: {file: 'pdfs/decompte/' + this.reservation.get('IDent')}}))
+      } else {
+        window.App.print('../pdfs/decompte/' + this.reservation.get('IDent'))
+      }
     },
     doMission: function (event) {
-      window.App.print('../pdfs/mission/' + this.reservation.get('IDent'))
+      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
+        fetch(Path.url('exec/auto-print.php', {params: {file: 'pdfs/mission/' + this.reservation.get('IDent')}}))
+      } else {
+        window.App.print('../pdfs/mission/' + this.reservation.get('IDent'))
+      }
     },
 
     doDelete: function (event) {
