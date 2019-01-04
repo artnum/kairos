@@ -225,6 +225,7 @@ define([
 
     list: async function () {
       this.doc = new Doc({style: 'background-color: #FFFFCF'})
+      this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
 
@@ -350,6 +351,7 @@ define([
 
     start: async function () {
       this.doc = new Doc({style: 'background-color: #FFFFCF'})
+      this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       this.Total = 0
       this.Entries = {}
 
