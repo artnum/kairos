@@ -214,6 +214,9 @@ foreach($reservations as $reservation) {
    $PDF->left = 8; 
 
    $PDF->printTaggedLn(array('%c', 'Machine : ', '%cb',  $reservation['target'] . ' - ' . $machines[$reservation['target']]['cn']));
+   if (isset($reservation['title']) && !empty($reservation['title'])) {
+      $PDF->printTaggedLn(array('%c', 'Commandée : ', '%cb',  $reservation['title']));
+   }
 
    unset($PDF->left);
    unset($PDF->right);
