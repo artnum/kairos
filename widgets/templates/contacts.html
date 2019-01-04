@@ -1,7 +1,7 @@
 <div>
 
 <form data-dojo-type="dijit/form/Form" data-dojo-attach-point="nForm" data-dojo-attach-event="submit:doSearch">
-<div>
+<fieldset>
 <label class="big"><input type="radio" name="cType" value="_client" data-dojo-type="dijit/form/RadioButton" checked>Client</input></label>
 <label class="big"><input type="radio" name="cType" value="_facturation" data-dojo-type="dijit/form/RadioButton">Facturation</input></label>
 <label class="big"><input type="radio" name="cType" value="_responsable" data-dojo-type="dijit/form/RadioButton">Responsable</input></label>
@@ -10,13 +10,14 @@
 <div style="float: right">
 <label class="big"><input type="radio" name="cType" value="_autre" data-dojo-type="dijit/form/RadioButton">Autre</input></label> <input type="text" data-dojo-type="dijit/form/TextBox" name="details" />
 </div>
-</div>
+</fieldset>
 
-<fieldset><label>Adresse du carnet</label>
-<input type="text" data-dojo-type="dijit/form/TextBox" name="search" data-dojo-attach-point="nSearch"
-	data-dojo-attach-event="keypress:keyEvent" tabindex="0" />
-<button data-dojo-type="dijit/form/Button" type="button" data-dojo-attach-event="click:doSearch" ><i class="fa fa-search" aria-hidden="true"></i> Chercher</button>
-<button data-dojo-type="dijit/form/Button" type="button" data-dojo-attach-point="nCancel" data-dojo-attach-event="click:resetResults" >Annuler</button>
+<fieldset>
+  <label>Adresse du carnet</label><br />
+  <input class="fullWidth" type="text" data-dojo-type="dijit/form/ValidationTextBox" name="search" data-dojo-attach-point="nSearch" data-dojo-attach-event="keypress:keyEvent" tabindex="0" />
+  <input type="checkbox" name="company" /><label for="company">Entreprise </label><br />
+  <button data-dojo-type="dijit/form/Button" type="button" data-dojo-attach-event="click:doSearch" ><i class="fa fa-search" aria-hidden="true"></i> Chercher</button>
+  <button data-dojo-type="dijit/form/Button" type="button" data-dojo-attach-point="nCancel" data-dojo-attach-event="click:resetResults" >Annuler</button>
 </fieldset>
 
 <fieldset data-dojo-attach-point="nFreeFormField"><label>Adresse libre</label>
