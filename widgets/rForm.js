@@ -1275,8 +1275,7 @@ define([
     },
 
     openCount: async function () {
-      var count = new Count({})
-      count.addReservation(this.reservation.get('id'))
+      var count = new Count({reservation: this.reservation.get('id')})
     },
 
     refreshCount: async function () {
@@ -1288,6 +1287,7 @@ define([
             if (count.success && count.length === 1) {
               count = count.data
               var tr = document.createElement('TR')
+              tr.setAttribute('data-count-id', count.id)
               count.period = ''
               if (count.begin) {
                 count.period = (new Date(count.begin)).fullDate()
@@ -1298,6 +1298,15 @@ define([
               }
               tr.innerHTML = '<td>' + count.id + '</td><td>' + count.reference + '</td><td>' + count.period + '</td>'
               frag.appendChild(tr)
+              tr.addEventListener('click', function (event) {
+                if (event.target) {
+                  var node = event.target
+                  while (node.nodeName !== 'TR') { node = node.parentNode }
+                  if (node.getAttribute('data-count-id')) {
+                    window.location.hash = 'DEC' + node.getAttribute('data-count-id')
+                  }
+                }
+              })
             }
           }
         }

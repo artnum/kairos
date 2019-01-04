@@ -96,6 +96,9 @@ define([
           }
 
           this.refresh_contacts()
+          if (args[0] && args[0].reservation) {
+            await this.addReservation(args[0].reservation)
+          }
           this.start()
         }
       }.bind(this))
@@ -205,16 +208,19 @@ define([
       return ''
     },
 
-    addReservation: function (reservation) {
-      this._initialized.then(async function () {
-        var url = Path.url('store/CountReservation')
-        url.searchParams.set('search.count', this.get('data-id'))
-        url.searchParams.set('search.reservation', reservation)
-        var link = await Query.exec(url)
-        if (link.success && link.length <= 0) {
-          Query.exec(Path.url('store/CountReservation'), {method: 'post', body: JSON.stringify({reservation: reservation, count: this.get('data-id')})})
+    addReservation: async function (reservation) {
+      var url = Path.url('store/CountReservation')
+      url.searchParams.set('search.count', this.get('data-id'))
+      url.searchParams.set('search.reservation', reservation)
+      var link = await Query.exec(url)
+      if (link.success && link.length <= 0) {
+        var res = await Query.exec(Path.url('store/CountReservation'), {method: 'post', body: JSON.stringify({reservation: reservation, count: this.get('data-id')})})
+        if (res.success) {
+          var r = this.get('reservations')
+          r.push(reservation)
+          this.set('reservations', r)
         }
-      }.bind(this))
+      }
     },
 
     list: async function () {
@@ -250,6 +256,7 @@ define([
           '<td>' + (data[i].comment ? this._shortDesc(data[i].comment) : '') + '</td>' +
           '<td>' + (data[i].total ? data[i].total : '') + '</td>' +
           '<td>' + (data[i].printed ? this._toHtmlDate(data[i].printed) : '') + '</td>' +
+          '<td data-op="delete"><i class="far fa-trash-alt action"></i></td>' +
           '</tr>'
       }
       txt += '</tbody></table>'
@@ -258,7 +265,7 @@ define([
       var trs = this.domNode.getElementsByTagName('TR')
       for (i = 0; i < trs.length; i++) {
         if (trs[i].getAttribute('data-url')) {
-          trs[i].addEventListener('click', function (event) {
+          trs[i].addEventListener('click', async function (event) {
             var tr = event.target
             var td = event.target
             while (tr && tr.nodeName !== 'TR') {
@@ -302,6 +309,17 @@ define([
                   td.appendChild(input)
                 })
               }
+            } else if (td.getAttribute('data-op')) {
+              switch (td.getAttribute('data-op')) {
+                case 'delete':
+                  if (tr.getAttribute('data-count-id')) {
+                    var res = await Query.exec(Path.url('store/Count/' + tr.getAttribute('data-count-id')), {method: 'DELETE', body: {id: tr.getAttribute('data-count-id')}})
+                    if (res.success) {
+                      tr.parentNode.removeChild(tr)
+                    }
+                  }
+                  break
+              }
             } else {
               window.location.hash = tr.getAttribute('data-url')
             }
@@ -337,10 +355,18 @@ define([
 
       var reservations = await this.getReservations()
       var references = '<fieldset name="reference"><legend>Référence</legend>'
+      var begin = null
+      var end = null
       if (reservations.length > 0) {
         for (var i = 0; i < reservations.length; i++) {
           if (reservations[i].reference) {
             references += '<div data-reference-value="' + reservations[i].reference + '"><b>Réservation ' + reservations[i].id + '</b>&nbsp;: ' + reservations[i].reference + '</div>'
+          }
+          if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
+            begin = reservations[i].begin
+          }
+          if (end === null || (new Date(end)).getTime() < (new Date(reservations[i].end)).getTime) {
+            end = reservations[i].end
           }
         }
       }
@@ -364,8 +390,8 @@ define([
         (this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '') +
         '</ul>' +
         '<fieldset><legend>Période</legend><label for="begin">Début</label>' +
-        '<input type="date" value="' + (this.get('data').begin ? this._toInputDate(this.get('data').begin) : '') + '" name="begin" /><label for="end">Fin</label>' +
-        '<input type="date" name="end" value="' + (this.get('data').end ? this._toInputDate(this.get('data').end) : '') + '" /></fieldset>' +
+        '<input type="date" value="' + (this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin)) + '" name="begin" /><label for="end">Fin</label>' +
+        '<input type="date" name="end" value="' + (this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end)) + '" /></fieldset>' +
         '<label for="comment">Remarque interne</label><textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea>' +
         references +
         '</form>' +
@@ -508,7 +534,6 @@ define([
             selected = 'selected'
           }
           str = '<option value="' + u.id + '" ' + selected + '>' + u.name + (u.symbol ? ' [' + u.symbol + ']' : '') + '</option>'
-          console.log(u)
           if (u.collection) {
             if (!optgroups[u.collection]) {
               optgroups[u.collection] = document.createElement('OPTGROUP')
@@ -575,7 +600,6 @@ define([
     },
 
     showChange: function (event) {
-      console.log(event)
       if (!this.Changed) {
         this.Changed = []
       }
