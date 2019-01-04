@@ -104,7 +104,12 @@ $tables = array (
       'article_ucollection' => SQLITE3_INTEGER,
       'article_deleted' => SQLITE3_INTEGER,
       'article_created' => SQLITE3_INTEGER,
-      'article_modified' => SQLITE3_INTEGER)
+      'article_modified' => SQLITE3_INTEGER),
+   'entry' => array(
+      'entry_id' => SQLITE3_INTGER,
+      'entry_ref' => SQLITE3_TEXT,
+      'entry_name' => SQLITE3_TEXT,
+      'entry_value' => SQLITE3_TEXT)
    );
 
 foreach ($tables as $name => $content) {
