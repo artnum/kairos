@@ -232,7 +232,7 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><td>Numéro</td><td>Facture</td><td>Réservation</td><td>Période</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
+        '<thead><tr><td>Numéro</td><td>Facture</td><td>Réservation</td><td>Période</td><td>Référence client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
         '<tbody>'
 
       var data = this.get('data')
@@ -254,6 +254,7 @@ define([
           '<td tabindex data-edit="0" data-invoice="' + (data[i].invoice ? data[i].invoice : '') + '">' + (data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '') + '</td>' +
           '<td>' + reservations + '</td>' +
           '<td>' + this._toHtmlRange(data[i].begin, data[i].end) + '</td>' +
+          '<td>' + (data[i].reference ? data[i].reference : '') + '</td>' +
           '<td>' + (data[i].comment ? this._shortDesc(data[i].comment) : '') + '</td>' +
           '<td>' + (data[i].total ? data[i].total : '') + '</td>' +
           '<td>' + (data[i].printed ? this._toHtmlDate(data[i].printed) : '') + '</td>' +
