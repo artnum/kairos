@@ -19,6 +19,7 @@
 <label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
 <br />
 <input data-dojo-type="dijit/form/CheckBox" name="confirmed" data-dojo-attach-point="nConfirmed" data-dojo-attach-event="click:toggleConfirmed"/> <label for="confirmed">Fin confirmée</label>
+<button data-dojo-type="dijit/form/Button" name="confirmedAndReturned" data-dojo-attach-point="nConfirmedAndReturned" data-dojo-attach-event="click:toggleConfirmedAndReturned">Confirmée et ramenée</button>
 </fieldset>
 
 
@@ -38,7 +39,7 @@
     <label for="arrivalLocality" class="fixedSize">Localité : </label><input class="fullWidth" data-dojo-attach-point="nArrivalLocality" data-dojo-type="dijit/form/TextBox" name="arrivalLocality" /><br />
     <label for="arrivalKeys" class="fixedSize">Clefs : </label><input class="fullWidth" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /><br />
     <label for="arrivalComment" class="fixedSize">Remarque : </label><input class="fullWidth" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /><br />
-    <span class="twoCol"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> <label for="arrivalInprogress">En cours</label> <input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" data-dojo-attach-event="click:autoprint"/> <label for="arrivalDone">Ramenée</label></span>
+    <span class="twoCol"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> <label for="arrivalInprogress">En cours</label> <input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> <label for="arrivalDone">Ramenée</label></span>
   </fieldset>
 </div>
 
@@ -118,9 +119,9 @@
 <button data-dojo-type="dijit/form/Button" value="Dupliquer"
  type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
 <button data-dojo-type="dijit/form/Button" value="Mission"
- type="button" data-dojo-attach-event="click:doMission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button>
+ type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button>
 <button data-dojo-type="dijit/form/Button" value="Décompte"
-   type="button" data-dojo-attach-event="click:doPrint" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
+   type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
 <button data-dojo-type="dijit/form/Button" value="Décompte"
  type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
 

@@ -144,6 +144,10 @@ define([
       if (!this.complements) { this.complements = [] }
       if (!this.IDent) { this.set('IDent', this.id) }
 
+      if (json.arrival) {
+        this.set('_arrival', Object.assign({}, json.arrival))
+      }
+
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
       this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
       if (this.sup) {
@@ -189,6 +193,10 @@ define([
 
       if (this.get('IDent')) {
         object['id'] = this.get('IDent')
+      }
+
+      if (this.get('_arrival')) {
+        object.arrival = Object.assign({}, this.get('_arrival'))
       }
 
       return object
@@ -1201,49 +1209,9 @@ define([
       this.destroyReservation(this)
     },
 
-    saveArrival: function () {
-      var values = this.get('_arrival')
-      var suffix = ''
-      var method = 'post'
-
-      if (!values) {
-        return
-      }
-
-      if (values['id']) {
-        suffix = '/' + values['id']
-        method = 'put'
-      }
-
-      if (!values.creator) {
-        var currentUser = window.localStorage.getItem(Path.bcname('user'))
-        if (currentUser) {
-          currentUser = JSON.parse(currentUser)
-          values.creator = 'store/User/' + currentUser.id
-          this.set('arrivalCreator', values.creator)
-        }
-      }
-
-      if (values.reported) {
-        values.reported = djDateStamp.toISOString(values.reported)
-      }
-
-      if (values.done == null) {
-        values.done = ''
-      }
-
-      if (values.inprogress == null) {
-        values.inprogress = ''
-      }
-
-      Req[method](String(Path.url('store/Arrival' + suffix)), {query: values}).then(djLang.hitch(function (result) {
-      }))
-    },
-
     save: function () {
       var object = this.toObject()
       this.Channel.postMessage({op: 'put', data: object, localid: this.get('localid')})
-      this.saveArrival()
     },
 
     copy: function () {

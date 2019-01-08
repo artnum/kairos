@@ -103,7 +103,6 @@ new IdxDB().then(function (DB) {
   var checker = function () {
     var url = String(Artnum.Path.url('/store/DeepReservation'))
     var parameters = ''
-    console.log(last)
     if (last.modification === 0) {
       setTimeout(checker, 2500)
       return

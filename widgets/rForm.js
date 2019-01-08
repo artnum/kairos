@@ -859,8 +859,10 @@ define([
         if (retval.comment) {
           this.nArrivalComment.set('value', retval.comment)
         }
+        if (retval.locality) {
+          this.nArrivalLocality.set('value', retval.locality)
+        }
         if (retval.creator) {
-          console.log(retval.creator)
         }
       }
 
@@ -884,11 +886,13 @@ define([
       }
     },
 
-    saveArrival: function (retForm) {
-      var tx = window.App.DB.transaction('return', 'readwrite')
-      var store = tx.objectStore('return')
-      retForm._hash = ''
-      store.put(retForm)
+    toggleConfirmedAndReturned: function () {
+      if (!this.nConfirmed.get('checked')) {
+        this.nConfirmed.set('checked', true)
+        this.toggleConfirmed()
+      }
+      this.nArrivalDone.set('checked', true)
+      this.nArrivalInprogress.set('checked', true)
     },
 
     toggleConfirmed: function () {
@@ -1064,11 +1068,24 @@ define([
       }
     },
 
-    doPrint: function (event) {
-      this._print('decompte')
-    },
-    doMission: function (event) {
-      this._print('mission')
+    evPrint: function (event) {
+      var printType = null
+      if (event.target.getAttribute('data-print-type')) {
+        printType = event.target.getAttribute('data-print-type')
+      } else {
+        for (var node = event.target; node; node = node.parentNode) {
+          console.log(node)
+          if (node.getAttribute('data-print-type')) {
+            printType = node.getAttribute('data-print-type')
+            break
+          }
+        }
+      }
+      if (printType) {
+        if (this.doSave(event)) {
+          this._print(printType)
+        }
+      }
     },
 
     doDelete: function (event) {
@@ -1143,11 +1160,11 @@ define([
     },
 
     doSaveAndQuit: function (event) {
-      if (this.doSave()) {
+      this.doSave().then(function () {
         this.hide()
-      }
+      }.bind(this))
     },
-    doSave: function (event) {
+    doSave: async function (event) {
       var err = this.validate()
       if (!err[1]) {
         window.App.error(err[0])
@@ -1169,7 +1186,6 @@ define([
       let f = this.nForm.get('value')
       var other = {}
       for (var k in f) {
-        console.log(k)
         if (k.substr(0, 2) === 'o-') {
           other[k.substr(2)] = f[k]
         }
@@ -1188,46 +1204,46 @@ define([
         deliveryEnd = ''
       }
 
+      var res = await Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.get('id')}}))
+      var arrival = {target: this.reservation.get('id')}
+      if (res.success && res.length > 0) {
+        arrival = Object.assign(arrival, res.data[0])
+      }
+
       if (this.nConfirmed.get('checked')) {
-        var currentRet = this.reservation.get('_arrival') ? this.reservation.get('_arrival') : {}
-        var retVal = {}
         if (f.arrivalDate) {
           if (f.arrivalTime) {
-            retVal.reported = f.arrivalDate.join(f.arrivalTime)
+            arrival.reported = f.arrivalDate.join(f.arrivalTime)
           } else {
-            retVal.reported = f.arrivalDate
+            arrival.reported = f.arrivalDate
           }
         }
-        retVal.comment = f.arrivalComment
-        retVal.contact = f.arrivalAddress
-        retVal.locality = f.arrivalLocality
-        retVal.other = f.arrivalKeys
+        arrival.comment = f.arrivalComment
+        arrival.contact = f.arrivalAddress
+        arrival.locality = f.arrivalLocality
+        arrival.other = f.arrivalKeys
 
-        if (f.arrivalDone.length > 0 && !currentRet.done) {
-          retVal.done = djDateStamp.toISOString(new Date())
-        } else if (f.arrivalDone.length <= 0 && currentRet.done) {
-          retVal.done = null
+        if (f.arrivalDone.length > 0) {
+          if (!arrival.done) {
+            arrival.done = (new Date()).toISOString()
+          }
         } else {
-          retVal.done = currentRet.done
+          arrival.done = null
         }
 
-        if (f.arrivalInprogress.length > 0 && !currentRet.inprogress) {
-          retVal.inprogress = djDateStamp.toISOString(new Date())
-        } else if (f.arrivalInprogress.length <= 0 && currentRet.inprogress) {
-          retVal.inprogress = null
+        if (f.arrivalInprogress.length > 0) {
+          if (!arrival.inprogress) {
+            arrival.inprogress = (new Date()).toISOString()
+          }
         } else {
-          retVal.inprogress = currentRet.inprogress
+          arrival.inprogress = null
         }
 
-        retVal.target = this.reservation.get('id')
-        if (currentRet.id) {
-          retVal.id = currentRet.id
-        }
-        this.reservation.set('_arrival', retVal)
+        this.reservation.set('_arrival', arrival)
       } else {
-        currentRet = this.reservation.get('_arrival')
-        if (currentRet) {
-          Req.del(Path.url('/store/Arrival/' + currentRet.id))
+        if (arrival.id) {
+          this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
+        } else {
           this.reservation.set('_arrival', null)
         }
       }
@@ -1281,7 +1297,7 @@ define([
     },
 
     openCount: async function () {
-      var count = new Count({reservation: this.reservation.get('id')})
+      var count = new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
     },
 
     refreshCount: async function () {
@@ -1321,17 +1337,6 @@ define([
           this.nCountList.appendChild(frag)
         }.bind(this))
       }.bind(this))
-    },
-
-    autoprint: function (event) {
-      console.log(event)
-      switch (event.target.getAttribute('name')) {
-        case 'arrivalDone':
-          if (event.target.checked) {
-            window.App.autoprint('pdfs/decompte/' + this.reservation.get('id'))
-          }
-          break
-      }
     }
   })
 })

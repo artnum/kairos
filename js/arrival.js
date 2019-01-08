@@ -165,6 +165,11 @@ Arrival.prototype.html = {
 
 Arrival.prototype.done = function (event) {
   event.stopPropagation()
+
+  var line = null
+  for (line = event.target; line.nodeName !== 'TR'; line = line.parentNode);
+  var reservationId = line.getAttribute('data-reservation')
+
   var req = { id: this.id }
   if (this.done) {
     req.done = ''
@@ -172,18 +177,23 @@ Arrival.prototype.done = function (event) {
     var now = new Date()
     req.done = now.toISOString()
   }
-  Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: req}).then(function (result) {
+  Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then(function (result) {
     if (result.success && result.length === 1) {
       if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
-        fetch(Artnum.Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + this.target}}))
+        fetch(Artnum.Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + reservationId}}))
       }
-      this.RChannel.postMessage({op: 'touch', id: this.target})
+      this.RChannel.postMessage({op: 'touch', id: reservationId})
     }
   }.bind(this))
 }
 
 Arrival.prototype.progress = function (event) {
   event.stopPropagation()
+
+  var line = null
+  for (line = event.target; line.nodeName !== 'TR'; line = line.parentNode);
+  var reservationId = line.getAttribute('data-reservation')
+
   var req = { id: this.id }
   if (this.inprogress) {
     req.inprogress = ''
@@ -193,7 +203,7 @@ Arrival.prototype.progress = function (event) {
   }
 
   fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
-    this.RChannel.postMessage({op: 'touch', id: this.target})
+    this.RChannel.postMessage({op: 'touch', id: reservationId})
   }.bind(this))
 }
 
@@ -281,6 +291,7 @@ Arrival.prototype.add = function (retval) {
   dom.setAttribute('class', className)
   dom.setAttribute('id', 'return_' + retval.id)
   dom.setAttribute('data-current-state', 'closed')
+  dom.setAttribute('data-reservation', retval.target)
 
   var rep = retval.reported ? new Date(retval.reported) : ''
   if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }

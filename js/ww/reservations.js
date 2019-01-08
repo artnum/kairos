@@ -2,7 +2,9 @@
 /* global IdxDB, Artnum */
 'use strict'
 importScripts('../localdb.js')
+importScripts('https://bitwiseshiftleft.github.io/sjcl/sjcl.js')
 importScripts('https://artnum.ch/code/js/Path.js')
+importScripts('https://artnum.ch/code/js/Query.js')
 
 var fetchInit = {credentials: 'same-origin'}
 new IdxDB().then(function (db) {
@@ -12,17 +14,38 @@ new IdxDB().then(function (db) {
 
   var write = function (data) {
     return new Promise(function (resolve, reject) {
+      var arrival = null
+      if (data.arrival) {
+        arrival = data.arrival
+        delete data.arrival
+      }
       var method = data.id ? 'PUT' : 'POST'
       var url = data.id ? '/' + String(data.id) : '/'
-      var qid = (new Date()).getTime()
-      fetch(Artnum.Path.url('/store/Reservation/' + url, {params: {'_qid': qid}}), Object.assign({method: method, body: JSON.stringify(data)}, fetchInit)).then(function (response) {
-        response.json().then(function (data) {
-          if (data.type === 'results') {
-            if (data.success) {
-              resolve({id: data.data[0].id, new: method === 'POST'})
+      Artnum.Query.exec(Artnum.Path.url('/store/Reservation/' + url), {method: method, body: data}).then(async function (res) {
+        if (res.success && res.length === 1) {
+          if (arrival) {
+            url = arrival.id ? arrival.id : ''
+            method = arrival.id ? 'PATCH' : 'POST'
+            var body = arrival
+            if (arrival._op) {
+              switch (arrival._op.toLowerCase()) {
+                case 'delete':
+                  if (arrival.id) {
+                    method = 'DELETE'
+                    body = {id: arrival.id}
+                  } else {
+                    method = null
+                  }
+                  break
+              }
+            }
+
+            if (method) {
+              await Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + url), {method: method, body: body})
             }
           }
-        })
+          resolve({id: res.data[0].id, new: method === 'POST'})
+        }
       })
     })
   }
