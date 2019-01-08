@@ -1050,19 +1050,25 @@ define([
       this.destroy()
     },
 
-    doPrint: function (event) {
+    _print: function (type) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        fetch(Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + this.reservation.get('IDent')}}))
+        Query.exec((Path.url('exec/auto-print.php', {params: {type: type, file: 'pdfs/' + type + '/' + this.reservation.get('IDent')}}))).then(function (result) {
+          if (result.success) {
+            window.App.info('Impression (' + type + ') pour la réservation ' + this.reservation.get('id') + ' en cours')
+          } else {
+            window.App.error('Erreur d\'impression (' + type + ') pour la réservation ' + this.reservation.get('id'))
+          }
+        }.bind(this))
       } else {
-        window.App.print('../pdfs/decompte/' + this.reservation.get('IDent'))
+        window.App.print('../pdfs/' + type + '/' + this.reservation.get('IDent'))
       }
     },
+
+    doPrint: function (event) {
+      this._print('decompte')
+    },
     doMission: function (event) {
-      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        fetch(Path.url('exec/auto-print.php', {params: {file: 'pdfs/mission/' + this.reservation.get('IDent')}}))
-      } else {
-        window.App.print('../pdfs/mission/' + this.reservation.get('IDent'))
-      }
+      this._print('mission')
     },
 
     doDelete: function (event) {

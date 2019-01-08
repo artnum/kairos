@@ -4,10 +4,14 @@ require_once('../lib/url.php');
 if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
    $ini_conf = parse_ini_file('../conf/location.ini', true);
    if (!isset($ini_conf['printing']['print-command'])) {
+      $result = array('success' => false, 'message' => 'Pas d\'impression disponible', 'type' => 'results', 'data' => NULL, 'length' => 0);
+      echo json_encode($result);
       exit(0);
    }
 
    if (!isset($_GET['file'])) {
+      $result = array('success' => false, 'message' => 'Pas de document spécifié', 'type' => 'results', 'data' => NULL, 'length' => 0);
+      echo json_encode($result);
       exit(0);
    }
 
@@ -18,6 +22,7 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
       }
    }
 
+   $result = array('success' => true, 'message' => '', 'type' => 'results');
    $tmp = tempnam(sys_get_temp_dir(), 'auto-print-file');
    $ctx = curl_init(base_url($_GET['file']));
    if ($ctx) {
@@ -30,8 +35,24 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
          if ($o !== FALSE && $o > 0) {
             $cmd = str_replace('__FILE__', escapeshellarg($tmp), $cmd);
             exec($cmd, $retstr, $retval);
+            if ($retval != 0) {
+               $result['success'] = false;
+               $result['data'] = NULL;
+               $result['length'] = 0;
+               $result['message'] = 'Impression échouée';
+            } else {
+               $result['data'] = $retstr;
+               $result['length'] = count($retstr);
+            }
+         } else {
+            $result = array('success' => false, 'message' => '', 'type' => 'results', 'data' => NULL, 'length' => 0);
          }
+      } else {
+         $result = array('success' => false, 'message' => '', 'type' => 'results', 'data' => NULL, 'length' => 0);
       }
+   } else {
+      $result = array('success' => false, 'message' => '', 'type' => 'results', 'data' => NULL, 'length' => 0);
    }
+   echo json_encode($result);
 }
 ?>
