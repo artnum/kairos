@@ -31,7 +31,8 @@ define([
   'location/update',
 
   'artnum/dojo/Request',
-  'artnum/Path'
+  'artnum/Path',
+  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
@@ -63,7 +64,8 @@ define([
   update,
 
   Req,
-  Path
+  Path,
+  Query
 ) {
   return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
 
@@ -242,15 +244,16 @@ define([
         that.displayTags(that.tags)
       })
 
-      Req.get(String(Path.url('store/Entry')), {query: { 'search.ref': this.target }}).then((result) => {
-        if (result && result.data) {
-          result.data.forEach(function (attrs) {
-            that[attrs.name] = attrs.value
-          })
+      Query.exec(Path.url('store/Entry', {params: {'search.ref': this.get('target')}})).then(function (result) {
+        if (result.success && result.length > 0) {
+          for (var i = 0; i < result.length; i++) {
+            this.set(result.data[i].name, result.data[i].value)
+            this.set('_' + result.data[i].name, result.data[i])
+          }
         }
-        that.loaded.resolve()
-        that.displayLocation()
-      })
+        this.loaded.resolve()
+        this.displayLocation()
+      }.bind(this))
 
       var frag = document.createDocumentFragment()
 
@@ -350,54 +353,70 @@ define([
     },
 
     displayLocation: function () {
-      var that = this
-      var frag = document.createDocumentFragment()
-      var i = document.createElement('I')
-      i.setAttribute('class', 'fas fa-warehouse'); frag.appendChild(i)
-      frag.appendChild(document.createTextNode(' ' + this.currentLocation))
-
-      window.requestAnimationFrame(() => {
-        if (that.get('currentLocation')) {
-          that.nControl.setAttribute('class', 'control ' + that.get('currentLocation').tagify())
-        }
-        that.nLocation.appendChild(frag); that.nLocation.setAttribute('class', 'location')
-        djOn.once(that.nLocation, 'dblclick', djLang.hitch(that, that.eEditLocation))
-      })
-    },
-
-    clearLocation: function () {
-      var def = new DjDeferred()
-      var that = this
-      window.requestAnimationFrame(() => {
-        while (that.nLocation.firstChild) {
-          that.nLocation.removeChild(that.nLocation.firstChild)
-        }
-
-        def.resolve()
-      })
-
-      return def.promise
+      var location = this.get('_currentLocation')
+      if (location && location.value) {
+        window.requestAnimationFrame(function () {
+          this.nControl.setAttribute('class', 'control ' + location.value.tagify())
+          this.nLocation.setAttribute('data-id', location.id)
+          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> ' + location.value
+        }.bind(this))
+      } else {
+        window.requestAnimationFrame(function () {
+          this.nLocation.removeAttribute('data-id')
+          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> '
+        }.bind(this))
+      }
     },
 
     eEditLocation: function (event) {
-      var that = this
-      var form = document.createElement('FORM')
-      var input = document.createElement('INPUT')
-      var button = document.createElement('BUTTON')
-      form.appendChild(input); form.appendChild(button)
-      button.appendChild(document.createTextNode('Ok'))
-      input.setAttribute('value', this.currentLocation)
+      var location = this.get('_currentLocation')
+      var frag = document.createDocumentFragment()
+      var saveLocFn = function (event) {
+        var node = null
+        var input = null
+        for (node = event.target; node.nodeName !== 'DIV'; node = node.parentNode);
+        for (input = node.firstChild; input.nodeName !== 'INPUT'; input = input.nextSibling);
+        if (node.getAttribute('data-id')) {
+          var body = {id: node.getAttribute('data-id'), value: input.value}
+          var method = 'PATCH'
+          var url = Path.url('store/Entry/' + body.id)
+        } else {
+          body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
+          method = 'POST'
+          url = Path.url('store/Entry')
+        }
 
-      djOn.once(form, 'submit', (event) => {
-        event.preventDefault()
+        Query.exec(url, {method: method, body: body}).then(function (result) {
+          if (result.success && result.length === 1) {
+            Query.exec(Path.url('store/Entry/' + result.data[0].id)).then(function (result) {
+              if (result.success && result.length === 1) {
+                this.set('_currentLocation', result.data)
+                this.displayLocation()
+              }
+            }.bind(this))
+          }
+        }.bind(this))
+      }.bind(this)
 
-        Req.post(String(Path.url('store/Entry')), {query: { ref: that.get('target'), name: 'currentLocation', value: input.value }}).then(() => {
-          that.currentLocation = input.value
-          that.clearLocation(); that.displayLocation()
-        })
-      })
+      frag.appendChild(document.createElement('INPUT'))
+      if (location && location.value) {
+        frag.lastChild.value = location.value
+      }
+      frag.lastChild.addEventListener('keyup', function (event) { if (event.key === 'Enter') { saveLocFn(event) } })
 
-      that.clearLocation().then(() => { that.nLocation.setAttribute('class', 'location edit'); that.nLocation.appendChild(form) })
+      frag.appendChild(document.createElement('BUTTON'))
+      frag.lastChild.addEventListener('click', saveLocFn)
+
+      frag.lastChild.innerHTML = 'Ok'
+      frag.appendChild(document.createElement('BUTTON'))
+      frag.lastChild.addEventListener('click', this.displayLocation.bind(this))
+      frag.lastChild.innerHTML = 'Annuler'
+
+      window.requestAnimationFrame(function () {
+        this.nLocation.setAttribute('class', 'location edit')
+        this.nLocation.innerHTML = ''
+        this.nLocation.appendChild(frag)
+      }.bind(this))
     },
 
     cancelReservation: function () {
