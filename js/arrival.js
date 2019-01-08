@@ -172,11 +172,13 @@ Arrival.prototype.done = function (event) {
     var now = new Date()
     req.done = now.toISOString()
   }
-  fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
-    if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
-      fetch(Artnum.Path.url('exec/auto-print.php', {params: {file: 'pdfs/decompte/' + req.id}}))
+  Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: req}).then(function (result) {
+    if (result.success && result.length === 1) {
+      if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
+        fetch(Artnum.Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + this.target}}))
+      }
+      this.RChannel.postMessage({op: 'touch', id: this.target})
     }
-    this.RChannel.postMessage({op: 'touch', id: this.target})
   }.bind(this))
 }
 
