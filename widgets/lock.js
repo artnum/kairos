@@ -10,6 +10,7 @@ define([
 ) {
   return djDeclare('location.lock', [], {
     constructor: function (target) {
+      this.Disabled = true
       this.Key = null
       this.Target = target
       this.Timeout = null
@@ -25,11 +26,13 @@ define([
     },
 
     mine: function () {
+      if (this.Disabled) { return true }
       return this.Locked
     },
 
     lock: async function () {
-      if (this.Target === null) return true
+      if (this.Disabled) { return true }
+      if (this.Target === null) { return true }
       var start = Math.round((new Date()).getTime() / 1000)
       var result = await Query.exec(Path.url('store/.lock/' + this.Target), {method: 'POST', body: {operation: 'lock', key: this.Key, 'timestamp': start}})
       var diff = Math.round((new Date()).getTime() / 1000) - start // second taken to travel between server and client
@@ -51,6 +54,7 @@ define([
     },
 
     unlock: async function () {
+      if (this.Disabled) { return true }
       if (this.Timeout) {
         clearTimeout(this.Timeout) // clear current timeout
       }
