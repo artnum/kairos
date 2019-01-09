@@ -118,10 +118,10 @@
  type="button" data-dojo-attach-event="click:doSaveAndQuit" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder et quitter</button>
 <button data-dojo-type="dijit/form/Button" value="Dupliquer"
  type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
-<button data-dojo-type="dijit/form/Button" value="Mission"
- type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button>
-<button data-dojo-type="dijit/form/Button" value="Décompte"
-   type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
+<span data-print-type="mission"><button data-dojo-type="dijit/form/Button" value="Mission"
+                                                                           type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button></span>
+<span data-print-type="decompte"><button data-dojo-type="dijit/form/Button" value="Décompte"
+                                                                            type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button></span>
 <button data-dojo-type="dijit/form/Button" value="Décompte"
  type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
 
