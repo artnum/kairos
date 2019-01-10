@@ -261,6 +261,23 @@ define([
       this.resize()
     },
 
+    evTouchStart: function (event) {
+      event.stopPropagation()
+      event.preventDefault()
+      if (window.App.touchTimeout) {
+        clearInterval(window.App.touchTimeout)
+      }
+      window.App.touchTimeout = setTimeout(function () {
+        this.popMeUp()
+      }.bind(this), 500)
+    },
+
+    evTouchEnd: function (event) {
+      event.stopPropagation()
+      event.preventDefault()
+      clearTimeout(window.App.touchTimeout)
+    },
+
     isolateMe: function (e) {
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
@@ -999,6 +1016,9 @@ define([
       if (!this.currentDom) {
         this.currentDom = document.createElement('DIV')
       }
+
+      djOn(this.currentDom, 'touchstart', this.evTouchStart.bind(this))
+      djOn(this.currentDom, 'touchend', this.evTouchEnd.bind(this))
 
       if (!this.DblClick) {
         this.DblClick = djOn(this.currentDom, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))

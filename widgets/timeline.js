@@ -622,7 +622,7 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      djOn(this.domNode, 'mousemove', djLang.hitch(this, this.mouseOver))
+      djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1010,6 +1010,11 @@ define([
 
     mouseOver: function (event) {
       if (this._mask) { return }
+      if (event.type === 'touchmove') {
+        if (window.App.touchTimeout) {
+          clearInterval(window.App.touchTimeout)
+        }
+      }
       var nodeBox = djDomGeo.getContentBox(this.domNode)
       var sight = this.sight
       var days = this.days
@@ -1024,7 +1029,7 @@ define([
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
 
       /* Move, following mouse, timeline left/right and up/down when left button is held */
-      if (event.buttons === 1) {
+      if (event.buttons === 1 || event.type === 'touchmove') {
         if (!this.originalTarget) {
           this.originalTarget = event.target
         }

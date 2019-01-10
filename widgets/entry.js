@@ -86,6 +86,8 @@ define([
     currentLocation: '',
 
     constructor: function (args) {
+      this.lastTouchEndEv = 0
+      this.lastTouchTarget = null
       this.waiters = 0
       this.childs = {}
       this.newReservation = null
@@ -222,6 +224,8 @@ define([
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
       djOn(this.domNode, 'dblclick', djLang.hitch(this, this.evtDblClick))
+      djOn(this.domNode, 'touchend', djLang.hitch(this, this.evTouchEnd))
+      djOn(this.domNode, 'touchstart', djLang.hitch(this, this.evTouchStart))
       djOn(this.sup, 'zoom', () => {
         djDomStyle.set(that.domNode, 'height', '')
         that.originalHeight = djDomStyle.get(that.domNode, 'height')
@@ -435,6 +439,23 @@ define([
 
     defaultStatus: function () {
       return this.sup.defaultStatus()
+    },
+
+    evTouchStart: function (event) {
+      event.stopPropagation()
+      event.preventDefault()
+      if (window.App.touchTimeout) {
+        clearTimeout(window.App.touchTimeout)
+      }
+      window.App.touchTimeout = setTimeout(function () {
+        this.evtDblClick(event)
+      }.bind(this), 500)
+    },
+
+    evTouchEnd: function (event) {
+      event.stopPropagation()
+      event.preventDefault()
+      clearTimeout(window.App.touchTimeout)
     },
 
     evtDblClick: function (event) {
