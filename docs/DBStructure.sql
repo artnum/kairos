@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS "centry" (
 	"centry_id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"centry_count" INTEGER NOT NULL,
 	"centry_article" INTEGER DEFAULT NULL,
+	"centry_reference" TEXT DEFAULT NULL,
 	"centry_description" TEXT,
 	"centry_price" FLOAT DEFAULT NULL,
 	"centry_quantity" FLOAT DEFAULT NULL,

@@ -251,7 +251,9 @@ foreach($reservations as $reservation) {
 
             $subtotal += $entry['total'];
 
-            $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 91, 'multiline' => true, 'break' => false));
+            $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
+            $PDF->SetX(30);
+            $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 71, 'multiline' => true, 'break' => false));
             $unitname = 'name';
             if (isset($entry['quantity']) && $entry['quantity'] != 0) {
                if ($entry['quantity'] > 1) { $unitname = 'names'; }
@@ -301,7 +303,9 @@ if ($has_null_entry && !$single) {
 
          $subtotal += $entry['total'];
 
-         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 91, 'multiline' => true, 'break' => false));
+         $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
+         $PDF->SetX(30);
+         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 71, 'multiline' => true, 'break' => false));
          $unitname = 'name';
          if (isset($entry['quantity']) && $entry['quantity'] != 0) {
             if ($entry['quantity'] > 1) { $unitname = 'names'; }
@@ -337,7 +341,7 @@ if ($has_null_entry && !$single) {
 
 $PDF->hr();
 $PDF->SetFontSize(6);
-$PDF->printTaggedLn(array('%cb', 'Total'), array('break' => false));
+$PDF->printTaggedLn(array('%cb', 'Total HT'), array('break' => false));
 $PDF->printTaggedLn(array('%cb', fprice($count['total'])), array('align' => 'right'));
 $PDF->Output($count['id'] .  '.pdf', 'I'); 
 

@@ -416,7 +416,7 @@ define([
       div.lastChild.focus()
 
       this.thead = document.createElement('THEAD')
-      this.thead.innerHTML = '<tr><td class="short">ID</td><td class="short">Réservation</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Total</td><td></td></tr>'
+      this.thead.innerHTML = '<tr><td class="short">ID</td><td class="short">Réservation</td><td class="short">Référence</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Total</td><td></td></tr>'
       this.tbody = document.createElement('TBODY')
       this.tfoot = document.createElement('TFOOT')
 
@@ -469,7 +469,7 @@ define([
             }
           }
           this.newEmpty()
-          this.tfoot.innerHTML = '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td>' + this.Total + '</td><td></td></tr>'
+          this.tfoot.innerHTML = '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>' + this.Total + '</td><td></td></tr>'
           resolve()
         }.bind(this))
         this.draw_contacts()
@@ -508,6 +508,7 @@ define([
           })
         }
         var txt = '<td>' + String(value.id ? value.id : '&#10022;') + '</td><td>' + String(value.reservation ? value.reservation : '') + '</td><td>' +
+          String(value.reference ? value.reference : '').html() + '</td><td>' +
           String(value.description ? value.description : '-').html() + '</td><td>' + String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
           String(unit).html() + '</td><td>' + String(value.price ? value.price : '').html() + '</td><td>' +
           String(value.total ? value.total : '0').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
@@ -552,7 +553,8 @@ define([
         }
         units += '</select>'
 
-        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() +
+        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="reference" type="text" value="' + String(value.reference ? value.reference : '').html() +
+          '" /><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() +
           '" /></td><td><input step="any" name="quantity" type="number" lang="en" value="' + String(value.quantity ? value.quantity : '').html() +
           '" /></td><td>' + units + '</td><td><input name="price" lang="en" step="any" type="number" value="' + String(value.price ? value.price : '').html() +
           '" /></td><td><input lang="en" name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() +
