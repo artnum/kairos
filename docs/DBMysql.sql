@@ -210,6 +210,7 @@ CREATE TABLE IF NOT EXISTS "centry" (
 	"centry_reference" TEXT DEFAULT NULL,
 	"centry_description" TEXT,
 	"centry_price" FLOAT DEFAULT NULL,
+	"centry_discount" FLOAT DEFAULT NULL, -- percent value
 	"centry_quantity" FLOAT DEFAULT NULL,
 	"centry_total" FLOAT DEFAULT NULL,
 	"centry_unit" INTEGER DEFAULT NULL,

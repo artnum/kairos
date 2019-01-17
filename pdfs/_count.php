@@ -250,22 +250,26 @@ foreach($reservations as $reservation) {
 
             $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
             $PDF->SetX(30);
-            $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 71, 'multiline' => true, 'break' => false));
+            $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 61, 'multiline' => true, 'break' => false));
             $unitname = 'name';
             if (isset($entry['quantity']) && $entry['quantity'] != 0) {
                if ($entry['quantity'] > 1) { $unitname = 'names'; }
-               $PDF->SetX(104);
+               $PDF->SetX(94);
                $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'right'));
             }
             
             if (isset($entry['unit']) && $entry['unit']) {
-               $PDF->SetX(121);
+               $PDF->SetX(111);
                $PDF->printTaggedLn(array('%c', $units[$entry['unit']][$unitname]), array('max-width' => 25, 'break' => false, 'align' => 'left'));
             }
 
             if (isset($entry['price']) && $entry['price'] != 0) {
-               $PDF->SetX(146);
+               $PDF->SetX(136);
                $PDF->printTaggedLn(array('%c', fprice($entry['price'])), array('max-width' => 18, 'align' => 'right', 'multiline' => true, 'break' => false));
+            }
+            if (isset($entry['discount']) && $entry['discount'] != 0) {
+               $PDF->SetX(160);
+               $PDF->printTaggedLn(array('%c', $entry['discount'] . '%'), array('max-width' => 10, 'align' => 'right', 'multiline' => true, 'break' => false));
             }
             if (isset($entry['total']) && $entry['total'] != 0) {
                $PDF->printTaggedLn(array('%c', fprice(floatval($entry['total']))), array('multiline' => true, 'break' => false, 'align' => 'right'));
@@ -302,21 +306,25 @@ if ($has_null_entry && !$single) {
 
          $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
          $PDF->SetX(30);
-         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 71, 'multiline' => true, 'break' => false));
+         $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 61, 'multiline' => true, 'break' => false));
          $unitname = 'name';
          if (isset($entry['quantity']) && $entry['quantity'] != 0) {
             if ($entry['quantity'] > 1) { $unitname = 'names'; }
-            $PDF->SetX(104);
+            $PDF->SetX(94);
             $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'right'));
          }
 
          if (isset($entry['unit']) && $entry['unit']) {
-            $PDF->SetX(121);
+            $PDF->SetX(111);
             $PDF->printTaggedLn(array('%c', $units[$entry['unit']][$unitname]), array('max-width' => 25, 'break' => false, 'align' => 'left'));
          }
          if (isset($entry['price']) && $entry['price'] != 0) {
-            $PDF->SetX(146);
+            $PDF->SetX(136);
             $PDF->printTaggedLn(array('%c', fprice($entry['price'])), array('max-width' => 18, 'align' => 'right', 'multiline' => true, 'break' => false));
+         }
+         if (isset($entry['discount']) && $entry['discount'] != 0) {
+            $PDF->SetX(160);
+            $PDF->printTaggedLn(array('%c', $entry['discount'] . '%'), array('max-width' => 10, 'align' => 'right', 'multiline' => true, 'break' => false));
          }
          if (isset($entry['total']) && $entry['total'] != 0) {
             $PDF->printTaggedLn(array('%c', fprice(floatval($entry['total']))), array('multiline' => true, 'break' => false, 'align' => 'right'));
@@ -325,12 +333,6 @@ if ($has_null_entry && !$single) {
          $PDF->br();
       }
    }
-   /*
-   $PDF->hr();
-   $PDF->printTaggedLn(array('%cb', 'Sous-total'), array('max-width' => 99, 'multiline' => true, 'break' => false));
-   $PDF->SetX($PDF->right);
-   $PDF->printTaggedLn(array('%cb', fprice($subtotal)), array('multiline' => true, 'break' => false, 'align' => 'right'));
-   $PDF->br(); */
    $PDF->close_block();
    $PDF->br();
 }
