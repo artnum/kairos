@@ -77,8 +77,19 @@ foreach ($reservations as $k => $reservation) {
 
    foreach ($reservations[$k]['contacts'] as $type => $contact) {
       foreach ($contact as $entry) {
+
+         /* clientManager will contain the name and givenname of manager */
          if ($type == '_responsable' && is_null($clientManager)) {
-            $clientManager = $entry['id'];
+            if ($entry['freeform']) {
+               $clientManager = format_address(array('type' => 'freeform', 'data' => $entry['freeform']));
+            } else {
+               $e = $entry['target'];
+               if (isset($e['givenname']) || isset($e['sn'])) {
+                  $clientManager = join(' ', array($e['givenname'], $e['sn']));
+               } else {
+                  $clientManager = format_address(array('type' => 'db', 'data' => $e));
+               }
+            }
          }
          if (!isset($contacts[$entry['id']])) {
             if($entry['freeform']) {
@@ -148,7 +159,37 @@ if ($count['_invoice']['address'] && $contacts[$count['_invoice']['address']]) {
 $PDF->close_block();
 $PDF->left = $PDF->w / 3;
 $PDF->SetY($y);
-$PDF->block('global_reference');
+$PDF->block('our_ref');
+$PDF->background_block('#EEEEEE');
+
+
+$creator = $reservations[0]['creator'];
+$creator = explode('/', $creator);
+$creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
+if ($creator && $creator['success'] && $creator['length'] == 1) {
+   $creator = $creator['data'];
+}
+
+$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  'DEC ' . $count['id']));
+if ($creator && isset($creator['name'])) {
+   $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator['name']), array('multiline' => true));
+}
+$PDF->close_block();
+$PDF->br();
+
+$PDF->block('their_ref');
+$PDF->background_block('#EEEEEE');
+if ($has_global_reference) {
+   $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
+}
+if (!is_null($clientManager)) {
+   $PDF->printTaggedLn(array('%c', 'Votre responsable : ', '%cb', $clientManager), array('multiline' => true));
+}
+
+$PDF->close_block();
+$PDF->br();
+
+$PDF->block('range');
 $PDF->background_block('#EEEEEE');
 
 if (!empty($count['begin']) || !empty($count['end'])) {
@@ -162,27 +203,7 @@ if (!empty($count['begin']) || !empty($count['end'])) {
 }
 
 
-$creator = $reservations[0]['creator'];
-$creator = explode('/', $creator);
-$creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
-if ($creator && $creator['success'] && $creator['length'] == 1) {
-   $creator = $creator['data'];
-}
-
-
-$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  $count['id']));
-if ($creator && isset($creator['name'])) {
-   $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator['name']), array('multiline' => true));
-}
-if ($has_global_reference) {
-   $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
-}
-if (!is_null($clientManager)) {
-   $manager = join(', ', $contacts[$clientManager]);
-   $PDF->printTaggedLn(array('%c', 'Votre responsable : ', '%cb', $manager), array('multiline' => true));
-}
-
-$PDF->block('remarks', $previous);
+$PDF->block('remarks', array($previous, 'range'));
 $PDF->left = 10;
 $PDF->right = 10;
 
@@ -203,6 +224,25 @@ unset($PDF->right);
 $single = false;
 if (count($reservations) == 1) {
    $single = true;
+}
+
+function tableHead($PDF) {
+   $PDF->setFontSize(2);
+   $PDF->printTaggedLn(array('%cb', 'Référence'), array('max-width' => 20, 'break' => false));
+   $PDF->SetX(30);
+   $PDF->printTaggedLn(array('%cb', 'Description'), array('max-width' => 61, 'break' => false));
+   $PDF->SetX(94);
+   $PDF->printTaggedLn(array('%cb', 'Quantité'), array('max-width' => 16, 'break' => false));
+   $PDF->SetX(111);
+   $PDF->printTaggedLn(array('%cb', 'Unité'), array('max-width' => 25, 'break' => false));
+   $PDF->SetX(136);
+   $PDF->printTaggedLn(array('%cb', 'Prix unitaire'), array('max-width' => 18, 'break' => false, 'align' => 'right'));
+   $PDF->SetX(160);
+   $PDF->printTaggedLn(array('%cb', 'Rabais'), array('max-width' => 10, 'break' => false, 'align' => 'right'));
+   $PDF->SetX(180);
+   $PDF->printTaggedLn(array('%cb', 'Total'), array('align' => 'right'));
+   $PDF->br();
+   $PDF->resetFontSize();
 }
 
 $previous = 'remarks';
@@ -226,6 +266,9 @@ foreach($reservations as $reservation) {
 
    if ($single || in_array($reservation['id'], $reservations_with_entries)) {
       $PDF->br();
+
+      tableHead($PDF);
+
       $PDF->block('e' . $reservation['id'], $previous);
       $PDF->background_block('#EEEEEE');
       $previous = 'e' . $reservation['id'];
@@ -253,6 +296,7 @@ foreach($reservations as $reservation) {
             }
 
             $subtotal += $entry['total'];
+            if (!isset($entry['reference'])) { $entry['reference'] = ''; }
 
             $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
             $PDF->SetX(30);
@@ -261,7 +305,7 @@ foreach($reservations as $reservation) {
             if (isset($entry['quantity']) && $entry['quantity'] != 0) {
                if ($entry['quantity'] > 1) { $unitname = 'names'; }
                $PDF->SetX(94);
-               $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'right'));
+               $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'left'));
             }
             
             if (isset($entry['unit']) && $entry['unit']) {
@@ -284,11 +328,6 @@ foreach($reservations as $reservation) {
             $PDF->br();
          }
       }
-      /*$PDF->hr();
-      $PDF->printTaggedLn(array('%cb', 'Total pour réservation N°' . $reservation['id']), array('max-width' => 99, 'multiline' => true, 'break' => false));
-      $PDF->SetX($PDF->right);
-      $PDF->printTaggedLn(array('%cb', fprice($subtotal)), array('multiline' => true, 'break' => false, 'align' => 'right'));
-      $PDF->br(); */
       $PDF->close_block();
    }
 }
@@ -298,6 +337,9 @@ $PDF->br();
 if ($has_null_entry && !$single) {
    $PDF->hr();
    $PDF->br();
+
+   tableHead($PDF);
+
    $PDF->block('eNULL');
    $PDF->background_block('#EEEEEE');
    $previous = 'eNULL';
@@ -317,7 +359,7 @@ if ($has_null_entry && !$single) {
          if (isset($entry['quantity']) && $entry['quantity'] != 0) {
             if ($entry['quantity'] > 1) { $unitname = 'names'; }
             $PDF->SetX(94);
-            $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'right'));
+            $PDF->printTaggedLn(array('%c', ffloat($entry['quantity'])), array('max-width' => 16, 'multiline' => true, 'break' => false, 'align' => 'left'));
          }
 
          if (isset($entry['unit']) && $entry['unit']) {
