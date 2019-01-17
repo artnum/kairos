@@ -64,11 +64,9 @@ if (!is_null($count['reference'])) {
 
 $contacts = array();
 $machines = array();
-$our_ref = '';
 
 /* Preprocess reservation */
 foreach ($reservations as $k => $reservation) {
-   $our_ref .= '#' . $reservation['id'];
    if (!isset($machines[$reservations[$k]['target']])) {
       $res = $Machine->search(array('search.description' => $reservations[$k]['target'], 'search.airaltref' => $reservations[$k]['target']), 'Machine');
       if ($res['type'] == 'results') {
@@ -136,23 +134,19 @@ $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
 if ($count['_invoice']['address'] && $contacts[$count['_invoice']['address']]) {
    foreach ($contacts[$count['_invoice']['address']] as $line) {
       if (!empty($line)) {
-         $PDF->printTaggedLn(array('%c', $line), array('max-width' => $PDF->innerCenter));
+         $PDF->printTaggedLn(array('%c', $line), array('max-width' => $PDF->w / 3));
       }
    }
 } else {
-   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => 85, 'square' => 6));
+   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => $PDF->w / 3, 'square' => 6));
 }
 
 $PDF->close_block();
-$PDF->left = $PDF->innerCenter;
+$PDF->left = $PDF->w / 3;
 $PDF->SetY($y);
 $PDF->block('global_reference');
 $PDF->background_block('#EEEEEE');
-/*$PDF->to_block_begin();
 
-$PDF->printTaggedLn(array('%cb', 'Résumé'), array('underline' => true));
-$PDF->printTaggedLn(array('%c', 'Montant : ', '%cb', fprice($count['total'])));
-$PDF->printTaggedLn(array('%c', 'Date : ', '%cb', $count['date']->format('d.m.Y')));*/
 if (!empty($count['begin']) || !empty($count['end'])) {
    if (empty($count['begin'])) {
       $PDF->printTaggedLn(array('%c', 'Jusqu\'au ', '%cb', $count['end']->format('d.m.Y')));
@@ -163,20 +157,23 @@ if (!empty($count['begin']) || !empty($count['end'])) {
    }
 }
 
-/*if (count($reservations) <= 1) {
-   $PDF->printTaggedLn(array('%c', 'Réservation : '), array('break' => false));
-} else {
-   $PDF->printTaggedLn(array('%c', 'Réservations : '), array('break' => false));
+
+$creator = $reservations[0]['creator'];
+$creator = explode('/', $creator);
+$creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
+if ($creator && $creator['success'] && $creator['length'] == 1) {
+   $creator = $creator['data'];
+   $PDF->printTaggedLn(array('%cb',  $creator['name']));
 }
-$first = true;
-foreach ($reservations as $r) {
-   if (!$first) { $PDF->printTaggedLn(array('%c', ', '), array('break' => false)); }
-   $PDF->printTaggedLn(array('%cb', $r['id']), array('break' => false));
-   $first = false;
-}*/
-$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  $count['id'] . $our_ref));
+
+$ref = $count['id'];
+if ($creator && isset($creator['name'])) {
+   $ref .= ' / ' . $creator['name'];
+}
+
+$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  $ref));
 if ($has_global_reference) {
-   $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']));
+   $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
 }
 
 $PDF->block('remarks', $previous);
