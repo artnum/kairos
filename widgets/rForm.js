@@ -1270,10 +1270,7 @@ define([
       this.reservation.set('note', f.nNote)
       this.reservation.set('folder', f.folder)
       this.reservation.set('gps', f.gps)
-
-      if (f.title !== '') {
-        this.reservation.set('title', f.title)
-      }
+      this.reservation.set('title', f.title)
 
       this.reservation.save()
       var reservation = this.reservation
