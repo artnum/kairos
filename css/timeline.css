@@ -357,3 +357,28 @@ label.big {
 	font-family: "FontAwesome";
 	content: "\f021";
 }
+
+td[data-id] {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+
+table.count {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.count thead th {
+  border-bottom: 1px solid black;
+}
+
+table.count tbody tr:nth-child(even) {
+  background-color: lightgray;
+}
+table.count .ref {
+  min-width: 6ch;
+}
+
+table.count .reference {
+  min-width: 26ch;
+}

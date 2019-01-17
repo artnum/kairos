@@ -338,6 +338,13 @@ define([
         var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
         if (x.success && x.length) {
           x = x.data
+          if (x.locality) {
+            if (x.address && x.address.length > 0) {
+              x.address = x.address.trim() + '\n' + x.locality.trim()
+            } else {
+              x.address = x.locality.trim()
+            }
+          }
           if (!x.reference && x.address) {
             x.reference = x.address
           } else if (x.reference && x.address) {

@@ -1315,15 +1315,12 @@ define([
                 if (count.period !== '') { count.period += ' - ' }
                 count.period += (new Date(count.end)).fullDate()
               }
-              tr.innerHTML = '<td>' + count.id + '</td><td>' + count.reference + '</td><td>' + count.period + '</td>'
+              tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count.reference ? count.reference : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
               frag.appendChild(tr)
               tr.addEventListener('click', function (event) {
                 if (event.target) {
-                  var node = event.target
-                  while (node.nodeName !== 'TR') { node = node.parentNode }
-                  if (node.getAttribute('data-count-id')) {
-                    window.location.hash = 'DEC' + node.getAttribute('data-count-id')
-                  }
+                  if (!event.target.getAttribute('data-id')) { return }
+                  window.location.hash = 'DEC' + event.target.getAttribute('data-id')
                 }
               })
             }
