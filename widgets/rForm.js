@@ -1165,6 +1165,16 @@ define([
       }.bind(this))
     },
     doSave: async function (event) {
+      if (!this.HashLastSave) {
+        this.HashLastSave = this.reservation.get('_hash')
+      } else {
+        if (this.HashLastSave === this.reservation.get('_hash')) {
+          window.App.warn('Dernière sauvegare pas encore validée (double-clique sur "sauvegarder" ?)')
+          return false
+        } else {
+          this.HashLastSave = this.reservation.get('_hash')
+        }
+      }
       var err = this.validate()
       if (!err[1]) {
         window.App.error(err[0])
@@ -1295,6 +1305,9 @@ define([
 
     openCount: async function () {
       var count = new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
+      count.addEventListener('save', function (event) {
+        this.refreshCount()
+      }.bind(this))
     },
 
     refreshCount: async function () {

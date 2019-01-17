@@ -7,7 +7,8 @@ define([
   'artnum/Path',
   'artnum/Query',
   'artnum/Doc',
-  'location/card'
+  'location/card',
+  'location/count'
 ], function (
   djDeclare,
   _dtWidgetBase,
@@ -15,13 +16,13 @@ define([
   Path,
   Query,
   Doc,
-  Card
+  Card,
+  Count
 ) {
   return djDeclare('location/count', [ _dtWidgetBase, djEvented ], {
     constructor: function () {
       this.inherited(arguments)
       var args = arguments
-
       this._initialized = new Promise(async function (resolve, reject) {
         var units = await Query.exec(Path.url('store/Unit'))
         if (units.success && units.length > 0) {
@@ -751,6 +752,7 @@ define([
         query[inputs[i].getAttribute('name')] = val
       }
       await Query.exec(Path.url('store/Count/' + this.get('data-id')), {method: 'patch', body: JSON.stringify(query)})
+      this.eventTarget.dispatchEvent(new Event('save'))
     },
 
     print: async function (event) {
@@ -817,6 +819,12 @@ define([
           priinput.value = ''
         }
       }
+    },
+    addEventListener: function (type, listener, options = {}) {
+      if (!this.eventTarget) {
+        this.eventTarget = new EventTarget()
+      }
+      this.eventTarget.addEventListener(type, listener.bind(this), options)
     }
   })
 })
