@@ -66,6 +66,7 @@ $contacts = array();
 $machines = array();
 
 /* Preprocess reservation */
+$clientManager = null;
 foreach ($reservations as $k => $reservation) {
    if (!isset($machines[$reservations[$k]['target']])) {
       $res = $Machine->search(array('search.description' => $reservations[$k]['target'], 'search.airaltref' => $reservations[$k]['target']), 'Machine');
@@ -74,8 +75,11 @@ foreach ($reservations as $k => $reservation) {
       }
    }
 
-   foreach ($reservations[$k]['contacts'] as $contact) {
+   foreach ($reservations[$k]['contacts'] as $type => $contact) {
       foreach ($contact as $entry) {
+         if ($type == '_responsable' && is_null($clientManager)) {
+            $clientManager = $entry['id'];
+         }
          if (!isset($contacts[$entry['id']])) {
             if($entry['freeform']) {
                $contacts[$entry['id']] = format_address(array('type' => 'freeform', 'data' => $entry['freeform']));
@@ -166,14 +170,17 @@ if ($creator && $creator['success'] && $creator['length'] == 1) {
    $PDF->printTaggedLn(array('%cb',  $creator['name']));
 }
 
-$ref = $count['id'];
-if ($creator && isset($creator['name'])) {
-   $ref .= ' / ' . $creator['name'];
-}
 
-$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  $ref));
+$PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  $count['id']));
+if ($creator && isset($creator['name'])) {
+   $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator['name']), array('multiline' => true));
+}
 if ($has_global_reference) {
    $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
+}
+if (!is_null($clientManager)) {
+   $manager = join(', ', $contacts[$clientManager]);
+   $PDF->printTaggedLn(array('%c', 'Votre responsable : ', '%cb', $manager), array('multiline' => true));
 }
 
 $PDF->block('remarks', $previous);
