@@ -85,7 +85,15 @@ foreach ($reservations as $k => $reservation) {
             } else {
                $e = $entry['target'];
                if (isset($e['givenname']) || isset($e['sn'])) {
-                  $clientManager = join(' ', array($e['givenname'], $e['sn']));
+                  if (isset($e['givenname'])) {
+                     $clientManager = $e['givenname'];
+                  }
+                  if (isset($e['sn'])) {
+                     if (!is_null($clientManager)) {
+                        $clientManager .= ' ';
+                     }
+                     $clientManager .= $e['sn'];
+                  }
                } else {
                   $clientManager = format_address(array('type' => 'db', 'data' => $e));
                }
