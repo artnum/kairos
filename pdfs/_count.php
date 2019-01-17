@@ -234,7 +234,16 @@ if (count($reservations) == 1) {
    $single = true;
 }
 
-function tableHead($PDF) {
+function tableHead($PDF, $entries) {
+   $discount = false;
+
+   foreach ($entries as $entry) {
+      if (isset($entry['discount']) && !is_null($entry['discount']) && $entry['discount'] > 0) {
+         $discount = true;
+         break;
+      }
+   }
+
    $PDF->setFontSize(2);
    $PDF->printTaggedLn(array('%cb', 'Référence'), array('max-width' => 20, 'break' => false));
    $PDF->SetX(30);
@@ -245,8 +254,10 @@ function tableHead($PDF) {
    $PDF->printTaggedLn(array('%cb', 'Unité'), array('max-width' => 25, 'break' => false));
    $PDF->SetX(136);
    $PDF->printTaggedLn(array('%cb', 'Prix unitaire'), array('max-width' => 18, 'break' => false, 'align' => 'right'));
-   $PDF->SetX(160);
-   $PDF->printTaggedLn(array('%cb', 'Rabais'), array('max-width' => 10, 'break' => false, 'align' => 'right'));
+   if ($discount) {
+      $PDF->SetX(160);
+      $PDF->printTaggedLn(array('%cb', 'Rabais'), array('max-width' => 10, 'break' => false, 'align' => 'right'));
+   }
    $PDF->SetX(180);
    $PDF->printTaggedLn(array('%cb', 'Total'), array('align' => 'right'));
    $PDF->br();
@@ -275,7 +286,7 @@ foreach($reservations as $reservation) {
    if ($single || in_array($reservation['id'], $reservations_with_entries)) {
       $PDF->br();
 
-      tableHead($PDF);
+      tableHead($PDF, $entries);
 
       $PDF->block('e' . $reservation['id'], $previous);
       $PDF->background_block('#EEEEEE');
@@ -346,7 +357,7 @@ if ($has_null_entry && !$single) {
    $PDF->hr();
    $PDF->br();
 
-   tableHead($PDF);
+   tableHead($PDF, $entries);
 
    $PDF->block('eNULL');
    $PDF->background_block('#EEEEEE');
