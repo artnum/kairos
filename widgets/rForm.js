@@ -1318,6 +1318,7 @@ define([
             var count = await Query.exec(Path.url('store/Count/' + counts.data[i].count))
             if (count.success && count.length === 1) {
               count = count.data
+              if (count.deleted) { continue }
               var tr = document.createElement('TR')
               tr.setAttribute('data-count-id', count.id)
               count.period = ''
