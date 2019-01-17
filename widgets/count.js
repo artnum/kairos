@@ -121,7 +121,7 @@ define([
               if (data.data[j].freeform) {
                 if (!contacts[data.data[j].id]) {
                   contacts[data.data[j].id] = new Card()
-                  contacts[data.data[j].id].entry(data.data[i])
+                  contacts[data.data[j].id].entry(data.data[j])
                 }
               } else {
                 var contact = await Query.exec(Path.url('store/' + data.data[j].target))
