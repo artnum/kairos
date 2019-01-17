@@ -167,7 +167,6 @@ $creator = explode('/', $creator);
 $creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
 if ($creator && $creator['success'] && $creator['length'] == 1) {
    $creator = $creator['data'];
-   $PDF->printTaggedLn(array('%cb',  $creator['name']));
 }
 
 
