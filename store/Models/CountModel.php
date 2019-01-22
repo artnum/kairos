@@ -10,7 +10,7 @@ class CountModel extends artnum\SQL {
       $this->conf('delete', 'count_deleted');
       $this->conf('delete.ts', true);
       $this->conf('datetime', array('deleted', 'modified', 'created', 'begin', 'end', 'date'));
-      $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "invoice" ON "\\Table"."count_invoice" = "invoice"."invoice_id" WHERE "\\IDName" = :id');
+      $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "invoice" ON "\\Table"."count_invoice" = "invoice"."invoice_id" LEFT JOIN "status" ON "\\Table"."count_status" = "status"."status_id" WHERE "\\IDName" = :id');
    }
 }
 ?>

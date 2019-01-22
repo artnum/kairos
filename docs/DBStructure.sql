@@ -1,10 +1,12 @@
 /* SQLite 3 schema */
 PRAGMA "foreign_keys" = ON;
-CREATE TABLE IF NOT EXISTS status 		( status_id INTEGER PRIMARY KEY AUTOINCREMENT,
-						  status_name TEXT,
-						  status_color VARCHAR(8),
-						  status_default BOOL,
-						  status_type INTEGER DEFAULT 0
+CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTOINCREMENT,
+						  "status_name" TEXT,
+						  "status_description" TEXT DEFAULT NULL,
+						  "status_color" VARCHAR(8) DEFAULT NULL,
+						  "status_bgcolor" VARCHAR(8) DEFAULT NULL,
+						  "status_default" BOOL,
+						  "status_type" INTEGER DEFAULT 0 -- kind of object it apply
 						);
 
 CREATE TABLE IF NOT EXISTS contacts 		( contacts_id INTEGER PRIMARY KEY,
@@ -111,6 +113,7 @@ CREATE TABLE IF NOT EXISTS "countReservation" (
 CREATE TABLE IF NOT EXISTS "count" (
 	"count_id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"count_invoice" INTEGER NULL,
+	"count_status" INTEGER NULL,
 	"count_date" DATETIME NOT NULL,
 	"count_begin" DATETIME DEFAULT NULL,
 	"count_end" DATETIME DEFAULT NULL,

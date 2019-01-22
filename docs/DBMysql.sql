@@ -5,9 +5,11 @@ USE "location";
 
 CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "status_name" TEXT,
-						  "status_color" VARCHAR(8),
+						  "status_description" TEXT DEFAULT NULL,
+						  "status_color" VARCHAR(8) DEFAULT NULL,
+						  "status_bgcolor" VARCHAR(8) DEFAULT NULL,
 						  "status_default" BOOL,
-						  "status_type" INTEGER DEFAULT 0
+						  "status_type" INTEGER DEFAULT 0 -- kind of object it apply
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -132,6 +134,7 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 CREATE TABLE IF NOT EXISTS "count" (
 	"count_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 	"count_invoice" INTEGER NULL,
+	"count_status" INTEGER NULL,
 	"count_date" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"count_begin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"count_end" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
@@ -144,7 +147,11 @@ CREATE TABLE IF NOT EXISTS "count" (
 	"count_modified" INTEGER DEFAULT NULL, -- unix ts
 	FOREIGN KEY("count_invoice") REFERENCES "invoice"("invoice_id")
 		ON UPDATE CASCADE
-		ON DELETE CASCADE ) CHARACTER SET "utf8mb4";
+		ON DELETE CASCADE,
+	FOREIGN KEY("count_status") REFERENCES "status"("status_id")
+		ON UPDATE CASCADE
+		ON DELETE CASCADE
+	) CHARACTER SET "utf8mb4";
 
 -- Associate reservation to count
 CREATE TABLE IF NOT EXISTS "countReservation" (

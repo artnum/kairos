@@ -7,8 +7,7 @@ define([
   'artnum/Path',
   'artnum/Query',
   'artnum/Doc',
-  'location/card',
-  'location/count'
+  'location/card'
 ], function (
   djDeclare,
   _dtWidgetBase,
@@ -16,8 +15,7 @@ define([
   Path,
   Query,
   Doc,
-  Card,
-  Count
+  Card
 ) {
   return djDeclare('location/count', [ _dtWidgetBase, djEvented ], {
     constructor: function () {
@@ -193,7 +191,7 @@ define([
 
     _toHtmlDate: function (date) {
       var x = new Date(date)
-      return x.getDate() + '.' + (x.getMonth() + 1 < 10 ? '0' + String(x.getMonth() + 1) : String(x.getMonth() + 1)) + '.' + x.getFullYear()
+      return x.getDate() + '.' + (x.getMonth() + 1 < 10 ? '0' + String(x.getMonth() + 1) : String(x.getMonth() + 1)) + '.' + String(x.getYear() - 100)
     },
 
     _shortDesc: function (text) {
@@ -237,7 +235,7 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><td>Numéro</td><td>Facture</td><td>Réservation</td><td>Période</td><td>Référence client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
+        '<thead><tr><td>N°</td><td>Facture</td><td>Réservation</td><td>Statut</td><td>Période</td><td>Référence client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
         '<tbody>'
 
       var data = this.get('data')
@@ -258,6 +256,7 @@ define([
         txt += '<tr data-url="#DEC' + String(data[i].id) + '" data-count-id="' + String(data[i].id) + '"><td>' + data[i].id + '</td>' +
           '<td tabindex data-edit="0" data-invoice="' + (data[i].invoice ? data[i].invoice : '') + '">' + (data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '') + '</td>' +
           '<td>' + reservations + '</td>' +
+          '<td>' + (data[i].status && data[i]._status ? data[i]._status.name : '') + '</td>' +
           '<td>' + this._toHtmlRange(data[i].begin, data[i].end) + '</td>' +
           '<td>' + (data[i].reference ? data[i].reference : '') + '</td>' +
           '<td>' + (data[i].comment ? this._shortDesc(data[i].comment) : '') + '</td>' +
@@ -398,6 +397,20 @@ define([
         htmlReservation.push('<del>' + d + '</del>')
       })
 
+      var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}}))
+      var txtStatus = ''
+      if (allStatus.success && allStatus.length > 0) {
+        txtStatus = '<label for="status">Statut</label><select name="status">'
+        allStatus.data.forEach(function (s) {
+          var checked = ''
+          if (this.get('data').status && String(this.get('data').status) === String(s.id)) {
+            checked = ' selected '
+          }
+          txtStatus += '<option value="' + s.id + '" ' + checked + '>' + s.name + '</option>'
+        }.bind(this))
+        txtStatus += '</select><br/>'
+      }
+
       div.innerHTML = '<h1>Décompte N°' + String(this.get('data-id')) + '</h1>' +
         '<form name="details"><ul>' +
         (this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '') +
@@ -407,6 +420,7 @@ define([
         '<fieldset><legend>Période</legend><label for="begin">Début</label>' +
         '<input type="date" value="' + (this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin)) + '" name="begin" /><label for="end">Fin</label>' +
         '<input type="date" name="end" value="' + (this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end)) + '" /></fieldset>' +
+        txtStatus +
         '<label for="comment">Remarque interne</label><textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea>' +
         references +
         '</form>' +
@@ -717,11 +731,13 @@ define([
       await this.refresh()
 
       query = {}
-      inputs = this.form_invoice.getElementsByTagName('INPUT')
-      for (i = 0; i < inputs.length; i++) {
-        var val = inputs[i].value
-        query[inputs[i].getAttribute('name')] = val
-      }
+      ;['INPUT', 'SELECT'].forEach(function (element) {
+        inputs = this.form_invoice.getElementsByTagName(element)
+        for (i = 0; i < inputs.length; i++) {
+          var val = inputs[i].value
+          query[inputs[i].getAttribute('name')] = val
+        }
+      }.bind(this))
       var method = 'post'
       var url = 'store/Invoice'
       if (this.form_invoice.getAttribute('data-invoice')) {
@@ -743,18 +759,20 @@ define([
           this.form_invoice.setAttribute('data-invoice', query.invoice)
         }
       }
-      inputs = this.form_details.getElementsByTagName('INPUT')
 
-      for (i = 0; i < inputs.length; i++) {
-        val = inputs[i].value
-        if (!val) { continue }
-        switch (inputs[i].getAttribute('name')) {
-          case 'begin': case 'end':
-            val = new Date(val).toISOString()
-            break
+      ;['INPUT', 'SELECT'].forEach(function (element) {
+        inputs = this.form_details.getElementsByTagName(element)
+        for (i = 0; i < inputs.length; i++) {
+          var val = inputs[i].value
+          if (!val) { continue }
+          switch (inputs[i].getAttribute('name')) {
+            case 'begin': case 'end':
+              val = new Date(val).toISOString()
+              break
+          }
+          query[inputs[i].getAttribute('name')] = val
         }
-        query[inputs[i].getAttribute('name')] = val
-      }
+      }.bind(this))
       await Query.exec(Path.url('store/Count/' + this.get('data-id')), {method: 'patch', body: JSON.stringify(query)})
       this.eventTarget.dispatchEvent(new Event('save'))
     },
