@@ -67,12 +67,12 @@ body, html { margin: 0; padding: 0; }
 }
 
 .weekNumber.odd {
-	background-color: #005c5c;
+	background-color: gray;
 	color: white;
 }
 .monthName.odd {
-	background-color: #008d8d;	
-	color: white;
+	background-color: lightgray;
+	color: black;
 }
 .timeline .fixed {
 	position: fixed;
@@ -91,7 +91,7 @@ body, html { margin: 0; padding: 0; }
 }
 
 .day.weekend {
-	background-color: #003f3f;	
+	background-color: black;	
 	color: white;
 }
 
