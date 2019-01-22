@@ -1334,9 +1334,12 @@ define([
               tr.addEventListener('click', function (event) {
                 if (event.target) {
                   if (!event.target.getAttribute('data-id')) { return }
-                  window.location.hash = 'DEC' + event.target.getAttribute('data-id')
+                  var count = new Count({'data-id': event.target.getAttribute('data-id')})
+                  count.addEventListener('save', function (event) {
+                    this.refreshCount()
+                  }.bind(this))
                 }
-              })
+              }.bind(this))
             }
           }
         }
