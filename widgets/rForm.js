@@ -1323,13 +1323,13 @@ define([
               tr.setAttribute('data-count-id', count.id)
               count.period = ''
               if (count.begin) {
-                count.period = (new Date(count.begin)).fullDate()
+                count.period = (new Date(count.begin)).shortDate()
               }
               if (count.end) {
                 if (count.period !== '') { count.period += ' - ' }
-                count.period += (new Date(count.end)).fullDate()
+                count.period += (new Date(count.end)).shortDate()
               }
-              tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count.reference ? count.reference : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
+              tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
               frag.appendChild(tr)
               tr.addEventListener('click', function (event) {
                 if (event.target) {
