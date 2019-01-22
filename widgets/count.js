@@ -103,6 +103,10 @@ define([
           this.start()
         }
       }.bind(this))
+
+      if (!this.eventTarget) {
+        this.eventTarget = new EventTarget()
+      }
     },
 
     refresh_contacts: async function () {
@@ -821,9 +825,6 @@ define([
       }
     },
     addEventListener: function (type, listener, options = {}) {
-      if (!this.eventTarget) {
-        this.eventTarget = new EventTarget()
-      }
       this.eventTarget.addEventListener(type, listener.bind(this), options)
     }
   })
