@@ -664,7 +664,7 @@ define([
               this.reinit()
             }
           }
-          setTimeout(this.revision.bind(this), 54000)
+          setTimeout(this.revision.bind(this), 5400000)
         }.bind(this))
       }.bind(this))
     },
