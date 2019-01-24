@@ -1017,9 +1017,10 @@ define([
         this.currentDom = document.createElement('DIV')
       }
 
-      djOn(this.currentDom, 'touchstart', this.evTouchStart.bind(this))
-      djOn(this.currentDom, 'touchend', this.evTouchEnd.bind(this))
-
+      if (!this.TouchEvents) {
+        this.TouchEvents = [djOn(this.currentDom, 'touchstart', this.evTouchStart.bind(this)),
+          djOn(this.currentDom, 'touchend', this.evTouchEnd.bind(this))]
+      }
       if (!this.DblClick) {
         this.DblClick = djOn(this.currentDom, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
       }

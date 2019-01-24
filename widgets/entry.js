@@ -459,21 +459,14 @@ define([
     },
 
     evtDblClick: function (event) {
+      if (this.DisableDblClick) {
+        return
+      }
+      window.setTimeout(function () {
+        this.DisableDblClick = false
+      }.bind(this), 500)
       if (event.clientX <= 200) { return }
-      var n = event.target
-      while (n) {
-        if (n.getAttribute('widgetid')) { break }
-        n = n.parentNode
-      }
-
-      if (n) {
-        var w = dtRegistry.byId(n.getAttribute('widgetid'))
-        if (w.baseClass === 'reservation') {
-          // w.popMeUp();
-        } else if (w.baseClass === 'entry') {
-          w.createReservation(this.dayFromX(event.clientX))
-        }
-      }
+      this.createReservation(this.dayFromX(event.clientX))
     },
 
     createReservation: function (day) {
