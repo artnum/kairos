@@ -165,6 +165,7 @@ define([
       this.extension = false
       this.LocalReservations = {}
       this.timelineMoving = false
+      this.FirstLoad = true
 
       this.zoomCss = document.createElement('style')
 
@@ -663,6 +664,7 @@ define([
               this.reinit()
             }
           }
+          setTimeout(this.revision.bind(this), 54000)
         }.bind(this))
       }.bind(this))
     },
@@ -1769,6 +1771,12 @@ define([
     },
 
     reinit: function () {
+      if (!this.FirstLoad) {
+        if (!confirm('Une mise à jour est dispobnible, voulez-vous recharger')) {
+          return
+        }
+      }
+
       this.wait('Mise à jour du programme')
       window.localStorage.setItem(Path.bcname('revision'), this.currentRevision)
       this.Cleaner.postMessage({op: 'rebuild'})
