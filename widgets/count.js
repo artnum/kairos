@@ -344,7 +344,7 @@ define([
           x = x.data
           if (x.locality) {
             if (x.address && x.address.length > 0) {
-              x.address = x.address.trim() + '\n' + x.locality.trim()
+              x.address = x.address.trim() + ', ' + x.locality.trim()
             } else {
               x.address = x.locality.trim()
             }
@@ -706,7 +706,7 @@ define([
           continue
         }
 
-        if (parseInt(query.quantity) === 0) {
+        if (parseFloat(query.quantity) === 0) {
           remove = parent
           parent = parent.nextSibling
           remove.parentNode.removeChild(remove)
