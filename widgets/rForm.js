@@ -191,15 +191,16 @@ define([
     eChangeUser: async function (event) {
       if (window.localStorage.getItem(Path.bcname('user'))) {
         var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+        _c = 'store/User/' + _c.id
         if (event.target.getAttribute('data-target') === 'c') {
-          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.get('id'), {method: 'PATCH', body: JSON.stringify({ creator: _c })}))
+          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.get('id')), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.get('id'), creator: _c })})
           if (mod.success && mod.length === 1) {
-            this.set('creator', 'store/User/' + _c.id)
+            this.set('creator', _c)
           }
         } else {
-          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id, {method: 'PATCH', body: JSON.stringify({ creator: _c })}))
+          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.get('id'), creator: _c })})
           if (mod.success && mod.length === 1) {
-            this.set('arrivalCreator', 'store/User/' + _c.id)
+            this.set('arrivalCreator', _c)
           }
         }
       }
