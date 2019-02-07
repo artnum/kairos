@@ -793,6 +793,9 @@ define([
     },
 
     calculate: function (event) {
+      var fix = function (value) {
+        return Math.round(value * 100) / 100
+      }
       var parent = event.target
       while (parent.nodeName !== 'TR') {
         parent = parent.parentNode
@@ -836,7 +839,7 @@ define([
           } else {
             discount = 1
           }
-          totinput.setAttribute('value', String(q * p * discount))
+          totinput.setAttribute('value', String(fix(q * p * discount)))
         } else if (event.target.getAttribute('name') === 'total') {
           priinput.value = ''
         }
