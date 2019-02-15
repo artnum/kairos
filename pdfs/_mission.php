@@ -42,7 +42,7 @@ foreach($addrs as $k => $v) {
 
 /* PDF Generation */
 $PDF = new LocationPDF();
-$PDF->addVTab(19);
+$PDF->addVTab(21);
 $PDF->addVTab(50);
 $PDF->addVTab(88);
 $PDF->addVTab(240);
@@ -72,16 +72,24 @@ $PDF->SetFont('century-gothic');
 $PDF->setFontSize(3.6);
 
 $PDF->vtab('collab');
+$PDF->block('collaborateur');
 $PDF->printTaggedLn(array('%c', 'Collaborateur : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64, 0, 'dotted', array('color' => '#999') );
 $PDF->SetX(116);
 $PDF->printTaggedLn(array('%c', 'Véhicule : '), array('break' => false));
 $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 64 , 0, 'dotted', array('color' => '#999') );
+$PDF->br();
+$PDF->br();
+$PDF->printTaggedLn(array('%c', 'Chargé par : '), array('break' => false));
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 155, 0, 'dotted', array('color' => '#999') );
+$PDF->br();
+$PDF->br();
+$PDF->close_block();
 
 $PDF->setFontSize(3.2);
 
+$PDF->block('addresse', 'collaborateur');
 $stopY = $PDF->GetY();
-$PDF->vtab(2); 
 $PDF->printTaggedLn(array('%cb', 'Client'), array('underline' => true));
 if(!is_null($addrs['client'])) {
    foreach($addrs['client'] as $c) {
@@ -94,7 +102,7 @@ if(!is_null($addrs['client'])) {
 
 if($PDF->GetY() > $stopY) { $stopY = $PDF->GetY(); }
 
-$PDF->vtab(2);
+$PDF->block('addresse');
 $PDF->tab(3); 
 $PDF->printTaggedLn(array('%cb', 'Contact s/place'), array('underline' => true));
 if(!is_null($addrs['place'])) {
@@ -108,8 +116,7 @@ if(!is_null($addrs['place'])) {
    if($stopY < 36 + $PDF->GetY()) { $stopY = 36 + $PDF->GetY(); }
 }
 
-
-$PDF->vtab(2);
+$PDF->block('addresse');
 $PDF->tab(4);
 $PDF->printTaggedLn(array('%cb', 'Responsable'), array('underline' => true));
 if(!is_null($addrs['responsable'])) {
@@ -124,7 +131,8 @@ if(!is_null($addrs['responsable'])) {
 }
 if($PDF->GetY() > $stopY) { $stopY = $PDF->GetY(); }
 
-$PDF->SetY($stopY);
+$PDF->close_block();
+
 $PDF->hr();
 $PDF->SetFontSize(3.4);
 if(!empty($reservation['reference'])) {
@@ -180,8 +188,8 @@ $PDF->printTaggedLn(array('%c', $reservation['target'], ' - ' . $machine['cn']))
 $PDF->br();
 
 if(isset($reservation['equipment']) || ( is_array($reservation['complements']) && count($reservation['complements']) > 0)) {
-   $remSize = 62;
-   $col = array( 'c' => 12, 'q' => 4,  'd' => 32, 'r' => $remSize, 'l' => 0);
+   $remSize = 68;
+   $col = array( 'c' => 18, 'q' => 4,  'd' => 32, 'r' => $remSize, 'l' => 0);
 
    $PDF->printTaggedLn(array('%cb', 'Complément'), array('underline' => true, 'break' => false)); $col['c'] += $PDF->GetX();  $PDF->SetX($col['c']);
    $PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline' => true, 'break' => false)); $col['r'] += $PDF->GetX(); $PDF->SetX($col['r']);
@@ -192,6 +200,8 @@ if(isset($reservation['equipment']) || ( is_array($reservation['complements']) &
 }
 
 if( is_array($reservation['complements']) && count($reservation['complements']) > 0) {
+   $PDF->br();
+   $PDF->SetFontSize(3);
    $association = array();
    foreach($reservation['complements'] as $complement) {
       if(isset($association[$complement['type']['name']])) {
@@ -264,6 +274,7 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
       $PDF->br();
    }
 }
+$PDF->resetFontSize();
 
 if(isset($reservation['equipment'])) {
    $equipment = array();
@@ -283,9 +294,9 @@ if(isset($reservation['equipment'])) {
          $PDF->SetX($XPos);
          $PDF->printTaggedLn(array('%c', $e), array('break' => false));
 
-         $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), $col['l'] - ($PDF->GetX() + 3), 0, 'dotted', array('color' => 'gray') );
-         
-         $PDF->SetX($col['l']);
+         $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), 180 - $PDF->GetX()  , 0, 'dotted', array('color' => 'gray') );
+
+         $PDF->SetX($PDF->GetX() + 132); 
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
