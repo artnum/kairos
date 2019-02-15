@@ -1326,12 +1326,12 @@ define([
               count.period = ''
               var sortBegin = '0'
               if (count.begin) {
-                count.period = (new Date(count.begin)).shortDate()
+                count.period = (new Date(count.begin)).shortDate(true)
                 sortBegin = (new Date(count.begin)).getTime()
               }
               if (count.end) {
                 if (count.period !== '') { count.period += ' - ' }
-                count.period += (new Date(count.end)).shortDate()
+                count.period += (new Date(count.end)).shortDate(true)
               }
               tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
               tr.setAttribute('data-sort', sortBegin)
@@ -1348,7 +1348,7 @@ define([
               }.bind(this))
             }
           }
-          
+
           trs.sort(function (a, b) {
             a = parseInt(a.getAttribute('data-sort'))
             b = parseInt(b.getAttribute('data-sort'))
