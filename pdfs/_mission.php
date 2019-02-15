@@ -211,6 +211,7 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
       }
    }
 
+   $origin = $PDF->GetX();
    foreach($association as $k => $v) {
       $startY = $PDF->GetY();
       $stopY = $startY;
@@ -265,7 +266,7 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
          } else {
             $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
          }
-         $PDF->SetX($col['l']);
+         $PDF->SetX($origin + 174);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
 
          $first = false;
@@ -296,7 +297,7 @@ if(isset($reservation['equipment'])) {
 
          $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), 180 - $PDF->GetX()  , 0, 'dotted', array('color' => 'gray') );
 
-         $PDF->SetX($PDF->GetX() + 132); 
+         $PDF->SetX($origin + 174);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
