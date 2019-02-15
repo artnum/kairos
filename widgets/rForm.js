@@ -1315,6 +1315,7 @@ define([
       Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.get('id')}})).then(async function (counts) {
         var frag = document.createDocumentFragment()
         if (counts.success && counts.length > 0) {
+          var trs = []
           for (var i = 0; i < counts.length; i++) {
             var count = await Query.exec(Path.url('store/Count/' + counts.data[i].count))
             if (count.success && count.length === 1) {
@@ -1323,15 +1324,19 @@ define([
               var tr = document.createElement('TR')
               tr.setAttribute('data-count-id', count.id)
               count.period = ''
+              var sortBegin = '0'
               if (count.begin) {
                 count.period = (new Date(count.begin)).shortDate()
+                sortBegin = (new Date(count.begin)).getTime()
               }
               if (count.end) {
                 if (count.period !== '') { count.period += ' - ' }
                 count.period += (new Date(count.end)).shortDate()
               }
               tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
-              frag.appendChild(tr)
+              tr.setAttribute('data-sort', sortBegin)
+              trs.push(tr)
+
               tr.addEventListener('click', function (event) {
                 if (event.target) {
                   if (!event.target.getAttribute('data-id')) { return }
@@ -1343,6 +1348,15 @@ define([
               }.bind(this))
             }
           }
+          
+          trs.sort(function (a, b) {
+            a = parseInt(a.getAttribute('data-sort'))
+            b = parseInt(b.getAttribute('data-sort'))
+            return a - b
+          })
+          trs.forEach(function (n) {
+            frag.appendChild(n)
+          })
         }
         window.requestAnimationFrame(function () {
           this.nCountList.innerHTML = ''
