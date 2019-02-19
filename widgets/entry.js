@@ -266,7 +266,7 @@ define([
 
       var s = document.createElement('SPAN')
       s.setAttribute('class', 'reference')
-      s.appendChild(document.createTextNode(that.get('target')))
+      s.appendChild(document.createTextNode('(' + that.get('target') + ')'))
       a.appendChild(s)
 
       s = document.createElement('SPAN')
