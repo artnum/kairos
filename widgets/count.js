@@ -227,7 +227,8 @@ define([
     },
 
     list: async function () {
-      this.doc = new Doc({style: 'background-color: #FFFFCF'})
+      this.doc = new Doc({width: window.innerWidth - 800, style: 'background-color: #FFFFCF;'})
+      console.log(this.doc)
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
@@ -362,7 +363,7 @@ define([
     },
 
     start: async function () {
-      this.doc = new Doc({style: 'background-color: #FFFFCF'})
+      this.doc = new Doc({width: window.innerWidth - 800, style: 'background-color: #FFFFCF'})
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       this.Total = 0
       this.Entries = {}
@@ -371,10 +372,14 @@ define([
       var references = '<fieldset name="reference"><legend>Référence</legend>'
       var begin = null
       var end = null
+      var machines = []
       if (reservations.length > 0) {
         for (var i = 0; i < reservations.length; i++) {
+          if (machines.indexOf(reservations[i].target) === -1) {
+            machines.push(reservations[i].target)
+          }
           if (reservations[i].reference) {
-            references += '<div data-reference-value="' + reservations[i].reference + '"><b>Réservation ' + reservations[i].id + '</b>&nbsp;: ' + reservations[i].reference + '</div>'
+            references += `<div data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
           }
           if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
             begin = reservations[i].begin
@@ -384,7 +389,7 @@ define([
           }
         }
       }
-      references += '<input type="text" name="reference" value="' + (this.get('data').reference ? this.get('data').reference : '') + '"></fieldset>'
+      references += `<input type="text" name="reference" value="'${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
 
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
@@ -404,27 +409,23 @@ define([
         allStatus.data.forEach(function (s) {
           var checked = ''
           if (this.get('data').status && String(this.get('data').status) === String(s.id)) {
-            checked = ' selected '
+            checked = 'selected'
           }
-          txtStatus += '<option value="' + s.id + '" ' + checked + '>' + s.name + '</option>'
+          txtStatus += `<option value="${s.id}" ${checked}>${s.name}</option>`
         }.bind(this))
         txtStatus += '</select><br/>'
       }
 
-      div.innerHTML = '<h1>Décompte N°' + String(this.get('data-id')) + '</h1>' +
-        '<form name="details"><ul>' +
-        (this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '') +
-        '<li>Réservation : ' + (htmlReservation.length > 0 ? htmlReservation.join(', ') : '') + '</li>' +
-        (this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '') +
-        '</ul>' +
-        '<fieldset><legend>Période</legend><label for="begin">Début</label>' +
-        '<input type="date" value="' + (this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin)) + '" name="begin" /><label for="end">Fin</label>' +
-        '<input type="date" name="end" value="' + (this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end)) + '" /></fieldset>' +
-        txtStatus +
-        '<label for="comment">Remarque interne</label><textarea name="comment">' + (this.get('data').comment ? this.get('data').comment : '') + '</textarea>' +
-        references +
-        '</form>' +
-        '<form name="invoice"' + (this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '') + '><fieldset name="contacts"><fieldset></form>'
+      div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
+        ${(this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '')}
+        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(', ') : '')}</li>
+        <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
+        ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
+        <fieldset><legend>Période</legend><label for="begin">Début</label>
+        <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
+        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>${txtStatus}
+        <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
+        <form name="invoice"${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
       div.addEventListener('click', function (event) {
         var node = event.target
         if (node.getAttribute('data-reference-value')) {
