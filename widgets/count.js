@@ -227,8 +227,7 @@ define([
     },
 
     list: async function () {
-      this.doc = new Doc({width: window.innerWidth - 800, style: 'background-color: #FFFFCF;'})
-      console.log(this.doc)
+      this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
@@ -363,7 +362,7 @@ define([
     },
 
     start: async function () {
-      this.doc = new Doc({width: window.innerWidth - 800, style: 'background-color: #FFFFCF'})
+      this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF'})
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       this.Total = 0
       this.Entries = {}
@@ -455,11 +454,16 @@ define([
       save.setAttribute('type', 'button')
       save.setAttribute('value', 'Sauvegarder')
       save.addEventListener('click', this.save.bind(this))
+      var saveQuit = document.createElement('input')
+      saveQuit.setAttribute('type', 'button')
+      saveQuit.setAttribute('value', 'Sauvegarder et quitter')
+      saveQuit.addEventListener('click', function () { this.save.bind(this); this.doc.close() }.bind(this))
       var print = document.createElement('input')
       print.setAttribute('type', 'button')
       print.setAttribute('value', 'Imprimer')
       print.addEventListener('click', this.print.bind(this))
       this.domNode.appendChild(save)
+      this.domNode.appendChild(saveQuit)
       this.domNode.appendChild(print)
 
       this.refresh()
