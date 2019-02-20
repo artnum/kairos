@@ -1,4 +1,5 @@
 /* eslint-env amd, browser */
+/* global Address */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -242,35 +243,53 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><td>N°</td><td>Facture</td><td>Réservation</td><td>Statut</td><td>Période</td><td>Référence client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
+        '<thead><tr><td>N°</td><td>Facture</td><td>Réservation</td><td>Statut</td><td>Période</td><td>Référence client</td><td>Client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
         '<tbody>'
 
       var data = this.get('data')
       var url = Path.url('store/CountReservation')
+      var clients = []
+      var _clients = {}
       for (var i = 0; i < data.length; i++) {
         url.searchParams.set('search.count', data[i].id)
         var reservations = await Query.exec(url)
         if (reservations.success && reservations.length > 0) {
           reservations._table = []
+          clients = []
           for (var j = 0; j < reservations.length; j++) {
             reservations._table.push(reservations.data[j].reservation)
+            if (!_clients[reservations.data[j].reservation]) {
+              var t = await Query.exec(Path.url(`store/DeepReservation/${reservations.data[j].reservation}`))
+              if (t.success && t.length === 1) {
+                if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {
+                  var a = new Address(t.data.contacts['_client'][0])
+                  _clients[reservations.data[j].reservation] = a.toArray()[0]
+                  if (a.toArray().length > 1) {
+                    _clients[reservations.data[j].reservation] += `<br />${a.toArray()[1]}`
+                  }
+                }
+              }
+            }
+            if (_clients[reservations.data[j].reservation]) {
+              clients.push(_clients[reservations.data[j].reservation])
+            }
           }
           reservations = reservations._table.join(', ')
         } else {
           reservations = ''
         }
-
-        txt += '<tr data-url="#DEC' + String(data[i].id) + '" data-count-id="' + String(data[i].id) + '"><td>' + data[i].id + '</td>' +
-          '<td tabindex data-edit="0" data-invoice="' + (data[i].invoice ? data[i].invoice : '') + '">' + (data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '') + '</td>' +
-          '<td>' + reservations + '</td>' +
-          '<td>' + (data[i].status && data[i]._status ? data[i]._status.name : '') + '</td>' +
-          '<td>' + this._toHtmlRange(data[i].begin, data[i].end) + '</td>' +
-          '<td>' + (data[i].reference ? data[i].reference : '') + '</td>' +
-          '<td>' + (data[i].comment ? this._shortDesc(data[i].comment) : '') + '</td>' +
-          '<td>' + (data[i].total ? data[i].total : '') + '</td>' +
-          '<td>' + (data[i].printed ? this._toHtmlDate(data[i].printed) : '') + '</td>' +
-          '<td data-op="delete"><i class="far fa-trash-alt action"></i></td>' +
-          '</tr>'
+        txt += `<tr data-url="#DEC${String(data[i].id)}" data-count-id="${String(data[i].id)}"><td>${data[i].id}</td>
+          <td tabindex data-edit="0" data-invoice="${(data[i].invoice ? data[i].invoice : '')}">${(data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '')}</td>
+          <td>${reservations}</td>
+          <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
+          <td>${this._toHtmlRange(data[i].begin, data[i].end)}</td>
+          <td>${(data[i].reference ? data[i].reference : '')}</td>
+          <td>${clients.length > 0 ? clients.join('<hr>') : ''}</td>
+          <td>${(data[i].comment ? this._shortDesc(data[i].comment) : '')}</td>
+          <td>${(data[i].total ? data[i].total : '')}</td>
+          <td>${(data[i].printed ? this._toHtmlDate(data[i].printed) : '')}</td>
+          <td data-op="delete"><i class="far fa-trash-alt action"></i></td>
+          </tr>`
       }
       txt += '</tbody></table>'
       this.domNode.innerHTML = txt
