@@ -334,6 +334,7 @@ define([
               if (this.addReservation) {
                 await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
                 delete this.addReservation
+                this.eventTarget.dispatchEvent(new Event('save'))
               }
               window.location.hash = tr.dataset.url
             }
