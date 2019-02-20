@@ -77,11 +77,10 @@ foreach ($reservations as $k => $reservation) {
 
    foreach ($reservations[$k]['contacts'] as $type => $contact) {
       foreach ($contact as $entry) {
-
          /* clientManager will contain the name and givenname of manager */
          if ($type == '_responsable' && is_null($clientManager)) {
             if ($entry['freeform']) {
-               $clientManager = format_address(array('type' => 'freeform', 'data' => $entry['freeform']));
+               $clientManager = format_address(array('type' => 'freeform', 'data' => $entry['freeform']))[0];
             } else {
                $e = $entry['target'];
                if (isset($e['givenname']) || isset($e['sn'])) {
@@ -95,7 +94,7 @@ foreach ($reservations as $k => $reservation) {
                      $clientManager .= $e['sn'];
                   }
                } else {
-                  $clientManager = format_address(array('type' => 'db', 'data' => $e));
+                  $clientManager = format_address(array('type' => 'db', 'data' => $e))[0];
                }
             }
          }
@@ -109,7 +108,6 @@ foreach ($reservations as $k => $reservation) {
       }
    }
 }
-
 /* preprocess count */
 foreach (array('created', 'modified', 'deleted', 'end', 'begin', 'date', 'printed') as $key) {
    if (!empty($count[$key])) {
