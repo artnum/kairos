@@ -41,7 +41,7 @@ define([
           url.searchParams.set('search.deleted', '-')
           var data = await Query.exec(url)
           this.set('data', data.data)
-          this.list()
+          this.list(args)
           resolve()
         } else {
           var create = true
@@ -98,7 +98,7 @@ define([
           if (args[0] && args[0].reservation) {
             await this.addReservation(args[0].reservation)
           }
-          this.start()
+          this.start(arguments)
         }
       }.bind(this))
 
@@ -268,6 +268,9 @@ define([
       txt += '</tbody></table>'
       this.domNode.innerHTML = txt
 
+      if (arguments[0].addReservation) {
+        this.addReservation = arguments[0].addReservation
+      }
       var trs = this.domNode.getElementsByTagName('TR')
       for (i = 0; i < trs.length; i++) {
         if (trs[i].getAttribute('data-url')) {
@@ -327,9 +330,14 @@ define([
                   break
               }
             } else {
-              window.location.hash = tr.getAttribute('data-url')
+              console.log(this, this.addReservation)
+              if (this.addReservation) {
+                await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
+                delete this.addReservation
+              }
+              window.location.hash = tr.dataset.url
             }
-          })
+          }.bind(this))
         }
       }
       this.doc.content(this.domNode)
@@ -388,7 +396,7 @@ define([
           }
         }
       }
-      references += `<input type="text" name="reference" value="'${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
+      references += `<input type="text" name="reference" value="${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
 
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
@@ -424,7 +432,7 @@ define([
         <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
         <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>${txtStatus}
         <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
-        <form name="invoice"${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
+        <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
       div.addEventListener('click', function (event) {
         var node = event.target
         if (node.getAttribute('data-reference-value')) {

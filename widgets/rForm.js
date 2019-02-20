@@ -1310,6 +1310,12 @@ define([
         this.refreshCount()
       }.bind(this))
     },
+    openAddCount: async function () {
+      var count = new Count({'data-id': '*', addReservation: this.reservation.get('id')}) // eslint-disable-line
+      count.addEventListener('save', function (event) {
+        this.refreshCount()
+      }.bind(this))
+    },
 
     refreshCount: async function () {
       Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.get('id')}})).then(async function (counts) {
