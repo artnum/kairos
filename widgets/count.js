@@ -161,20 +161,25 @@ define([
         if (i === this.get('address-id')) {
           contacts[i].domNode.setAttribute('data-selected', '1')
         }
-        contacts[i].domNode.addEventListener('click', function (event) {
-          var node = event.target
-          while (!node.getAttribute('data-address-id')) {
-            node = node.parentNode
-          }
+        if (contacts.length > 1) {
+          contacts[i].domNode.addEventListener('click', function (event) {
+            var node = event.target
+            while (!node.getAttribute('data-address-id')) {
+              node = node.parentNode
+            }
 
-          this.set('address-id', node.getAttribute('data-address-id'))
+            this.set('address-id', node.getAttribute('data-address-id'))
 
-          var div = node
-          for (node = node.parentNode.firstChild; node; node = node.nextSibling) {
-            node.removeAttribute('data-selected')
-          }
-          div.setAttribute('data-selected', '1')
-        }.bind(this))
+            var div = node
+            for (node = node.parentNode.firstChild; node; node = node.nextSibling) {
+              node.removeAttribute('data-selected')
+            }
+            div.setAttribute('data-selected', '1')
+          }.bind(this))
+        } else {
+          this.set('address-id', i)
+          contacts[i].domNode.dataset.selected = 1
+        }
       }
 
       window.requestAnimationFrame(function () {
@@ -466,7 +471,7 @@ define([
       var saveQuit = document.createElement('input')
       saveQuit.setAttribute('type', 'button')
       saveQuit.setAttribute('value', 'Sauvegarder et quitter')
-      saveQuit.addEventListener('click', function () { this.save.bind(this); this.doc.close() }.bind(this))
+      saveQuit.addEventListener('click', this.saveQuit.bind(this))
       var print = document.createElement('input')
       print.setAttribute('type', 'button')
       print.setAttribute('value', 'Imprimer')
@@ -686,6 +691,11 @@ define([
       }
       parent.parentNode.removeChild(parent)
       this.refresh()
+    },
+
+    saveQuit: async function (event) {
+      await this.save(event)
+      this.doc.close()
     },
 
     save: async function (event) {
