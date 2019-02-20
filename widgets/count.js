@@ -160,8 +160,13 @@ define([
         contacts[i].domNode.setAttribute('data-address-id', i)
         if (i === this.get('address-id')) {
           contacts[i].domNode.setAttribute('data-selected', '1')
+        } else {
+          if (Object.keys(contacts).length === 1) {
+            this.set('address-id', i)
+            contacts[i].domNode.dataset.selected = 1
+          }
         }
-        if (contacts.length > 1) {
+        if (Object.keys(contacts).length > 1) {
           contacts[i].domNode.addEventListener('click', function (event) {
             var node = event.target
             while (!node.getAttribute('data-address-id')) {
@@ -176,9 +181,6 @@ define([
             }
             div.setAttribute('data-selected', '1')
           }.bind(this))
-        } else {
-          this.set('address-id', i)
-          contacts[i].domNode.dataset.selected = 1
         }
       }
 
@@ -335,7 +337,6 @@ define([
                   break
               }
             } else {
-              console.log(this, this.addReservation)
               if (this.addReservation) {
                 await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
                 delete this.addReservation
@@ -402,7 +403,11 @@ define([
           }
         }
       }
-      references += `<input type="text" name="reference" value="${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
+      if (reservations.length === 1 && !this.get('data').reference) {
+        references += `<input type="text" name="reference" value="${reservations[0].reference ? reservations[0].reference : ''}"></fieldset>`
+      } else {
+        references += `<input type="text" name="reference" value="${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
+      }
 
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
@@ -418,7 +423,7 @@ define([
       var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}}))
       var txtStatus = ''
       if (allStatus.success && allStatus.length > 0) {
-        txtStatus = '<label for="status">Statut</label><select name="status">'
+        txtStatus = '<label for="status">Statut</label><select form="details" name="status">'
         allStatus.data.forEach(function (s) {
           var checked = ''
           if (this.get('data').status && String(this.get('data').status) === String(s.id)) {
@@ -428,6 +433,7 @@ define([
         }.bind(this))
         txtStatus += '</select><br/>'
       }
+      var domStatus = document.createRange().createContextualFragment(txtStatus)
 
       div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
         ${(this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '')}
@@ -436,7 +442,7 @@ define([
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
         <fieldset><legend>Période</legend><label for="begin">Début</label>
         <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
-        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>${txtStatus}
+        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>
         <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
       div.addEventListener('click', function (event) {
@@ -463,6 +469,8 @@ define([
       this.table.appendChild(this.thead)
       this.table.appendChild(this.tbody)
       this.table.appendChild(this.tfoot)
+
+      div.appendChild(domStatus)
 
       var save = document.createElement('input')
       save.setAttribute('type', 'button')
@@ -785,7 +793,7 @@ define([
       }
 
       ;['INPUT', 'SELECT'].forEach(function (element) {
-        inputs = this.form_details.getElementsByTagName(element)
+        inputs = [...this.form_details.elements, ...document.querySelectorAll('*[form=details]')]
         for (i = 0; i < inputs.length; i++) {
           var val = inputs[i].value
           if (!val) { continue }
