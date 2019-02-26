@@ -382,6 +382,10 @@ html {
   min-height: 76px;
 }
 
+.entry:nth-child(even) {
+	background-color: rgba( 230, 230, 230, 0.3);
+}
+
 .control {
 	height: 100%;
 	width: 100%;

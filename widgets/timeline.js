@@ -1190,39 +1190,20 @@ define([
       return false
     },
 
-    endDraw: function () {
-      var newBuffer = document.createDocumentFragment()
+    placeEntry: function (entry) {
+      entry.domNode.dataset.order = entry.get('order')
+        ? entry.get('order')
+        : (parseInt(entry.get('target')) > 0
+          ? parseInt(entry.get('target')) * 1000
+          : 99999999)
 
-      this.displayOrder = this.entries.sort(function (a, b) {
-        var oa = a.get('order')
-        var ob = b.get('order')
-
-        if (oa && !ob) { return -1 }
-        if (!oa && ob) { return 1 }
-
-        if (parseInt(oa) > parseInt(ob)) { return 1 }
-        if (parseInt(oa) < parseInt(ob)) { return -1 }
-        return 0
-      })
-
-      for (var i = 0; i < this.displayOrder.length; i++) {
-        if (this.displayOrder[i]) { newBuffer.appendChild(this.displayOrder[i].domNode) }
+      var p = null
+      var i = this.domEntries.lastChild
+      while (i && parseInt(i.dataset.order) > parseInt(entry.domNode.dataset.order)) {
+        p = i
+        i = i.previousSibling
       }
-
-      var className = 'odd'
-      for (i = newBuffer.firstChild; i; i = i.nextSibling) {
-        i.setAttribute('class', i.getAttribute('class') + ' ' + className)
-        className = className === 'odd' ? 'even' : 'odd'
-      }
-
-      var node = this.domEntries
-      fastdom.mutate(() => {
-        while (node.firstChild) {
-          node.removeChild(node.firstChild)
-        }
-        node.appendChild(newBuffer)
-        this.resize()
-      })
+      this.domEntries.insertBefore(entry.domNode, p)
     },
 
     addEntry: function (widget) {
@@ -1413,16 +1394,10 @@ define([
       this.currentPosition = 0
       this.update()
 
-      Query.exec(new URL('https://aircluster.local.airnace.ch/store/Machine')).then(function (response) {
+      Query.exec(new URL('https://aircluster.local.airnace.ch/store/Machine')).then(async function (response) {
         /* TODO when updated completly use new fetch api */
         if (response.data) {
           var whole = response.data
-          whole.sort(function (a, b) {
-            if (parseInt(a.description, 10) < parseInt(b.description, 10)) { return -1 };
-            if (parseInt(a.description, 10) > parseInt(b.description, 10)) { return 1 };
-            return 0
-          })
-
           var inc = 0
           var category = {}
           for (var i = 0; i < whole.length; i++) {
@@ -1447,6 +1422,7 @@ define([
                 name += '<div class="name">' + machine.cn + '</div>'
               }
               var e = new Entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
+              e.loadExtension().then(this.placeEntry.bind(this))
 
               var families = []
               var types = []
@@ -1477,6 +1453,7 @@ define([
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
                   var e = new Entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
+                  e.loadExtension().then(this.placeEntry.bind(this))
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
                       category[families[j]][types[k]].push(e.target)
@@ -1486,10 +1463,11 @@ define([
 
                   that.addEntry(e)
                   loaded.push(e.loaded)
-                })
+                }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
                 e = new Entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
+                e.loadExtension().then(this.placeEntry.bind(this))
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
                     category[families[j]][types[k]].push(e.target)
@@ -1508,11 +1486,10 @@ define([
         that.categories = category
         djAll(loaded).then(function () {
           that.buildMenu()
-          that.endDraw()
           that.update()
           window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(that), 300000)
         })
-      })
+      }.bind(this))
     },
 
     updateChild: function () {

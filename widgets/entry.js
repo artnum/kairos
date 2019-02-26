@@ -100,7 +100,6 @@ define([
       this.entries = {}
       this.currentLocation = ''
 
-      this.loaded = new DjDeferred()
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
       if (dtRegistry.byId('location_entry_' + args['target'])) {
@@ -193,7 +192,6 @@ define([
     },
 
     postCreate: function () {
-      var that = this
       this.load()
       this.update()
       this.Channel = new BroadcastChannel(Path.bcname('reservations'))
@@ -226,37 +224,26 @@ define([
       djOn(this.domNode, 'dblclick', djLang.hitch(this, this.evtDblClick))
       djOn(this.domNode, 'touchend', djLang.hitch(this, this.evTouchEnd))
       djOn(this.domNode, 'touchstart', djLang.hitch(this, this.evTouchStart))
-      djOn(this.sup, 'zoom', () => {
-        djDomStyle.set(that.domNode, 'height', '')
-        that.originalHeight = djDomStyle.get(that.domNode, 'height')
-        that.resize()
-      })
+      djOn(this.sup, 'zoom', function () {
+        djDomStyle.set(this.domNode, 'height', '')
+        this.originalHeight = djDomStyle.get(this.domNode, 'height')
+        this.resize()
+      }.bind(this))
 
       this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73 /* in chrome value here is 0, set default known value for now */
 
       this.view = { rectangle: getElementRect(this.domNode) }
       this.verifyLock()
-      Req.get(String(Path.url('store/Tags/?!=' + this.url))).then((tags) => {
-        if (tags.length > 0) {
-          for (var i in tags.data[0]) {
-            tags.data[0][i].forEach(function (tag) {
-              that.tags.push(tag)
-            })
+      Query.exec(Path.url('store/Tags/', {params: {'!': this.url}})).then(function (response) {
+        if (response.success && response.length > 0) {
+          for (var i in response.data[0]) {
+            response.data[0][i].forEach(function (tag) {
+              this.tags.push(tag)
+            }.bind(this))
           }
         }
 
-        that.displayTags(that.tags)
-      })
-
-      Query.exec(Path.url('store/Entry', {params: {'search.ref': this.get('target')}})).then(function (result) {
-        if (result.success && result.length > 0) {
-          for (var i = 0; i < result.length; i++) {
-            this.set(result.data[i].name, result.data[i].value)
-            this.set('_' + result.data[i].name, result.data[i])
-          }
-        }
-        this.loaded.resolve()
-        this.displayLocation()
+        this.displayTags(this.tags)
       }.bind(this))
 
       var frag = document.createDocumentFragment()
@@ -266,16 +253,31 @@ define([
 
       var s = document.createElement('SPAN')
       s.setAttribute('class', 'reference')
-      s.appendChild(document.createTextNode('(' + that.get('target') + ')'))
+      s.appendChild(document.createTextNode('(' + this.get('target') + ')'))
       a.appendChild(s)
 
       s = document.createElement('SPAN')
       s.setAttribute('class', 'commonName label')
-      s.appendChild(document.createTextNode(that.get('label')))
+      s.appendChild(document.createTextNode(this.get('label')))
       a.appendChild(s)
 
       frag.appendChild(a)
-      window.requestAnimationFrame(function () { that.nameNode.appendChild(frag) })
+      window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
+    },
+
+    loadExtension: function () {
+      return new Promise(function (resolve, reject) {
+        Query.exec(Path.url('store/Entry', {params: {'search.ref': this.get('target')}})).then(function (result) {
+          if (result.success && result.length > 0) {
+            for (var i = 0; i < result.length; i++) {
+              this.set(result.data[i].name, result.data[i].value)
+              this.set('_' + result.data[i].name, result.data[i])
+            }
+          }
+          this.displayLocation()
+          resolve(this)
+        }.bind(this))
+      }.bind(this))
     },
 
     displayTags: function (tags) {
