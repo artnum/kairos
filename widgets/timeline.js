@@ -1191,6 +1191,9 @@ define([
     },
 
     placeEntry: function (entry) {
+      this.Entries[entry.target] = entry
+      this.entries.push(entry)
+
       entry.domNode.dataset.order = entry.get('order')
         ? entry.get('order')
         : (parseInt(entry.get('target')) > 0
@@ -1204,11 +1207,10 @@ define([
         i = i.previousSibling
       }
       this.domEntries.insertBefore(entry.domNode, p)
-    },
-
-    addEntry: function (widget) {
-      this.Entries[widget.target] = widget
-      this.entries.push(widget)
+      /* next node must be pushed on step  */
+      for (i = entry.nextSibling; i; i = i.nextSibling) {
+        dtRegistry.byNode(i).resize()
+      }
     },
 
     _getCompactAttr: function () {
@@ -1390,7 +1392,6 @@ define([
 
     run: function () {
       var loaded = []
-      var that = this
       this.currentPosition = 0
       this.update()
 
@@ -1421,7 +1422,7 @@ define([
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new Entry({name: name, sup: that, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
+              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
               e.loadExtension().then(this.placeEntry.bind(this))
 
               var families = []
@@ -1447,12 +1448,11 @@ define([
               }
 
               djDomClass.add(e.domNode, groupName)
-              that.addEntry(e)
               loaded.push(e.loaded)
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: that, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
+                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
                   e.loadExtension().then(this.placeEntry.bind(this))
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
@@ -1461,12 +1461,11 @@ define([
                   }
                   djDomClass.add(e.domNode, groupName)
 
-                  that.addEntry(e)
                   loaded.push(e.loaded)
                 }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: that, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
+                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
                 e.loadExtension().then(this.placeEntry.bind(this))
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
@@ -1475,7 +1474,6 @@ define([
                 }
 
                 djDomClass.add(e.domNode, groupName)
-                that.addEntry(e)
                 loaded.push(e.loaded)
               }
 
@@ -1483,12 +1481,12 @@ define([
             }
           }
         }
-        that.categories = category
+        this.categories = category
         djAll(loaded).then(function () {
-          that.buildMenu()
-          that.update()
-          window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(that), 300000)
-        })
+          this.buildMenu()
+          this.update()
+          window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
+        }.bind(this))
       }.bind(this))
     },
 
