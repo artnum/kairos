@@ -741,16 +741,20 @@ define([
         for (var i = 0; i < inputs.length; i++) {
           if (inputs[i].value) {
             query[inputs[i].getAttribute('name')] = inputs[i].value
+          } else {
+            query[inputs[i].getAttribute('name')] = null
           }
         }
         var selects = parent.getElementsByTagName('SELECT')
         for (i = 0; i < selects.length; i++) {
           if (selects[i].value) {
             query[selects[i].getAttribute('name')] = selects[i].value
+          } else {
+            query[selects[i].getAttribute('name')] = null
           }
         }
 
-        if (!query.description && !query.quantity && !query.price && !query.total) {
+        if (!query.description && !query.quantity && !query.price && !query.total && !query.reference) {
           var remove = parent
           parent = parent.nextSibling
           remove.parentNode.removeChild(remove)
