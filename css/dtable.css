@@ -1,0 +1,45 @@
+.dtable th {
+	cursor: pointer;
+	min-width: 10ch;
+}
+
+.dtable th:after {
+	content: '\00A0\00A0';
+	float: right;
+	font-weight: normal;
+}
+
+.dtable th[data-sort-include] {
+	background-color: hsl(75, 85%, 100%);
+}
+
+.dtable th[data-sort-include="0"] {
+	background-color: hsl(75, 85%, 46%);
+}
+
+.dtable th[data-sort-include="1"] {
+	background-color: hsl(75, 85%, 54%);
+}
+
+.dtable th[data-sort-include="2"] {
+	background-color: hsl(75, 85%, 62%);
+}
+
+.dtable th[data-sort-include="3"] {
+	background-color: hsl(75, 85%, 76%);
+}
+
+.dtable th[data-sort-include="4"] {
+	background-color: hsl(75, 85%, 84%);
+}
+
+.dtable th[data-sort-include="5"] {
+	background-color: hsl(75, 85%, 92%);
+}
+
+.dtable th[data-sort-direction="ASC"]:after {
+	content: '\00A0\2798';
+}
+.dtable th[data-sort-direction="DESC"]:after {
+	content: '\00A0\279a';
+}

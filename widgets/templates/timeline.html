@@ -45,8 +45,12 @@
   <div data-dojo-type="dijit/MenuBarItem" data-dojo-props="onClick: () => { window.App.openWindow('./return.html'); }">
     <label>Retours</label> 
   </div>
-  <div data-dojo-type="dijit/MenuBarItem" data-dojo-props="onClick: () => { window.location.hash = '#DEC*' }">
+  <div data-dojo-type="dijit/PopupMenuBarItem">
     <label>Décomptes</label>
+		<div data-dojo-type="dijit/DropDownMenu" id="countMenu">
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.location.hash = '#DEC*' }">Liste</div>
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openUncounted() }">Non-décompté</div>
+    </div>
   </div>
 </div>
 

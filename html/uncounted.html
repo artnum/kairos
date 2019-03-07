@@ -1,0 +1,34 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Décompte</title>
+<link href="../css/dtable.css" rel="stylesheet" />
+</head>
+<body>
+  <table data-source="store/Reservationbis" data-options="{parameters: {'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+    <thead><tr>
+      <th data-attribute="id" data-sort-type="integer">N°</th>
+      <th data-attribute="target" data-sort-type="integer">Machine</th>
+      <th data-attribute="reference">Référence</th>
+      <th data-attribute="begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="end:date" data-sort-type="date" data-condition="@store/Count?search.id=$_countReservation.count;end:date $end:date lt">Fin</th>
+      <th data-attribute="@store/Arrival?search.target=$id reported:date">Fin confirmée</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script src="https://artnum.ch/code/js/Query.js"></script>
+<script src="https://artnum.ch/code/js/Path.js"></script>
+<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="../../js/StreamSort.js"></script>
+<script src="../../js/DTable.js"></script>
+<script>
+window.onload = function () {
+ var tables = document.getElementsByTagName('TABLE') 
+
+ for (var i = 0; i < tables.length; i++) {
+   new Artnum.DTable({table: tables[i]})
+ }
+}
+</script>
+</html>

@@ -53,7 +53,8 @@ define([
 
   'artnum/dojo/Request',
   'artnum/Path',
-  'artnum/Query'
+  'artnum/Query',
+  'artnum/Doc'
 
 ], function (
   djDeclare,
@@ -104,7 +105,8 @@ define([
   Count,
   Req,
   Path,
-  Query
+  Query,
+  Doc
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
@@ -1761,6 +1763,13 @@ define([
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
         fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
       }
+    },
+    openUncounted: function () {
+      var uncounted = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
+      var iframe = document.createElement('IFRAME')
+      iframe.setAttribute('src', 'uncounted.html')
+      iframe.setAttribute('style', 'border: none; width: 100%; height: 100%')
+      uncounted.content(iframe)
     }
   })
 })
