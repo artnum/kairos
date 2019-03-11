@@ -310,6 +310,7 @@ define([
             if (td.getAttribute('data-invoice') !== null) {
               if (td.getAttribute('data-edit') === '0') {
                 td.setAttribute('data-edit', '1')
+                td.dataset.previousValue = td.innerHTML
                 var fn = async function (event) {
                   var td = event.target
                   while (td.nodeName !== 'TD') { td = td.parentNode }
@@ -337,8 +338,17 @@ define([
                   }
                 }
                 var input = document.createElement('INPUT')
+                input.value = td.innerHTML
                 input.addEventListener('blur', fn)
-                input.addEventListener('keypress', function (event) { if (event.key === 'Enter') { fn(event) } })
+                input.addEventListener('keypress', function (event) {
+                  if (event.key === 'Enter') { fn(event); return }
+                  if (event.key === 'Escape') {
+                    var td = event.target
+                    for (; td.nodeName !== 'TD'; td = td.parentNode) ;
+                    td.innerHTML = td.dataset.previousValue
+                    td.dataset.previousValue = null
+                  }
+                })
                 window.requestAnimationFrame(function () {
                   td.innerHTML = ''
                   td.appendChild(input)
