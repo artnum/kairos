@@ -17,6 +17,7 @@
   </table>
 </body>
 <script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script async defer src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
 <script src="https://artnum.ch/code/js/Query.js"></script>
 <script src="https://artnum.ch/code/js/Path.js"></script>
 <script src="https://artnum.ch/code/js/Date.js"></script>
@@ -25,8 +26,11 @@
 window.onload = function () {
  var tables = document.getElementsByTagName('TABLE') 
 
- for (var i = 0; i < tables.length; i++) {
-   new Artnum.DTable({table: tables[i]})
+   for (var i = 0; i < tables.length; i++) {
+   var dtable = new Artnum.DTable({table: tables[i]})
+   if (transliterate) {
+     dtable.transliterate = transliterate
+   }
  }
 }
 </script>
