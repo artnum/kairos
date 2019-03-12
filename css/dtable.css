@@ -4,8 +4,9 @@
 }
 
 .dtable th:before {
-	content: '\00A0\00A0';
+	content: '\00A0\2b65';
 	float: left;
+	opacity: 0.5;
 	font-weight: normal;
 }
 
@@ -39,11 +40,9 @@
 
 .dtable th[data-sort-direction="ASC"]:before {
     content: '\00A0\2b61';
-    opacity: 0.5;
 }
 .dtable th[data-sort-direction="DESC"]:before {
     content: '\00A0\2b63';
-    opacity: 0.5;
 }
 
 .dtable tr[data-filtered-out] {
@@ -52,6 +51,7 @@
 
 .dtable .filter {
     display: block;
+    margin: auto;
     padding: 1px;
     border: 1px solid gray;
 }
