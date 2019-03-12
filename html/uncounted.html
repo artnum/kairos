@@ -5,7 +5,8 @@
 <link href="../css/dtable.css" rel="stylesheet" />
 </head>
 <body>
-  <table data-source="store/Reservationbis" data-options="{parameters: {'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+  <table
+    data-source="store/Reservationbis" data-options="{parameters: {'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
       <th data-attribute="id" data-sort-type="integer">N°</th>
       <th data-attribute="target" data-sort-type="integer">Machine</th>
