@@ -298,16 +298,20 @@ define([
       document.body.appendChild(this.Window)
     },
 
-    openWindow: function (url) {
-      if (!this.Window) {
-        this.createWindow()
+    openWindow: function (url, real = false) {
+      if (!real) {
+        if (!this.Window) {
+          this.createWindow()
+        }
+
+        url += (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now()
+        this.Window.lastChild.setAttribute('src', url)
+        this.Window.currentUrl = url
+
+        this.Window.setAttribute('style', '')
+      } else {
+        window.open(url + (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now(), 'arrival')
       }
-
-      url += (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now()
-      this.Window.lastChild.setAttribute('src', url)
-      this.Window.currentUrl = url
-
-      this.Window.setAttribute('style', '')
     },
 
     closeWindow: function () {
