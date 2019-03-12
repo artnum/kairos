@@ -13,7 +13,8 @@
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date" data-sort-type="date">Début</th>
       <th data-attribute="end:date" data-sort-type="date" data-condition="@store/Count?search.id=$_countReservation.count;end:date $end:date lt">Fin</th>
-      <th data-attribute="@store/Arrival?search.target=$id reported:date">Fin confirmée</th>
+      <th data-attribute="@store/Arrival?search.target=$id reported:date">Annonce</th>
+      <th data-attribute="@store/Arrival?search.target=$id done:bool">Fin confirmée</th>
     </tr></thead>
   </table>
 </body>
