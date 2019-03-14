@@ -7,9 +7,9 @@
 <body>
   <table data-source="store/Count" data-options="{parameters: {'search.deleted': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modified', parameter: 'search.modified', integer: true}}">
     <thead><tr>
-      <th data-attribute="id:integer" data-sort-type="integer">N°</th>
-      <th data-attribute="@store/Invoice/$invoice winbiz:integer" data-sort-type="integer">Facture</th>
-      <th data-attribute="@store/CountReservation?search.count=$id reservation:integer" data-sort-type="integer">Réservation</th>
+      <th data-attribute="id:integer">N°</th>
+      <th data-attribute="@store/Invoice/$invoice winbiz:integer">Facture</th>
+      <th data-attribute="@store/CountReservation?search.count=$id reservation:integer">Réservation</th>
       <th data-attribute="@store/Status/$status name">Status</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>

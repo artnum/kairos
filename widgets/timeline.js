@@ -310,7 +310,7 @@ define([
 
         this.Window.setAttribute('style', '')
       } else {
-        window.open(url + (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now(), 'arrival')
+        window.open(url + (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now(), url.split('.')[0])
       }
     },
 

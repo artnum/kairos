@@ -8,14 +8,14 @@
   <table
     data-source="store/Reservationbis" data-options="{parameters: {'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
-      <th data-attribute="id" data-sort-type="integer">N°</th>
-      <th data-attribute="target" data-sort-type="integer">Machine</th>
+      <th data-attribute="id:integer">N°</th>
+      <th data-attribute="target:integer">Machine</th>
       <th data-attribute="reference">Référence</th>
-      <th data-attribute="begin:date" data-sort-type="date">Début</th>
-      <th data-attribute="end:date" data-sort-type="date" data-condition="@store/Count?search.id=$_countReservation.count;end:date $end:date lt">Fin</th>
+      <th data-attribute="begin:date">Début</th>
+      <th data-attribute="end:date" data-condition="@store/Count?search.id=$_countReservation.count;end:date $end:date lt">Fin</th>
       <th data-attribute="@$creator name">Responsable</th>
-      <th data-attribute="@store/Arrival?search.target=$id reported:date">Annonce</th>
-      <th data-attribute="@store/Arrival?search.target=$id done:bool">Fin confirmée</th>
+      <th data-attribute="@store/Arrival/$id reported:bool">Fin confirmée</th>
+      <th data-attribute="@store/Arrival/$id done:bool">Retournée</th>
     </tr></thead>
   </table>
 </body>
