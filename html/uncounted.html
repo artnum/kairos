@@ -14,8 +14,8 @@
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date" data-condition="@store/Count?search.id=$_countReservation.count;end:date $end:date lt">Fin</th>
       <th data-attribute="@$creator name">Responsable</th>
-      <th data-attribute="@store/Arrival/$id reported:bool">Fin confirmée</th>
-      <th data-attribute="@store/Arrival/$id done:bool">Retournée</th>
+      <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- reported:bool">Fin confirmée</th>
+      <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- done:bool">Retournée</th>
     </tr></thead>
   </table>
 </body>
