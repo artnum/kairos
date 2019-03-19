@@ -43,7 +43,8 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
-      window.addEventListener('keypress', function (event) {
+      window.addEventListener('keydown', function (event) {
+        console.log(event)
         if (event.key === 'Escape') {
           this.switchToCommandMode()
         } else {
