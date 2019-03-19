@@ -636,7 +636,6 @@ define([
         ident.lastChild.appendChild(document.createTextNode(' '))
         i = document.createElement('I')
         i.setAttribute('class', 'fas fa-exclamation-triangle')
-        i.setAttribute('style', 'color: red;')
         ident.lastChild.setAttribute('data-balloon', this.get('other').critic)
         ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
         ident.lastChild.appendChild(i)
