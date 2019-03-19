@@ -631,6 +631,16 @@ define([
         }
       }
 
+      if (this.get('other') && this.get('other').critic) {
+        ident.appendChild(document.createElement('SPAN'))
+        ident.lastChild.appendChild(document.createTextNode(' '))
+        i = document.createElement('I')
+        i.setAttribute('class', 'fas fa-exclamation-triangle')
+        i.setAttribute('style', 'color: red;')
+        ident.lastChild.setAttribute('data-balloon', this.get('other').critic)
+        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
+        ident.lastChild.appendChild(i)
+      }
       frag.lastChild.appendChild(ident)
 
       frag.lastChild.appendChild(document.createElement('address'))

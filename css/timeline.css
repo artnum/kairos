@@ -188,7 +188,7 @@ body, html { margin: 0; padding: 0; }
 	color: #ddffee !important;
 }
 
-.entry .fa-refresh, .entry .fa-lock, .entry .fa-exclamation {
+.entry .fa-refresh, .entry .fa-lock {
 	color: #ddd ;
 	text-shadow: none;
 }
