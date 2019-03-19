@@ -1610,17 +1610,19 @@ define([
     },
 
     doSearchLocation: function (loc) {
-      var that = this
-
-      Req.get(String(Path.url('store/Reservation/' + loc)), {query: {'search.delete': '-'}}).then(function (result) {
-        if (result && result.data) {
-          var data = result.data
-          that.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
-            // that.highlight(widget.domNode)
-            widget.popMeUp()
-          })
-        }
-      })
+      return new Promise(function (resolve, reject) {
+        Req.get(String(Path.url('store/Reservation/' + loc)), {query: {'search.delete': '-'}}).then(function (result) {
+          if (result && result.data) {
+            var data = result.data
+            this.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
+              widget.popMeUp()
+              resolve()
+            })
+          } else {
+            reject()
+          }
+        }.bind(this))
+      }.bind(this))
     },
 
     print: function (url) {

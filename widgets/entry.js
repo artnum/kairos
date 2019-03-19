@@ -263,6 +263,7 @@ define([
 
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
+      this.domNode.dataset.reference = this.target
     },
 
     loadExtension: function () {
