@@ -253,14 +253,6 @@ define([
       }
 
       window.UnloadCall = {}
-      window.addEventListener('beforeunload', function (event) {
-        event.preventDefault()
-        event.returnValue = ''
-        for (var i in window.UnloadCall) {
-          console.log(i, window.UnloadCall[i])
-          window.UnloadCall[i]()
-        }
-      })
     },
 
     createWindow: function () {
