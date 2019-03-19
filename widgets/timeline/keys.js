@@ -5,6 +5,8 @@ define([
   'dojo/Evented',
   'dojo/Deferred',
 
+  'dojo/text!../templates/commandOverlay.html',
+
   'dojo/dom-construct',
   'dojo/on',
   'dojo/dom-attr',
@@ -24,6 +26,8 @@ define([
   djEvented,
   djDeferred,
 
+  innerHtmlOverlay,
+
   djDomConstruct,
   djOn,
   djDomAttr,
@@ -38,6 +42,39 @@ define([
   Req
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
+    constructor: function () {
+      window.addEventListener('keypress', function (event) {
+        if (event.key === 'Escape') {
+          this.switchToCommandMode()
+        } else {
+          if (this.CommandMode) {
+            event.preventDefault()
+            this.commandKeys(event)
+            this.switchToCommandMode()
+          }
+        }
+      }.bind(this), {capture: true})
+    },
+
+    switchToCommandMode: function () {
+      this.CommandMode = !this.CommandMode
+      if (!this.CommandMode) {
+        window.requestAnimationFrame(() => document.body.removeChild(document.getElementById('commandModeOverlay')))
+      } else {
+        var o = document.createElement('DIV')
+        o.setAttribute('id', 'commandModeOverlay')
+        o.innerHTML = innerHtmlOverlay
+        window.requestAnimationFrame(() => document.body.appendChild(o))
+      }
+    },
+
+    commandKeys: function (event) {
+      switch (event.key) {
+        case 'a':
+          this.today()
+          break
+      }
+    },
 
     keys: function (event) {
       if (!event.ctrlKey) {

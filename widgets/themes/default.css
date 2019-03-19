@@ -720,3 +720,29 @@ input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+#commandModeOverlay {
+    z-index: 999999999;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 24px;
+}
+
+#commandModeOverlay .key {
+    display: inline-block;
+    border: 2px black solid;
+    font-weight: bold;
+    padding: 16px;
+    font-size: 16px;
+}
+
+#commandModeOverlay .description {
+    font-size: 16px;
+    display:  inline-block;
+    padding: 16px;
+    font-weight: bold;
+}
