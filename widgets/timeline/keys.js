@@ -1,4 +1,6 @@
 /* Timeline app -> key code */
+/* eslint-env amd, browser */
+/* global APPConf */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -44,7 +46,7 @@ define([
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
       window.addEventListener('keydown', async function (event) {
-        if (event.key === 'Escape') {
+        if (event.key === APPConf.CommandWindow.escapeKey) {
           this.switchCommandMode()
         } else {
           if (this.CommandMode) {

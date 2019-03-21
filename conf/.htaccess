@@ -1,0 +1,5 @@
+Order allow,deny
+Deny from all
+<Files ~ ".js">
+      Allow from all
+</Files>
