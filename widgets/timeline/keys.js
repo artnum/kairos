@@ -51,7 +51,22 @@ define([
         } else {
           if (this.CommandMode) {
             switch (event.key) {
-              case 'Enter':
+              case APPConf.exitKey:
+                if (this.CommandOverlay) {
+                  if (this.func) {
+                    this.func = null
+                    document.activeElement.blur()
+                    for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
+                      if (n.firstChild && n.firstChild.innerHTML) {
+                        window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
+                      }
+                    }
+                  } else {
+                    this.switchCommandMode()
+                  }
+                }
+                break
+              case APPConf.enterKey:
                 event.preventDefault()
                 if (this.func) {
                   var r = this.func(document.getElementById('commandSearchBox').value)
@@ -81,17 +96,30 @@ define([
     switchCommandMode: function () {
       this.CommandMode = !this.CommandMode
       if (!this.CommandMode) {
+        this.CommandOverlay = null
         window.requestAnimationFrame(() => document.body.removeChild(document.getElementById('commandModeOverlay')))
       } else {
         var o = document.createElement('DIV')
         o.setAttribute('id', 'commandModeOverlay')
         o.innerHTML = innerHtmlOverlay
+        this.CommandOverlay = o
         window.requestAnimationFrame(() => document.body.appendChild(o))
       }
     },
 
     commandKeys: function (event) {
       var done = false
+      if (this.CommandOverlay) {
+        for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
+          if (n.firstChild && n.firstChild.innerHTML) {
+            if (n.firstChild.innerHTML.toLowerCase() === event.key) {
+              window.requestAnimationFrame(() => n.firstChild.setAttribute('style', 'background-color: hsla(126, 100%, 56%, 0.6)'))
+            } else {
+              window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
+            }
+          }
+        }
+      }
       switch (event.key) {
         case 'a':
           this.today()
@@ -116,7 +144,6 @@ define([
     gotoDay: async function (val) {
       var elements = val.split(/(?:\/|\.|-|\s)/)
       var date = new Date()
-      console.log(elements)
       var y = date.getFullYear()
       var m = date.getMonth()
       switch (elements.length) {
