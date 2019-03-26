@@ -146,49 +146,51 @@ define([
     },
 
     update: function () {
-      var entries = []
-      var that = this
-      var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target')
-      idx.openCursor(this.target).onsuccess = function (e) {
-        var cursor = e.target.result
-        if (cursor) {
-          if (typeof that.entries === 'undefined') {
-            return
-          }
-          entries.push(cursor.value.id)
-          if (!that.entries[cursor.value.id]) {
-            try {
-              that.entries[cursor.value.id] = new Reservation({ sup: that, id: cursor.value.id })
-              that.entries[cursor.value.id].fromJson(cursor.value)
-            } catch (e) {
-              /* do nothing */
+      return new Promise(function (resolve, reject) {
+        var entries = []
+        var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target')
+        idx.openCursor(this.target).onsuccess = function (e) {
+          var cursor = e.target.result
+          if (cursor) {
+            if (typeof this.entries === 'undefined') {
+              return
             }
-          } else {
-            if (that.entries[cursor.value.id]._hash !== cursor.value._hash) {
-              if (window.App.isOpen(cursor.value.id)) {
-                if (!window.App.isModify(cursor.value.id)) {
-                  that.syncForm()
-                }
-                window.App.unsetModify(cursor.value.id)
-              }
+            entries.push(cursor.value.id)
+            if (!this.entries[cursor.value.id]) {
               try {
-                that.entries[cursor.value.id].fromJson(cursor.value)
+                this.entries[cursor.value.id] = new Reservation({ sup: this, id: cursor.value.id })
+                this.entries[cursor.value.id].fromJson(cursor.value)
               } catch (e) {
-                console.log(e)
+                /* do nothing */
+              }
+            } else {
+              if (this.entries[cursor.value.id]._hash !== cursor.value._hash) {
+                if (window.App.isOpen(cursor.value.id)) {
+                  if (!window.App.isModify(cursor.value.id)) {
+                    this.syncForm()
+                  }
+                  window.App.unsetModify(cursor.value.id)
+                }
+                try {
+                  this.entries[cursor.value.id].fromJson(cursor.value)
+                } catch (e) {
+                  console.log(e)
+                }
               }
             }
-          }
-          cursor.continue()
-        } else {
-          for (var k in that.entries) {
-            if (entries.indexOf(k) === -1) {
-              that.entries[k].destroy()
-              delete that.entries[k]
+            cursor.continue()
+          } else {
+            for (var k in this.entries) {
+              if (entries.indexOf(k) === -1) {
+                this.entries[k].destroy()
+                delete this.entries[k]
+              }
             }
+            this.show()
+            resolve()
           }
-          that.show()
-        }
-      }
+        }.bind(this)
+      }.bind(this))
     },
 
     postCreate: function () {
@@ -623,10 +625,9 @@ define([
     addOrUpdateReservation: function (reservations) {
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({ sup: this })
+          this.entries[reservations[i].id] = new Reservation({ id: reservations[i].id, sup: this })
         }
-        var json = window.App.Reservation.get(reservations[i].id)
-        if (json) { this.entries[reservations[i].id].fromJson(json) }
+        this.entries[reservations[i].id].fromJson(reservations[i])
       }
 
       this.show()

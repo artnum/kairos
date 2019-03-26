@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf */
+/* global getPageRect, getElementRect,fastdom, APPConf, DoWait */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -1613,6 +1613,7 @@ define([
     },
 
     doSearchLocation: function (loc) {
+      DoWait()
       return new Promise(function (resolve, reject) {
         Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
           if (result && result.length === 0) {
@@ -1621,12 +1622,13 @@ define([
             var reservation = result.data
             if (reservation.deleted) {
               reject()
+              DoWait(false)
               return
             }
             this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin))
             this.update()
             var data = result.data
-            this.Entries[data.target].update()
+            this.Entries[data.target].addOrUpdateReservation([data])
             if (this.Entries[data.target].openReservation(data.id)) {
               var pos = djDomGeo.position(this.Entries[data.target].domNode, true)
               window.scroll(0, pos.y - (window.innerHeight / 3))
@@ -1634,9 +1636,10 @@ define([
             } else {
               reject()
             }
+            DoWait(false)
           }
-        }.bind(this))
-      }.bind(this))
+        }.bind(this), () => DoWait(false))
+      }.bind(this), () => DoWait(false))
     },
 
     print: function (url) {

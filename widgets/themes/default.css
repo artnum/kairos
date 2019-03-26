@@ -2,6 +2,10 @@ html {
 	overflow-x: hidden;
 }
 
+body.waiting * {
+    cursor: progress;
+}
+
 .header:active div.even {
 	background-color: red;
 	color: yellow;
@@ -49,7 +53,7 @@ html {
 	z-index: 460;
 	max-height: 89px;
 	height: 89px;
-	11;rgb:2323/2727/2929background-color: white;
+	background-color: white;
 	width: 100%;
 	max-width: 100%;
 	border-bottom: 2px solid black;
@@ -187,9 +191,8 @@ html {
 
 /* reservation */
 .reservation {
-	border-radius: 12px;
 	background-color: white;
-  border: 1px solid #ddd;
+	border: 1px solid #ddd;
 	cursor: pointer;
 	user-select: none;
 	-moz-user-select: none;
@@ -241,9 +244,7 @@ html {
 
 .reservation > div {
 	overflow: hidden;
-	border-radius: 12px;
 }
-
 
 .reservation.nobegin > div{
 	border-left: 2px dotted grey;
@@ -786,5 +787,41 @@ input[type=number]::-webkit-outer-spin-button {
     font-size: 16px;
     display:  inline-block;
     padding: 16px;
+    font-weight: bold;
+}
+
+.timeline [data-selected] {
+    box-shadow: 0px 0px 26px 10px hsla(130, 63%, 41%, 1);
+}
+
+.docOverlay {
+    background-color: white !important;
+    border: none !important;
+}
+
+.docCount ul li{
+    line-height: 20px !important;
+}
+
+.button {
+    font-weight: bold;
+    border: 1px solid black;
+    padding: 2px 0 2px 4px;
+    background-color: white;
+    color: black;
+    font-size: 12px;
+}
+
+.button.deleted {
+    border: 1px solid darkgray;
+    background-color: lightgray;
+    color: darkgray;
+}
+
+.button [data-action="delete-reservation"] {
+    padding: 2px 4px 2px 4px;
+    margin-left: 6px;
+    background-color: gray;
+    color: white;
     font-weight: bold;
 }
