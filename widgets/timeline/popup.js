@@ -56,12 +56,14 @@ define([
         event.preventDefault()
 
         var o = djDomForm.toObject(form)
-        this.doSearchLocation(o.locationNumber)
-        dialog.destroy()
+        this.doSearchLocation(o.locationNumber).then(function () {
+          dialog.destroy()
+        }, function () {
+          window.App.error('Location inexistance ou supprimée')
+        })
       })
 
       dialog.show()
     }
-
   })
 })

@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom */
+/* global getPageRect, getElementRect,fastdom, APPConf */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -599,6 +599,14 @@ define([
       this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()
+
+      /* tContainer.domNode.addEventListener('keydown', function (event) {
+        if (event.key === APPConf.exitKey) {
+          if (this.selectedChildWidget) {
+            this.removeChild(this.selectedChildWidget)
+          }
+        }
+      }.bind(tContainer), {capture: true}) */
 
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
@@ -1515,13 +1523,8 @@ define([
     },
 
     update: function (force = false) {
-      var def = new DjDeferred()
-
       this.refresh()
       this.resize()
-      def.resolve()
-
-      return def.promise
     },
 
     _getEntriesAttr: function () {
@@ -1611,15 +1614,26 @@ define([
 
     doSearchLocation: function (loc) {
       return new Promise(function (resolve, reject) {
-        Req.get(String(Path.url('store/Reservation/' + loc)), {query: {'search.delete': '-'}}).then(function (result) {
-          if (result && result.data) {
-            var data = result.data
-            this.goToReservation(data, data.deliveryBegin ? new Date(data.deliveryBegin) : new Date(data.begin)).then(function (widget) {
-              widget.popMeUp()
-              resolve()
-            })
-          } else {
+        Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
+          if (result && result.length === 0) {
             reject()
+          } else {
+            var reservation = result.data
+            if (reservation.deleted) {
+              reject()
+              return
+            }
+            this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin))
+            this.update()
+            var data = result.data
+            this.Entries[data.target].update()
+            if (this.Entries[data.target].openReservation(data.id)) {
+              var pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+              window.scroll(0, pos.y - (window.innerHeight / 3))
+              resolve()
+            } else {
+              reject()
+            }
           }
         }.bind(this))
       }.bind(this))
