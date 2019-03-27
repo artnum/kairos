@@ -48,6 +48,7 @@ define([
   'location/timeline/popup',
   'location/timeline/keys',
   'location/timeline/filters',
+  'location/timeline/gevent',
   'location/update',
   'location/count',
 
@@ -100,7 +101,7 @@ define([
 
   Entry,
 
-  tlPopup, tlKeys, update, Filters,
+  tlPopup, tlKeys, update, Filters, GEvent,
 
   Count,
   Req,
@@ -110,7 +111,7 @@ define([
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
-    tlPopup, tlKeys, update, Filters ], {
+    tlPopup, tlKeys, update, Filters, GEvent ], {
 
     center: null,
     offset: 220,
@@ -202,7 +203,7 @@ define([
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
-        switch (e.data.type) {
+[5~        switch (e.data.type) {
           case 'entry':
             if (this.Entries[e.data.content]) {
               this.Entries[e.data.content].update()

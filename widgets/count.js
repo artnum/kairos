@@ -1,5 +1,5 @@
 /* eslint-env amd, browser */
-/* global Address */
+/* global Artnum, Address, DoWait */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -22,6 +22,7 @@ define([
     constructor: function () {
       this.inherited(arguments)
       var args = arguments
+      this.addReservation = null
       this._initialized = new Promise(async function (resolve, reject) {
         var units = await Query.exec(Path.url('store/Unit'))
         if (units.success && units.length > 0) {
@@ -40,6 +41,7 @@ define([
         if (args[0]['data-id'] === '*') {
           var url = Path.url('store/Count')
           url.searchParams.set('search.deleted', '-')
+
           var data = await Query.exec(url)
           this.set('data', data.data)
           this.list(args)
@@ -75,12 +77,7 @@ define([
             var r = []
             var deleted = []
             for (var i = 0; i < data.length; i++) {
-              var exists = await Query.exec(Path.url('store/Reservation/' + data.data[i].reservation), {method: 'head'})
-              if (exists.success && exists.data.exists === '1') {
-                r.push(data.data[i].reservation)
-              } else {
-                deleted.push(data.data[i].reservation)
-              }
+              r.push(data.data[i].reservation)
             }
             this.set('reservations', r)
             this.set('deleted-reservation', deleted)
@@ -239,11 +236,24 @@ define([
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       var div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
+      window.GEvent.listen('count.count-deleted', function (event) {
+        var id = String(event.detail.id)
+        var tbody = this.domNode.getElementsByTagName('TBODY')[0]
+        var node = tbody.firstElementChild
+        for (; node; node = node.nextElementSibling) {
+          if (node.getAttribute('data-count-id') === id) {
+            break
+          }
+        }
+        if (node) {
+          window.requestAnimationFrame(() => node.parentNode.removeChild(node))
+        }
+      }.bind(this))
 
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><td>N°</td><td>Facture</td><td>Réservation</td><td>Statut</td><td>Période</td><td>Référence client</td><td>Client</td><td>Remarque</td><td>Montant</td><td>Impression</td><td></td></tr></thead>' +
+        '<thead><tr><th data-sort-type="integer">N°</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
         '<tbody>'
 
       var data = this.get('data')
@@ -293,8 +303,9 @@ define([
       }
       txt += '</tbody></table>'
       this.domNode.innerHTML = txt
+      this.dtable = new Artnum.DTable({table: this.domNode.getElementsByTagName('table')[0], sortOnly: true})
 
-      if (arguments[0].addReservation) {
+      if (arguments[0].addReservation && String(arguments[0].addReservation) !== '0') {
         this.addReservation = arguments[0].addReservation
       }
       var trs = this.domNode.getElementsByTagName('TR')
@@ -367,6 +378,7 @@ define([
               }
             } else {
               if (this.addReservation) {
+                console.log(this.addReservation)
                 await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
                 delete this.addReservation
                 this.eventTarget.dispatchEvent(new Event('save'))
@@ -377,6 +389,83 @@ define([
         }
       }
       this.doc.content(this.domNode)
+    },
+
+    deleteCount: function (countId) {
+      return new Promise(function (resolve, reject) {
+        Promise.all([
+          Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId}})),
+          Query.exec(Path.url('store/Centry', {params: {'search.count': countId}}))
+        ]).then(function (results) {
+          var subres = []
+          for (var i = 0; i < results.length; i++) {
+            if (results[i].success && results[i].length > 0) {
+              for (var j = 0; j < results[i].length; j++) {
+                subres.push(Query.exec(Path.url((i === 0 ? 'store/CountReservation/' : 'store/Centry/') + results[i].data[j].id), {method: 'DELETE'}))
+              }
+            }
+          }
+          Promise.all(subres).then(() => {
+            Query.exec(Path.url('store/Count/' + countId), {method: 'DELETE'}).then(function (result) {
+              if (result.success) {
+                window.GEvent('count.count-deleted', {id: countId})
+                resolve()
+              } else {
+                reject(new Error('Delete failed'))
+              }
+            }, () => reject(new Error('Delete query failed')))
+          }, () => reject(new Error('Sub delete failed')))
+        }, () => reject(new Error('Sub delete query failed')))
+      })
+    },
+
+    deleteReservation: function (countId, reservationId) {
+      return new Promise(async function (resolve, reject) {
+        var result = await Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId}}))
+
+        if (result.success && result.length === 1) {
+          if (confirm('Ce décompte ne contient qu\'une résarvation. Voulez-vous supprimer le décompte ?')) {
+            this.deleteCount().then(function () {
+              resolve('count-deleted')
+            }, () => reject(new Error(`Suppression de la réservation ${countId} échouée`)))
+            return
+          } else {
+            resolve('user-cancel')
+            return
+          }
+        }
+
+        Promise.all([
+          Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId, 'search.reservation': reservationId}})),
+          Query.exec(Path.url('store/Centry', {params: {'search.count': countId, 'search.reservation': reservationId}}))
+        ]).then(function (results) {
+          if (results[1].success && results[0].success && results[0].length === 1) {
+            var all = []
+            var centryDeleted = []
+            for (var i = 0; i < results[1].length; i++) {
+              all.push(Query.exec(Path.url('store/Centry/' + results[1].data[i].id), {method: 'DELETE'}))
+              centryDeleted.push(results[1].data[i].id)
+            }
+            Promise.all(all).then(function (results2) {
+              var s = 'success'
+              for (i = 0; i < results2.length; i++) {
+                if (!results2[i].success) {
+                  s = 'success-with-errors'
+                  break
+                }
+              }
+              Query.exec(Path.url('store/CountReservation/' + results[0].data[0].id), {method: 'DELETE'}).then(function (result) {
+                if (result.success) {
+                  window.GEvent('count.reservation-deleted', {id: countId, reservation: reservationId})
+                  resolve(s)
+                }
+              })
+            })
+          } else {
+            reject(new Error(`Erreur de traitement de la suppression de la réseravtion ${reservationId}`))
+          }
+        }, () => reject(new Error(`Requête échouée pour les sous-éléments du décompte ${countId} durant la suppression de la réservation ${reservationId}`)))
+      }.bind(this))
     },
 
     getReservations: async function () {
@@ -410,6 +499,46 @@ define([
       this.doc.addEventListener('close', function (event) { window.location.hash = '' })
       this.Total = 0
       this.Entries = {}
+      window.GEvent.listen('count.count-deleted', function (event) {
+        if (String(this.get('data-id')) === String(event.detail.id)) {
+          this.doc.close()
+        }
+      }.bind(this))
+
+      window.GEvent.listen('count.reservation-deleted', function (event) {
+        var id = String(event.detail.reservation)
+        var r = this.get('reservations')
+        var i = r.indexOf(id)
+        if (i > -1) {
+          r.splice(i, 1)
+        }
+        this.set('reservation', r)
+
+        var selects = this.domNode.getElementsByTagName('SELECT')
+        for (let i = 0; i < selects.length; i++) {
+          if (selects[i].getAttribute('name') === 'reservation') {
+            if (r.length === 1) {
+              window.requestAnimationFrame(() => selects[i].parentNode.removeChild(selects[i]))
+            } else {
+              let n = selects[i].firstElementChild
+              for (; n; n = n.nextElementSibling) {
+                if (n.value === id) {
+                  window.requestAnimationFrame(() => n.parentNode.removeChild(n))
+                }
+              }
+            }
+          }
+        }
+
+        ;['DIV', 'SPAN', 'TR'].forEach(function (nt) {
+          let nodes = this.domNode.getElementsByTagName(nt)
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].getAttribute('data-reservation-id') === id) {
+              window.requestAnimationFrame(() => nodes[i].parentNode.removeChild(nodes[i]))
+            }
+          }
+        }.bind(this))
+      }.bind(this))
 
       var reservations = await this.getReservations()
       var references = '<fieldset name="reference"><legend>Référence</legend>'
@@ -422,7 +551,7 @@ define([
             machines.push(reservations[i].target)
           }
           if (reservations[i].reference) {
-            references += `<div data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
+            references += `<div data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
           }
           if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
             begin = reservations[i].begin
@@ -443,10 +572,10 @@ define([
 
       var htmlReservation = []
       this.get('reservations').forEach(function (r) {
-        htmlReservation.push(r)
+        htmlReservation.push(`<span class="button" data-reservation-id="${r}">${r}<span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
       })
       this.get('deleted-reservation').forEach(function (d) {
-        htmlReservation.push('<del>' + d + '</del>')
+        htmlReservation.push(`<span class="button deleted" data-reservation-id="${d}"><del>${d}</del><span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
       })
 
       var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}}))
@@ -466,7 +595,7 @@ define([
 
       div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
         ${(this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '')}
-        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(', ') : '')}</li>
+        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')}</li>
         <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
         <fieldset><legend>Période</legend><label for="begin">Début</label>
@@ -474,14 +603,54 @@ define([
         <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>
         <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
-      div.addEventListener('click', function (event) {
+
+      div.addEventListener('click', async function (event) {
         var node = event.target
-        if (node.getAttribute('data-reference-value')) {
-          var value = node.getAttribute('data-reference-value')
-          while (node.tagName !== 'INPUT') { node = node.nextSibling }
-          node.value = value
+        while (node && node.getAttribute) {
+          if (node.getAttribute('data-action')) {
+            break
+          }
+          node = node.parentNode
         }
-      })
+        if (!node || !node.getAttribute) {
+          return
+        }
+        switch (node.dataset.action) {
+          case 'delete-reservation':
+            DoWait()
+            var id
+            if (node.dataset.reservationId) {
+              id = node.dataset.reservationId
+            } else {
+              var n = node.parentNode
+              while (n && !n.dataset.reservationId) { n = n.parentNode }
+              id = n.dataset.reservationId
+            }
+
+            this.deleteReservation(this.get('data-id'), id).then(function (result) {
+              if (result.type === 'success-with-error' || result.type === 'success') {
+                if (result.type === 'success-with-error') {
+                  window.App.warn('Des erreurs bégnines se sont produites durant la suppression')
+                }
+                while (node && !node.classList.contains('button')) { node = node.parentNode }
+                window.requestAnimationFrame(function () {
+                  node.parentNode.removeChild(node)
+                })
+              } else if (result.type === 'count-deleted') {
+                this.doc.close()
+                window.GEvent('count.count-deleted', {id: result.id})
+              }
+              DoWait(false)
+            }, (error) => { DoWait(false); window.App.error(error.message) })
+            break
+          default:
+            if (node.getAttribute('data-reference-value')) {
+              var value = node.getAttribute('data-reference-value')
+              while (node.tagName !== 'INPUT') { node = node.nextSibling }
+              node.value = value
+            }
+        }
+      }.bind(this))
 
       this.domNode = div
       this.table = document.createElement('TABLE')
@@ -513,6 +682,23 @@ define([
       print.setAttribute('type', 'button')
       print.setAttribute('value', 'Imprimer')
       print.addEventListener('click', this.print.bind(this))
+      var del = document.createElement('input')
+      del.setAttribute('type', 'button')
+      del.setAttribute('value', 'Supprimer')
+      del.setAttribute('style', 'float: right');
+      del.addEventListener('click', function () {
+        if (confirm(`Confirmez la suppression du décompte ${this.get('data-id')}`)) {
+          DoWait()
+          this.deleteCount(this.get('data-id')).then(function () {
+            this.doc.close()
+            DoWait(false)
+          }.bind(this), () => {
+            DoWait(false)
+            window.App.error('Erreur de suppression du décompte')
+          })
+        }
+      }.bind(this))
+      this.domNode.appendChild(del)
       this.domNode.appendChild(save)
       this.domNode.appendChild(saveQuit)
       this.domNode.appendChild(print)
@@ -565,6 +751,9 @@ define([
         this.Entries[value.id] = value
       } else {
         tr.setAttribute('data-id', '')
+      }
+      if (value.reservation) {
+        tr.setAttribute('data-reservation-id', value.reservation)
       }
       tr.setAttribute('tabindex', '0')
 
