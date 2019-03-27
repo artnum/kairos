@@ -203,7 +203,7 @@ define([
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
-[5~        switch (e.data.type) {
+        switch (e.data.type) {
           case 'entry':
             if (this.Entries[e.data.content]) {
               this.Entries[e.data.content].update()
