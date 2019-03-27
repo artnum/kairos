@@ -27,7 +27,8 @@ define([
   'location/lock',
 
   'artnum/dojo/Request',
-  'artnum/Path'
+  'artnum/Path',
+  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
@@ -56,7 +57,8 @@ define([
   Lock,
 
   Req,
-  Path
+  Path,
+  Query
 ) {
   return djDeclare('location.reservation', [
     dtWidgetBase, djEvented, Mouse], {
@@ -1054,7 +1056,7 @@ define([
       this._gui.hidden = true
     },
 
-    resize: function (fromEntry = false) {
+    resize: async function (fromEntry = false) {
       if (this.deleted) {
         if (!this.destroyed) {
           this.destroy()
@@ -1087,8 +1089,16 @@ define([
 
       /* Last day included */
       var bgcolor = '#FFFFFF'
-      if (this.color) {
-        bgcolor = '#' + this.color
+      if (this) {
+        var cres = JSON.parse(window.localStorage.getItem(Path.url('store/Status/' + this.get('status'))))
+
+        if (!cres) {
+          cres = await Query.exec(Path.url('store/Status/' + this.get('status')))
+          window.localStorage.setItem(Path.url('store/Status/' + this.get('status')), JSON.stringify(cres))
+        }
+        if (cres.success && cres.length === 1) {
+          bgcolor = '#' + cres.data.color
+        }
       }
 
       var range = this.get('dateRange')
