@@ -254,6 +254,16 @@ define([
       }
 
       window.UnloadCall = {}
+
+      window.GEvent.listen('count.attribute-click', function (event) {
+        if (!event.detail) {
+          return
+        }
+
+        if (event.detail.attribute === 'id') {
+          window.location.hash = `#DEC${event.detail.value}`
+        }
+      })
     },
 
     createWindow: function () {
