@@ -624,7 +624,18 @@ body.waiting * {
   background-color: white;
 }
 
-.DocCount tr td {
+.DocCount thead th {
+    background-color: black;
+    color: white;
+    font-weight: bold;
+}
+
+.DocCount tbody td {
+    boder-collapse: collapse;
+    border-bottom: solid 2px hsla(130, 100%, 44%, 0.1);
+}
+
+.DocCount tr td, .DocCount tr th {
 	padding: 8px;
 }
 

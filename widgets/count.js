@@ -254,41 +254,50 @@ define([
 
       var txt = '<h1>Liste de décompte</h1><table>' +
         '<thead><tr><th data-sort-type="integer">N°</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
-        '<tbody>'
+          '<tbody></tbody></table>'
+      this.domNode.innerHTML = txt
+      var Tbody = this.domNode.getElementsByTagName('TBODY')[0]
+      var Table = this.domNode.getElementsByTagName('TABLE')[0]
+      this.dtable = new Artnum.DTable({table: Table, sortOnly: true})
 
       var data = this.get('data')
       var url = Path.url('store/CountReservation')
-      var clients = []
       var _clients = {}
-      for (var i = 0; i < data.length; i++) {
-        url.searchParams.set('search.count', data[i].id)
-        var reservations = await Query.exec(url)
-        if (reservations.success && reservations.length > 0) {
-          reservations._table = []
-          clients = []
-          for (var j = 0; j < reservations.length; j++) {
-            reservations._table.push(reservations.data[j].reservation)
-            if (!_clients[reservations.data[j].reservation]) {
-              var t = await Query.exec(Path.url(`store/DeepReservation/${reservations.data[j].reservation}`))
-              if (t.success && t.length === 1) {
-                if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {
-                  var a = new Address(t.data.contacts['_client'][0])
-                  _clients[reservations.data[j].reservation] = a.toArray()[0]
-                  if (a.toArray().length > 1) {
-                    _clients[reservations.data[j].reservation] += `<br />${a.toArray()[1]}`
+      for (let i = 0; i < data.length; i++) {
+        setTimeout(function () {
+          var clients = []
+          url.searchParams.set('search.count', data[i].id)
+          Query.exec(url).then(async function (reservations) {
+            if (reservations.success && reservations.length > 0) {
+              reservations._table = []
+              clients = []
+              for (var j = 0; j < reservations.length; j++) {
+                reservations._table.push(reservations.data[j].reservation)
+                if (!_clients[reservations.data[j].reservation]) {
+                  var t = await Query.exec(Path.url(`store/DeepReservation/${reservations.data[j].reservation}`))
+                  if (t.success && t.length === 1) {
+                    if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {
+                      var a = new Address(t.data.contacts['_client'][0])
+                      _clients[reservations.data[j].reservation] = a.toArray()[0]
+                      if (a.toArray().length > 1) {
+                        _clients[reservations.data[j].reservation] += `<br />${a.toArray()[1]}`
+                      }
+                    }
                   }
                 }
+                if (_clients[reservations.data[j].reservation]) {
+                  clients.push(_clients[reservations.data[j].reservation])
+                }
               }
+              reservations = reservations._table.join(', ')
+            } else {
+              reservations = ''
             }
-            if (_clients[reservations.data[j].reservation]) {
-              clients.push(_clients[reservations.data[j].reservation])
-            }
-          }
-          reservations = reservations._table.join(', ')
-        } else {
-          reservations = ''
-        }
-        txt += `<tr data-url="#DEC${String(data[i].id)}" data-count-id="${String(data[i].id)}"><td>${data[i].id}</td>
+            var tr = document.createElement('TR')
+            tr.setAttribute('data-url', `#DEC${String(data[i].id)}`)
+            tr.setAttribute('data-count-id', String(data[i].id))
+            tr.addEventListener('click', this.evtSelectTr.bind(this))
+            tr.innerHTML = `<td>${data[i].id}</td>
           <td tabindex data-edit="0" data-invoice="${(data[i].invoice ? data[i].invoice : '')}">${(data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '')}</td>
           <td>${reservations}</td>
           <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
@@ -298,97 +307,96 @@ define([
           <td>${(data[i].comment ? this._shortDesc(data[i].comment) : '')}</td>
           <td>${(data[i].total ? data[i].total : '')}</td>
           <td>${(data[i].printed ? this._toHtmlDate(data[i].printed) : '')}</td>
-          <td data-op="delete"><i class="far fa-trash-alt action"></i></td>
-          </tr>`
+          <td data-op="delete"><i class="far fa-trash-alt action"></i></td>`
+            window.requestAnimationFrame(() => Tbody.appendChild(tr))
+          }.bind(this))
+        }.bind(this), 10)
       }
-      txt += '</tbody></table>'
-      this.domNode.innerHTML = txt
-      this.dtable = new Artnum.DTable({table: this.domNode.getElementsByTagName('table')[0], sortOnly: true})
 
+      this.doc.content(this.domNode)
       if (arguments[0].addReservation && String(arguments[0].addReservation) !== '0') {
         this.addReservation = arguments[0].addReservation
       }
       var trs = this.domNode.getElementsByTagName('TR')
-      for (i = 0; i < trs.length; i++) {
+      for (var i = 0; i < trs.length; i++) {
         if (trs[i].getAttribute('data-url')) {
-          trs[i].addEventListener('click', async function (event) {
-            var tr = event.target
-            var td = event.target
-            while (tr && tr.nodeName !== 'TR') {
-              if (tr.nodeName === 'TD') { td = tr }
-              tr = tr.parentNode
-            }
-            if (td.getAttribute('data-invoice') !== null) {
-              if (td.getAttribute('data-edit') === '0') {
-                td.setAttribute('data-edit', '1')
-                td.dataset.previousValue = td.innerHTML
-                var fn = async function (event) {
-                  var td = event.target
-                  while (td.nodeName !== 'TD') { td = td.parentNode }
-                  var invoice = td.getAttribute('data-invoice')
-                  if (invoice) {
-                    var result = await Query.exec(Path.url('store/Invoice/' + invoice), {method: 'PATCH', body: {id: invoice, winbiz: event.target.value}})
-                  } else {
-                    var tr = event.target
-                    while (tr.nodeName !== 'TR') { tr = tr.parentNode }
-                    var countid = tr.getAttribute('data-count-id')
-                    result = await Query.exec(Path.url('store/Invoice'), {method: 'POST', body: {winbiz: event.target.value}})
-                    if (result.success) {
-                      invoice = result.data[0].id
-                      td.setAttribute('data-invoice', invoice)
-                      result = await Query.exec(Path.url('store/Count/' + countid), {method: 'PATCH', body: {id: countid, invoice: result.data[0].id}})
-                    }
-                  }
-                  if (result.success) {
-                    td.setAttribute('data-edit', '0')
-                    result = await Query.exec(Path.url('store/Invoice/' + invoice))
-                    var winbiz = result.data.winbiz
-                    window.requestAnimationFrame(function () {
-                      td.innerHTML = winbiz
-                    })
-                  }
-                }
-                var input = document.createElement('INPUT')
-                input.value = td.innerHTML
-                input.addEventListener('blur', fn)
-                input.addEventListener('keypress', function (event) {
-                  if (event.key === 'Enter') { fn(event); return }
-                  if (event.key === 'Escape') {
-                    var td = event.target
-                    for (; td.nodeName !== 'TD'; td = td.parentNode) ;
-                    td.innerHTML = td.dataset.previousValue
-                    td.dataset.previousValue = null
-                  }
-                })
-                window.requestAnimationFrame(function () {
-                  td.innerHTML = ''
-                  td.appendChild(input)
-                })
-              }
-            } else if (td.getAttribute('data-op')) {
-              switch (td.getAttribute('data-op')) {
-                case 'delete':
-                  if (tr.getAttribute('data-count-id')) {
-                    var res = await Query.exec(Path.url('store/Count/' + tr.getAttribute('data-count-id')), {method: 'DELETE', body: {id: tr.getAttribute('data-count-id')}})
-                    if (res.success) {
-                      tr.parentNode.removeChild(tr)
-                    }
-                  }
-                  break
-              }
-            } else {
-              if (this.addReservation) {
-                console.log(this.addReservation)
-                await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
-                delete this.addReservation
-                this.eventTarget.dispatchEvent(new Event('save'))
-              }
-              window.location.hash = tr.dataset.url
-            }
-          }.bind(this))
         }
       }
-      this.doc.content(this.domNode)
+    },
+    evtSelectTr: async function (event) {
+      var tr = event.target
+      var td = event.target
+      while (tr && tr.nodeName !== 'TR') {
+        if (tr.nodeName === 'TD') { td = tr }
+        tr = tr.parentNode
+      }
+      if (td.getAttribute('data-invoice') !== null) {
+        if (td.getAttribute('data-edit') === '0') {
+          td.setAttribute('data-edit', '1')
+          td.dataset.previousValue = td.innerHTML
+          var fn = async function (event) {
+            var td = event.target
+            while (td.nodeName !== 'TD') { td = td.parentNode }
+            var invoice = td.getAttribute('data-invoice')
+            if (invoice) {
+              var result = await Query.exec(Path.url('store/Invoice/' + invoice), {method: 'PATCH', body: {id: invoice, winbiz: event.target.value}})
+            } else {
+              var tr = event.target
+              while (tr.nodeName !== 'TR') { tr = tr.parentNode }
+              var countid = tr.getAttribute('data-count-id')
+              result = await Query.exec(Path.url('store/Invoice'), {method: 'POST', body: {winbiz: event.target.value}})
+              if (result.success) {
+                invoice = result.data[0].id
+                td.setAttribute('data-invoice', invoice)
+                result = await Query.exec(Path.url('store/Count/' + countid), {method: 'PATCH', body: {id: countid, invoice: result.data[0].id}})
+              }
+            }
+            if (result.success) {
+              td.setAttribute('data-edit', '0')
+              result = await Query.exec(Path.url('store/Invoice/' + invoice))
+              var winbiz = result.data.winbiz
+              window.requestAnimationFrame(function () {
+                td.innerHTML = winbiz
+              })
+            }
+          }
+          var input = document.createElement('INPUT')
+          input.value = td.innerHTML
+          input.addEventListener('blur', fn)
+          input.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') { fn(event); return }
+            if (event.key === 'Escape') {
+              var td = event.target
+              for (; td.nodeName !== 'TD'; td = td.parentNode) ;
+              td.innerHTML = td.dataset.previousValue
+              td.dataset.previousValue = null
+            }
+          })
+          window.requestAnimationFrame(function () {
+            td.innerHTML = ''
+            td.appendChild(input)
+          })
+        }
+      } else if (td.getAttribute('data-op')) {
+        switch (td.getAttribute('data-op')) {
+        case 'delete':
+          if (tr.getAttribute('data-count-id')) {
+            var res = await Query.exec(Path.url('store/Count/' + tr.getAttribute('data-count-id')), {method: 'DELETE', body: {id: tr.getAttribute('data-count-id')}})
+            if (res.success) {
+              tr.parentNode.removeChild(tr)
+            }
+          }
+          break
+        }
+      } else {
+        if (this.addReservation) {
+          console.log(this.addReservation)
+          await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
+          delete this.addReservation
+          this.eventTarget.dispatchEvent(new Event('save'))
+        }
+        window.location.hash = tr.dataset.url
+      }
     },
 
     deleteCount: function (countId) {
