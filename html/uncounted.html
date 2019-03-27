@@ -45,7 +45,7 @@
          var i = 0
          for (var x = tr.firstElementChild; x !== node; x = x.nextElementSibling) { i++ };
          if (this.Column[i]) {
-           window.GEvent('count.attribute-click', {attribute: this.Column[i].attr, value: node.getAttribute('data-sort-value') ? node.getAttribute('data-sort-value') : node.contentText})
+           window.GEvent('reservation.attribute-click', {attribute: this.Column[i].attr, value: node.getAttribute('data-sort-value') ? node.getAttribute('data-sort-value') : node.contentText})
          }
        }
      }.bind(dtable))
