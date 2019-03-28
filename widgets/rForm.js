@@ -117,6 +117,14 @@ define([
       this.loaded = {status: false, warehouse: false, association: false, user: false}
       this.userStore = new DjMemory()
       this.userStore_bis = new DjMemory()
+
+      window.GEvent.listen('reservation.close', function (event) {
+        if (event.detail.id && event.detail.id === this.reservation.get('id')) {
+          if (!this.CloseInProgress) {
+            this.close(true)
+          }
+        }
+      }.bind(this))
     },
 
     _setDescriptionAttr: function (value) {
@@ -1040,19 +1048,23 @@ define([
       this.initRequests = []
     },
 
-    destroy: function () {
-      this.reservation.closeForm()
-      this.initCancel()
-      this.inherited(arguments)
+    destroy: function (noevent = false) {
+      this.CloseInProgress = true
+      if (!noevent) {
+        window.GEvent('reservation.close', {id: this.reservation.get('id')})
+      }
     },
 
     hide: function () {
-      window.App.unsetOpen(this.reservation.get('IDent'))
+      this.close()
+    },
+
+    close: function (noevent = false, fromdestroy = false) {
       this.get('_pane')[1].removeChild(this.get('_pane')[0])
       this.get('_pane')[0].destroy()
       this.reservation.myForm = null
       this.reservation.myContentPane = null
-      this.destroy()
+      this.destroy(noevent)
     },
 
     _print: function (type) {
@@ -1075,7 +1087,6 @@ define([
         printType = event.target.getAttribute('data-print-type')
       } else {
         for (var node = event.target; node; node = node.parentNode) {
-          console.log(node)
           if (node.getAttribute('data-print-type')) {
             printType = node.getAttribute('data-print-type')
             break

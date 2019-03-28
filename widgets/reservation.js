@@ -785,7 +785,7 @@ define([
 
     close: function () {
       if (this.myForm) {
-        this.myForm.hide()
+        this.myForm.close()
       }
       this.closeForm()
     },
