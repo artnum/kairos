@@ -22,7 +22,7 @@ define([
     constructor: function () {
       this.inherited(arguments)
       var args = arguments
-      this.addReservation = null
+      this.AddReservationToCount = null
       this._initialized = new Promise(async function (resolve, reject) {
         var units = await Query.exec(Path.url('store/Unit'))
         if (units.success && units.length > 0) {
@@ -315,7 +315,7 @@ define([
 
       this.doc.content(this.domNode)
       if (arguments[0].addReservation && String(arguments[0].addReservation) !== '0') {
-        this.addReservation = arguments[0].addReservation
+        this.AddReservationToCount = arguments[0].addReservation
       }
       var trs = this.domNode.getElementsByTagName('TR')
       for (var i = 0; i < trs.length; i++) {
@@ -389,10 +389,9 @@ define([
           break
         }
       } else {
-        if (this.addReservation) {
-          console.log(this.addReservation)
+        if (this.AddReservationToCount) {
           await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
-          delete this.addReservation
+          delete this.AddReservationToCount
           this.eventTarget.dispatchEvent(new Event('save'))
         }
         window.location.hash = tr.dataset.url
