@@ -3,6 +3,6 @@ var APPConf = {
   exitKey: 'Escape',
   enterKey: 'Enter',
   CommandWindow : {
-    escapeKey: 'Insert'
+    escapeKey: 'F2'
   }
 }
