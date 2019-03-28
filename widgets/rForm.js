@@ -44,6 +44,7 @@ define([
   'location/bitsfield',
   'location/dateentry',
   'location/count',
+  'location/countList',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -92,6 +93,7 @@ define([
   bitsfield,
   dateentry,
   Count,
+  CountList,
 
   Req,
   Path,
@@ -118,6 +120,11 @@ define([
       this.userStore = new DjMemory()
       this.userStore_bis = new DjMemory()
 
+      window.GEvent.listen('count.reservation-add', function (event) {
+        if (event.detail.reservation && event.detail.reservation === this.reservation.get('id')) {
+          this.refreshCount()
+        }
+      }.bind(this))
       window.GEvent.listen('reservation.close', function (event) {
         if (event.detail.id && event.detail.id === this.reservation.get('id')) {
           if (!this.CloseInProgress) {
@@ -1317,16 +1324,10 @@ define([
     },
 
     openCount: async function () {
-      var count = new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
-      count.addEventListener('save', function (event) {
-        this.refreshCount()
-      }.bind(this))
+      new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
     },
     openAddCount: async function () {
-      var count = new Count({'data-id': '*', addReservation: this.reservation.get('id')}) // eslint-disable-line
-      count.addEventListener('save', function (event) {
-        this.refreshCount()
-      }.bind(this))
+      new CountList({addReservation: this.reservation.get('id')}) // eslint-disable-line
     },
 
     refreshCount: async function () {
@@ -1358,12 +1359,9 @@ define([
               tr.addEventListener('click', function (event) {
                 if (event.target) {
                   if (!event.target.getAttribute('data-id')) { return }
-                  var count = new Count({'data-id': event.target.getAttribute('data-id')})
-                  count.addEventListener('save', function (event) {
-                    this.refreshCount()
-                  }.bind(this))
+                  new Count({'data-id': event.target.getAttribute('data-id')}) // eslint-disable-line
                 }
-              }.bind(this))
+              })
             }
           }
 

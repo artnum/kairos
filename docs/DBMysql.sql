@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS "unit" (
 	"unit_deleted" INTEGER DEFAULT NULL,
 	"unit_created" INTEGER DEFAULT NULL,
 	"unit_modified" INTEGER DEFAULT NULL,
+	"unit_default" INTEGER DEFAULT 0,
 	FOREIGN KEY ("unit_collection") REFERENCES "collection"("collection_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL

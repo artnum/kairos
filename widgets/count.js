@@ -23,6 +23,9 @@ define([
       this.inherited(arguments)
       var args = arguments
       this.AddReservationToCount = null
+      if (arguments[0] && arguments[0].reservation) {
+        this.AddReservationToCount = arguments[0].reservation
+      }
       this._initialized = new Promise(async function (resolve, reject) {
         var units = await Query.exec(Path.url('store/Unit'))
         if (units.success && units.length > 0) {
@@ -37,72 +40,59 @@ define([
         } else {
           this.set('articles', [])
         }
+        var data
+        var create = true
+        if (args[0]['data-id']) {
+          data = await Query.exec(Path.url('store/Count/' + args[0]['data-id']))
+          if (data.length === 1) {
+            this.set('data', data.data)
+            this.set('data-id', data.data.id)
+            create = false
+            resolve()
+          }
+        }
 
-        if (args[0]['data-id'] === '*') {
-          var url = Path.url('store/Count')
-          url.searchParams.set('search.deleted', '-')
-
-          var data = await Query.exec(url)
-          this.set('data', data.data)
-          this.list(args)
-          resolve()
-        } else {
-          var create = true
-          if (args[0]['data-id']) {
-            data = await Query.exec(Path.url('store/Count/' + args[0]['data-id']))
+        if (create) {
+          data = await Query.exec(Path.url('store/Count'), {method: 'post', body: JSON.stringify({date: new Date().toISOString()})})
+          if (data.success) {
+            data = await Query.exec(Path.url('store/Count/' + data.data[0].id))
             if (data.length === 1) {
               this.set('data', data.data)
               this.set('data-id', data.data.id)
-              create = false
               resolve()
             }
           }
-
-          if (create) {
-            data = await Query.exec(Path.url('store/Count'), {method: 'post', body: JSON.stringify({date: new Date().toISOString()})})
-            if (data.success) {
-              data = await Query.exec(Path.url('store/Count/' + data.data[0].id))
-              if (data.length === 1) {
-                this.set('data', data.data)
-                this.set('data-id', data.data.id)
-                resolve()
-              }
-            }
-          }
-
-          url = Path.url('store/CountReservation')
-          url.searchParams.set('search.count', this.get('data-id'))
-          data = await Query.exec(url)
-          if (data.success && data.length > 0) {
-            var r = []
-            var deleted = []
-            for (var i = 0; i < data.length; i++) {
-              r.push(data.data[i].reservation)
-            }
-            this.set('reservations', r)
-            this.set('deleted-reservation', deleted)
-          } else {
-            this.set('reservations', [])
-            this.set('deleted-reservation', [])
-          }
-
-          if (this.get('data').invoice) {
-            if (this.get('data')._invoice.address) {
-              this.set('address-id', this.get('data')._invoice.address)
-            }
-          }
-
-          this.refresh_contacts()
-          if (args[0] && args[0].reservation) {
-            await this.addReservation(args[0].reservation)
-          }
-          this.start(arguments)
         }
-      }.bind(this))
 
-      if (!this.eventTarget) {
-        this.eventTarget = new EventTarget()
-      }
+        var r = []
+        var url = Path.url('store/CountReservation')
+        url.searchParams.set('search.count', this.get('data-id'))
+        data = await Query.exec(url)
+        if (data.success && data.length > 0) {
+          var deleted = []
+          for (var i = 0; i < data.length; i++) {
+            r.push(data.data[i].reservation)
+          }
+          if (this.AddReservationToCount && r.indexOf(this.AddReservationToCount) < 0) { r.push(this.AddReservationToCount) }
+          this.set('reservations', r)
+          this.set('deleted-reservation', deleted)
+        } else {
+          if (this.AddReservationToCount) {
+            r.push(this.AddReservationToCount)
+          }
+          this.set('reservations', r)
+          this.set('deleted-reservation', [])
+        }
+
+        if (this.get('data').invoice) {
+          if (this.get('data')._invoice.address) {
+            this.set('address-id', this.get('data')._invoice.address)
+          }
+        }
+
+        this.refresh_contacts()
+        this.start(arguments)
+      }.bind(this))
     },
 
     refresh_contacts: async function () {
@@ -222,179 +212,23 @@ define([
       url.searchParams.set('search.reservation', reservation)
       var link = await Query.exec(url)
       if (link.success && link.length <= 0) {
+        var rData = Query.exec(Path.url('store/Reservation/' + reservation))
         var res = await Query.exec(Path.url('store/CountReservation'), {method: 'post', body: JSON.stringify({reservation: reservation, count: this.get('data-id')})})
         if (res.success) {
           var r = this.get('reservations')
-          r.push(reservation)
-          this.set('reservations', r)
-        }
-      }
-    },
-
-    list: async function () {
-      this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
-      this.doc.addEventListener('close', function (event) { window.location.hash = '' })
-      var div = document.createElement('DIV')
-      div.setAttribute('class', 'DocCount')
-      window.GEvent.listen('count.count-deleted', function (event) {
-        var id = String(event.detail.id)
-        var tbody = this.domNode.getElementsByTagName('TBODY')[0]
-        var node = tbody.firstElementChild
-        for (; node; node = node.nextElementSibling) {
-          if (node.getAttribute('data-count-id') === id) {
-            break
+          if (r.indexOf(reservation) < 0) {
+            r.push(reservation)
+            this.set('reservations', r)
           }
         }
-        if (node) {
-          window.requestAnimationFrame(() => node.parentNode.removeChild(node))
-        }
-      }.bind(this))
 
-      this.domNode = div
-
-      var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><th data-sort-type="integer">N°</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
-          '<tbody></tbody></table>'
-      this.domNode.innerHTML = txt
-      var Tbody = this.domNode.getElementsByTagName('TBODY')[0]
-      var Table = this.domNode.getElementsByTagName('TABLE')[0]
-      this.dtable = new Artnum.DTable({table: Table, sortOnly: true})
-
-      var data = this.get('data')
-      var url = Path.url('store/CountReservation')
-      var _clients = {}
-      for (let i = 0; i < data.length; i++) {
-        setTimeout(function () {
-          var clients = []
-          url.searchParams.set('search.count', data[i].id)
-          Query.exec(url).then(async function (reservations) {
-            if (reservations.success && reservations.length > 0) {
-              reservations._table = []
-              clients = []
-              for (var j = 0; j < reservations.length; j++) {
-                reservations._table.push(reservations.data[j].reservation)
-                if (!_clients[reservations.data[j].reservation]) {
-                  var t = await Query.exec(Path.url(`store/DeepReservation/${reservations.data[j].reservation}`))
-                  if (t.success && t.length === 1) {
-                    if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {
-                      var a = new Address(t.data.contacts['_client'][0])
-                      _clients[reservations.data[j].reservation] = a.toArray()[0]
-                      if (a.toArray().length > 1) {
-                        _clients[reservations.data[j].reservation] += `<br />${a.toArray()[1]}`
-                      }
-                    }
-                  }
-                }
-                if (_clients[reservations.data[j].reservation]) {
-                  clients.push(_clients[reservations.data[j].reservation])
-                }
-              }
-              reservations = reservations._table.join(', ')
-            } else {
-              reservations = ''
-            }
-            var tr = document.createElement('TR')
-            tr.setAttribute('data-url', `#DEC${String(data[i].id)}`)
-            tr.setAttribute('data-count-id', String(data[i].id))
-            tr.addEventListener('click', this.evtSelectTr.bind(this))
-            tr.innerHTML = `<td>${data[i].id}</td>
-          <td tabindex data-edit="0" data-invoice="${(data[i].invoice ? data[i].invoice : '')}">${(data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '')}</td>
-          <td>${reservations}</td>
-          <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
-          <td>${this._toHtmlRange(data[i].begin, data[i].end)}</td>
-          <td>${(data[i].reference ? data[i].reference : '')}</td>
-          <td>${clients.length > 0 ? clients.join('<hr>') : ''}</td>
-          <td>${(data[i].comment ? this._shortDesc(data[i].comment) : '')}</td>
-          <td>${(data[i].total ? data[i].total : '')}</td>
-          <td>${(data[i].printed ? this._toHtmlDate(data[i].printed) : '')}</td>
-          <td data-op="delete"><i class="far fa-trash-alt action"></i></td>`
-            window.requestAnimationFrame(() => Tbody.appendChild(tr))
-          }.bind(this))
-        }.bind(this), 10)
-      }
-
-      this.doc.content(this.domNode)
-      if (arguments[0].addReservation && String(arguments[0].addReservation) !== '0') {
-        this.AddReservationToCount = arguments[0].addReservation
-      }
-      var trs = this.domNode.getElementsByTagName('TR')
-      for (var i = 0; i < trs.length; i++) {
-        if (trs[i].getAttribute('data-url')) {
-        }
-      }
-    },
-    evtSelectTr: async function (event) {
-      var tr = event.target
-      var td = event.target
-      while (tr && tr.nodeName !== 'TR') {
-        if (tr.nodeName === 'TD') { td = tr }
-        tr = tr.parentNode
-      }
-      if (td.getAttribute('data-invoice') !== null) {
-        if (td.getAttribute('data-edit') === '0') {
-          td.setAttribute('data-edit', '1')
-          td.dataset.previousValue = td.innerHTML
-          var fn = async function (event) {
-            var td = event.target
-            while (td.nodeName !== 'TD') { td = td.parentNode }
-            var invoice = td.getAttribute('data-invoice')
-            if (invoice) {
-              var result = await Query.exec(Path.url('store/Invoice/' + invoice), {method: 'PATCH', body: {id: invoice, winbiz: event.target.value}})
-            } else {
-              var tr = event.target
-              while (tr.nodeName !== 'TR') { tr = tr.parentNode }
-              var countid = tr.getAttribute('data-count-id')
-              result = await Query.exec(Path.url('store/Invoice'), {method: 'POST', body: {winbiz: event.target.value}})
-              if (result.success) {
-                invoice = result.data[0].id
-                td.setAttribute('data-invoice', invoice)
-                result = await Query.exec(Path.url('store/Count/' + countid), {method: 'PATCH', body: {id: countid, invoice: result.data[0].id}})
-              }
-            }
-            if (result.success) {
-              td.setAttribute('data-edit', '0')
-              result = await Query.exec(Path.url('store/Invoice/' + invoice))
-              var winbiz = result.data.winbiz
-              window.requestAnimationFrame(function () {
-                td.innerHTML = winbiz
-              })
-            }
+        rData.then(function (result) {
+          if (result.success && result.length === 1) {
+            var unit = this.get('units').find(x => x.default > 0).id
+            var days = 0
+            this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days}, true), this.tbody.firstChild)
           }
-          var input = document.createElement('INPUT')
-          input.value = td.innerHTML
-          input.addEventListener('blur', fn)
-          input.addEventListener('keypress', function (event) {
-            if (event.key === 'Enter') { fn(event); return }
-            if (event.key === 'Escape') {
-              var td = event.target
-              for (; td.nodeName !== 'TD'; td = td.parentNode) ;
-              td.innerHTML = td.dataset.previousValue
-              td.dataset.previousValue = null
-            }
-          })
-          window.requestAnimationFrame(function () {
-            td.innerHTML = ''
-            td.appendChild(input)
-          })
-        }
-      } else if (td.getAttribute('data-op')) {
-        switch (td.getAttribute('data-op')) {
-        case 'delete':
-          if (tr.getAttribute('data-count-id')) {
-            var res = await Query.exec(Path.url('store/Count/' + tr.getAttribute('data-count-id')), {method: 'DELETE', body: {id: tr.getAttribute('data-count-id')}})
-            if (res.success) {
-              tr.parentNode.removeChild(tr)
-            }
-          }
-          break
-        }
-      } else {
-        if (this.AddReservationToCount) {
-          await Query.exec(Path.url('store/CountReservation'), {method: 'POST', body: {count: tr.dataset.countId, reservation: this.addReservation}})
-          delete this.AddReservationToCount
-          this.eventTarget.dispatchEvent(new Event('save'))
-        }
-        window.location.hash = tr.dataset.url
+        }.bind(this))
       }
     },
 
@@ -715,7 +549,11 @@ define([
       this.domNode.appendChild(saveQuit)
       this.domNode.appendChild(print)
 
-      this.refresh()
+      this.refresh().then(function () {
+        if (this.AddReservationToCount) {
+          this.addReservation(this.AddReservationToCount)
+        }
+      }.bind(this))
 
       var forms = this.domNode.getElementsByTagName('FORM')
       for (i = 0; i < forms.length; i++) {
@@ -749,7 +587,7 @@ define([
             }
           }
           this.newEmpty()
-          this.tfoot.innerHTML = '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>' + this.Total + '</td><td></td></tr>'
+          this.tfoot.innerHTML = `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>${this.Total}</td></tr>`
           resolve()
         }.bind(this))
         this.draw_contacts()
@@ -1040,7 +878,9 @@ define([
         }
       }.bind(this))
       await Query.exec(Path.url('store/Count/' + this.get('data-id')), {method: 'patch', body: JSON.stringify(query)})
-      this.eventTarget.dispatchEvent(new Event('save'))
+      this.get('reservations').forEach(function (r) {
+        window.GEvent('count.reservation-add', {reservation: r})
+      })
     },
 
     print: async function (event) {
@@ -1110,9 +950,6 @@ define([
           priinput.value = ''
         }
       }
-    },
-    addEventListener: function (type, listener, options = {}) {
-      this.eventTarget.addEventListener(type, listener.bind(this), options)
     }
   })
 })
