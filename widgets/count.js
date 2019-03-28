@@ -580,10 +580,10 @@ define([
 
       var htmlReservation = []
       this.get('reservations').forEach(function (r) {
-        htmlReservation.push(`<span class="button" data-reservation-id="${r}">${r}<span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
+        htmlReservation.push(`<span class="button" data-action="open-reservation" data-reservation-id="${r}">${r}<span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
       })
       this.get('deleted-reservation').forEach(function (d) {
-        htmlReservation.push(`<span class="button deleted" data-reservation-id="${d}"><del>${d}</del><span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
+        htmlReservation.push(`<span class="button deleted" data-action="open-reservation" data-reservation-id="${d}"><del>${d}</del><span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
       })
 
       var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}}))
@@ -624,6 +624,11 @@ define([
           return
         }
         switch (node.dataset.action) {
+          case 'open-reservation':
+            if (node.dataset.reservationId) {
+              window.GEvent('reservation.open', {id: node.dataset.reservationId})
+            }
+            break
           case 'delete-reservation':
             DoWait()
             var id

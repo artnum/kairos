@@ -255,6 +255,11 @@ define([
 
       window.UnloadCall = {}
 
+      window.GEvent.listen('reservation.open', function (event) {
+        if (event.detail.id) {
+          this.doSearchLocation(event.detail.id)
+        }
+      }.bind(this))
       window.GEvent.listen('reservation.attribute-click', function (event) {
         if (!event.detail) {
           return
