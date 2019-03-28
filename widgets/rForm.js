@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global pSBC */
+/* global pSBC, Artnum */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -626,6 +626,7 @@ define([
       this.nMBeginTime.set('value', this.beginTime.get('value'))
       this.nMEndDate.set('value', this.endDate.get('value'))
       this.nMEndTime.set('value', this.endTime.get('value'))
+      this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
     },
 
     disable: function (v) {
@@ -1350,7 +1351,7 @@ define([
                 if (count.period !== '') { count.period += ' - ' }
                 count.period += (new Date(count.end)).shortDate(true)
               }
-              tr.innerHTML = '<td data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
+              tr.innerHTML = '<td class="clickable" data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
               tr.setAttribute('data-sort', sortBegin)
               trs.push(tr)
 

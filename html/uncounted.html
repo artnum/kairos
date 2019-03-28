@@ -2,13 +2,13 @@
 <html>
 <head>
 <title>Non décompté</title>
-<link href="../css/dtable.css" rel="stylesheet" />
+<link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
   <table
     data-source="store/Reservationbis" data-options="{parameters: {'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
-      <th data-attribute="id:integer">N°</th>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date">Début</th>
@@ -40,6 +40,7 @@
        } else {
          var node = event.target
          for (; node && node.nodeName !== 'TD'; node = node.parentNode) ;
+         if (!node) { return }
          var tr = node
          for (; tr && tr.nodeName !== 'TR'; tr = tr.parentNode) ;
          var i = 0

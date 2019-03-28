@@ -2,12 +2,12 @@
 <html>
 <head>
   <title>Décompte</title>
-  <link href="../css/dtable.css" rel="stylesheet" />
+  <link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
   <table data-source="store/Count" data-options="{parameters: {'search.deleted': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modified', parameter: 'search.modified', integer: true}}">
     <thead><tr>
-      <th data-attribute="id:integer">N°</th>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="@store/Invoice/$invoice winbiz:integer">Facture</th>
       <th data-attribute="@store/CountReservation?search.count=$id reservation:integer">Réservation</th>
       <th data-attribute="@store/Status/$status name">Status</th>
@@ -41,6 +41,7 @@
        } else {
          var node = event.target
          for (; node && node.nodeName !== 'TD'; node = node.parentNode) ;
+         if (!node) { return }
          var tr = node
          for (; tr && tr.nodeName !== 'TR'; tr = tr.parentNode) ;
          var i = 0
