@@ -436,25 +436,45 @@ define([
         var end = new Date(day.getTime())
         end.setHours(17, 0, 0, 0)
         day.setHours(8, 0, 0, 0)
+
         getUUID().then(async function (uuid) {
-          this.openOnReceive[uuid] = 1
-          let newReservation = new Reservation({sup: this, begin: day, end: end, status: await this.defaultStatus(), uuid: uuid, openOnLoad: true})
-          this.entries[newReservation.uuid] = newReservation
-          newReservation.save()
+          let all = []
+          all.push(this.defaultStatus())
+          all.push(Query.exec(Path.url('store/Reservation'), {method: 'POST', body: {uuid: uuid}}))
+          Promise.all(all).then(function ([status, result]) {
+            if (result.success && result.length === 1) {
+              this.openOnReceive[uuid] = 1
+              let newReservation = new Reservation({sup: this, IDent: result.data[0].id, begin: day, end: end, status: status, uuid: uuid, openOnLoad: true})
+              this.entries[newReservation.uuid] = newReservation
+              newReservation.save()
+            } else {
+              window.App.error('Impossible de créer une nouvelle réservation')
+            }
+            resolve()
+          }.bind(this))
         }.bind(this))
       }.bind(this))
     },
 
     copy: function (original) {
       getUUID().then(function (uuid) {
-        var copy = original.toObject()
-        delete copy.id
-        delete copy.IDent
-        delete copy.uuid
-        this.openOnReceive[uuid] = 1
-        this.entries[uuid] = new Reservation({sup: this, begin: new Date(copy.begin), end: new Date(copy.end), status: copy.status, uuid: uuid, openOnLoad: true})
-        this.entries[uuid].fromJson(copy)
-        this.entries[uuid].save()
+        let all = []
+        all.push(this.defaultStatus())
+        all.push(Query.exec(Path.url('store/Reservation'), {method: 'POST', body: {uuid: uuid}}))
+        Promise.all(all).then(function ([status, result]) {
+          if (result.success && result.length === 1) {
+            var copy = original.toObject()
+            copy.id = result.data[0].id
+            copy.IDent = copy.id
+            copy.uuid = uuid
+            this.openOnReceive[uuid] = 1
+            this.entries[uuid] = new Reservation({sup: this, IDent: result.data[0].id, begin: new Date(copy.begin), end: new Date(copy.end), status: copy.status, uuid: uuid, openOnLoad: true})
+            this.entries[uuid].fromJson(copy)
+            this.entries[uuid].save()
+          } else {
+            window.App.error(`Impossible de dupliquer la réservation ${original.id}`)
+          }
+        }.bind(this))
       }.bind(this))
     },
 
