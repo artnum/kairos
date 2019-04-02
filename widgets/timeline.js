@@ -174,7 +174,7 @@ define([
 
       this.zoomCss = document.createElement('style')
 
-      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
+
 
       this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
@@ -202,24 +202,24 @@ define([
         this.unwait()
       })
 
-      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
-      this.Updater.onmessage = djLang.hitch(this, function (e) {
-        if (!e || !e.data || !e.data.type) { return }
-        switch (e.data.type) {
-          case 'entry':
-            if (this.Entries[e.data.content]) {
-              this.Entries[e.data.content].update()
-            }
-            break
-          case 'entries':
-            for (var i = 0; i < e.data.content.length; i++) {
-              if (this.Entries[e.data.content[i]]) {
-                this.Entries[e.data.content[i]].update()
-              }
+      let msgHandler = function (event) {
+        if (!event.data) { return }
+        let content = event.data
+        switch (content.op) {
+          case 'response':
+            /* fall through */
+          case 'responses':
+            if (this.Entries[content.target]) {
+              this.Entries[content.target].receiveContent(content)
             }
             break
         }
-      })
+      }.bind(this)
+
+      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
+      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
+      this.Updater.onmessage = msgHandler
+      this.Reservation.onmessage = msgHandler
 
       this.Filter = new Worker(Path.url('/js/ww/filter.js'))
       this.Filter.onmessage = djLang.hitch(this, function (event) {
@@ -656,7 +656,8 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
+      this.domNode.addEventListener('mousemove', this.mouseOver.bind(this), {passive: true})
+      this.domNode.addEventListener('touchmove', this.mouseOver.bind(this), {passive: true})
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */

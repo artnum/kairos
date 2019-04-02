@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom */
+/* global getElementRect, fastdom, getUUID */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -98,6 +98,7 @@ define([
       this.originalHeight = 0
       this.tags = []
       this.entries = {}
+      this.openOnReceive = {}
       this.currentLocation = ''
 
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
@@ -128,98 +129,51 @@ define([
     },
 
     load: function () {
-      window.App.DB.transaction('reservations').objectStore('reservations').index('by_target').getAll(this.get('target')).onsuccess = function (event) {
-        var entries = event.target.result
-        if (entries) {
-          for (var i = 0; i < entries.length; i++) {
-            try {
-              this.entries[entries[i].id] = new Reservation({sup: this, id: entries[i].id})
-              this.entries[entries[i].id].fromJson(entries[i])
-            } catch (e) {
-              console.log(e)
-              console.log(entries[i])
-            }
-          }
-          this.resize()
-        }
-      }.bind(this)
     },
 
     update: function () {
       return new Promise(function (resolve, reject) {
-        var entries = []
-        var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target')
-        idx.openCursor(this.target).onsuccess = function (e) {
-          var cursor = e.target.result
-          if (cursor) {
-            if (typeof this.entries === 'undefined') {
-              return
-            }
-            entries.push(cursor.value.id)
-            if (!this.entries[cursor.value.id]) {
-              try {
-                this.entries[cursor.value.id] = new Reservation({ sup: this, id: cursor.value.id })
-                this.entries[cursor.value.id].fromJson(cursor.value)
-              } catch (e) {
-                /* do nothing */
-              }
-            } else {
-              if (this.entries[cursor.value.id]._hash !== cursor.value._hash) {
-                if (window.App.isOpen(cursor.value.id)) {
-                  if (!window.App.isModify(cursor.value.id)) {
-                    this.syncForm()
-                  }
-                  window.App.unsetModify(cursor.value.id)
+        resolve()
+      })
+    },
+
+    receiveContent: function (content) {
+      switch (content.op) {
+        case 'responses':
+          var all = []
+          for (let i = 0; i < content.data.length; i++) {
+            all.push(new Promise(function (resolve, reject) {
+              setTimeout(function () {
+                var id = this.reservation.uuid ? this.reservation.uuid : this.reservation.id
+                if (!this.entry.entries[id]) {
+                  this.entry.entries[id] = new Reservation({sup: this.entry, id: this.reservation.id})
                 }
-                try {
-                  this.entries[cursor.value.id].fromJson(cursor.value)
-                } catch (e) {
-                  console.log(e)
-                }
-              }
-            }
-            cursor.continue()
-          } else {
-            for (var k in this.entries) {
-              if (entries.indexOf(k) === -1) {
-                this.entries[k].destroy()
-                delete this.entries[k]
-              }
-            }
-            this.show()
-            resolve()
+                this.entry.entries[id].fromJson(this.reservation)
+                resolve()
+              }.bind(this), 10)
+            }.bind({entry: this, reservation: content.data[i]})))
           }
-        }.bind(this)
-      }.bind(this))
+
+          Promise.all(all).then(function () {
+            this.resize()
+          }.bind(this))
+          break
+        case 'response':
+          /* we switch to uuid so handle this */
+          var id = content.uuid ? content.uuid : content.id
+          if (!this.entries[id]) {
+            this.entries[id] = new Reservation({sup: this, id: content.id})
+          }
+          this.entries[id].fromJson(content)
+          this.resize()
+          break
+      }
     },
 
     postCreate: function () {
       this.load()
       this.update()
-      this.Channel = new BroadcastChannel(Path.bcname('reservations'))
-      this.Channel.onmessage = function (msg) {
-        if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target) && msg.data.new) {
-          var local = false
-          if (msg.data.localid) {
-            if (window.App.LocalReservations) {
-              if (window.App.LocalReservations[msg.data.localid]) {
-                this.entries[msg.data.id] = window.App.LocalReservations[msg.data.localid]
-                this.entries[msg.data.id].set('sup', this)
-                delete window.App.LocalReservations[msg.data.localid]
-                local = true
-              }
-            }
-          }
-          if (!local) {
-            if (!this.entries[msg.data.id]) {
-              this.entries[msg.data.id] = new Reservation({sup: this, id: msg.data.data.id})
-            }
-          }
-          this.entries[msg.data.id].fromJson(msg.data.data)
-          this.entries[msg.data.id].syncForm()
-          this.resize()
-        }
-      }.bind(this)
+      this.Channel = window.App.Reservation
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
@@ -475,23 +429,33 @@ define([
     },
 
     createReservation: function (day) {
-      if (!day) {
-        day = this.get('dateRange').begin
-      }
-      var end = new Date(day.getTime())
-      end.setHours(17, 0, 0, 0)
-      day.setHours(8, 0, 0, 0)
-
-      var sup = this
-      this.defaultStatus().then(function (s) {
-        var newReservation = new Reservation({ sup: sup, begin: day, end: end, status: s })
-        window.App.LocalReservations[newReservation.localid] = newReservation
-        newReservation.save()
-        newReservation.popMeUp()
-      })
+      return new Promise(async function (resolve, reject) {
+        if (!day) {
+          day = this.get('dateRange').begin
+        }
+        var end = new Date(day.getTime())
+        end.setHours(17, 0, 0, 0)
+        day.setHours(8, 0, 0, 0)
+        getUUID().then(async function (uuid) {
+          this.openOnReceive[uuid] = 1
+          let newReservation = new Reservation({sup: this, begin: day, end: end, status: await this.defaultStatus(), uuid: uuid, openOnLoad: true})
+          this.entries[newReservation.uuid] = newReservation
+          newReservation.save()
+        }.bind(this))
+      }.bind(this))
     },
 
     copy: function (original) {
+      getUUID().then(function (uuid) {
+        var copy = original.toObject()
+        delete copy.id
+        delete copy.IDent
+        delete copy.uuid
+        this.openOnReceive[uuid] = 1
+        this.entries[uuid] = new Reservation({sup: this, begin: new Date(copy.begin), end: new Date(copy.end), status: copy.status, uuid: uuid, openOnLoad: true})
+        this.entries[uuid].fromJson(copy)
+        this.entries[uuid].save()
+      }.bind(this))
     },
 
     _getOffsetAttr: function () {
@@ -609,8 +573,10 @@ define([
     },
 
     resizeChild: function () {
-      for (var k in this.entries) {
-        this.entries[k].resize(true)
+      for (let k in this.entries) {
+        setTimeout(function () {
+          this.resize(true)
+        }.bind(this.entries[k]), 5)
       }
     },
 
@@ -691,6 +657,7 @@ define([
         var root = true
         entries[i].overlap.order = i
         for (var j = 0; j < overlapRoot.length; j++) {
+          if (!overlapRoot[j].range) { continue }
           if (overlapRoot[j].range.overlap(entries[i].range)) {
             if (overlapRoot[j].duration > entries[i].duration) {
               overlapRoot[j].overlap.elements.push(entries[i])

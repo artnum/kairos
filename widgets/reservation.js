@@ -51,7 +51,6 @@ define([
   dtTooltip,
   dtRegistry,
   DtContentPane,
-
   RForm,
   Mouse,
   Lock,
@@ -72,6 +71,7 @@ define([
     complements: [],
 
     constructor: function () {
+      this.openOnLoad = false
       this.destroyed = false
       this.attrs = ['special']
       this.detailsHtml = ''
@@ -88,7 +88,12 @@ define([
         hidden: false
       }
 
+      if (arguments[0].openOnLoad) {
+        this.openOnLoad = true
+        delete arguments[0].openOnLoad
+      }
       this.Lock = new Lock(null)
+      this.inherited(arguments)
       this.own(this.Lock)
     },
 
@@ -123,7 +128,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note', 'uuid'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -169,7 +174,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note', 'uuid'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -232,32 +237,7 @@ define([
       }
     },
     postCreate: function () {
-      var bc = new BroadcastChannel(Path.bcname('reservations'))
-      this.Channel = bc
-      bc.onmessage = function (msg) {
-        if (!msg.data && msg.data.data) {
-          return
-        }
-        if (msg.data.copyfrom && msg.data.copyfrom === this.get('id')) {
-          this.copyExt(msg.data.data.id)
-          return
-        }
-        if (msg.data.op === 'response') {
-          if (this.get('localid') !== String(msg.data.localid) && this.get('id') !== String(msg.data.id)) {
-            return
-          }
-
-          if (!msg.data.unchanged || msg.data.new) {
-            this.fromJson(msg.data.data)
-            this.Lock.lock()
-            return
-          }
-          if (!msg.data.deleted) {
-            this.destroy()
-          }
-        }
-      }.bind(this)
-
+      this.Channel = window.App.Reservation
       this._gui.hidden = true
       this.set('active', false)
       this.resize()
@@ -346,6 +326,10 @@ define([
     _setIDentAttr: function (value) {
       this.IDent = value
       this.id = value
+      if (this.myContentPane) {
+        this.myContentPane.set('title', `Réservation ${value}`)
+        this.myContentPane.resize()
+      }
       this.Lock.on('Reservation/' + this.id)
     },
     _setEquipmentAttr: function (value) {
@@ -746,20 +730,19 @@ define([
       }
       this.popMeUp()
     },
+
     popMeUp: async function () {
       var locked = await this.Lock.lock()
 
       var tContainer = dtRegistry.byId('tContainer')
-      if (this.get('localid') == null) { return }
-      if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
-        tContainer.selectChild('ReservationTab_' + this.get('localid'))
+      if (dtRegistry.byId('ReservationTab_' + this.get('uuid'))) {
+        tContainer.selectChild('ReservationTab_' + this.get('uuid'))
         return
       }
-      window.App.setOpen(this.get('IDent'))
       var f = new RForm({ reservation: this })
-      this.highlight()
 
-      var title = 'Réservation ' + this.get('id')
+
+      var title = 'Réservation ' + this.get('IDent')
       if (!locked) {
         title = '<i class="fas fa-lock"></i> ' + title
       }
@@ -767,7 +750,7 @@ define([
       var cp = new DtContentPane({
         title: title,
         closable: true,
-        id: 'ReservationTab_' + this.get('localid'),
+        id: 'ReservationTab_' + this.get('uuid'),
         content: f.domNode})
       cp.own(f)
       tContainer.addChild(cp)
@@ -777,7 +760,7 @@ define([
       this.myForm = f
       this.myContentPane = cp
       f.set('_pane', [cp, tContainer])
-      this.syncForm()
+      this.highlight()
       if (!locked) {
         this.myForm.disable(true)
       }
@@ -792,19 +775,6 @@ define([
     closeForm: function () {
       this.myForm = null
       this.Lock.unlock()
-    },
-
-    syncForm: function () {
-      if (this.myForm) {
-        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
-          this.myForm.set(e, this.get(e))
-        }))
-        this.myForm.load()
-      }
-
-      if (this.myContentPane) {
-        this.myContentPane.set('title', 'Réservation ' + this.get('id'))
-      }
     },
 
     _getTargetAttr: function () {
@@ -1227,6 +1197,11 @@ define([
             }
             this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
           }
+
+          if (this.openOnLoad) {
+            this.popMeUp()
+            this.openOnLoad = false
+          }
         }))
       }))
     },
@@ -1254,10 +1229,8 @@ define([
       this.Channel.postMessage({op: 'put', data: object, localid: this.get('localid')})
     },
 
-    copy: function () {
-      var object = this.toObject()
-      delete object['id']
-      this.Channel.postMessage({op: 'put', data: object, copyfrom: this.get('id')})
+    copy: async function () {
+      this.sup.copy(this)
     },
 
     copyExt: function (toid) {
