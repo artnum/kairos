@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO
 
 CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"reservation_uuid" VARCHAR(36) DEFAULT NULL,
 	"reservation_begin" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"reservation_end" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"reservation_target" TEXT DEFAULT NULL,
@@ -50,6 +51,15 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
+CREATE UNIQUE INDEX "reservationUuidIdx" ON "reservation"("reservation_uuid");
+DELIMITER //
+CREATE TRIGGER insertSetUUID BEFORE INSERT ON reservation
+  FOR EACH ROW
+  BEGIN
+    IF NEW.reservation_uuid IS NULL THEN
+      SET NEW.reservation_uuid = UUID();
+    END IF;
+  END; //
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT
