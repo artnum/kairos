@@ -70,7 +70,14 @@ define([
     dbContact: null,
     complements: [],
 
-    constructor: function () {
+    constructor: async function () {
+      if (!arguments[0].uuid) {
+        throw new Error('New UUID')
+      }
+      this.uuid = arguments[0].uuid
+      this.id = this.uuid
+      this.localid = this.uuid
+
       this.openOnLoad = false
       this.destroyed = false
       this.attrs = ['special']
@@ -82,8 +89,6 @@ define([
       this.events = {}
       this.overlap = {}
       this.duration = 0
-      this.nodeGeneration = 0
-      this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this._gui = {
         hidden: false
       }
@@ -740,8 +745,6 @@ define([
         return
       }
       var f = new RForm({ reservation: this })
-
-
       var title = 'Réservation ' + this.get('IDent')
       if (!locked) {
         title = '<i class="fas fa-lock"></i> ' + title
@@ -1187,7 +1190,9 @@ define([
           if (this.currentDom) {
             this.currentDom.innerHTML = ''
             this.currentDom.setAttribute('style', domstyle.join(';'))
-            this.currentDom.setAttribute('class', domclass.join(' '))
+            domclass.forEach(function (c) {
+              this.currentDom.classList.add(c)
+            }.bind(this))
             this.currentDom.appendChild(compdiv)
             if (txtdiv == null) {
               this.currentDom.appendChild(this._currentTextDesc)

@@ -1,3 +1,7 @@
+:root {
+    --highlight-color: hsla(55, 100%, 50%, 1);
+}
+
 html {
 	overflow-x: hidden;
 }
@@ -7,12 +11,16 @@ body.waiting * {
 }
 
 .header:active div.even {
-	background-color: red;
-	color: yellow;
+    background-color: red;
+    color: var(--highlight-color);
 }
 .header:active div.odd {
-	background-color: yellow;
-	color: red;
+    background-color: var(--highlight-color);
+    color: red;
+}
+
+.highlight {
+    box-shadow: 0px 0px 26px 10px var(--highlight-color);
 }
 
 .leftpane {

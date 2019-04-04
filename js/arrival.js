@@ -355,7 +355,7 @@ Arrival.prototype.add = function (retval) {
   progBtn.addEventListener('click', this.progress.bind(retval))
 
   dom.addEventListener('click', function () {
-    this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
+    GEvent('reservation.open', {id: retval.target})
     this.bc.postMessage({what: 'window', type: 'close'})
   }.bind(this))
 

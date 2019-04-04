@@ -144,9 +144,9 @@ define([
           for (let i = 0; i < content.data.length; i++) {
             all.push(new Promise(function (resolve, reject) {
               setTimeout(function () {
-                var id = this.reservation.uuid ? this.reservation.uuid : this.reservation.id
+                var id = this.reservation.uuid
                 if (!this.entry.entries[id]) {
-                  this.entry.entries[id] = new Reservation({sup: this.entry, id: this.reservation.id})
+                  this.entry.entries[id] = new Reservation({sup: this.entry, IDent: this.reservation.id, uuid: this.reservation.uuid})
                 }
                 this.entry.entries[id].fromJson(this.reservation)
                 resolve()
@@ -162,7 +162,7 @@ define([
           /* we switch to uuid so handle this */
           var id = content.uuid ? content.uuid : content.id
           if (!this.entries[id]) {
-            this.entries[id] = new Reservation({sup: this, id: content.id})
+            this.entries[id] = new Reservation({sup: this, IDent: content.id, uuid: content.uuid})
           }
           this.entries[id].fromJson(content)
           this.resize()
@@ -611,7 +611,7 @@ define([
     addOrUpdateReservation: function (reservations) {
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({ id: reservations[i].id, sup: this })
+          this.entries[reservations[i].id] = new Reservation({ id: reservations[i].id, sup: this, uuid: reservations[i].uuid})
         }
         this.entries[reservations[i].id].fromJson(reservations[i])
       }
