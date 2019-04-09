@@ -184,7 +184,7 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><th data-sort-type="integer">N°</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
+        '<thead><tr><th data-sort-type="integer">N°</th><th>Final</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
           '<tbody></tbody></table>'
       this.domNode.innerHTML = txt
       var Tbody = this.domNode.getElementsByTagName('TBODY')[0]
@@ -240,6 +240,7 @@ define([
             tr.setAttribute('data-count-id', String(data[i].id))
             tr.addEventListener('click', this.evtSelectTr.bind(this))
             tr.innerHTML = `<td>${data[i].id}</td>
+          <td>${(data[i].state === 'FINAL' ? 'Oui' : 'Non')}</td>
           <td tabindex data-edit="0" data-invoice="${(data[i].invoice ? data[i].invoice : '')}">${(data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '')}</td>
           <td>${reservations}</td>
           <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
