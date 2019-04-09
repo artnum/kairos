@@ -138,7 +138,11 @@ $PDF->setFontSize(5);
 $y = $PDF->GetY();
 $PDF->SetY($PDF->tMargin);
 /* Title block */
-$PDF->printTaggedLn(array('Décompte ', strval($count['id']), '%cb'), array('align' => 'right'));
+$final = ' intermédiaire ';
+if ($count['state'] === 'FINAL') {
+  $final = 'final ';
+}
+$PDF->printTaggedLn(array('Décompte ', $final, strval($count['id']), '%cb'), array('align' => 'right'));
 
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
