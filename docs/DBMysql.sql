@@ -72,11 +72,15 @@ CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY 
 						  "association_end" VARCHAR(32), -- ISO8601 datetime
 						  "association_comment" TEXT,
 						  "association_type" TEXT,
+						  "association_status" INTEGER DEFAULT NULL,
 						  "association_number" INTEGER DEFAULT 1,
 						  "association_follow" INTEGER DEFAULT 0,
 						  FOREIGN KEY("association_reservation") REFERENCES "reservation"("reservation_id") 
 							ON UPDATE CASCADE
-							ON DELETE CASCADE
+							ON DELETE CASCADE,
+						  FOREIGN KEY("association_status") REFERENCES "status"("status_id")
+						  	ON UPDATE CASCADE
+							ON DELETE SET NULL
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "warehouse"		( "warehouse_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -144,6 +148,7 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 CREATE TABLE IF NOT EXISTS "count" (
 	"count_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 	"count_invoice" INTEGER NULL,
+	"count_state" ENUM('INTERMEDIATE', 'FINAL') DEFAULT 'INTERMEDIATE',
 	"count_status" INTEGER NULL,
 	"count_date" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"count_begin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
