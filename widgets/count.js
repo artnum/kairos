@@ -441,7 +441,9 @@ define([
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
         <fieldset><legend>Période</legend><label for="begin">Début</label>
         <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
-        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" /></fieldset>
+        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" />
+        <label for="state"> décompte final</label> <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/>
+        </fieldset>
         <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
 
@@ -872,6 +874,9 @@ define([
           switch (inputs[i].getAttribute('name')) {
             case 'begin': case 'end':
               val = new Date(val).toISOString()
+              break
+            case 'state':
+              val = inputs[i].checked ? 'FINAL' : 'INTERMEDIATE'
               break
           }
           query[inputs[i].getAttribute('name')] = val
