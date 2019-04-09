@@ -1,5 +1,5 @@
 /* eslint-env amd, browser */
-/* global Artnum, Address, DoWait */
+/* global Artnum, Address, DoWait, sjcl */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -56,7 +56,6 @@ define([
       var contacts = {}
       if (this.get('reservations').length > 0) {
         var r = this.get('reservations')
-
         for (var i = 0; i < r.length; i++) {
           var url = Path.url('store/ReservationContact')
           url.searchParams.set('search.comment:1', '_facturation')
@@ -225,6 +224,17 @@ define([
             } else {
               reservations = ''
             }
+
+            let addIn = []
+            let c = []
+            clients.forEach(function (_c) {
+              let h = sjcl.codec.base64.fromBits(sjcl.hash.sha256.hash(_c))
+              if (addIn.indexOf(h) === -1) {
+                addIn.push(h)
+                c.push(_c)
+              }
+            })
+
             var tr = document.createElement('TR')
             tr.setAttribute('data-url', `#DEC${String(data[i].id)}`)
             tr.setAttribute('data-count-id', String(data[i].id))
@@ -235,7 +245,7 @@ define([
           <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
           <td>${this._toHtmlRange(data[i].begin, data[i].end)}</td>
           <td>${(data[i].reference ? data[i].reference : '')}</td>
-          <td>${clients.length > 0 ? clients.join('<hr>') : ''}</td>
+          <td>${c.length > 0 ? c.join('<hr>') : ''}</td>
           <td>${(data[i].comment ? this._shortDesc(data[i].comment) : '')}</td>
           <td>${(data[i].total ? data[i].total : '')}</td>
           <td>${(data[i].printed ? this._toHtmlDate(data[i].printed) : '')}</td>
