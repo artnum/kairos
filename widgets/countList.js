@@ -184,7 +184,7 @@ define([
       this.domNode = div
 
       var txt = '<h1>Liste de décompte</h1><table>' +
-        '<thead><tr><th data-sort-type="integer">N°</th><th>Final</th><th>Facture</th><th>Réservation</th><th>Statut</th><th>Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
+        '<thead><tr><th data-sort-type="integer">N°</th><th data-sort-type="boolean">Final</th><th data-sort-type="integer">Facture</th><th data-sort-value="integer">Réservation</th><th>Statut</th><th data-sort-type="date">Période</th><th>Référence client</th><th>Client</th><th>Remarque</th><th>Montant</th><th>Impression</th><th data-sort-type="no"></th></tr></thead>' +
           '<tbody></tbody></table>'
       this.domNode.innerHTML = txt
       var Tbody = this.domNode.getElementsByTagName('TBODY')[0]
@@ -192,7 +192,7 @@ define([
       this.dtable = new Artnum.DTable({table: Table, sortOnly: true})
 
       var data = this.get('data')
-      var url = Path.url('store/CountReservation')
+      var url = Path.url('store/CountReservation', {params: {'sort.count': 'DESC'}})
       var _clients = {}
       for (let i = 0; i < data.length; i++) {
         setTimeout(function () {
@@ -239,19 +239,27 @@ define([
             tr.setAttribute('data-url', `#DEC${String(data[i].id)}`)
             tr.setAttribute('data-count-id', String(data[i].id))
             tr.addEventListener('click', this.evtSelectTr.bind(this))
-            tr.innerHTML = `<td>${data[i].id}</td>
-          <td>${(data[i].state === 'FINAL' ? 'Oui' : 'Non')}</td>
+            tr.innerHTML = `<td data-sort-value="${data[i].id}">${data[i].id}</td>
+          <td data-sort-value="${(data[i].state === 'FINAL' ? 'true' : 'false')}">${(data[i].state === 'FINAL' ? 'Oui' : 'Non')}</td>
           <td tabindex data-edit="0" data-invoice="${(data[i].invoice ? data[i].invoice : '')}">${(data[i].invoice ? (data[i]._invoice.winbiz ? data[i]._invoice.winbiz : '') : '')}</td>
           <td>${reservations}</td>
           <td>${(data[i].status && data[i]._status ? data[i]._status.name : '')}</td>
-          <td>${this._toHtmlRange(data[i].begin, data[i].end)}</td>
+          <td data-sort-value="${data[i].begin}">${this._toHtmlRange(data[i].begin, data[i].end)}</td>
           <td>${(data[i].reference ? data[i].reference : '')}</td>
           <td>${c.length > 0 ? c.join('<hr>') : ''}</td>
           <td>${(data[i].comment ? this._shortDesc(data[i].comment) : '')}</td>
           <td>${(data[i].total ? data[i].total : '')}</td>
           <td>${(data[i].printed ? this._toHtmlDate(data[i].printed) : '')}</td>
           <td data-op="delete"><i class="far fa-trash-alt action"></i></td>`
-            window.requestAnimationFrame(() => Tbody.appendChild(tr))
+
+            let n = Tbody.lastElementChild
+            let p = null
+            while (n &&
+                   parseInt(tr.firstElementChild.dataset.sortValue) > parseInt(n.firstElementChild.dataset.sortValue)) {
+              p = n
+              n = n.previousSibling
+            }
+            window.requestAnimationFrame(() => Tbody.insertBefore(tr, p))
           }.bind(this))
         }.bind(this), 10)
       }
