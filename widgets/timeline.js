@@ -173,6 +173,9 @@ define([
       this.FirstLoad = true
 
       this.zoomCss = document.createElement('style')
+
+      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
+
       this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
@@ -199,24 +202,24 @@ define([
         this.unwait()
       })
 
-      let msgHandler = function (event) {
-        if (!event.data) { return }
-        let content = event.data
-        switch (content.op) {
-          case 'response':
-            /* fall through */
-          case 'responses':
-            if (this.Entries[content.target]) {
-              this.Entries[content.target].receiveContent(content)
+      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
+      this.Updater.onmessage = djLang.hitch(this, function (e) {
+        if (!e || !e.data || !e.data.type) { return }
+        switch (e.data.type) {
+          case 'entry':
+            if (this.Entries[e.data.content]) {
+              this.Entries[e.data.content].update()
+            }
+            break
+          case 'entries':
+            for (var i = 0; i < e.data.content.length; i++) {
+              if (this.Entries[e.data.content[i]]) {
+                this.Entries[e.data.content[i]].update()
+              }
             }
             break
         }
-      }.bind(this)
-
-      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
-      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
-      this.Updater.onmessage = msgHandler
-      this.Reservation.onmessage = msgHandler
+      })
 
       this.Filter = new Worker(Path.url('/js/ww/filter.js'))
       this.Filter.onmessage = djLang.hitch(this, function (event) {
@@ -257,7 +260,6 @@ define([
       window.GEvent.listen('reservation.open', function (event) {
         if (event.detail.id) {
           this.doSearchLocation(event.detail.id)
-          window.focus()
         }
       }.bind(this))
       window.GEvent.listen('reservation.attribute-click', function (event) {
@@ -267,7 +269,6 @@ define([
 
         if (event.detail.attribute === 'id') {
           this.doSearchLocation(event.detail.value)
-          window.focus()
         }
       }.bind(this))
       window.GEvent.listen('count.attribute-click', function (event) {
@@ -655,8 +656,7 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      this.domNode.addEventListener('mousemove', this.mouseOver.bind(this), {passive: true})
-      this.domNode.addEventListener('touchmove', this.mouseOver.bind(this), {passive: true})
+      djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1287,9 +1287,10 @@ define([
             window.localStorage.setItem(Path.bcname('autoprint'), '1')
           }
       }
-      this.update()
-      var pos = getElementRect(targetNode.domNode)
-      window.scroll(0, pos[1] - delta)
+      this.update(true).then(() => {
+        var pos = getElementRect(targetNode.domNode)
+        window.scroll(0, pos[1] - delta)
+      })
     },
 
     drawTimeline: function () {
@@ -1569,33 +1570,18 @@ define([
     },
 
     highlight: function (domNode) {
-      if (!domNode) { return }
-      if (domNode.classList) {
-        if (!this.Highlighting) {
-          this.Highlighting = []
-        }
-        /*
-        if (this.Highlighting.length > 0) {
-          for (var i = 0; i < this.Highlighting.length; i++) {
-            window.requestAnimationFrame(function () {
-              if (this.classList) {
-                this.classList.remove('highlight')
-              }
-            }.bind(this.Highlighting[i][1]))
-            clearTimeout(this.Highlighting[i][0])
-          }
-        }*/
-        window.requestAnimationFrame(function () {
-          if (this.classList) {
-            this.classList.add('highlight')
-          }
-        }.bind(domNode))
-        this.Highlighting.push([setTimeout(function () {
-          window.requestAnimationFrame(function () {
-            this.classList.remove('highlight')
-          }.bind(this))
-        }.bind(domNode), 2500), domNode])
+      if (this.Highlighting) {
+        djDomStyle.set(this.Highlighting[0], 'box-shadow', '')
+        window.clearTimeout(this.Highlighting[1])
+      } else {
+        this.Highlighting = []
       }
+
+      djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)')
+      this.Highlighting[0] = domNode
+      this.Highlighting[1] = window.setTimeout(function () {
+        djDomStyle.set(domNode, 'box-shadow', '')
+      }, 5000)
     },
 
     goToReservation: function (data, center) {

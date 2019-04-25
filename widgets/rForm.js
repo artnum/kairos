@@ -636,12 +636,6 @@ define([
       this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
     },
 
-    sync: function () {
-      [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
-        this.set(e, this.reservation.get(e))
-      }))
-    },
-
     disable: function (v) {
       this.Disabled = v
       ;[ 'INPUT', 'SELECT', 'TEXTAREA', 'BUTTON' ].forEach(function (type) {
@@ -668,7 +662,7 @@ define([
 
     load: async function () {
       this.initCancel()
-      this.sync()
+
       var that = this
       this.nMachineChange.set('value', this.reservation.get('target'))
 

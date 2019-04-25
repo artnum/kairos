@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO
 
 CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"reservation_uuid" VARCHAR(36) DEFAULT NULL,
 	"reservation_begin" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"reservation_end" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"reservation_target" TEXT DEFAULT NULL,
@@ -51,15 +50,6 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
-CREATE UNIQUE INDEX "reservationUuidIdx" ON "reservation"("reservation_uuid");
-DELIMITER //
-CREATE TRIGGER insertSetUUID BEFORE INSERT ON reservation
-  FOR EACH ROW
-  BEGIN
-    IF NEW.reservation_uuid IS NULL THEN
-      SET NEW.reservation_uuid = UUID();
-    END IF;
-  END; //
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT
@@ -72,15 +62,11 @@ CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY 
 						  "association_end" VARCHAR(32), -- ISO8601 datetime
 						  "association_comment" TEXT,
 						  "association_type" TEXT,
-						  "association_status" INTEGER DEFAULT NULL,
 						  "association_number" INTEGER DEFAULT 1,
 						  "association_follow" INTEGER DEFAULT 0,
 						  FOREIGN KEY("association_reservation") REFERENCES "reservation"("reservation_id") 
 							ON UPDATE CASCADE
-							ON DELETE CASCADE,
-						  FOREIGN KEY("association_status") REFERENCES "status"("status_id")
-						  	ON UPDATE CASCADE
-							ON DELETE SET NULL
+							ON DELETE CASCADE
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "warehouse"		( "warehouse_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -148,7 +134,6 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 CREATE TABLE IF NOT EXISTS "count" (
 	"count_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 	"count_invoice" INTEGER NULL,
-	"count_state" ENUM('INTERMEDIATE', 'FINAL') DEFAULT 'INTERMEDIATE',
 	"count_status" INTEGER NULL,
 	"count_date" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"count_begin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
