@@ -132,10 +132,11 @@ $PDF->addTab(62);
 $PDF->addTab(123);
 
 $PDF->AddPage();
-$PDF->SetY(40);
 $PDF->hr();
+$PDF->setPosition(60);
 $PDF->setFontSize(5);
 $y = $PDF->GetY();
+$PDF->SetY($PDF->tMargin);
 /* Title block */
 $final = ' intermédiaire ';
 if ($count['state'] === 'FINAL') {
