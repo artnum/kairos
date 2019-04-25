@@ -667,8 +667,8 @@ define([
               var sub = window.location.hash.substr(1)
               switch (String(sub.substr(0, 3)).toLowerCase()) {
                 case 'dec':
-                if (String(sub.substr(3, 1)) === '*') {
-                    new CountList() // eslint-disable-line
+                  if (String(sub.substr(4, 1) === '*')) {
+                    new CountList({integrated: true}) // eslint-disable-line
                   } else {
                     new Count({'data-id': sub.substr(3)}) // eslint-disable-line
                   }
