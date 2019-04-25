@@ -36,7 +36,6 @@ class LocationPDF extends artnum\PDF {
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
-      $this->SetY(40);
    }
 
    function Footer() {
