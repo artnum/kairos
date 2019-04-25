@@ -668,7 +668,7 @@ define([
               switch (String(sub.substr(0, 3)).toLowerCase()) {
                 case 'dec':
                   if (String(sub.substr(4, 1) === '*')) {
-                    new CountList() // eslint-disable-line
+                    new CountList({integrated: true}) // eslint-disable-line
                   } else {
                     new Count({'data-id': sub.substr(3)}) // eslint-disable-line
                   }
