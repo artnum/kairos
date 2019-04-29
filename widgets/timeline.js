@@ -280,6 +280,12 @@ define([
           window.location.hash = `#DEC${event.detail.value}`
         }
       })
+      window.GEvent.listen('count.open', function (event) {
+        if (!event.detail) { return }
+        if (event.detail.id) {
+          new Count({'data-id': event.detail.id}) // eslint-disable-line
+        }
+      })
     },
 
     createWindow: function () {
