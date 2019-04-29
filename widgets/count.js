@@ -444,7 +444,7 @@ define([
         <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" />
         <label for="state"> décompte final</label> <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/>
         </fieldset>
-        <label for="comment">Remarque interne</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
+        <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
 
       div.addEventListener('click', async function (event) {
