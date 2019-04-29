@@ -219,11 +219,14 @@ $PDF->right = 10;
 
 $PDF->br();
 if (!empty($count['comment'])) {
-   $comments = explode("\n", $count['comment']);
-   $PDF->printTaggedLn(array('%cb', 'Remarque interne: '), array('underline' => true));
-   foreach($comments as $c) {
-      $PDF->printTaggedLn(array('%c', $c), array('multiline' => true));
-   }
+  $comments = explode("\n", $count['comment']);
+  $PDF->printTaggedLn(array('%cb', 'Communication client: '), array('underline' => true));
+  if ($count['state'] !== 'FINAL') {
+    $PDF->printTaggedLn(array('%c', 'Décompte intermédiaire'));
+  }
+  foreach($comments as $c) {
+    $PDF->printTaggedLn(array('%c', $c), array('multiline' => true));
+  }
 }
 
 $PDF->to_block_end();
