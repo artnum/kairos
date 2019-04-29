@@ -20,7 +20,9 @@ define([
   'dojo/window',
   'dijit/registry',
 
-  'artnum/dojo/Request'
+  'artnum/dojo/Request',
+  'artnum/Query',
+  'artnum/Path'
 
 ], function (
   djDeclare,
@@ -41,7 +43,9 @@ define([
   djWindow,
   dtRegistry,
 
-  Req
+  Req,
+  Query,
+  Path
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
@@ -137,6 +141,10 @@ define([
           this.goToSearchBox()
           this.func = this.gotoReservation
           break
+        case 'd':
+          this.goToSearchBox()
+          this.func = this.gotoCount
+          break
       }
       return done
     },
@@ -176,6 +184,13 @@ define([
         return true
       }
       return false
+    },
+    gotoCount: async function (val) {
+      Query.exec(Path.url(`store/Count/${val}`)).then(function (result) {
+        if (result.success && result.length === 1) {
+          window.GEvent('count.open', {id: val})
+        }
+      })
     },
     gotoMachine: async function (val) {
       var top = -1

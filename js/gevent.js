@@ -14,6 +14,10 @@ if (typeof window.GEvent === 'undefined') {
     }
   }
   window.GEvent.listen = function (type, callback) {
-    window.GEvent.GEventTarget.addEventListener(type, callback)
+    if (Array.isArray(type)) {
+      type.forEach((t) => window.GEvent.GEventTarget.addEventListener(t, callback))
+    } else {
+      window.GEvent.GEventTarget.addEventListener(type, callback)
+    }
   }
 }
