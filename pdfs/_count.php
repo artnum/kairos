@@ -137,7 +137,7 @@ $PDF->setFontSize(5);
 $PDF->block('title');
 $final = ' intermédiaire ';
 if ($count['state'] === 'FINAL') {
-  $final = 'final ';
+  $final = '';
 }
 $PDF->printTaggedLn(array('Décompte ', $final, strval($count['id']), '%cb'), array('align' => 'right'));
 
