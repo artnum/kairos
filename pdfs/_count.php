@@ -132,11 +132,9 @@ $PDF->addTab(62);
 $PDF->addTab(123);
 
 $PDF->AddPage();
-$PDF->SetY(40);
-$PDF->hr();
 $PDF->setFontSize(5);
-$y = $PDF->GetY();
 /* Title block */
+$PDF->block('title');
 $final = ' intermédiaire ';
 if ($count['state'] === 'FINAL') {
   $final = 'final ';
@@ -146,13 +144,15 @@ $PDF->printTaggedLn(array('Décompte ', $final, strval($count['id']), '%cb'), ar
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
 
-$PDF->SetY($y - 6);
 $PDF->printLn('créée le ' . $count['created']->format('d.m.Y') . ' à '. $count['created']->format('H:i'), array('align' => 'right'));
 $PDF->setFontSize(3.2);
 
-$PDF->SetY($y);
 
 $PDF->block('addresses');
+$PDF->SetY(40);
+$PDF->hr();
+$y = $PDF->GetY();
+$PDF->br();
 $previous = 'addresses';
 $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
 if ($count['_invoice']['address'] && $contacts[$count['_invoice']['address']]) {
@@ -168,6 +168,7 @@ if ($count['_invoice']['address'] && $contacts[$count['_invoice']['address']]) {
 $PDF->close_block();
 $PDF->left = $PDF->w / 3;
 $PDF->SetY($y);
+$PDF->br();
 $PDF->block('our_ref');
 $PDF->background_block('#EEEEEE');
 
