@@ -1327,7 +1327,7 @@ define([
       new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
     },
     openAddCount: async function () {
-      new CountList({addReservation: this.reservation.get('id')}) // eslint-disable-line
+      new CountList({addReservation: this.reservation.get('id'), integrated: true}) // eslint-disable-line
     },
 
     refreshCount: async function () {
