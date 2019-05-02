@@ -918,7 +918,7 @@ define([
       this.nArrivalInprogress.set('checked', true)
     },
 
-    toggleConfirmed: function () {
+    toggleConfirmed: function (dontset = false) {
       if (this.nConfirmed.get('checked')) {
         var retVal = this.reservation.get('_arrival')
         if (retVal && retVal.id && retVal.reported) {
@@ -936,7 +936,7 @@ define([
         if (this.get('arrivalCreator')) {
 
         } else {
-          if (window.localStorage.getItem('user')) {
+          if (!dontset && window.localStorage.getItem('user')) {
             this.set('arrivalCreator', JSON.parse(window.localStorage.getItem('user')))
           }
         }
@@ -1253,6 +1253,9 @@ define([
           } else {
             arrival.reported = f.arrivalDate
           }
+        }
+        if (!arrival.creator) {
+          arrival.creator = this.get('arrivalCreator')
         }
         arrival.comment = f.arrivalComment
         arrival.contact = f.arrivalAddress
