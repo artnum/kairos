@@ -481,8 +481,15 @@ body.waiting * {
 	flex-wrap: wrap;
 }
 
-.rForm legend {
-  font-weight: bold;
+.rForm label.title {
+    font-weight: bold;
+    display: block;
+}
+
+.rForm button {
+    color: black;
+    display: block;
+    text-decoration: none;
 }
 
 .rForm label.fixedSize {
