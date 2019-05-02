@@ -340,6 +340,8 @@ Arrival.prototype.add = function (retval) {
   dom.appendChild(this.html.label(equipment, 'wide'))
   dom.appendChild(this.html.label(retval.comment, 'wide'))
 
+  createLinkFromPhone(dom)
+
   if (retval.inprogress && !retval.done) {
   } else if (!retval.inprogress && !retval.done) {
   }

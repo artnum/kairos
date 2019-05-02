@@ -14,7 +14,7 @@ function createLinkFromPhone (htmlnode) {
       if (res) {
         for (let m of res) {
           let num = m.replace(unwantedChar, '')
-          if (num.length < 5 || /[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4}/.test(m)) {
+          if (num.length < 5 || /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4}$/.test(m)) {
             continue
           } else {
             let a = document.createElement('A')
