@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
+@import 'tel.css';
+
 body {
 	font-family: Roboto;
 }
@@ -92,6 +94,14 @@ th[data-artnum-sortdir=asc]:after {
   height: 3.5ex;
 }
 
+.inprogress a.phonenumber {
+    color: hsla(30, 100%, 90%, 1);
+}
+
+.later a.phonenumber {
+    color: hsla(30, 100%, 30%, 1);
+}
+
 .button:active {
   background-color: #e9ecef;
   background-image: none;
@@ -102,3 +112,4 @@ th[data-artnum-sortdir=asc]:after {
 .button.selected {
 	opacity: 0.5;
 }
+
