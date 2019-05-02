@@ -1,0 +1,66 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Réservations futures</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table
+    data-source="store/DeepReservation" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+    <thead><tr>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
+      <th data-attribute="target:integer">Machine</th>
+      <th data-attribute="begin:date">Début</th>
+      <th data-attribute="end:date">Fin</th>
+      <th data-attribute="reference">Référence</th>
+      <th data-attribute="@$creator name">Responsable Airnace</th>
+      <th data-attribute="client_">Client</th>
+      <th data-attribute="responsable_">Responsable client</th>      
+      <th data-attribute="place_">Contact sur place</th>
+      <th data-attribute="equipment">Équipement</th>
+      <th data-attribute="address">Adresse</th>
+      <th data-attribute="locality">Localité</th>
+      <th data-attribute="comment">Commentaire</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="../js/tel.js"></script>
+<script src="https://artnum.ch/code/js/Query.js"></script>
+<script src="https://artnum.ch/code/js/Path.js"></script>
+<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="/js/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE')
+   let yesterday = new Date();
+   yesterday.setDate((new Date()).getDate() - 1)
+   let options = `{parameters: {'search.end': '<=${yesterday.toISOString().split('T')[0]}', 'search.deleted': '-', 'sort.id': 'DESC'}}`
+   tables[0].setAttribute('data-options', options)
+   
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i], postprocess: createLinkFromPhone})
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     tables[i].addEventListener('click', function (event) {
+       if (event.target.nodeName === 'TR') {
+       } else {
+         var node = event.target
+         for (; node && node.nodeName !== 'TD'; node = node.parentNode) ;
+         if (!node) { return }
+         var tr = node
+         for (; tr && tr.nodeName !== 'TR'; tr = tr.parentNode) ;
+         var i = 0
+         for (var x = tr.firstElementChild; x !== node; x = x.nextElementSibling) { i++ };
+         if (this.Column[i]) {
+           window.GEvent('reservation.attribute-click', {attribute: this.Column[i].attr, value: node.getAttribute('data-sort-value') ? node.getAttribute('data-sort-value') : node.contentText})
+         }
+       }
+     }.bind(dtable))
+   }
+ }
+</script>
+</html>
