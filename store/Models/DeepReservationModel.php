@@ -141,9 +141,12 @@ class DeepReservationModel extends ReservationModel {
                 $contact['target'] = $res['data'][0];
               }
             }
-            $contact['_displayname'] = isset($contact['displayname']) ? $contact['displayname'] :
-                                       (isset($contact['o']) ? $contact ['o'] :
-                                        (isset($contact['cn'])? $contact['cn'] : ''));
+            foreach (array('displayname', 'o', 'cn') as $a) {
+              if (isset($contact['target'][$a]) && !empty($contact['target'][$a])) {
+                $contact['_displayname'] = $contact['target'][$a];
+                break;
+              }
+            }
           } else {
             $contact['_displayname'] = explode("\n", $contact['freeform'])[0];
           }
