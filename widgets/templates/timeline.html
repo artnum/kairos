@@ -52,6 +52,12 @@
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./uncounted.html', true); }">Non-décompté</div>
     </div>
   </div>
+  <div data-dojo-type="dijit/PopupMenuBarItem">
+    <label>Tableaux</label>
+    <div data-dojo-type="dijit/DropDownMenu" id="tableMenu">
+      <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./upcoming.html', true); }">Réservations futures</div>
+    </div>
+  </div>
 </div>
 
 <div data-dojo-attach-point="nScrollShow" id="scrollshow"></div>

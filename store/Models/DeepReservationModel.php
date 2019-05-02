@@ -131,16 +131,34 @@ class DeepReservationModel extends ReservationModel {
               }
               if($c[1] > 0) {
                 $contact['target'] = $c[0][0];
+              } else {
+                continue;
               }
             } else {
               $jrc = new \artnum\JRestClient($_SERVER['SERVER_NAME']);
               $res = $jrc->direct(base_url('/store/' . $contact['target']));
-              if($res['lenght'] > 0) {
+              if($res['length'] > 0) {
                 $contact['target'] = $res['data'][0];
               }
             }
+            $contact['_displayname'] = isset($contact['displayname']) ? $contact['displayname'] :
+                                       (isset($contact['o']) ? $contact ['o'] :
+                                        (isset($contact['cn'])? $contact['cn'] : ''));
+          } else {
+            $contact['_displayname'] = explode("\n", $contact['freeform'])[0];
           }
 
+          switch ($contact['comment']) {
+            case '_client':
+            case '_place':
+            case '_responsable':
+            case '_facturation':
+              $attr = substr($contact['comment'], 1);
+              if (!isset($entry[$contact['comment']])) {
+                $entry[$attr . '_'] = $contact['_displayname'];
+              }
+              break;
+          }
           if(!isset($contacts[$contact['comment']])) {
             $contacts[$contact['comment']] = array($contact);
           } else {
