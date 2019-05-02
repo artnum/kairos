@@ -4,7 +4,7 @@
 <div class="flex"> <!-- Flexbox base //-->
 
 <div class="group">
-<fieldset><legend>Machine</legend>
+<fieldset><label class="title">Machine</label>
 <input data-dojo-type="dijit/form/Select" name="machine" data-dojo-attach-point="nMachineChange" /><br />
 <label for="title" class="fixedSize">Commandée : </label><input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" /><br />
 <label for="o-critic" class="fixedSize">Critique : </label><input data-dojo-type="dijit/form/TextBox" name="o-critic" />
@@ -13,7 +13,7 @@
 
 
 <div class="group twocol">
-<fieldset><legend>Location</legend>
+<fieldset><label class="title">Location</label>
 <input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente<br />
 <label for="beginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
 <label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
@@ -23,7 +23,7 @@
 </fieldset>
 
 
-<fieldset data-dojo-attach-point="nDeliveryFields"><legend>Livraison</legend>
+<fieldset data-dojo-attach-point="nDeliveryFields"><label class="title">Livraison</label>
 <br />
 <label for="deliveryBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /><br />
 <label for="deliveryEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
@@ -31,7 +31,7 @@
 </div>
 
 <div class="group" data-dojo-attach-point="nBack" style="display: none">
-  <fieldset><legend>Retour</legend>
+  <fieldset><label class="title">Retour</label>
     <span class="dualEntry"><label for="arrivalDate" class="fixedSize">Annonce : </label><input data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" name="arrivalDate" /> <input data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" />
       <label for="arrivalCreator" class="fixedSize">Responsable : </label><span data-dojo-attach-point="nArrivalCreator" /></span></span>
       <br />
@@ -44,7 +44,7 @@
 </div>
 
 <div class="group"> 
-<fieldset><legend>Détails</legend>
+<fieldset><label class="title">Détails</label>
 	<span class="dualEntry"><label for="mReference" class="fixedSize">Référence : </label><input data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" />
 		<label for="status" class="fixedSize">Status : </label><input data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="nStatus" /></span><br />
 	<label for="nAddress" class="fixedSize">Adresse : </label><input class="fullWidth" data-dojo-type="dijit/form/Textarea" name="nAddress" data-dojo-attach-point="nAddress" /><br />
@@ -56,7 +56,7 @@
 </fieldset> 
 
 
-<fieldset><legend>Contacts</legend>
+<fieldset><label class="title">Contacts</label>
 <div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 40ex;" data-dojo-props="isLayoutContainer: true"></div>
 <div class="contacts" data-dojo-attach-point="nContacts">
 </div>
@@ -64,18 +64,18 @@
 </div>
 
 <div class="group twocol">
-<fieldset><legend>Matériel</legend>
+<fieldset><label class="title" style="display: inline-block;">Équipement</label> <button style="display: inline-block; clear: right" type="button" name="noEquipement" data-dojo-attach-event="click:evtNoEquipment">Pas d'équipement</button>
 <textarea data-dojo-type="dijit/form/Textarea" name="nEquipment" data-dojo-attach-point="nEquipment"></textarea>
 </fieldset>
 
-<fieldset><legend>Commentaire</legend>
+<fieldset><label class="title">Commentaire</label>
 <textarea data-dojo-type="dijit/form/Textarea" name="nComments" data-dojo-attach-point="nComments"></textarea>
 </fieldset>
 </div>
 
 <div class="group">
 	<fieldset data-dojo-attach-point="nComplementsForm">
-	<legend>Complément</legend>
+	<label class="title">Complément</label>
 
 	<div data-dojo-attach-point="complements"></div>
 
@@ -98,13 +98,13 @@
 </div> 
 
 <div class="group">
-<fieldset><legend>Note interne</legend>
+<fieldset><label class="title">Note interne</label>
 <textarea style="width: 100%" data-dojo-type="dijit/form/Textarea" name="nNote" data-dojo-attach-point="nNote"></textarea>
 </fieldset>
 </div>
 
 <div class="group">
-  <legend>Décompte</legend>
+  <label class="title">Décompte</label>
   <table class="count dtable" data-dojo-attach-point="nCountTable">
     <thead><tr><th class="ref">Numéro</th><th class="invoice">Facture</th><th class="status">Statut</th><th class="range">Période</th></tr></thead>
     <tbody data-dojo-attach-point="nCountList"></tbody>

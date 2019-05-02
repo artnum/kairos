@@ -1327,7 +1327,16 @@ define([
 
       return true
     },
-
+    evtNoEquipment: function () {
+      let val = this.nEquipment.get('value')
+      if (val.length > 1 && val !== '%') {
+        if (!confirm('Êtes-vous certain de vouloir supprimer tout le matériel ?')) {
+          return
+        }
+      }
+      console.log(this.nEquipment)
+      this.nEquipment.set('value', '%')
+    },
     destroyReservation: function (reservation) {
       this.reservation.destroyReservation(reservation)
     },
