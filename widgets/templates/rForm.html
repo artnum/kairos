@@ -15,8 +15,8 @@
 <div class="group twocol">
 <fieldset><label class="title">Location</label>
 <input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente<br />
-<label for="beginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
-<label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
+<label for="beginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
+<label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
 <br />
 <input data-dojo-type="dijit/form/CheckBox" name="confirmed" data-dojo-attach-point="nConfirmed" data-dojo-attach-event="click:toggleConfirmed"/> <label for="confirmed">Fin confirmée</label>
 <button data-dojo-type="dijit/form/Button" name="confirmedAndReturned" data-dojo-attach-point="nConfirmedAndReturned" data-dojo-attach-event="click:toggleConfirmedAndReturned">Confirmée et ramenée</button>
@@ -25,14 +25,14 @@
 
 <fieldset data-dojo-attach-point="nDeliveryFields"><label class="title">Livraison</label>
 <br />
-<label for="deliveryBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /><br />
-<label for="deliveryEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
+<label for="deliveryBeginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /><br />
+<label for="deliveryEndDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" />
 </fieldset>
 </div>
 
 <div class="group" data-dojo-attach-point="nBack" style="display: none">
   <fieldset><label class="title">Retour</label>
-    <span class="dualEntry"><label for="arrivalDate" class="fixedSize">Annonce : </label><input data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" name="arrivalDate" /> <input data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" />
+    <span class="dualEntry"><label for="arrivalDate" class="fixedSize">Annonce : </label><input data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="arrivalDate" /> <input data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" />
       <label for="arrivalCreator" class="fixedSize">Responsable : </label><span data-dojo-attach-point="nArrivalCreator" /></span></span>
       <br />
     <label for="arrivalAddress" class="fixedSize">Adresse : </label><textarea class="fullWidth" data-dojo-attach-point="nArrivalAddress" data-dojo-type="dijit/form/Textarea" name="arrivalAddress"></textarea><br />
