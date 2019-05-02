@@ -13,7 +13,7 @@
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>
-      <th data-attribute="@store/Count?search.id=$_countReservation.count&limit=0,1&sort.end=DESC end:date" data-attribute="data-condition="@store/Count?search.id=$_countReservation.count&search.state=FINAL;state FINAL ne">Fin dernier décompte</th>
+      <th data-attribute="@store/Count?search.id=$_countReservation.count&limit=0,1&sort.end=DESC end:date" data-condition="@store/Count?search.id=$_countReservation.count&search.state=FINAL;state FINAL ne">Fin dernier décompte</th>
       <th data-attribute="@$creator name">Responsable</th>
       <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- reported:bool">Fin confirmée</th>
       <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- done:bool">Retournée</th>
