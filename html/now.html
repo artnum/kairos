@@ -1,7 +1,7 @@
 <!DOCTYPE>
 <html>
 <head>
-<title>Réservations futures</title>
+<title>Réservations en cours</title>
 <link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
@@ -11,6 +11,7 @@
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
       <th data-attribute="begin:date">Début</th>
+      <th data-attribute="end:date">Fin</th>
       <th data-attribute="reference">Référence</th>
       <th data-attribute="@$creator name">Responsable Airnace</th>
       <th data-attribute="client_">Client</th>
@@ -33,9 +34,8 @@
 <script>
  window.onload = function () {
    var tables = document.getElementsByTagName('TABLE')
-   let tomorrow = new Date();
-   tomorrow.setDate((new Date()).getDate() + 1)
-   let options = `{parameters: {'search.begin': '>=${tomorrow.toISOString().split('T')[0]}', 'search.deleted': '-', 'search.closed': '-', 'order.begin': 'ASC'}}`
+   let today = new Date();
+   let options = `{parameters: {'search.begin': '<=${today.toISOString().split('T')[0]}', 'search.end': '>=${today.toISOString().split('T')[0]}','search.deleted': '-', 'search.closed': '-', 'order.begin': 'ASC'}}`
    tables[0].setAttribute('data-options', options)
    
    for (var i = 0; i < tables.length; i++) {
