@@ -6,7 +6,7 @@
 </head>
 <body>
   <table
-    data-source="store/Reservationbis" data-options="{parameters: {'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+    data-source="store/Reservationbis" data-options="{parameters: {'sort.id': 'DESC', 'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
