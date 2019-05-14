@@ -8,6 +8,10 @@ class DeepReservationModel extends ReservationModel {
     $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
   }
 
+  function get_db($x = false) {
+    return $this->DB;
+  }
+
   function set_db($dbs) {
     $this->DB = $dbs['sql'];
     $this->dbs = $dbs;
