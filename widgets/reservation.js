@@ -593,7 +593,7 @@ define([
 
         ident.lastChild.appendChild(i)
       }
-      if (this.get('equipment') !== '' && this.get('equipment') != null) {
+      if (this.get('equipment') !== '' && this.get('equipment') != null && this.get('equipment') !== '%') {
         ident.appendChild(document.createElement('SPAN'))
         ident.lastChild.appendChild(document.createTextNode(' '))
         i = document.createElement('I')
