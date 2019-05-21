@@ -149,8 +149,11 @@ class DeepReservationModel extends ReservationModel {
             }
             foreach (array('mobile', 'telephonenumber') as $a) {
               if (isset($contact['target'][$a]) && !empty($contact['target'][$a])) {
-                if (!isset($contact['_displayname'])) { $contact['_displayname'] = $contact['target'][$a]; }
-                else { $contact['_displayname'] .= ', '. $contact['target'][$a]; }
+                if (!isset($contact['_displayname'])) {
+                  $contact['_displayname'] = $contact['target'][$a];
+                } else {
+                  $contact['_displayname'] .= ', '. (is_array($contact['target'][$a]) ? join(', ', $contact['target'][$a]) : $contact['target'][$a]);
+                }
                 break;
               }
             }
