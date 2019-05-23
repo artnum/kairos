@@ -753,6 +753,7 @@ define([
       var cp = new DtContentPane({
         title: title,
         closable: true,
+        style: 'width: 100%; height: 100%; padding: 0; padding-top: 8px;',
         id: 'ReservationTab_' + this.get('uuid'),
         content: f.domNode})
       cp.own(f)
@@ -1126,24 +1127,7 @@ define([
         }
         toolsOffsetEnd *= this.get('blockSize') / 24
       }
-      var domclass = ['reservation']
-
-      if (this.overlap.do > 0) {
-        domclass.push('overlap')
-      }
-      if (nobegin) {
-        domclass.push('nobegin')
-      }
-      if (noend) {
-        domclass.push('noend')
-      }
-      if (this.is('confirmed')) {
-        domclass.push('confirmed')
-      }
-      if (returnDone) {
-        domclass.push('done')
-      }
-
+      var domclass = {reservation: true, overlap: this.overlap.do > 0, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
       var supRect = this.sup.view.rectangle
       fastdom.measure(djLang.hitch(this, function () {
         var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
@@ -1190,9 +1174,13 @@ define([
           if (this.currentDom) {
             this.currentDom.innerHTML = ''
             this.currentDom.setAttribute('style', domstyle.join(';'))
-            domclass.forEach(function (c) {
-              this.currentDom.classList.add(c)
-            }.bind(this))
+            for (let c in domclass) {
+              if (domclass[c]) {
+                this.currentDom.classList.add(c)
+              } else {
+                this.currentDom.classList.remove(c)
+              }
+            }
             this.currentDom.appendChild(compdiv)
             if (txtdiv == null) {
               this.currentDom.appendChild(this._currentTextDesc)
