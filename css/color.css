@@ -1,0 +1,17 @@
+:root {
+    --default-bg-color-base: 0, 0%, 100%; /* white */
+    --default-color-base: 0, 0%, 0%; /* black */
+    --default-reverse-bg-color-base: 0, 0%, 0%; /* black */
+    --default-reverse-color-base: 0, 0%, 100%; /* white */
+    --error-color-base: 0, 100%, 50%; /* red */
+    --warn-color-base: 50, 100%, 50%; /* orange */
+    --info-color-base: 200 100% 50%; /* blue */
+    --highlight-color: hsla(50, 100%, 50%, 1);
+    --default-bg-color: hsla(var(--default-bg-color-base), 1);
+    --default-color: hsla(var(--default-color-base), 1);
+    --default-reverse-bg-color: hsla(var(--default-reverse-bg-color-base), 1);
+    --default-reverse-color: hsla(var(--default-reverse-color-base), 1);
+    --message-err-bg-color: hsla(var(--error-color-base), 0.2);
+    --message-warn-bg-color: hsla(var(--warn-color-base), 0.2);
+    --message-info-bg-color: hsla(var(--info-color-base), 0.2);
+}

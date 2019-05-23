@@ -14,7 +14,8 @@
 
 <div class="group twocol">
 <fieldset><label class="title">Location</label>
-<input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente<br />
+  <label><input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente</label>
+  <!--<label><input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-point="nDayBefore" /> Livrable la veille</label>//--><br />
 <label for="beginDate" class="fixedSize">Début : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /><br />
 <label for="endDate" class="fixedSize">Fin : </label><input data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yyyy'}" name="endDate" data-dojo-attach-point="endDate" /> <input data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" />
 <br />
@@ -39,7 +40,9 @@
     <label for="arrivalLocality" class="fixedSize">Localité : </label><input class="fullWidth" data-dojo-attach-point="nArrivalLocality" data-dojo-type="dijit/form/TextBox" name="arrivalLocality" /><br />
     <label for="arrivalKeys" class="fixedSize">Clefs : </label><input class="fullWidth" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /><br />
     <label for="arrivalComment" class="fixedSize">Remarque : </label><input class="fullWidth" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /><br />
-    <span class="twoCol"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> <label for="arrivalInprogress">En cours</label> <input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> <label for="arrivalDone">Ramenée</label></span>
+    <span class="twoCol">
+      <label for="arrivalInprogress"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> En cours</label>
+      <label for="arrivalDone"><input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> Ramenée</label></span>
   </fieldset>
 </div>
 
@@ -110,29 +113,26 @@
     <tbody data-dojo-attach-point="nCountList"></tbody>
   </table>
 </div>
-
-<fieldset class="command">
-<button data-dojo-type="dijit/form/Button" value="Sauvegarder"
- type="button" data-dojo-attach-event="click:doSave" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder</button>
-<button data-dojo-type="dijit/form/Button" value="Sauvegarder et quitter"
- type="button" data-dojo-attach-event="click:doSaveAndQuit" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder et quitter</button>
-<button data-dojo-type="dijit/form/Button" value="Dupliquer"
- type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
-<span data-print-type="mission"><button data-dojo-type="dijit/form/Button" value="Mission"
-                                                                           type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button></span>
-<span data-print-type="decompte"><button data-dojo-type="dijit/form/Button" value="Décompte"
-                                                                            type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button></span>
-<button data-dojo-type="dijit/form/Button" value="Décompte"
- type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
-
-<button data-dojo-type="dijit/form/Button" value="Ajouter au décompte"
- type="button" data-dojo-attach-event="click:openAddCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Ajouter à un décompte</button>
-
-<br/ >
-<button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"
- type="button" data-dojo-attach-event="click:doDelete" ><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
- </fieldset>
 </form>
+<fieldset class="command">
+  <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
+          type="button" data-dojo-attach-event="click:doSave" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder</button>
+  <button data-dojo-type="dijit/form/Button" value="Sauvegarder et quitter"
+          type="button" data-dojo-attach-event="click:doSaveAndQuit" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder et quitter</button>
+  <button data-dojo-type="dijit/form/Button" value="Dupliquer"
+          type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
+  <span data-print-type="mission"><button data-dojo-type="dijit/form/Button" value="Mission"
+                                          type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button></span>
+  <span data-print-type="decompte"><button data-dojo-type="dijit/form/Button" value="Décompte"
+                                           type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button></span>
+  <button data-dojo-type="dijit/form/Button" value="Décompte"
+          type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
 
+  <button data-dojo-type="dijit/form/Button" value="Ajouter au décompte"
+          type="button" data-dojo-attach-event="click:openAddCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Ajouter à un décompte</button>
 
+  <br/ >
+  <button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"
+          type="button" data-dojo-attach-event="click:doDelete" ><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
+</fieldset>
 </div>

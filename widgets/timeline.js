@@ -1782,20 +1782,8 @@ define([
       }
       if (!max && node.getAttribute('data-artnum-maximize') === 'yes') {
         node.setAttribute('data-artnum-maximize', 'no')
-        fastdom.mutate(function () {
-          inode.setAttribute('class', 'fas fa-window-maximize')
-          djDomStyle.set(node, 'bottom', '')
-          djDomStyle.set(node, 'height', '32px')
-          djDomStyle.set(node, 'overflow', 'hidden')
-        })
       } else {
         node.setAttribute('data-artnum-maximize', 'yes')
-        fastdom.mutate(function () {
-          inode.setAttribute('class', 'fas fa-window-minimize')
-          djDomStyle.set(node, 'bottom', '0')
-          djDomStyle.set(node, 'height', '')
-          djDomStyle.set(node, 'overflow', '')
-        })
       }
     },
 
