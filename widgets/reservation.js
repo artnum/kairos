@@ -768,7 +768,7 @@ define([
         title: title,
         closable: true,
         style: 'width: 100%; height: 100%; padding: 0; padding-top: 8px;',
-        id: 'ReservationTab_' + this.get('uuid'),
+        id: 'ReservationTab_' + this.get('localid'),
         content: f.domNode})
       cp.own(f)
       tContainer.addChild(cp)
