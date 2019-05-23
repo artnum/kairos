@@ -37,7 +37,10 @@
  window.onload = function () {
    var tables = document.getElementsByTagName('TABLE')
    let today = new Date();
-   let options = `{parameters: {'search.begin': '<=${today.toISOString().split('T')[0]}', 'search.end': '>=${today.toISOString().split('T')[0]}','search.deleted': '-', 'search.closed': '-', 'order.begin': 'ASC'}}`
+   let tomorow = new Date()
+   today.setHours(12, 0, 0, 0)
+   tomorow.setDate((new Date()).getDate() + 1)
+   let options = `{parameters: {'search.begin': '<=${tomorow.toISOString().split('T')[0]}', 'search.end': '>=${today.toISOString().split('T')[0]}','search.deleted': '-', 'search.closed': '-', 'order.begin': 'ASC'}}`
    tables[0].setAttribute('data-options', options)
    
    for (var i = 0; i < tables.length; i++) {
