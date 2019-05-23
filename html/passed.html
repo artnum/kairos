@@ -1,4 +1,4 @@
-<!DOCTYPE>
+OA<!DOCTYPE>
 <html>
 <head>
 <title>Réservations passées</title>
@@ -37,6 +37,7 @@
  window.onload = function () {
    var tables = document.getElementsByTagName('TABLE')
    let yesterday = new Date();
+   yesterday.setHours(12, 00, 00)
    yesterday.setDate((new Date()).getDate() - 1)
    let options = `{parameters: {'search.end': '<=${yesterday.toISOString().split('T')[0]}', 'search.deleted': '-', 'sort.id': 'DESC'}}`
    tables[0].setAttribute('data-options', options)
