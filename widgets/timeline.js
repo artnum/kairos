@@ -1450,6 +1450,10 @@ define([
             var name = machine.description
             var label = machine.cn ? machine.cn : ''
 
+            if (machine.state && machine.state.indexOf('SOLD') !== -1) {
+              continue
+            }
+
             if (machine.family) {
               if (Array.isArray(machine.family)) {
                 groupName = []
