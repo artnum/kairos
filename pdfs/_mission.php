@@ -55,12 +55,16 @@ $PDF->addTab(123);
 $PDF->addTab(40);
 
 $PDF->AddPage();
-$PDF->vtab(1);
-
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
 $PDF->tab(1);
 $PDF->setFontSize(5);
+
+$PDF->setY($PDF->tMargin);
+$PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb'), array('align' => 'right')); 
+
+$PDF->vtab(1);
+
 $PDF->hr();
 $PDF->printTaggedLn(array('%cb', $machine['cn']), array('break' => false));
 if(! is_null($addrs['client'])) {
