@@ -1244,7 +1244,7 @@ define([
           return 1
         }
         if (parseInt(a.get('target')) > 0 && parseInt(b.get('target')) > 0) {
-          if (parseInt(a.get('target')) / 100 === parseInt(b.get('target')) / 100) {
+          if (Math.floor(parseInt(a.get('target')) / 100) === Math.floor(parseInt(b.get('target')) / 100)) {
             let ha = parseInt(a.get('height') ? a.get('height') : (a.get('floorheight') ? a.get('floorheight') : (a.get('workheight') ? a.get('workheight') : 0)))
             let hb = parseInt(b.get('height') ? b.get('height') : (b.get('floorheight') ? b.get('floorheight') : (b.get('workheight') ? b.get('workheight') : 0)))
             return ha - hb
