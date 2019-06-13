@@ -1121,7 +1121,7 @@ define([
           var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
           if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
             fastdom.mutate(function () {
-              sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; position: absolute; top: 0; left: ' + pos.x + 'px; z-index: 400; background-color: yellow; opacity: 0.2; pointer-events: none')
+              sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
             })
             none = false
             break
@@ -1237,15 +1237,33 @@ define([
       this.Entries[entry.target] = entry
       this.entries.push(entry)
 
-      entry.domNode.dataset.order = entry.get('order')
-        ? entry.get('order')
-        : (parseInt(entry.get('target')) > 0
-          ? parseInt(entry.get('target')) * 1000
-          : 99999999)
-
+      let cmpNodes = (a, b) => {
+        if (a.get('order') && b.get('order')) {
+          return parseInt(a.get('order')) - parseInt(b.get('order'))
+        } else if (!a.get('order') && b.get('order')) {
+          return 1
+        }
+        if (parseInt(a.get('target')) > 0 && parseInt(b.get('target')) > 0) {
+          if (parseInt(a.get('target')) / 100 === parseInt(b.get('target')) / 100) {
+            let ha = parseInt(a.get('height') ? a.get('height') : (a.get('floorheight') ? a.get('floorheight') : (a.get('workheight') ? a.get('workheight') : 0)))
+            let hb = parseInt(b.get('height') ? b.get('height') : (b.get('floorheight') ? b.get('floorheight') : (b.get('workheight') ? b.get('workheight') : 0)))
+            return ha - hb
+          } else {
+            return parseInt(a.get('target')) - parseInt(b.get('target'))
+          }
+        } else {
+          if (parseInt(a.get('target')) > 0 && !(parseInt(b.get('target')) > 0)) {
+            return -1
+          } else if (!(parseInt(a.get('target')) > 0) && parseInt(b.get('target')) > 0) {
+            return 1
+          } else {
+            return 0
+          }
+        }
+      }
       var p = null
       var i = this.domEntries.lastChild
-      while (i && parseInt(i.dataset.order) > parseInt(entry.domNode.dataset.order)) {
+      while (i && cmpNodes(dtRegistry.getEnclosingWidget(i), entry) > 0) {
         p = i
         i = i.previousSibling
       }

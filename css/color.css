@@ -1,12 +1,25 @@
+@import url('https://fonts.googleapis.com/css?family=Anonymous+Pro&display=swap');
+
 :root {
+    /* INPUT color */
+    --default-input-bg-color-base: 220, 60%, 90%; /* light blue */
+    --default-input-color-base: 0, 0%, 0%; /* black */
+    --default-input-border-color-base: 220, 60%, 26%; /* dark blue */
+    --default-highlight-color-base: 50, 100%, 50%; /* yellow */
+    --default-input-bg-color: hsla(var(--default-input-bg-color-base), 0.2);
+    --default-input-color: hsla(var(--default-input-color-base), 1);
+    --default-input-border-color: hsla(var(--default-input-border-color-base), 1);
+
     --default-bg-color-base: 0, 0%, 100%; /* white */
     --default-color-base: 0, 0%, 0%; /* black */
     --default-reverse-bg-color-base: 0, 0%, 0%; /* black */
     --default-reverse-color-base: 0, 0%, 100%; /* white */
+
     --error-color-base: 0, 100%, 50%; /* red */
     --warn-color-base: 50, 100%, 50%; /* orange */
     --info-color-base: 200 100% 50%; /* blue */
-    --highlight-color: hsla(50, 100%, 50%, 1);
+    --highlight-color: hsla(var(--default-highlight-color-base), 1);
+
     --default-bg-color: hsla(var(--default-bg-color-base), 1);
     --default-color: hsla(var(--default-color-base), 1);
     --default-reverse-bg-color: hsla(var(--default-reverse-bg-color-base), 1);

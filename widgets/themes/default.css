@@ -62,6 +62,18 @@ body.waiting * {
   cursor: initial; 
 }
 
+#Sight {
+    position: absolute;
+    z-index: 400;
+    background-color: var(--highlight-color);
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.entry:hover {
+    background-color: hsla(var(--default-highlight-color-base), 0.2) !important;
+}
+
 /* Menu */
 #AppHeader {
 	z-index: 460;
@@ -446,9 +458,6 @@ body.waiting * {
     width: 200px;
 }
 
-.entry .control .tools {
-    display: none !important;
-}
 .entry .reference:after {
     content: "\0020";
 }
@@ -459,9 +468,10 @@ body.waiting * {
 }
 
 .entry .tools {
+    opacity: 0.2;
+    display: none;
+    margin-top: 16px;
     height: 8px;
-    position: relative;
-    top: -8px;	
 }
 
 .x1 .entry .tools {
