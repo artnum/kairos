@@ -1230,12 +1230,13 @@ define([
         }
 
         Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.uid}})).then(function (res) {
-          let arrival = {target: this.reservation.uid}
+          let arrival = {}
           if (res.success && res.length > 0) {
             arrival = Object.assign(arrival, res.data[0])
           }
 
           if (this.nConfirmed.get('checked')) {
+            arrival.target = this.reservation.uid
             if (f.arrivalDate) {
               if (f.arrivalTime) {
                 arrival.reported = f.arrivalDate.join(f.arrivalTime)

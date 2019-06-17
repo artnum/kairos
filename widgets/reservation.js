@@ -1223,16 +1223,14 @@ define([
           }
           let id = result.data[0].id
           this.domNode.dataset.id = id
-          if (!arrival) {
+          if (!arrival || Object.keys(arrival).length === 0) {
             resolve(id)
           } else {
-            console.log(arrival)
             let query
             if (arrival._op && arrival._op.toLowerCase() === 'delete') {
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
             } else {
               arrival.target = id
-              console.log(arrival)
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
             }
             query.then((result) => {
