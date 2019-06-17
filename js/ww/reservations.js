@@ -103,6 +103,7 @@ new IdxDB().then(function (db) {
       return
     }
 
+    let cookie = msg.data.cookie ? msg.data.cookie : {}
     var localid = msg.data.localid
     var forceServer = false
     switch (msg.data.op) {
@@ -112,7 +113,7 @@ new IdxDB().then(function (db) {
         }
         break
       case 'put':
-        var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: false, data: null}
+        var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: false, data: null, cookie: cookie}
         write(msg.data.data).then(function (response) {
           get(response.id, true).then(function (data) {
             result.localid = localid
@@ -136,7 +137,7 @@ new IdxDB().then(function (db) {
           return
         }
         get(msg.data.id, forceServer).then(function (data) {
-          var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: true, data: null}
+          var result = {op: 'response', id: null, localid: localid, new: false, deleted: false, unchanged: true, data: null, cookie: cookie}
           if (data) {
             if (data.deleted) {
               result = Object.assign(result, {id: data.id, deleted: true, unchanged: false})

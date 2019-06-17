@@ -13,11 +13,11 @@ if (typeof window.GEvent === 'undefined') {
       window.GEvent.GEventTarget.dispatchEvent(new CustomEvent(message.data.type, {detail: message.data.value}))
     }
   }
-  window.GEvent.listen = function (type, callback) {
+  window.GEvent.listen = function (type, callback, once = false) {
     if (Array.isArray(type)) {
-      type.forEach((t) => window.GEvent.GEventTarget.addEventListener(t, callback))
+      type.forEach((t) => window.GEvent.GEventTarget.addEventListener(t, callback, {once: once}))
     } else {
-      window.GEvent.GEventTarget.addEventListener(type, callback)
+      window.GEvent.GEventTarget.addEventListener(type, callback, {once: once})
     }
   }
 }

@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom */
+/* global getElementRect, fastdom, GEvent */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -133,7 +133,7 @@ define([
         if (entries) {
           for (var i = 0; i < entries.length; i++) {
             try {
-              this.entries[entries[i].id] = new Reservation({sup: this, id: entries[i].id})
+              this.entries[entries[i].id] = new Reservation({sup: this, uid: entries[i].id})
               this.entries[entries[i].id].fromJson(entries[i])
             } catch (e) {
               console.log(e)
@@ -158,7 +158,7 @@ define([
             entries.push(cursor.value.id)
             if (!this.entries[cursor.value.id]) {
               try {
-                this.entries[cursor.value.id] = new Reservation({ sup: this, id: cursor.value.id })
+                this.entries[cursor.value.id] = new Reservation({ sup: this, uid: cursor.value.id })
                 this.entries[cursor.value.id].fromJson(cursor.value)
               } catch (e) {
                 /* do nothing */
@@ -196,30 +196,26 @@ define([
     postCreate: function () {
       this.load()
       this.update()
+
       this.Channel = new BroadcastChannel(Path.bcname('reservations'))
       this.Channel.onmessage = function (msg) {
-        if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target) && msg.data.new) {
-          var local = false
-          if (msg.data.localid) {
-            if (window.App.LocalReservations) {
-              if (window.App.LocalReservations[msg.data.localid]) {
-                this.entries[msg.data.id] = window.App.LocalReservations[msg.data.localid]
-                this.entries[msg.data.id].set('sup', this)
-                delete window.App.LocalReservations[msg.data.localid]
-                local = true
-              }
+        if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target)) {
+          let widget = null
+          for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
+            if (entry.dataset.id === msg.data.data.id) {
+              widget = dtRegistry.getEnclosingWidget(entry)
+              break
             }
           }
-          if (!local) {
-            if (!this.entries[msg.data.id]) {
-              this.entries[msg.data.id] = new Reservation({sup: this, id: msg.data.data.id})
-            }
+          if (!widget) {
+            widget = new Reservation({sup: this, uid: msg.data.data.id})
+            this.entries[widget.uid] = widget
           }
-          this.entries[msg.data.id].fromJson(msg.data.data)
-          this.entries[msg.data.id].syncForm()
+          widget.fromJson(msg.data.data)
           this.resize()
         }
       }.bind(this)
+
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
@@ -484,10 +480,12 @@ define([
 
       var sup = this
       this.defaultStatus().then(function (s) {
-        var newReservation = new Reservation({ sup: sup, begin: day, end: end, status: s })
-        window.App.LocalReservations[newReservation.localid] = newReservation
-        newReservation.save()
-        newReservation.popMeUp()
+        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s })
+        newReservation.save().then((id) => {
+          console.log(id)
+          newReservation.set('uid', id)
+          newReservation.popMeUp()
+        })
       })
     },
 
@@ -609,8 +607,23 @@ define([
     },
 
     resizeChild: function () {
-      for (var k in this.entries) {
-        this.entries[k].resize(true)
+      let done = []
+      for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
+        let widget = dtRegistry.getEnclosingWidget(entry)
+        if (widget && widget.resize) {
+          widget.resize()
+          /* reconciliate DOM and list of reservation */
+          if (!this.entries[widget.uid]) { this.entries[widget.uid] = widget }
+          done.push(widget.uid)
+        }
+      }
+
+      for (let e in this.entries) {
+        if (done.indexOf(this.entries[e].uid) === -1) {
+          setTimeout(() => {
+            this.entries[e].resize()
+          }, 0)
+        }
       }
     },
 
@@ -625,7 +638,7 @@ define([
     addOrUpdateReservation: function (reservations) {
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({ id: reservations[i].id, sup: this })
+          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this})
         }
         this.entries[reservations[i].id].fromJson(reservations[i])
       }
