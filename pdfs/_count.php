@@ -135,11 +135,11 @@ $PDF->AddPage();
 $PDF->setFontSize(5);
 /* Title block */
 $PDF->block('title');
-$final = ' intermédiaire ';
+$final = 'Décompte intermédiaire ';
 if ($count['state'] === 'FINAL') {
-  $final = '';
+  $final = 'Décompte ';
 }
-$PDF->printTaggedLn(array('Décompte ', $final, strval($count['id']), '%cb'), array('align' => 'right'));
+$PDF->printTaggedLn(array($final, strval($count['id']), '%cb'), array('align' => 'right'));
 
 $PDF->SetFont('century-gothic');
 $PDF->setFontSize(2);
