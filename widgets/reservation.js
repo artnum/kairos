@@ -1227,7 +1227,12 @@ define([
             resolve(id)
           } else {
             let query
+            if (arrival.deleted) {
+              resolve(id)
+              return
+            }
             if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+              this.set('_arrival', null)
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
             } else {
               arrival.target = id

@@ -1311,10 +1311,9 @@ define([
             window.localStorage.setItem(Path.bcname('autoprint'), '1')
           }
       }
-      this.update(true).then(() => {
-        var pos = getElementRect(targetNode.domNode)
-        window.scroll(0, pos[1] - delta)
-      })
+      this.update(true)
+      let pos = getElementRect(targetNode.domNode)
+      window.scroll(0, pos[1] - delta)
     },
 
     drawTimeline: function () {

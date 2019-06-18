@@ -1236,6 +1236,7 @@ define([
           }
 
           if (this.nConfirmed.get('checked')) {
+            arrival.deleted = null
             arrival.target = this.reservation.uid
             if (f.arrivalDate) {
               if (f.arrivalTime) {
