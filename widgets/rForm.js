@@ -634,6 +634,11 @@ define([
       this.nMEndDate.set('value', this.endDate.get('value'))
       this.nMEndTime.set('value', this.endTime.get('value'))
       this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
+      djOn(this.nForm, 'click', this.clickForm.bind(this))
+    },
+
+    clickForm: function (event) {
+      // console.log(event)
     },
 
     disable: function (v) {
@@ -1169,7 +1174,11 @@ define([
     },
 
     doCopy: function (event) {
-      this.reservation.copy()
+      this.reservation.copy().then((id) => {
+        if (!this.reservation.sup.openReservation(id)) {
+          window.App.OpenAtCreation[id] = true
+        }
+      })
     },
 
     doSaveAndQuit: function (event) {
@@ -1177,7 +1186,7 @@ define([
         this.hide()
       }.bind(this))
     },
-      doSave: function (event) {
+    doSave: function (event) {
       this.domNode.setAttribute('style', 'opacity: 0.2')
       return new Promise(function (resolve, reject) {
         if (!this.HashLastSave) {

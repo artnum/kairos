@@ -129,9 +129,10 @@ define([
         case 'entries':
           msgData.value.forEach((entry) => {
             if (!this.entries[entry.id]) {
-              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id})
+              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+            } else {
+              this.entries[entry.id].fromJson(entry)
             }
-            this.entries[entry.id].fromJson(entry)
           })
           setTimeout(function () { this.resize(); this.domNode.dataset.refresh = 'fresh'; }.bind(this), 1)
           break
@@ -573,9 +574,10 @@ define([
     addOrUpdateReservation: function (reservations) {
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this})
+          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this, _json: reservations[i]})
+        } else {
+          this.entries[reservations[i].id].fromJson(reservations[i])
         }
-        this.entries[reservations[i].id].fromJson(reservations[i])
       }
 
       this.show()
@@ -669,9 +671,11 @@ define([
     },
 
     openReservation: function (id) {
-      if (this.entries[id]) {
-        this.entries[id].popMeUp()
-        return true
+      for (let i in this.entries) {
+        if (i.uid === id) {
+          i.popMeUp()
+          return true
+        }
       }
       return false
     },

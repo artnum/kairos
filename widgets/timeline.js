@@ -115,6 +115,8 @@ define([
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
 
+
+    OpenAtCreation: {},
     center: null,
     offset: 220,
     blockSize: 42,

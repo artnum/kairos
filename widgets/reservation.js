@@ -218,10 +218,18 @@ define([
         window.App.info(txt, code)
     },
     postCreate: function () {
+      if (this._json) {
+        this.fromJson(this._json)
+        delete this._json
+      }
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
       this.resize()
+      if (window.App.OpenAtCreation[this.uid]) {
+        delete window.App.OpenAtCreation[this.uid]
+        this.popMeUp()
+      }
     },
 
     evTouchStart: function (event) {
@@ -1248,6 +1256,7 @@ define([
     copy: function () {
       let object = this.toObject()
       let originalId = object['id']
+      delete object['uuid']
       delete object['id']
       delete object['arrival']
       object['creator'] = window.localStorage.getItem(Path.bcname('user'))
