@@ -168,7 +168,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
+      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -399,7 +399,7 @@ define([
     _setSupAttr: function (sup) {
       if (this.sup === sup) { return }
       this._set('sup', sup)
-      if (this.domNode) {
+      if (this.domNode && this.domNode.parentNode) {
         fastdom.mutate(djLang.hitch(this, function () {
           this.domNode.parentNode.removeChild(this.domNode)
           sup.data.appendChild(this.domNode)
@@ -717,9 +717,8 @@ define([
       }
       window.App.setOpen(this.uid)
       var f = new RForm({ reservation: this })
-      this.highlight()
-
       var title = 'Réservation ' + this.uid
+
       var cp = new DtContentPane({
         title: title,
         closable: true,
@@ -1275,6 +1274,58 @@ define([
             resolve(newId)
           })
         })
+      })
+    },
+
+    export: function () {
+      let RFileObject = {version: 1.0}
+      let reservation = this.toObject()
+      let arrival = {}
+      let rid = reservation.id
+      if (reservation.type) {
+        reservation.type = `store/Status/${reservation.type}`
+      }
+      delete reservation.id
+      if (reservation.arrival) {
+        arrival = reservation.arrival
+        delete arrival.target
+        delete reservation.arrival
+      }
+      let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
+      let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
+      let associations = []
+      let contacts = []
+      Promise.all([pContacts, pAssociations]).then((results) => {
+        console.log(results)
+        if (results[1].length > 0) {
+          results[1].data.forEach((a) => {
+            delete a.reservation
+            if (a.type) {
+              let t = a.type.split('/')
+              a.type = `store/Status/${t[t.length - 1]}`
+            }
+            associations.push(a)
+          })
+        }
+        if (results[0].length > 0) {
+          results[0].data.forEach((c) => {
+            delete c.reservation
+            if (c.target) {
+              c.target = `store${c.target}`
+            }
+            contacts.push(c)
+          })
+        }
+        RFileObject.content = [
+          {reservation: rid,
+           content: reservation,
+           arrival: arrival,
+           association: associations,
+           contact: contacts
+          }
+        ]
+        let OutFile = btoa(JSON.stringify(RFileObject))
+        window.open(`data:application/octet-stream;filename=export.txt,base64,${OutFile}`, 'export.txt')
       })
     },
 

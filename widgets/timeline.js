@@ -174,9 +174,9 @@ define([
 
       this.zoomCss = document.createElement('style')
 
-      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
+      /* this.Reservation = new Worker(Path.url('/js/ww/reservations.js')) */
 
-      this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
+      /* this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
         if (e.data.op) {
@@ -200,7 +200,7 @@ define([
           }
         }
         this.unwait()
-      })
+      }) */
 
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
@@ -1048,6 +1048,9 @@ define([
           this.refresh()
         } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
+          for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
+            node.dataset.refresh = 'outdated'
+          }
           this.timelineMoving = true
         }
       }.bind(this))
@@ -1486,7 +1489,7 @@ define([
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
+              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
               e.loadExtension().then(this.placeEntry.bind(this))
 
               var families = []
@@ -1513,10 +1516,11 @@ define([
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
+              this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
+                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
                   e.loadExtension().then(this.placeEntry.bind(this))
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
@@ -1526,10 +1530,11 @@ define([
                   djDomClass.add(e.domNode, groupName)
 
                   loaded.push(e.loaded)
+                  this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
                 }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
+                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
                 e.loadExtension().then(this.placeEntry.bind(this))
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
@@ -1539,6 +1544,7 @@ define([
 
                 djDomClass.add(e.domNode, groupName)
                 loaded.push(e.loaded)
+                this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
               }
 
               inc++
@@ -1571,12 +1577,7 @@ define([
         begin.setTime(begin.getTime() - 604800000)
         end.setTime(end.getTime() + 604800000)
 
-        this.Updater.postMessage({type: 'move',
-          content: [String(Path.url('store/DeepReservation')), {
-            query: { 'search.begin': '<' + djDateStamp.toISOString(end, { zulu: true }),
-              'search.end': '>' + djDateStamp.toISOString(begin, { zulu: true }),
-              'search.deleted': '-'}}]
-        })
+        this.Updater.postMessage({op: 'move', begin: begin, end: end})
       }
     },
 
@@ -1670,7 +1671,7 @@ define([
       return current
     },
 
-    doSearchLocation: function (loc) {
+    doSearchLocation: function (loc, dontmove = false) {
       DoWait()
       return new Promise(function (resolve, reject) {
         Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
@@ -1683,13 +1684,15 @@ define([
               DoWait(false)
               return
             }
-            this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin))
+            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
             this.update()
             var data = result.data
             this.Entries[data.target].addOrUpdateReservation([data])
             if (this.Entries[data.target].openReservation(data.id)) {
-              var pos = djDomGeo.position(this.Entries[data.target].domNode, true)
-              window.scroll(0, pos.y - (window.innerHeight / 3))
+              if (!dontmove) {
+                let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                window.scroll(0, pos.y - (window.innerHeight / 3))
+              }
               resolve()
             } else {
               reject()

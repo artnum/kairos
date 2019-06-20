@@ -215,7 +215,7 @@ define([
       return false
     },
     gotoReservation: async function (val) {
-      this.doSearchLocation(val).then(() => { return true }, () => { return false })
+      this.doSearchLocation(val, true).then(() => { return true }, () => { return false })
     },
 
     keys: function (event) {

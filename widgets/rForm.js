@@ -1343,7 +1343,9 @@ define([
     openAddCount: async function () {
       new CountList({addReservation: this.reservation.uid, integrated: true}) // eslint-disable-line
     },
-
+    clickExport: function () {
+      this.reservation.export()
+    },
     refreshCount: async function () {
       Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.uid}})).then(async function (counts) {
         var frag = document.createDocumentFragment()

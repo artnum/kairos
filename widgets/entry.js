@@ -99,6 +99,9 @@ define([
       this.tags = []
       this.entries = {}
       this.currentLocation = ''
+      this.CommChannel = args.channel
+
+      this.CommChannel.port1.onmessage = this.channelMsg.bind(this)
 
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
@@ -117,6 +120,23 @@ define([
     info: function (txt, code) {
       this.sup.info(txt, code)
     },
+    port: function () {
+      return this.CommChannel.port2
+    },
+    channelMsg: function (msg) {
+      let msgData = msg.data
+      switch (msgData.op) {
+        case 'entries':
+          msgData.value.forEach((entry) => {
+            if (!this.entries[entry.id]) {
+              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id})
+            }
+            this.entries[entry.id].fromJson(entry)
+          })
+          setTimeout(function () { this.resize(); this.domNode.dataset.refresh = 'fresh'; }.bind(this), 1)
+          break
+      }
+    },
     computeIntervalOffset: function (date) {
       var hour = date.getHours()
       var h = (17 - 7) * 3.8 + (24 - (17 - 7)) * 1
@@ -127,95 +147,10 @@ define([
       return (7 * bs) + ((17 - 7) * 3.8 * bs) + ((hour - 17) * bs)
     },
 
-    load: function () {
-      window.App.DB.transaction('reservations').objectStore('reservations').index('by_target').getAll(this.get('target')).onsuccess = function (event) {
-        var entries = event.target.result
-        if (entries) {
-          for (var i = 0; i < entries.length; i++) {
-            try {
-              this.entries[entries[i].id] = new Reservation({sup: this, uid: entries[i].id})
-              this.entries[entries[i].id].fromJson(entries[i])
-            } catch (e) {
-              console.log(e)
-              console.log(entries[i])
-            }
-          }
-          this.resize()
-        }
-      }.bind(this)
-    },
-
     update: function () {
-      return new Promise(function (resolve, reject) {
-        var entries = []
-        var idx = window.App.DB.transaction('reservations').objectStore('reservations').index('by_target')
-        idx.openCursor(this.target).onsuccess = function (e) {
-          var cursor = e.target.result
-          if (cursor) {
-            if (typeof this.entries === 'undefined') {
-              return
-            }
-            entries.push(cursor.value.id)
-            if (!this.entries[cursor.value.id]) {
-              try {
-                this.entries[cursor.value.id] = new Reservation({ sup: this, uid: cursor.value.id })
-                this.entries[cursor.value.id].fromJson(cursor.value)
-              } catch (e) {
-                /* do nothing */
-              }
-            } else {
-              if (this.entries[cursor.value.id]._hash !== cursor.value._hash) {
-                if (window.App.isOpen(cursor.value.id)) {
-                  if (!window.App.isModify(cursor.value.id)) {
-                    this.syncForm()
-                  }
-                  window.App.unsetModify(cursor.value.id)
-                }
-                try {
-                  this.entries[cursor.value.id].fromJson(cursor.value)
-                } catch (e) {
-                  console.log(e)
-                }
-              }
-            }
-            cursor.continue()
-          } else {
-            for (var k in this.entries) {
-              if (entries.indexOf(k) === -1) {
-                this.entries[k].destroy()
-                delete this.entries[k]
-              }
-            }
-            this.show()
-            resolve()
-          }
-        }.bind(this)
-      }.bind(this))
     },
 
     postCreate: function () {
-      this.load()
-      this.update()
-
-      this.Channel = new BroadcastChannel(Path.bcname('reservations'))
-      this.Channel.onmessage = function (msg) {
-        if (msg.data && msg.data.op === 'response' && String(msg.data.data.target) === String(this.target)) {
-          let widget = null
-          for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
-            if (entry.dataset.id === msg.data.data.id) {
-              widget = dtRegistry.getEnclosingWidget(entry)
-              break
-            }
-          }
-          if (!widget) {
-            widget = new Reservation({sup: this, uid: msg.data.data.id})
-            this.entries[widget.uid] = widget
-          }
-          widget.fromJson(msg.data.data)
-          this.resize()
-        }
-      }.bind(this)
-
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
