@@ -148,7 +148,6 @@ define([
       }
       return done
     },
-
     gotoDay: async function (val) {
       var elements = val.split(/(?:\/|\.|-|\s)/)
       var date = new Date()
@@ -207,7 +206,6 @@ define([
       }
       if (top !== -1) {
         var hh = Math.round(window.innerHeight / 3)
-        console.log(hh, top)
         window.scrollTo(0, top - hh)
         return true
       }

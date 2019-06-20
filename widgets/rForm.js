@@ -638,7 +638,19 @@ define([
     },
 
     clickForm: function (event) {
-      // console.log(event)
+      if (event.target.nodeName === 'LABEL') {
+        let labelFor = event.target.getAttribute('for')
+        switch (labelFor) {
+          case 'beginDate':
+          case 'endDate':
+            let date = this[labelFor].get('value')
+            window.App.gotoMachine(this.reservation.get('target'))
+            window.App.set('center', date)
+            window.App.update()
+            this.reservation.highlight()
+            break
+        }
+      }
     },
 
     disable: function (v) {

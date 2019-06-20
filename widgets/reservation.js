@@ -1195,9 +1195,11 @@ define([
     },
 
     highlight: function () {
-      if (this.sup) {
-        this.sup.highlight(this.domNode)
-      }
+      if (this.highlightTimer) { window.clearTimeout(this.highlightTimer) }
+      this.domNode.classList.add('highlight')
+      this.highlightTimer = window.setTimeout(function () {
+        this.domNode.classList.remove('highlight')
+      }.bind(this), 3000)
     },
     _getEntriesAttr: function () {
       if (!this.sup) { return [] }
