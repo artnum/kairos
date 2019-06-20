@@ -70,6 +70,8 @@ define([
     form: null,
     dbContact: null,
     complements: [],
+    hdivider: 1,
+    hposition: 0,
 
     constructor: function () {
       this.destroyed = false
@@ -212,10 +214,10 @@ define([
       window.App.error(txt, code)
     },
     warn: function (txt, code) {
-        window.App.warn(txt, code)
+      window.App.warn(txt, code)
     },
     info: function (txt, code) {
-        window.App.info(txt, code)
+      window.App.info(txt, code)
     },
     postCreate: function () {
       if (this._json) {
@@ -229,6 +231,7 @@ define([
       if (window.App.OpenAtCreation[this.uid]) {
         delete window.App.OpenAtCreation[this.uid]
         this.popMeUp()
+        this.highlight()
       }
     },
 
@@ -256,10 +259,6 @@ define([
           this._zindex = djDomStyle.get(this.domNode, 'z-index')
           this.highlight()
           djDomStyle.set(this.domNode, 'z-index', '99999999')
-          if (this.overlap.do) {
-            var height = djDomStyle.get(this.domNode, 'height')
-            djDomStyle.set(this.domNode, 'height', height * this.getOverlapLevel())
-          }
           djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
@@ -273,10 +272,6 @@ define([
 
       if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
-          if (this.overlap.do) {
-            var height = djDomStyle.get(this.domNode, 'height')
-            djDomStyle.set(this.domNode, 'height', height / this.getOverlapLevel())
-          }
           djDomStyle.set(this.domNode, 'z-index', this._zindex)
           this._isolated = false
         }
@@ -1142,7 +1137,6 @@ define([
           height /= overlapLevel
           top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
         }
-
         var domstyle = ['position: absolute']
         domstyle.push('width: ' + stopPoint + 'px')
         domstyle.push('left: ' + startPoint + 'px')

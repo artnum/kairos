@@ -543,27 +543,20 @@ define([
     },
 
     resizeChild: function () {
-      let done = []
-      for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
-        let widget = dtRegistry.getEnclosingWidget(entry)
-        if (widget && widget.resize) {
-          widget.resize()
-          /* reconciliate DOM and list of reservation */
-          if (!this.entries[widget.uid]) { this.entries[widget.uid] = widget }
-          done.push(widget.uid)
-        }
-      }
-
       for (let e in this.entries) {
-        if (done.indexOf(this.entries[e].uid) === -1) {
-          setTimeout(() => {
-            this.entries[e].resize()
-          }, 0)
-        }
+        setTimeout(() => {
+          this.entries[e].resize()
+        }, 0)
       }
     },
 
     resize: function () {
+      for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
+        let widget = dtRegistry.getEnclosingWidget(entry)
+        if (widget && widget.resize) {
+          if (!this.entries[widget.uid]) { this.entries[widget.uid] = widget }
+        }
+      }
       this.overlap()
       fastdom.measure(function () {
         this.view.rectangle = getElementRect(this.domNode)

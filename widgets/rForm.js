@@ -1189,7 +1189,10 @@ define([
       this.reservation.copy().then((id) => {
         if (!this.reservation.sup.openReservation(id)) {
           window.App.OpenAtCreation[id] = true
+        } else {
+          this.reservation.highlight()
         }
+        this.hide()
       })
     },
 

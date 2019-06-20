@@ -1,9 +1,9 @@
 .reservation.highlight {
+    z-index: 99;
     box-shadow: 0px 0px 26px 10px hsla(300, 100%, 50%, 1) !important;
     filter: none !important;
 }
 
 .reservation.done.highlight {
-    box-shadow: 0px 0px 26px 10px hsla(300, 100%, 50%, 1) !important;
     filter: opacity(0.5) !important;
 }
