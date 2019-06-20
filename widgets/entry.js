@@ -671,11 +671,9 @@ define([
     },
 
     openReservation: function (id) {
-      for (let i in this.entries) {
-        if (i.uid === id) {
-          i.popMeUp()
-          return true
-        }
+      if (this.entries[id]) {
+        this.entries[id].popMeUp()
+        return true
       }
       return false
     },
