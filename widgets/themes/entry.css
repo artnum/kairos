@@ -1,0 +1,17 @@
+.entry .control .tools  {
+    float: left;
+    font-size: 12px;
+    height: 12px;
+    margin: 0;
+    float: right;
+    text-align: right;
+    color: hsla(0, 0%, 0%, 0.3);
+}
+
+.entry[data-refresh="outdated"] .tools .fa-sync {
+    color: hsla(0, 100%, 40%, 0.3);
+}
+
+.entry[data-refresh="fresh"] .tools .fa-sync {
+    color: hsla(120, 100%, 40%, 0.3);                                                                                                                                                                               
+}
