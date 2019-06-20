@@ -6,7 +6,7 @@
 }
 
 .rForm .targetable {
-    cursor: crosshair;
+    cursor: pointer;
     text-decoration: underline dotted;
 }
 
