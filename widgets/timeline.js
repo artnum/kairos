@@ -173,35 +173,6 @@ define([
       this.FirstLoad = true
 
       this.zoomCss = document.createElement('style')
-
-      /* this.Reservation = new Worker(Path.url('/js/ww/reservations.js')) */
-
-      /* this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
-      this.Cleaner.onmessage = djLang.hitch(this, function (e) {
-        if (!e || !e.data) { return }
-        if (e.data.op) {
-          switch (e.data.op.toLowerCase()) {
-            case 'rebuild':
-              window.location.reload(true)
-              break
-            case 'loaded':
-              this.revision()
-              this.update()
-              break
-          }
-
-          this.unwait()
-          return
-        }
-        for (var i = 0; i < e.data.length; i++) {
-          if (this.Entries[e.data[i]]) {
-            console.log('Cleaning ' + e.data[i])
-            this.Entries[e.data[i]].update()
-          }
-        }
-        this.unwait()
-      }) */
-
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
@@ -259,7 +230,9 @@ define([
 
       window.GEvent.listen('reservation.open', function (event) {
         if (event.detail.id) {
-          this.doSearchLocation(event.detail.id)
+          this.doSearchLocation(event.detail.id).then(() => {
+            let n = new Notification(`Réservation ${event.detail.id} ouverte`, {body: 'La réservation a été ouverte avec succès', tag: `reservationOpen${event.detail.id}`})
+          })
         }
       }.bind(this))
       window.GEvent.listen('reservation.attribute-click', function (event) {
