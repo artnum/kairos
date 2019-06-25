@@ -71,6 +71,9 @@ dojoConfig = {
 <script src="../js/PJs/pSBC.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script> 
 <script>
+ if (window.APPConf && window.APPConf.domain) {
+   document.domain = window.APPConf.domain
+ }
 	require([
 		"dojo/_base/lang",
 		"location/timeline",
