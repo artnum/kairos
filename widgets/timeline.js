@@ -114,8 +114,6 @@ define([
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
-
-
     OpenAtCreation: {},
     center: null,
     offset: 220,
@@ -670,7 +668,7 @@ define([
         window.setTimeout(() => { /* hack to work in google chrome */
           if (window.location.hash) {
             if (Number(window.location.hash.substr(1))) {
-              that.doSearchLocation(window.location.hash.substr(1))
+              that.doSearchLocation(window.location.hash.substr(1), true)
             } else {
               var sub = window.location.hash.substr(1)
               switch (String(sub.substr(0, 3)).toLowerCase()) {
