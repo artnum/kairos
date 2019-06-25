@@ -1122,7 +1122,7 @@ define([
         }
         toolsOffsetEnd *= this.get('blockSize') / 24
       }
-      var domclass = {reservation: true, overlap: this.overlap.do > 0, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
+      var domclass = {reservation: true, overlap: this.get('hdivider') > 1, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
       var supRect = this.sup.view.rectangle
       fastdom.measure(djLang.hitch(this, function () {
         var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
@@ -1132,11 +1132,8 @@ define([
 
         var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
         var top = supRect[1] + supTopBorder
-        if (this.overlap.do) {
-          var overlapLevel = this.getOverlapLevel()
-          height /= overlapLevel
-          top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
-        }
+        height = height / this.get('hdivider')
+        top += (height + myTopBorder) * this.get('hposition')
         var domstyle = ['position: absolute']
         domstyle.push('width: ' + stopPoint + 'px')
         domstyle.push('left: ' + startPoint + 'px')
