@@ -48,7 +48,6 @@ define([
   'location/timeline/popup',
   'location/timeline/keys',
   'location/timeline/filters',
-  'location/timeline/gevent',
   'location/update',
   'location/count',
   'location/countList',
@@ -102,7 +101,7 @@ define([
 
   Entry,
 
-  tlPopup, tlKeys, update, Filters, GEvent,
+  tlPopup, tlKeys, update, Filters,
 
   Count,
   CountList,

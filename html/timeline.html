@@ -54,6 +54,12 @@ dojoConfig = {
 }
 </script>
 <script src="../conf/app.js"></script>
+<script>
+ if (window.APPConf && window.APPConf.domain) {
+   document.domain = window.APPConf.domain
+ } 
+</script>
+<script src="../js/gevent.js"></script>
 <script src="../js/wait.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
 <script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
@@ -71,9 +77,6 @@ dojoConfig = {
 <script src="../js/PJs/pSBC.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script> 
 <script>
- if (window.APPConf && window.APPConf.domain) {
-   document.domain = window.APPConf.domain
- }
 	require([
 		"dojo/_base/lang",
 		"location/timeline",
