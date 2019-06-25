@@ -5,6 +5,11 @@
     overflow: auto;
 }
 
+.rForm .targetable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
 .rForm .dijitTabPaneWrapper {
     max-width: 100% !important;
 }

@@ -1,4 +1,7 @@
 @import 'rform.css';
+@import 'entry.css';
+@import 'reservation.css';
+
 
 html {
 	overflow-x: hidden;
@@ -9,16 +12,12 @@ body.waiting * {
 }
 
 .header:active div.even {
-    background-color: red;
-    color: var(--highlight-color);
+	background-color: red;
+	color: yellow;
 }
 .header:active div.odd {
-    background-color: var(--highlight-color);
-    color: red;
-}
-
-.highlight {
-    box-shadow: 0px 0px 26px 10px var(--highlight-color);
+	background-color: yellow;
+	color: red;
 }
 
 .leftpane {
@@ -468,10 +467,15 @@ body.waiting * {
 }
 
 .entry .tools {
+<<<<<<< HEAD
     opacity: 0.2;
     display: none;
     margin-top: 16px;
     height: 8px;
+=======
+    margin-top: 16px;
+    height: 16px;
+>>>>>>> airnace
 }
 
 .reservation .tools {

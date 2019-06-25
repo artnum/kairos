@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom, getUUID */
+/* global getElementRect, fastdom, GEvent */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -98,8 +98,10 @@ define([
       this.originalHeight = 0
       this.tags = []
       this.entries = {}
-      this.openOnReceive = {}
       this.currentLocation = ''
+      this.CommChannel = args.channel
+
+      this.CommChannel.port1.onmessage = this.channelMsg.bind(this)
 
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
@@ -118,6 +120,24 @@ define([
     info: function (txt, code) {
       this.sup.info(txt, code)
     },
+    port: function () {
+      return this.CommChannel.port2
+    },
+    channelMsg: function (msg) {
+      let msgData = msg.data
+      switch (msgData.op) {
+        case 'entries':
+          msgData.value.forEach((entry) => {
+            if (!this.entries[entry.id]) {
+              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+            } else {
+              this.entries[entry.id].fromJson(entry)
+            }
+          })
+          setTimeout(function () { this.resize(); this.domNode.dataset.refresh = 'fresh'; }.bind(this), 1)
+          break
+      }
+    },
     computeIntervalOffset: function (date) {
       var hour = date.getHours()
       var h = (17 - 7) * 3.8 + (24 - (17 - 7)) * 1
@@ -128,52 +148,10 @@ define([
       return (7 * bs) + ((17 - 7) * 3.8 * bs) + ((hour - 17) * bs)
     },
 
-    load: function () {
-    },
-
     update: function () {
-      return new Promise(function (resolve, reject) {
-        resolve()
-      })
-    },
-
-    receiveContent: function (content) {
-      switch (content.op) {
-        case 'responses':
-          var all = []
-          for (let i = 0; i < content.data.length; i++) {
-            all.push(new Promise(function (resolve, reject) {
-              setTimeout(function () {
-                var id = this.reservation.uuid
-                if (!this.entry.entries[id]) {
-                  this.entry.entries[id] = new Reservation({sup: this.entry, IDent: this.reservation.id, uuid: this.reservation.uuid})
-                }
-                this.entry.entries[id].fromJson(this.reservation)
-                resolve()
-              }.bind(this), 10)
-            }.bind({entry: this, reservation: content.data[i]})))
-          }
-
-          Promise.all(all).then(function () {
-            this.resize()
-          }.bind(this))
-          break
-        case 'response':
-          /* we switch to uuid so handle this */
-          var id = content.uuid ? content.uuid : content.id
-          if (!this.entries[id]) {
-            this.entries[id] = new Reservation({sup: this, IDent: content.id, uuid: content.uuid})
-          }
-          this.entries[id].fromJson(content)
-          this.resize()
-          break
-      }
     },
 
     postCreate: function () {
-      this.load()
-      this.update()
-      this.Channel = window.App.Reservation
       djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
       djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
       djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
@@ -429,53 +407,25 @@ define([
     },
 
     createReservation: function (day) {
-      return new Promise(async function (resolve, reject) {
-        if (!day) {
-          day = this.get('dateRange').begin
-        }
-        var end = new Date(day.getTime())
-        end.setHours(17, 0, 0, 0)
-        day.setHours(8, 0, 0, 0)
+      if (!day) {
+        day = this.get('dateRange').begin
+      }
+      var end = new Date(day.getTime())
+      end.setHours(17, 0, 0, 0)
+      day.setHours(8, 0, 0, 0)
 
-        getUUID().then(async function (uuid) {
-          let all = []
-          all.push(this.defaultStatus())
-          all.push(Query.exec(Path.url('store/Reservation'), {method: 'POST', body: {uuid: uuid}}))
-          Promise.all(all).then(function ([status, result]) {
-            if (result.success && result.length === 1) {
-              this.openOnReceive[uuid] = 1
-              let newReservation = new Reservation({sup: this, IDent: result.data[0].id, begin: day, end: end, status: status, uuid: uuid, openOnLoad: true})
-              this.entries[newReservation.uuid] = newReservation
-              newReservation.save()
-            } else {
-              window.App.error('Impossible de créer une nouvelle réservation')
-            }
-            resolve()
-          }.bind(this))
-        }.bind(this))
-      }.bind(this))
+      var sup = this
+      this.defaultStatus().then(function (s) {
+        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s })
+        newReservation.save().then((id) => {
+          console.log(id)
+          newReservation.set('uid', id)
+          newReservation.popMeUp()
+        })
+      })
     },
 
     copy: function (original) {
-      getUUID().then(function (uuid) {
-        let all = []
-        all.push(this.defaultStatus())
-        all.push(Query.exec(Path.url('store/Reservation'), {method: 'POST', body: {uuid: uuid}}))
-        Promise.all(all).then(function ([status, result]) {
-          if (result.success && result.length === 1) {
-            var copy = original.toObject()
-            copy.id = result.data[0].id
-            copy.IDent = copy.id
-            copy.uuid = uuid
-            this.openOnReceive[uuid] = 1
-            this.entries[uuid] = new Reservation({sup: this, IDent: result.data[0].id, begin: new Date(copy.begin), end: new Date(copy.end), status: copy.status, uuid: uuid, openOnLoad: true})
-            this.entries[uuid].fromJson(copy)
-            this.entries[uuid].save()
-          } else {
-            window.App.error(`Impossible de dupliquer la réservation ${original.id}`)
-          }
-        }.bind(this))
-      }.bind(this))
     },
 
     _getOffsetAttr: function () {
@@ -593,14 +543,20 @@ define([
     },
 
     resizeChild: function () {
-      for (let k in this.entries) {
-        setTimeout(function () {
-          this.resize(true)
-        }.bind(this.entries[k]), 5)
+      for (let e in this.entries) {
+        setTimeout(() => {
+          this.entries[e].resize()
+        }, 0)
       }
     },
 
     resize: function () {
+      for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
+        let widget = dtRegistry.getEnclosingWidget(entry)
+        if (widget && widget.resize) {
+          if (!this.entries[widget.uid]) { this.entries[widget.uid] = widget }
+        }
+      }
       this.overlap()
       fastdom.measure(function () {
         this.view.rectangle = getElementRect(this.domNode)
@@ -611,9 +567,10 @@ define([
     addOrUpdateReservation: function (reservations) {
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({ id: reservations[i].id, sup: this, uuid: reservations[i].uuid})
+          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this, _json: reservations[i]})
+        } else {
+          this.entries[reservations[i].id].fromJson(reservations[i])
         }
-        this.entries[reservations[i].id].fromJson(reservations[i])
       }
 
       this.show()
@@ -677,7 +634,6 @@ define([
         var root = true
         entries[i].overlap.order = i
         for (var j = 0; j < overlapRoot.length; j++) {
-          if (!overlapRoot[j].range) { continue }
           if (overlapRoot[j].range.overlap(entries[i].range)) {
             if (overlapRoot[j].duration > entries[i].duration) {
               overlapRoot[j].overlap.elements.push(entries[i])

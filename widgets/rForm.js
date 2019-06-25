@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global pSBC, Artnum */
+/* global pSBC, Artnum, GEvent */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -121,12 +121,12 @@ define([
       this.userStore_bis = new DjMemory()
 
       window.GEvent.listen('count.reservation-add', function (event) {
-        if (event.detail.reservation && event.detail.reservation === this.reservation.get('id')) {
+        if (event.detail.reservation && event.detail.reservation === this.reservation.uid) {
           this.refreshCount()
         }
       }.bind(this))
       window.GEvent.listen('reservation.close', function (event) {
-        if (event.detail.id && event.detail.id === this.reservation.get('id')) {
+        if (event.detail.id && event.detail.id === this.reservation.uid) {
           if (!this.CloseInProgress) {
             this.close(true)
           }
@@ -208,12 +208,12 @@ define([
         var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
         _c = 'store/User/' + _c.id
         if (event.target.getAttribute('data-target') === 'c') {
-          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.get('id')), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.get('id'), creator: _c })})
+          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.uid), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
           if (mod.success && mod.length === 1) {
             this.set('creator', _c)
           }
         } else {
-          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.get('id'), creator: _c })})
+          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
           if (mod.success && mod.length === 1) {
             this.set('arrivalCreator', _c)
           }
@@ -549,7 +549,7 @@ define([
       query['target'] = null
       query['comment'] = f.nMComment ? f.nMComment : ''
       query['type'] = f.associationType
-      query['reservation'] = this.reservation.get('id')
+      query['reservation'] = this.reservation.uid
 
       if (this.nComplementId.value !== '') {
         query['id'] = this.nComplementId.value
@@ -634,12 +634,23 @@ define([
       this.nMEndDate.set('value', this.endDate.get('value'))
       this.nMEndTime.set('value', this.endTime.get('value'))
       this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
+      djOn(this.nForm, 'click', this.clickForm.bind(this))
     },
 
-    sync: function () {
-      [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
-        this.set(e, this.reservation.get(e))
-      }))
+    clickForm: function (event) {
+      if (event.target.nodeName === 'LABEL') {
+        let labelFor = event.target.getAttribute('for')
+        switch (labelFor) {
+          case 'beginDate':
+          case 'endDate':
+            let date = this[labelFor].get('value')
+            window.App.gotoMachine(this.reservation.get('target'))
+            window.App.set('center', date)
+            window.App.update()
+            this.reservation.highlight()
+            break
+        }
+      }
     },
 
     disable: function (v) {
@@ -668,7 +679,7 @@ define([
 
     load: async function () {
       this.initCancel()
-      this.sync()
+
       var that = this
       this.nMachineChange.set('value', this.reservation.get('target'))
 
@@ -810,7 +821,7 @@ define([
       this.toggleDelivery()
 
       url = Path.url('store/ReservationContact')
-      url.searchParams.set('search.reservation', this.reservation.get('id'))
+      url.searchParams.set('search.reservation', this.reservation.uid)
       var res = await Query.exec(url)
       if (res.length > 0) {
         res.data.forEach(djLang.hitch(this, async function (contact) {
@@ -1009,12 +1020,12 @@ define([
 
       if (id != null) {
         var url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.get('id'))
+        url.searchParams.set('search.reservation', this.reservation.uid)
         url.searchParams.set('search.target', id)
         url.searchParams.set('search.comment', type)
         Query.exec(url).then(djLang.hitch(this, function (results) {
           if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: that.reservation.get('id'), comment: type, freeform: null, target: id}}).then(djLang.hitch(this, function (result) {
+            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: that.reservation.uid, comment: type, freeform: null, target: id}}).then(djLang.hitch(this, function (result) {
               if (!result.success) {
                 return
               }
@@ -1031,12 +1042,12 @@ define([
         }))
       } else {
         url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.get('id'))
+        url.searchParams.set('search.reservation', this.reservation.uid)
         url.searchParams.set('search.target', id)
         url.searchParams.set('search.freeform', options.freeform)
         Query.exec(url).then(djLang.hitch(this, function (results) {
           if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.get('id'), comment: type, freeform: options.freeform, target: null}}).then(function (result) {
+            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.uid, comment: type, freeform: options.freeform, target: null}}).then(function (result) {
               if (result.success && result.length === 1) {
                 options.linkId = result.data[0].id
                 that.createContact(options, type, true)
@@ -1065,7 +1076,7 @@ define([
     destroy: function (noevent = false) {
       this.CloseInProgress = true
       if (!noevent) {
-        window.GEvent('reservation.close', {id: this.reservation.get('id')})
+        window.GEvent('reservation.close', {id: this.reservation.uid})
       }
     },
 
@@ -1083,15 +1094,15 @@ define([
 
     _print: function (type) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        Query.exec((Path.url('exec/auto-print.php', {params: {type: type, file: 'pdfs/' + type + '/' + this.reservation.get('IDent')}}))).then(function (result) {
+        Query.exec((Path.url('exec/auto-print.php', {params: {type: type, file: 'pdfs/' + type + '/' + this.reservation.uid}}))).then(function (result) {
           if (result.success) {
-            window.App.info('Impression (' + type + ') pour la réservation ' + this.reservation.get('id') + ' en cours')
+            window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
           } else {
-            window.App.error('Erreur d\'impression (' + type + ') pour la réservation ' + this.reservation.get('id'))
+            window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
           }
         }.bind(this))
       } else {
-        window.App.print('../pdfs/' + type + '/' + this.reservation.get('IDent'))
+        window.App.print('../pdfs/' + type + '/' + this.reservation.uid)
       }
     },
 
@@ -1115,16 +1126,9 @@ define([
     },
 
     doDelete: function (event) {
-      var retval = this.reservation.get('_arrival')
-      if (this.reservation.remove()) {
-        if (retval && retval.id) {
-          Query.exec(Path.url('store/Arrival/' + retval.id), {method: 'delete'})
-        }
-        Query.exec(Path.url('store/Reservation/' + this.reservation.get('id')), {method: 'delete'}).then(function (result) {
-          this.reservation.destroy()
-          this.hide()
-        }.bind(this))
-      }
+      this.reservation.remove().then(() => {
+        this.hide()
+      })
     },
 
     validate: function () {
@@ -1182,7 +1186,14 @@ define([
     },
 
     doCopy: function (event) {
-      this.reservation.copy()
+      this.reservation.copy().then((id) => {
+        if (!this.reservation.sup.openReservation(id)) {
+          window.App.OpenAtCreation[id] = true
+        } else {
+          this.reservation.highlight()
+        }
+        this.hide()
+      })
     },
 
     doSaveAndQuit: function (event) {
@@ -1190,143 +1201,152 @@ define([
         this.hide()
       }.bind(this))
     },
-    doSave: async function (event) {
-      if (!this.HashLastSave) {
-        this.HashLastSave = this.reservation.get('_hash')
-      } else {
-        if (this.HashLastSave === this.reservation.get('_hash')) {
-          window.App.warn('Dernière sauvegare pas encore validée (double-clique sur "sauvegarder" ?)')
-          return false
-        } else {
+    doSave: function (event) {
+      this.domNode.setAttribute('style', 'opacity: 0.2')
+      return new Promise(function (resolve, reject) {
+        if (!this.HashLastSave) {
           this.HashLastSave = this.reservation.get('_hash')
-        }
-      }
-      var err = this.validate()
-      if (!err[1]) {
-        window.App.error(err[0])
-        return false
-      }
-      var changeMachine = false
-      if (this.reservation.get('target') !== this.nMachineChange.get('value')) {
-        var newEntry = window.App.getEntry(this.nMachineChange.get('value'))
-        if (newEntry == null) {
-          alert('Déplacement vers machine inexistante')
-          return false
-        }
-        changeMachine = this.reservation.get('target')
-        this.reservation.set('sup', newEntry)
-        this.reservation.set('previous', changeMachine)
-        this.reservation.set('target', this.nMachineChange.get('value'))
-      }
-
-      let f = this.nForm.get('value')
-      var other = {}
-      for (var k in f) {
-        if (k.substr(0, 2) === 'o-') {
-          other[k.substr(2)] = f[k]
-        }
-      }
-      this.reservation.set('other', other)
-      let begin = f.beginDate.join(f.beginTime)
-      let end = f.endDate.join(f.endTime)
-
-      let deliveryBegin = begin
-      let deliveryEnd = end
-      if (this.nDelivery.get('checked')) {
-        deliveryBegin = f.deliveryBeginDate.join(f.deliveryBeginTime)
-        deliveryEnd = f.deliveryEndDate.join(f.deliveryEndTime)
-      } else {
-        deliveryBegin = ''
-        deliveryEnd = ''
-      }
-
-      var res = await Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.get('id')}}))
-      var arrival = {target: this.reservation.get('id')}
-      if (res.success && res.length > 0) {
-        arrival = Object.assign(arrival, res.data[0])
-      }
-
-      if (this.nConfirmed.get('checked')) {
-        if (f.arrivalDate) {
-          if (f.arrivalTime) {
-            arrival.reported = f.arrivalDate.join(f.arrivalTime)
+        } else {
+          if (this.HashLastSave === this.reservation.get('_hash')) {
+            window.App.warn('Dernière sauvegare pas encore validée (double-clique sur "sauvegarder" ?)')
+            reject(new Error('Not saved yet'))
           } else {
-            arrival.reported = f.arrivalDate
+            this.HashLastSave = this.reservation.get('_hash')
           }
         }
-        if (!arrival.creator) {
-          arrival.creator = this.get('arrivalCreator')
+        var err = this.validate()
+        if (!err[1]) {
+          window.App.error(err[0])
+          reject(new Error('Not valid'))
         }
-        arrival.comment = f.arrivalComment
-        arrival.contact = f.arrivalAddress
-        arrival.locality = f.arrivalLocality
-        arrival.other = f.arrivalKeys
-
-        if (f.arrivalDone.length > 0) {
-          if (!arrival.done) {
-            arrival.done = (new Date()).toISOString()
+        var changeMachine = false
+        if (this.reservation.get('target') !== this.nMachineChange.get('value')) {
+          var newEntry = window.App.getEntry(this.nMachineChange.get('value'))
+          if (newEntry == null) {
+            alert('Déplacement vers machine inexistante')
+            reject(new Error('Target not found'))
           }
-        } else {
-          arrival.done = null
+          changeMachine = this.reservation.get('target')
+          this.reservation.set('sup', newEntry)
+          this.reservation.set('previous', changeMachine)
+          this.reservation.set('target', this.nMachineChange.get('value'))
         }
 
-        if (f.arrivalInprogress.length > 0) {
-          if (!arrival.inprogress) {
-            arrival.inprogress = (new Date()).toISOString()
+        let f = this.nForm.get('value')
+        var other = {}
+        for (var k in f) {
+          if (k.substr(0, 2) === 'o-') {
+            other[k.substr(2)] = f[k]
           }
+        }
+        this.reservation.set('other', other)
+        let begin = f.beginDate.join(f.beginTime)
+        let end = f.endDate.join(f.endTime)
+
+        let deliveryBegin = begin
+        let deliveryEnd = end
+        if (this.nDelivery.get('checked')) {
+          deliveryBegin = f.deliveryBeginDate.join(f.deliveryBeginTime)
+          deliveryEnd = f.deliveryEndDate.join(f.deliveryEndTime)
         } else {
-          arrival.inprogress = null
+          deliveryBegin = ''
+          deliveryEnd = ''
         }
 
-        this.reservation.set('_arrival', arrival)
-      } else {
-        if (arrival.id) {
-          this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-        } else {
-          this.reservation.set('_arrival', null)
-        }
-      }
+        Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.uid}})).then(function (res) {
+          let arrival = {}
+          if (res.success && res.length > 0) {
+            arrival = Object.assign(arrival, res.data[0])
+          }
 
-      this.reservation.set('status', f.status)
-      this.reservation.set('begin', begin)
-      this.reservation.set('end', end)
-      this.reservation.set('deliveryBegin', deliveryBegin)
-      this.reservation.set('deliveryEnd', deliveryEnd)
-      this.reservation.set('address', f.nAddress)
-      this.reservation.set('reference', f.nReference)
-      this.reservation.set('equipment', f.nEquipment)
+          if (this.nConfirmed.get('checked')) {
+            arrival.deleted = null
+            arrival.target = this.reservation.uid
+            if (f.arrivalDate) {
+              if (f.arrivalTime) {
+                arrival.reported = f.arrivalDate.join(f.arrivalTime)
+              } else {
+                arrival.reported = f.arrivalDate
+              }
+            }
+            if (!arrival.creator) {
+              arrival.creator = this.get('arrivalCreator')
+            }
+            arrival.comment = f.arrivalComment
+            arrival.contact = f.arrivalAddress
+            arrival.locality = f.arrivalLocality
+            arrival.other = f.arrivalKeys
 
-      var store = this.nLocality.get('store')
-      var item = store.query({name: this.nLocality.get('value')})
-      if (item.length === 1) {
-        this.reservation.set('warehouse', item[0].id)
-        this.reservation.set('locality', '')
-      } else {
-        this.reservation.set('warehouse', '')
-        this.reservation.set('locality', f.nLocality)
-      }
-      this.reservation.set('comment', f.nComments)
-      this.reservation.set('note', f.nNote)
-      this.reservation.set('folder', f.folder)
-      this.reservation.set('gps', f.gps)
-      this.reservation.set('title', f.title)
+            if (f.arrivalDone.length > 0) {
+              if (!arrival.done) {
+                arrival.done = (new Date()).toISOString()
+              }
+            } else {
+              arrival.done = null
+            }
 
-      this.reservation.save()
-      var reservation = this.reservation
-      if (changeMachine) {
-        var entry = window.App.getEntry(reservation.get('target'))
-        var oldEntry = window.App.getEntry(changeMachine)
-        if (entry) {
-          window.App.info('Réservation ' + reservation.get('id') + ' correctement déplacée')
-          delete oldEntry.entries[reservation.get('id')]
-          entry.entries[reservation.get('id')] = reservation
-          entry.resize()
-          oldEntry.resize()
-        }
-      }
+            if (f.arrivalInprogress.length > 0) {
+              if (!arrival.inprogress) {
+                arrival.inprogress = (new Date()).toISOString()
+              }
+            } else {
+              arrival.inprogress = null
+            }
 
-      return true
+            this.reservation.set('_arrival', arrival)
+          } else {
+            if (arrival.id) {
+              this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
+            } else {
+              this.reservation.set('_arrival', {})
+            }
+          }
+
+          this.reservation.set('status', f.status)
+          this.reservation.set('begin', begin)
+          this.reservation.set('end', end)
+          this.reservation.set('deliveryBegin', deliveryBegin)
+          this.reservation.set('deliveryEnd', deliveryEnd)
+          this.reservation.set('address', f.nAddress)
+          this.reservation.set('reference', f.nReference)
+          this.reservation.set('equipment', f.nEquipment)
+
+          var store = this.nLocality.get('store')
+          var item = store.query({name: this.nLocality.get('value')})
+          if (item.length === 1) {
+            this.reservation.set('warehouse', item[0].id)
+            this.reservation.set('locality', '')
+          } else {
+            this.reservation.set('warehouse', '')
+            this.reservation.set('locality', f.nLocality)
+          }
+          this.reservation.set('comment', f.nComments)
+          this.reservation.set('note', f.nNote)
+          this.reservation.set('folder', f.folder)
+          this.reservation.set('gps', f.gps)
+          this.reservation.set('title', f.title)
+
+          this.reservation.save().then((id) => {
+            this.resize()
+            var reservation = this.reservation
+            if (changeMachine) {
+              var entry = window.App.getEntry(reservation.get('target'))
+              var oldEntry = window.App.getEntry(changeMachine)
+              if (entry) {
+                window.App.info(`Réservation ${reservation.uid} correctement déplacée`)
+                delete oldEntry.entries[reservation.uid]
+                entry.entries[reservation.uid] = reservation
+                entry.resize()
+                oldEntry.resize()
+              }
+            }
+            this.domNode.removeAttribute('style')
+            resolve()
+          })
+        }.bind(this))
+      }.bind(this))
     },
+
     evtNoEquipment: function () {
       let val = this.nEquipment.get('value')
       if (val.length > 1 && val !== '%') {
@@ -1342,14 +1362,16 @@ define([
     },
 
     openCount: async function () {
-      new Count({reservation: this.reservation.get('id')}) // eslint-disable-line
+      new Count({reservation: this.reservation.uid}) // eslint-disable-line
     },
     openAddCount: async function () {
-      new CountList({addReservation: this.reservation.get('id')}) // eslint-disable-line
+      new CountList({addReservation: this.reservation.uid, integrated: true}) // eslint-disable-line
     },
-
+    clickExport: function () {
+      this.reservation.export()
+    },
     refreshCount: async function () {
-      Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.get('id')}})).then(async function (counts) {
+      Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.uid}})).then(async function (counts) {
         var frag = document.createDocumentFragment()
         if (counts.success && counts.length > 0) {
           var trs = []

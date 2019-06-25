@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom */
+/* global DateRange, pSBC, fastdom, GEvent */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -51,6 +51,7 @@ define([
   dtTooltip,
   dtRegistry,
   DtContentPane,
+
   RForm,
   Mouse,
   Lock,
@@ -69,16 +70,10 @@ define([
     form: null,
     dbContact: null,
     complements: [],
+    hdivider: 1,
+    hposition: 0,
 
-    constructor: async function () {
-      if (!arguments[0].uuid) {
-        throw new Error('New UUID')
-      }
-      this.uuid = arguments[0].uuid
-      this.id = this.uuid
-      this.localid = this.uuid
-
-      this.openOnLoad = false
+    constructor: function () {
       this.destroyed = false
       this.attrs = ['special']
       this.detailsHtml = ''
@@ -89,16 +84,13 @@ define([
       this.events = {}
       this.overlap = {}
       this.duration = 0
+      this.nodeGeneration = 0
+      this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this._gui = {
         hidden: false
       }
 
-      if (arguments[0].openOnLoad) {
-        this.openOnLoad = true
-        delete arguments[0].openOnLoad
-      }
       this.Lock = new Lock(null)
-      this.inherited(arguments)
       this.own(this.Lock)
     },
 
@@ -117,8 +109,8 @@ define([
         var newEntry = window.App.getEntry(json.target)
         if (newEntry && oldEntry) {
           this.set('sup', newEntry)
-          delete oldEntry.entries[this.get('id')]
-          newEntry.entries[this.get('id')] = this
+          delete oldEntry.entries[this.uid]
+          newEntry.entries[this.uid] = this
           oldEntry.overlap()
           oldEntry.resize()
         }
@@ -133,7 +125,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note', 'uuid'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -154,7 +146,6 @@ define([
       }
       if (!this.color) { this.color = 'FFF' }
       if (!this.complements) { this.complements = [] }
-      if (!this.IDent) { this.set('IDent', this.id) }
 
       if (json.arrival) {
         this.set('_arrival', Object.assign({}, json.arrival))
@@ -179,7 +170,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note', 'uuid'].forEach(djLang.hitch(this, function (attr) {
+      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -203,49 +194,45 @@ define([
         object['target'] = this.sup.get('target')
       }
 
-      if (this.get('IDent')) {
-        object['id'] = this.get('IDent')
-      }
-
       if (this.get('_arrival')) {
         object.arrival = Object.assign({}, this.get('_arrival'))
       }
 
+      object.id = this.uid
       return object
     },
 
     modified: function () {
       if (!this.get('deleted')) {
-        setTimeout(function () { this.Channel.postMessage({op: 'touch', id: this.get('id')}) }.bind(this), 1500)
+        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}}).then((result) => {
+          console.log(result)
+        })
       }
     },
-
-    update: function () {
-      this.Channel.postMessage({op: 'get', id: this.get('id'), hash: this.get('hash')})
-    },
-
-    refresh: this.update,
 
     error: function (txt, code) {
-      if (this.sup) {
-        this.sup.error(txt, code)
-      }
+      window.App.error(txt, code)
     },
     warn: function (txt, code) {
-      if (this.sup) {
-        this.sup.warn(txt, code)
-      }
+      window.App.warn(txt, code)
     },
     info: function (txt, code) {
-      if (this.sup) {
-        this.sup.info(txt, code)
-      }
+      window.App.info(txt, code)
     },
     postCreate: function () {
-      this.Channel = window.App.Reservation
+      if (this._json) {
+        this.fromJson(this._json)
+        delete this._json
+      }
+      this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
       this.resize()
+      if (window.App.OpenAtCreation[this.uid]) {
+        delete window.App.OpenAtCreation[this.uid]
+        this.popMeUp()
+        this.highlight()
+      }
     },
 
     evTouchStart: function (event) {
@@ -269,14 +256,10 @@ define([
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
           this._isolated = true
-          this._zindex = djDomStyle.get(this.currentDom, 'z-index')
+          this._zindex = djDomStyle.get(this.domNode, 'z-index')
           this.highlight()
-          djDomStyle.set(this.currentDom, 'z-index', '99999999')
-          if (this.overlap.do) {
-            var height = djDomStyle.get(this.currentDom, 'height')
-            djDomStyle.set(this.currentDom, 'height', height * this.getOverlapLevel())
-          }
-          djOn(this.currentDom, 'dblclick', djLang.hitch(this, this.cancelIsolation))
+          djDomStyle.set(this.domNode, 'z-index', '99999999')
+          djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
       }
@@ -289,11 +272,7 @@ define([
 
       if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
-          if (this.overlap.do) {
-            var height = djDomStyle.get(this.currentDom, 'height')
-            djDomStyle.set(this.currentDom, 'height', height / this.getOverlapLevel())
-          }
-          djDomStyle.set(this.currentDom, 'z-index', this._zindex)
+          djDomStyle.set(this.domNode, 'z-index', this._zindex)
           this._isolated = false
         }
       }
@@ -328,14 +307,11 @@ define([
       this.addAttr('note')
       this._set('note', value)
     },
-    _setIDentAttr: function (value) {
-      this.IDent = value
-      this.id = value
-      if (this.myContentPane) {
-        this.myContentPane.set('title', `Réservation ${value}`)
-        this.myContentPane.resize()
+    _setUidAttr: function (value) {
+      this.uid = value
+      if (this.domNode) {
+        this.domNode.dataset.uid = value
       }
-      this.Lock.on('Reservation/' + this.id)
     },
     _setEquipmentAttr: function (value) {
       this.addAttr('equipment')
@@ -376,15 +352,15 @@ define([
       var that = this
       window.requestAnimationFrame(function () {
         if (x && x > that.get('offset')) {
-          djDomStyle.set(that.currentDom, 'width', Math.abs(x - that.get('clickPoint')))
+          djDomStyle.set(that.domNode, 'width', Math.abs(x - that.get('clickPoint')))
           if (that.get('clickPoint') < x) {
-            djDomStyle.set(that.currentDom, 'left', that.get('clickPoint'))
+            djDomStyle.set(that.domNode, 'left', that.get('clickPoint'))
           } else {
-            djDomStyle.set(that.currentDom, 'left', x)
+            djDomStyle.set(that.domNode, 'left', x)
           }
         }
         that.set('enable')
-        djDomStyle.set(that.currentDom, 'position', 'absolute')
+        djDomStyle.set(that.domNode, 'position', 'absolute')
       })
     },
     _setStartAttr: function (value) {
@@ -426,10 +402,10 @@ define([
     _setSupAttr: function (sup) {
       if (this.sup === sup) { return }
       this._set('sup', sup)
-      if (this.currentDom) {
+      if (this.domNode && this.domNode.parentNode) {
         fastdom.mutate(djLang.hitch(this, function () {
-          this.currentDom.parentNode.removeChild(this.currentDom)
-          sup.data.appendChild(this.currentDom)
+          this.domNode.parentNode.removeChild(this.domNode)
+          sup.data.appendChild(this.domNode)
         }))
       }
     },
@@ -726,35 +702,31 @@ define([
     eClick: function (event) {
       event.stopPropagation()
       event.preventDefault()
-      if (!this.get('IDent')) { return }
+      if (!this.uid) { return }
       if (document.selection && document.selection.empty) {
         document.selection.empty()
       } else if (window.getSelection) {
         var sel = window.getSelection()
-        sel.removeAllRanges()
+        if (sel) { sel.removeAllRanges() }
       }
       this.popMeUp()
     },
-
     popMeUp: async function () {
-      var locked = await this.Lock.lock()
-
       var tContainer = dtRegistry.byId('tContainer')
-      if (dtRegistry.byId('ReservationTab_' + this.get('uuid'))) {
-        tContainer.selectChild('ReservationTab_' + this.get('uuid'))
+      if (this.get('localid') == null) { return }
+      if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
+        tContainer.selectChild('ReservationTab_' + this.get('localid'))
         return
       }
+      window.App.setOpen(this.uid)
       var f = new RForm({ reservation: this })
-      var title = 'Réservation ' + this.get('IDent')
-      if (!locked) {
-        title = '<i class="fas fa-lock"></i> ' + title
-      }
+      var title = 'Réservation ' + this.uid
 
       var cp = new DtContentPane({
         title: title,
         closable: true,
         style: 'width: 100%; height: 100%; padding: 0; padding-top: 8px;',
-        id: 'ReservationTab_' + this.get('uuid'),
+        id: 'ReservationTab_' + this.get('localid'),
         content: f.domNode})
       cp.own(f)
       tContainer.addChild(cp)
@@ -762,12 +734,9 @@ define([
       tContainer.selectChild(cp.id)
 
       this.myForm = f
+      this.syncForm()
       this.myContentPane = cp
       f.set('_pane', [cp, tContainer])
-      this.highlight()
-      if (!locked) {
-        this.myForm.disable(true)
-      }
     },
 
     close: function () {
@@ -779,6 +748,19 @@ define([
     closeForm: function () {
       this.myForm = null
       this.Lock.unlock()
+    },
+
+    syncForm: function () {
+      if (this.myForm) {
+        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
+          this.myForm.set(e, this.get(e))
+        }))
+        this.myForm.load()
+      }
+
+      if (this.myContentPane) {
+        this.myContentPane.set('title', 'Réservation ' + this.uid)
+      }
     },
 
     _getTargetAttr: function () {
@@ -813,15 +795,28 @@ define([
       var diff = djDate.difference(this.get('dateRange').begin, x, 'hour')
       return (diff * this.get('blockSize') / 24) + this.get('offset')
     },
-    remove: function () {
-      if (confirm('Vraiment supprimer la réservation ' + this.get('IDent'))) {
-        this.set('deleted', true)
-        this.modified()
-        return true
-      }
 
-      return false
+    remove: function () {
+      return new Promise(function (resolve, reject) {
+        if (confirm('Vraiment supprimer la réservation ' + this.uid)) {
+          this.domNode.parentNode.removeChild(this.domNode)
+          this.set('deleted', true)
+          Query.exec(Path.url('/store/Arrival', {params: {'search.target': this.uid}})).then((result) => {
+            console.log(result)
+            if (result.success && result.length > 0) {
+              result.data.forEach((r) => {
+                Query.exec(Path.url(`/store/Arrival/${r.id}`), {method: 'DELETE', body: {id: r.id}})
+              })
+            }
+          })
+          Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'DELETE', body: {id: this.uid}})
+          resolve()
+        } else {
+          reject(new Error('Canceled by user'))
+        }
+      }.bind(this))
     },
+
     computeIntervalOffset: function (date) {
       if (!this.sup) { return 0 }
       return this.sup.computeIntervalOffset(date)
@@ -889,7 +884,7 @@ define([
               if (typeof window.Rent.Days[date][entry.type.color] === 'undefined') {
                 window.Rent.Days[date][entry.type.color] = {}
               }
-              window.Rent.Days[date][entry.type.color][that.get('id')] = parseInt(entry.number)
+              window.Rent.Days[date][entry.type.color][that.uid] = parseInt(entry.number)
             }
 
             /* Not in view as the end of this entry is after the beginning of the timeline */
@@ -982,11 +977,11 @@ define([
 
     destroy: function () {
       fastdom.mutate(function () {
-        if (this.currentDom) {
-          if (this.currentDom.parentNode) {
-            this.currentDom.parentNode.removeChild(this.currentDom)
+        if (this.domNode) {
+          if (this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
           }
-          delete this.currentDom
+          delete this.domNode
         }
       }.bind(this))
       this.destroyed = true
@@ -998,23 +993,23 @@ define([
 
     show: function () {
       this._gui.hidden = false
-      if (!this.currentDom) {
-        this.currentDom = document.createElement('DIV')
+      if (!this.domNode) {
+        this.domNode = document.createElement('DIV')
       }
 
       if (!this.TouchEvents) {
-        this.TouchEvents = [djOn(this.currentDom, 'touchstart', this.evTouchStart.bind(this)),
-          djOn(this.currentDom, 'touchend', this.evTouchEnd.bind(this))]
+        this.TouchEvents = [djOn(this.domNode, 'touchstart', this.evTouchStart.bind(this)),
+          djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
       }
       if (!this.DblClick) {
-        this.DblClick = djOn(this.currentDom, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
+        this.DblClick = djOn(this.domNode, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
       }
-      if (!this.currentDom.parentNode) {
+      if (!this.domNode.parentNode) {
         fastdom.mutate(function () {
-          this.sup.data.appendChild(this.currentDom)
+          this.sup.data.appendChild(this.domNode)
           if (!this.originalTop) {
             fastdom.measure(function () {
-              this.originalTop = djDomStyle.get(this.currentDom, 'top')
+              this.originalTop = djDomStyle.get(this.domNode, 'top')
             }.bind(this))
           }
         }.bind(this))
@@ -1023,8 +1018,8 @@ define([
 
     hide: function () {
       fastdom.mutate(function () {
-        if (this.currentDom && this.currentDom.parentNode) {
-          this.currentDom.parentNode.removeChild(this.currentDom)
+        if (this.domNode && this.domNode.parentNode) {
+          this.domNode.parentNode.removeChild(this.domNode)
         }
       }.bind(this))
       this._gui.hidden = true
@@ -1142,7 +1137,6 @@ define([
           height /= overlapLevel
           top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
         }
-
         var domstyle = ['position: absolute']
         domstyle.push('width: ' + stopPoint + 'px')
         domstyle.push('left: ' + startPoint + 'px')
@@ -1171,38 +1165,35 @@ define([
         var compdiv = this._drawComplement()
 
         fastdom.mutate(djLang.hitch(this, function () {
-          if (this.currentDom) {
-            this.currentDom.innerHTML = ''
-            this.currentDom.setAttribute('style', domstyle.join(';'))
+          if (this.domNode) {
+            this.domNode.innerHTML = ''
+            this.domNode.setAttribute('style', domstyle.join(';'))
             for (let c in domclass) {
               if (domclass[c]) {
-                this.currentDom.classList.add(c)
+                this.domNode.classList.add(c)
               } else {
-                this.currentDom.classList.remove(c)
+                this.domNode.classList.remove(c)
               }
             }
-            this.currentDom.appendChild(compdiv)
+            this.domNode.appendChild(compdiv)
             if (txtdiv == null) {
-              this.currentDom.appendChild(this._currentTextDesc)
+              this.domNode.appendChild(this._currentTextDesc)
             } else {
-              this.currentDom.appendChild(txtdiv)
+              this.domNode.appendChild(txtdiv)
               txtdiv.appendChild(tools)
             }
-            this.currentDom.setAttribute('id', 'reservation-' + this.get('id'))
-          }
-
-          if (this.openOnLoad) {
-            this.popMeUp()
-            this.openOnLoad = false
+            this.domNode.dataset.uid = this.uid
           }
         }))
       }))
     },
 
     highlight: function () {
-      if (this.sup) {
-        this.sup.highlight(this.currentDom)
-      }
+      if (this.highlightTimer) { window.clearTimeout(this.highlightTimer) }
+      this.domNode.classList.add('highlight')
+      this.highlightTimer = window.setTimeout(function () {
+        this.domNode.classList.remove('highlight')
+      }.bind(this), 3000)
     },
     _getEntriesAttr: function () {
       if (!this.sup) { return [] }
@@ -1217,57 +1208,130 @@ define([
       this.destroyReservation(this)
     },
 
-    save: function () {
-      var object = this.toObject()
-      this.Channel.postMessage({op: 'put', data: object, localid: this.get('localid')})
+    _newCookie: function () {
+      let uuidv4 = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
+      return {uuid: uuidv4, timestamp: Date.now()}
     },
 
-    copy: async function () {
-      this.sup.copy(this)
-    },
-
-    copyExt: function (toid) {
-      var allReqs = []
-      var complements = this.get('complements')
-      if (complements.length > 0) {
-        for (var i = 0; i < complements.length; i++) {
-          var query = {
-            begin: complements[i].begin ? djDateStamp.toISOString(complements[i].begin) : '',
-            end: complements[i].end ? djDateStamp.toISOString(complements[i].end) : '',
-            comment: String(complements[i].comment),
-            reservation: String(toid),
-            target: complements[i].target,
-            type: complements[i].type ? (complements[i].type.id ? Path.url('/store/Status/' + String(complements[i].type.id)) : '') : '',
-            number: String(complements[i].number),
-            follow: String(complements[i].follow)
+    save: function (object = null) {
+      return new Promise(function (resolve, reject) {
+        let reservation = object === null ? this.toObject() : object
+        let arrival = reservation.arrival
+        delete reservation.arrival
+        Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
+          if (!result.success || result.length !== 1) {
+            this.error(`Erreur pour enregistrer ${reservation.id ? 'la réservation ' + reservation.id : 'la nouvelle réservation'}`, 1)
+            reject(new Error('Writing failed'))
+            return
           }
-          allReqs.push(fetch(Path.url('/store/Association/'), {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
-        }
-      }
-      var contacts = this.get('contacts')
-      for (var k in contacts) {
-        for (i = 0; i < contacts[k].length; i++) {
-          var contact = contacts[k][i]
-          query = {
-            comment: contact.comment,
-            freeform: contact.freeform,
-            reservation: String(toid),
-            target: contact.target ? (contact.target.IDent ? '/Contacts/' + contact.target.IDent : '') : ''
+          let id = result.data[0].id
+          this.domNode.dataset.id = id
+          if (!arrival || Object.keys(arrival).length === 0) {
+            resolve(id)
+          } else {
+            let query
+            if (arrival.deleted) {
+              resolve(id)
+              return
+            }
+            if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+              this.set('_arrival', null)
+              query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
+            } else {
+              arrival.target = id
+              query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
+            }
+            query.then((result) => {
+              resolve(id)
+            })
           }
-          allReqs.push(fetch(Path.url('/store/ReservationContact'), {method: 'POST', body: JSON.stringify(query), credentials: 'same-origin'}))
-        }
-      }
-      djAll(allReqs).then(function () {
-        for (k in window.App.Entries) {
-          if (window.App.Entries[k].openReservation(toid)) {
-            break
-          }
-        }
-        /* wait 1.5 sec as db as a mod time granularity of 1 second ... */
-        setTimeout(function () {
-          this.Channel.postMessage({op: 'touch', id: this.get('id')})
-        }.bind(this), 1500)
+        })
       }.bind(this))
+    },
+
+    copy: function () {
+      let object = this.toObject()
+      let originalId = object['id']
+      delete object['uuid']
+      delete object['id']
+      delete object['arrival']
+      object['creator'] = window.localStorage.getItem(Path.bcname('user'))
+      return new Promise((resolve, reject) => {
+        this.save(object).then((id) => {
+          let newId = id
+          let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
+          let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
+
+          let all = []
+          Promise.all([contacts, associations]).then((results) => {
+            let url = Path.url('/store/ReservationContact')
+            results.forEach((result) => {
+              if (!result.success) { return }
+              result.data.forEach((e) => {
+                delete e['id']
+                e['reservation'] = newId
+                all.push(Query.exec(url, {method: 'POST', body: e}))
+              })
+              url = Path.url('/store/Association')
+            })
+          })
+          Promise.all(all).then((results) => {
+            resolve(newId)
+          })
+        })
+      })
+    },
+
+    export: function () {
+      let RFileObject = {version: 1.0}
+      let reservation = this.toObject()
+      let arrival = {}
+      let rid = reservation.id
+      if (reservation.type) {
+        reservation.type = `store/Status/${reservation.type}`
+      }
+      delete reservation.id
+      if (reservation.arrival) {
+        arrival = reservation.arrival
+        delete arrival.target
+        delete reservation.arrival
+      }
+      let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
+      let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
+      let associations = []
+      let contacts = []
+      Promise.all([pContacts, pAssociations]).then((results) => {
+        console.log(results)
+        if (results[1].length > 0) {
+          results[1].data.forEach((a) => {
+            delete a.reservation
+            if (a.type) {
+              let t = a.type.split('/')
+              a.type = `store/Status/${t[t.length - 1]}`
+            }
+            associations.push(a)
+          })
+        }
+        if (results[0].length > 0) {
+          results[0].data.forEach((c) => {
+            delete c.reservation
+            if (c.target) {
+              c.target = `store${c.target}`
+            }
+            contacts.push(c)
+          })
+        }
+        RFileObject.content = [
+          {reservation: rid,
+           content: reservation,
+           arrival: arrival,
+           association: associations,
+           contact: contacts
+          }
+        ]
+        let OutFile = btoa(JSON.stringify(RFileObject))
+        window.open(`data:application/octet-stream;filename=export.txt,base64,${OutFile}`, 'export.txt')
+      })
     },
 
     extend7: function (e) {
@@ -1275,17 +1339,17 @@ define([
     },
 
     extend: function (days) {
-      var newEnd = djDate.add(this.end, 'day', days)
-      if (newEnd) {
-        var newDEnd = ''
-        if (this.deliveryEnd) {
-          newDEnd = djDate.add(newEnd, 'second', Math.abs(djDate.difference(this.deliveryEnd, this.end, 'second')))
+      Query.exec(Path.url(`/store/DeepReservation/${this.get('id')}`)).then(function (result) {
+        if (!result.success && result.length !== 1) { console.warn('Erreur pour obtenir les données avant modification'); return }
+        let newEnd = djDate.add(new Date(result.data.end), 'day', days)
+        let newDeliveryEnd = null
+        if (result.data.deliveryEnd) {
+          newDeliveryEnd = djDate.add(new Date(result.data.deliveryEnd), 'day', days)
         }
-
         this.end = newEnd
-        this.deliveryEnd = newDEnd
+        this.deliveryEnd = newDeliveryEnd
         this.save()
-      }
+      }.bind(this))
     }
   })
 })

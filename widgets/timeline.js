@@ -115,6 +115,8 @@ define([
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
 
+
+    OpenAtCreation: {},
     center: null,
     offset: 220,
     blockSize: 42,
@@ -173,7 +175,10 @@ define([
       this.FirstLoad = true
 
       this.zoomCss = document.createElement('style')
-      this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
+
+      /* this.Reservation = new Worker(Path.url('/js/ww/reservations.js')) */
+
+      /* this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
       this.Cleaner.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data) { return }
         if (e.data.op) {
@@ -197,26 +202,26 @@ define([
           }
         }
         this.unwait()
-      })
+      }) */
 
-      let msgHandler = function (event) {
-        if (!event.data) { return }
-        let content = event.data
-        switch (content.op) {
-          case 'response':
-            /* fall through */
-          case 'responses':
-            if (this.Entries[content.target]) {
-              this.Entries[content.target].receiveContent(content)
+      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
+      this.Updater.onmessage = djLang.hitch(this, function (e) {
+        if (!e || !e.data || !e.data.type) { return }
+        switch (e.data.type) {
+          case 'entry':
+            if (this.Entries[e.data.content]) {
+              this.Entries[e.data.content].update()
+            }
+            break
+          case 'entries':
+            for (var i = 0; i < e.data.content.length; i++) {
+              if (this.Entries[e.data.content[i]]) {
+                this.Entries[e.data.content[i]].update()
+              }
             }
             break
         }
-      }.bind(this)
-
-      this.Reservation = new Worker(Path.url('/js/ww/reservations.js'))
-      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
-      this.Updater.onmessage = msgHandler
-      this.Reservation.onmessage = msgHandler
+      })
 
       this.Filter = new Worker(Path.url('/js/ww/filter.js'))
       this.Filter.onmessage = djLang.hitch(this, function (event) {
@@ -257,7 +262,6 @@ define([
       window.GEvent.listen('reservation.open', function (event) {
         if (event.detail.id) {
           this.doSearchLocation(event.detail.id)
-          window.focus()
         }
       }.bind(this))
       window.GEvent.listen('reservation.attribute-click', function (event) {
@@ -267,7 +271,6 @@ define([
 
         if (event.detail.attribute === 'id') {
           this.doSearchLocation(event.detail.value)
-          window.focus()
         }
       }.bind(this))
       window.GEvent.listen('count.attribute-click', function (event) {
@@ -661,8 +664,7 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      this.domNode.addEventListener('mousemove', this.mouseOver.bind(this), {passive: true})
-      this.domNode.addEventListener('touchmove', this.mouseOver.bind(this), {passive: true})
+      djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1048,6 +1050,9 @@ define([
           this.refresh()
         } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
+          for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
+            node.dataset.refresh = 'outdated'
+          }
           this.timelineMoving = true
         }
       }.bind(this))
@@ -1311,8 +1316,8 @@ define([
             window.localStorage.setItem(Path.bcname('autoprint'), '1')
           }
       }
-      this.update()
-      var pos = getElementRect(targetNode.domNode)
+      this.update(true)
+      let pos = getElementRect(targetNode.domNode)
       window.scroll(0, pos[1] - delta)
     },
 
@@ -1486,7 +1491,7 @@ define([
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description})
+              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
               e.loadExtension().then(this.placeEntry.bind(this))
 
               var families = []
@@ -1513,10 +1518,11 @@ define([
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
+              this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim()})
+                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
                   e.loadExtension().then(this.placeEntry.bind(this))
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
@@ -1526,10 +1532,11 @@ define([
                   djDomClass.add(e.domNode, groupName)
 
                   loaded.push(e.loaded)
+                  this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
                 }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim()})
+                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
                 e.loadExtension().then(this.placeEntry.bind(this))
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
@@ -1539,6 +1546,7 @@ define([
 
                 djDomClass.add(e.domNode, groupName)
                 loaded.push(e.loaded)
+                this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
               }
 
               inc++
@@ -1571,12 +1579,7 @@ define([
         begin.setTime(begin.getTime() - 604800000)
         end.setTime(end.getTime() + 604800000)
 
-        this.Updater.postMessage({type: 'move',
-          content: [String(Path.url('store/DeepReservation')), {
-            query: { 'search.begin': '<' + djDateStamp.toISOString(end, { zulu: true }),
-              'search.end': '>' + djDateStamp.toISOString(begin, { zulu: true }),
-              'search.deleted': '-'}}]
-        })
+        this.Updater.postMessage({op: 'move', begin: begin, end: end})
       }
     },
 
@@ -1597,33 +1600,18 @@ define([
     },
 
     highlight: function (domNode) {
-      if (!domNode) { return }
-      if (domNode.classList) {
-        if (!this.Highlighting) {
-          this.Highlighting = []
-        }
-        /*
-        if (this.Highlighting.length > 0) {
-          for (var i = 0; i < this.Highlighting.length; i++) {
-            window.requestAnimationFrame(function () {
-              if (this.classList) {
-                this.classList.remove('highlight')
-              }
-            }.bind(this.Highlighting[i][1]))
-            clearTimeout(this.Highlighting[i][0])
-          }
-        }*/
-        window.requestAnimationFrame(function () {
-          if (this.classList) {
-            this.classList.add('highlight')
-          }
-        }.bind(domNode))
-        this.Highlighting.push([setTimeout(function () {
-          window.requestAnimationFrame(function () {
-            this.classList.remove('highlight')
-          }.bind(this))
-        }.bind(domNode), 2500), domNode])
+      if (this.Highlighting) {
+        djDomStyle.set(this.Highlighting[0], 'box-shadow', '')
+        window.clearTimeout(this.Highlighting[1])
+      } else {
+        this.Highlighting = []
       }
+
+      djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)')
+      this.Highlighting[0] = domNode
+      this.Highlighting[1] = window.setTimeout(function () {
+        djDomStyle.set(domNode, 'box-shadow', '')
+      }, 5000)
     },
 
     goToReservation: function (data, center) {
@@ -1685,7 +1673,7 @@ define([
       return current
     },
 
-    doSearchLocation: function (loc) {
+    doSearchLocation: function (loc, dontmove = false) {
       DoWait()
       return new Promise(function (resolve, reject) {
         Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
@@ -1698,13 +1686,15 @@ define([
               DoWait(false)
               return
             }
-            this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin))
+            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
             this.update()
             var data = result.data
             this.Entries[data.target].addOrUpdateReservation([data])
             if (this.Entries[data.target].openReservation(data.id)) {
-              var pos = djDomGeo.position(this.Entries[data.target].domNode, true)
-              window.scroll(0, pos.y - (window.innerHeight / 3))
+              if (!dontmove) {
+                let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                window.scroll(0, pos.y - (window.innerHeight / 3))
+              }
               resolve()
             } else {
               reject()
