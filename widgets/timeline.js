@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf, DoWait */
+/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -170,6 +170,7 @@ define([
       this.LocalReservations = {}
       this.timelineMoving = false
       this.FirstLoad = true
+      this.Holidays = null
 
       this.zoomCss = document.createElement('style')
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
@@ -486,11 +487,24 @@ define([
       return false
     },
 
+    _trCantonName: function (c) {
+      switch (c) {
+        case 'vs': return 'Valais'
+        case 'vd': return 'Vaud'
+        case 'ge': return 'Genève'
+        case 'ju': return 'Jura'
+        case 'ne': return 'Neuchâtel'
+        case 'fr-cat': return 'Fribourg catholique'
+        case 'fr-prot': return 'Fribourg réformé'
+        case 'be': return 'Berne'
+        default: return 'Suisse'
+      }
+    },
+
     makeDay: function (newDay) {
       var txtDate = ''
+      newDay.setHours(12, 0, 0)
       var dayStamp = djDateStamp.toISOString(newDay, {selector: 'date'})
-      var c = 'day'
-      if (newDay.getDay() === 0 || newDay.getDay() === 6) { c = 'day weekend' }
 
       switch (newDay.getDay()) {
         case 0: txtDate = 'Dim ' + newDay.getDate(); break
@@ -504,7 +518,24 @@ define([
 
       var domDay = document.createElement('SPAN')
       domDay.setAttribute('data-artnum-day', dayStamp)
-      domDay.setAttribute('class', c)
+      domDay.classList.add('day')
+      if (newDay.getDay() === 0 || newDay.getDay() === 6) {
+        domDay.classList.add('weekend')
+      } else {
+        let holiday = this.Holidays.isHoliday(newDay)
+        if (holiday) {
+          domDay.classList.add('holiday')
+          let cantons = []
+          holiday.c.forEach((c) => {
+            cantons.push(this._trCantonName(c))
+          })
+          let text = `Férié ${cantons[0]}`
+          if (holiday.c.length > 1) {
+            text = `Férié ${cantons.join(', ')}`
+          }
+          new Tooltip(domDay, {title: text, placement: 'bottom'})
+        }
+      }
       domDay.innerHTML = txtDate
       return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
     },
@@ -1318,6 +1349,12 @@ define([
       var hFrag = document.createDocumentFragment()
       var shFrag = document.createDocumentFragment()
 
+      if (!this.Holidays) {
+        this.Holidays = new Holiday(this.center.getFullYear())
+      } else {
+        this.Holidays.addYear(this.center.getFullYear())
+      }
+      
       this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {

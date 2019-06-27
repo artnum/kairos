@@ -89,6 +89,11 @@ body, html { margin: 0; padding: 0; }
 	color: white;
 }
 
+.day.holiday {
+    background-color: hsla(40, 100%, 50%, 1);
+    color: black;
+}
+
 .day {
 	background-color: white;
 	border-left: 1px solid #ddd;	
