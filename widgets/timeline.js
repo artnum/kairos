@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday */
+/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -171,6 +171,7 @@ define([
       this.timelineMoving = false
       this.FirstLoad = true
       this.Holidays = null
+      this.Tooltips = {}
 
       this.zoomCss = document.createElement('style')
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
@@ -497,6 +498,7 @@ define([
         case 'fr-cat': return 'Fribourg catholique'
         case 'fr-prot': return 'Fribourg réformé'
         case 'be': return 'Berne'
+        case 'fra': return 'France'
         default: return 'Suisse'
       }
     },
@@ -519,23 +521,28 @@ define([
       var domDay = document.createElement('SPAN')
       domDay.setAttribute('data-artnum-day', dayStamp)
       domDay.classList.add('day')
-      if (newDay.getDay() === 0 || newDay.getDay() === 6) {
-        domDay.classList.add('weekend')
+
+      let holiday = this.Holidays.isHoliday(newDay)
+      if (holiday && newDay.getDay() !== 0) {
+        domDay.classList.add('holiday')
+        let cantons = []
+        holiday.c.forEach((c) => {
+          cantons.push(this._trCantonName(c))
+        })
+        let text = `Férié ${cantons[0]}`
+        if (holiday.c.length > 1) {
+          text = `Férié ${cantons.join(', ')}`
+        }
+        if (this.Tooltips[newDay.toISOString().split('T')[0]]) {
+          this.Tooltips[newDay.toISOString().split('T')[0]].dispose()
+        }
+        this.Tooltips[newDay.toISOString().split('T')[0]] = new Tooltip(domDay, {title: text, placement: 'bottom'})
       } else {
-        let holiday = this.Holidays.isHoliday(newDay)
-        if (holiday) {
-          domDay.classList.add('holiday')
-          let cantons = []
-          holiday.c.forEach((c) => {
-            cantons.push(this._trCantonName(c))
-          })
-          let text = `Férié ${cantons[0]}`
-          if (holiday.c.length > 1) {
-            text = `Férié ${cantons.join(', ')}`
-          }
-          new Tooltip(domDay, {title: text, placement: 'bottom'})
+        if (newDay.getDay() === 0 || newDay.getDay() === 6) {
+          domDay.classList.add('weekend')
         }
       }
+
       domDay.innerHTML = txtDate
       return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
     },

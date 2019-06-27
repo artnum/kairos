@@ -37,11 +37,14 @@
       'instaurationRepublique': '1.3', // Instauration République de Neuchâtel
       'saintJoseph': '19.3', // Saint-Joseph
       'labourDay': '1.5', // Fête du travail
+      'victoireAllie': '8.5', // Victoire des alliées (FRA)
+      'nationalFRDay': '14.7', // Fête nationale FRA
       'commemorationPlebiscite': '23.6', // Commémoration du Plébiscite (Jura)
-      'nationalDay': '1.8', // Fête nationale
+      'nationalCHDay': '1.8', // Fête nationale CHE
       'assumption': '15.8', // Assomption
       'saintNicolas': '25.9', // Saint-Nicolas de Flue
       'allSaintsDay': '1.11', // Toussaint
+      'armistice': '11.11', // Armistice (FRA)
       'immaculateConception': '8.12', // Immaculée Conception
       'christmasEve': '24.12', // Veille de Noël
       'christmas': '25.12', // Noël
@@ -59,15 +62,16 @@
        le numéro du jour va de 1 à 7 ou 1 est lundi et 7 est dimanche.
      */
     var cantons = {
-      'all': [ 'newYear:f', 'ascensionDay:f', 'nationalDay:f', 'christmas:f' ],
-      'vs': [ 'saintJoseph:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
-      'vd': [ 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'lundiDuJeune:f' ],
-      'ge': [ 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'jeuneGenevois:f', 'restaurationRepublique:f' ],
-      'ju': [ 'easter:f', 'easterMonday:f', 'pentecostMonday:f', 'labourDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'jeuneFederal:f', 'allSaintsDay:f', 'berchtoldsTag:f', 'commemorationPlebiscite:f' ],
-      'ne': [ 'newYear7|berchtoldsTag:f', 'instaurationRepublique:f', 'goodFriday:f', 'ascensionDay:f', 'labourDay:f', 'christmas7|saintEtienne:f' ],
-      'fr-cat': [ 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
-      'fr-prot': [ 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ],
-      'be': [ 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ]
+      'all': [ 'newYear:f', 'ascensionDay:f', 'christmas:f' ],
+      'vs': [ 'nationalCHDay:f', 'saintJoseph:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
+      'vd': [ 'nationalCHDay:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'lundiDuJeune:f' ],
+      'ge': [ 'nationalCHDay:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'jeuneGenevois:f', 'restaurationRepublique:f' ],
+      'ju': [ 'nationalCHDay:f', 'easter:f', 'easterMonday:f', 'pentecostMonday:f', 'labourDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'jeuneFederal:f', 'allSaintsDay:f', 'berchtoldsTag:f', 'commemorationPlebiscite:f' ],
+      'ne': [ 'nationalCHDay:f', 'newYear7|berchtoldsTag:f', 'instaurationRepublique:f', 'goodFriday:f', 'ascensionDay:f', 'labourDay:f', 'christmas7|saintEtienne:f' ],
+      'fr-cat': [ 'nationalCHDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
+      'fr-prot': [ 'nationalCHDay:f', 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ],
+      'be': [ 'nationalCHDay:f', 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ],
+      'fra': [ 'easterMonday:f', 'labourDay:f', 'pentecostMonday:f', 'nationalFRDay:f', 'assumption:f', 'allSaintsDay:f', 'armistice:f', 'victoireAllie:f' ]
     }
 
     var computeYear = function (year) {
