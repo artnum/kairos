@@ -68,7 +68,6 @@ define([
   Query
 ) {
   return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
-
     baseClass: 'entry',
     templateString: _template,
     stores: {},
@@ -416,9 +415,8 @@ define([
 
       var sup = this
       this.defaultStatus().then(function (s) {
-        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s })
+        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s})
         newReservation.save().then((id) => {
-          console.log(id)
           newReservation.set('uid', id)
           newReservation.popMeUp()
         })
@@ -713,6 +711,5 @@ define([
         }
       }
     }
-
   })
 })

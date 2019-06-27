@@ -115,7 +115,7 @@ define([
     tlPopup, tlKeys, update, Filters, GEvent ], {
     OpenAtCreation: {},
     center: null,
-    offset: 220,
+    offset: 260,
     blockSize: 42,
     baseClass: 'timeline',
     templateString: _template,
@@ -426,8 +426,12 @@ define([
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
-      this.set('blockSize', (page[2] - 240) / days)
-      this.zoomCss.innerHTML = '.timeline .line span { width: ' + (this.get('blockSize') - 2) + 'px !important;} ' + style
+      this.set('blockSize', Math.floor((window.innerWidth - (this.get('offset') + 40)) / days))
+      this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
+                                 .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
+                                .timeline .header .tools { width: ${this.get('offset')}px !important; }
+                                .timeline .line { margin-left: ${this.get('offset')}px !important; }
+                                ${style}`
       this.resize()
     },
 
@@ -1236,6 +1240,7 @@ define([
           }
         }
       }
+
       var p = null
       var i = this.domEntries.lastChild
       while (i && cmpNodes(dtRegistry.getEnclosingWidget(i), entry) > 0) {
@@ -1438,7 +1443,7 @@ define([
           var category = {}
           for (var i = 0; i < whole.length; i++) {
             var machine = whole[i]
-            var groupName = 'group' + (inc % 2)
+            let groupName = []
             var name = machine.description
             var label = machine.cn ? machine.cn : ''
 
@@ -1448,43 +1453,28 @@ define([
 
             if (machine.family) {
               if (Array.isArray(machine.family)) {
-                groupName = []
                 machine.family.forEach((g) => {
                   groupName.push(g.replace(/(\s|-)/g, ''))
                 })
               } else {
-                groupName = [ machine.family.replace(/(\s|-)/g, '') ]
+                groupName.push(machine.family.replace(/(\s|-)/g, ''))
               }
             }
-
+            if (machine.type) {
+              if (Array.isArray(machine.type)) {
+                machine.type.forEach((g) => {
+                  groupName.push(g.replace(/(\s|-)/g, ''))
+                })
+              } else {
+                groupName.push(machine.type.replace(/(\s|-)/g, ''))
+              }
+            }
             if (name) {
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
               var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
               e.loadExtension().then(this.placeEntry.bind(this))
-
-              var families = []
-              var types = []
-              if (machine.family && machine.type) {
-                families = String(machine.family).split(',')
-                types = String(machine.type).split(',')
-                if (!djLang.isArray(families)) { families = new Array(families) }
-                if (!djLang.isArray(types)) { types = new Array(types) }
-
-                for (var j = 0; j < families.length; j++) {
-                  if (!category[families[j]]) {
-                    category[families[j]] = {}
-                  }
-
-                  for (var k = 0; k < types.length; k++) {
-                    if (!category[families[j]][types[k]]) {
-                      category[families[j]][types[k]] = []
-                    }
-                    category[families[j]][types[k]].push(e.target)
-                  }
-                }
-              }
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
@@ -1494,11 +1484,6 @@ define([
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
                   var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
                   e.loadExtension().then(this.placeEntry.bind(this))
-                  for (var j = 0; j < families.length; j++) {
-                    for (var k = 0; k < types.length; k++) {
-                      category[families[j]][types[k]].push(e.target)
-                    }
-                  }
                   djDomClass.add(e.domNode, groupName)
 
                   loaded.push(e.loaded)
@@ -1508,12 +1493,6 @@ define([
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
                 e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
                 e.loadExtension().then(this.placeEntry.bind(this))
-                for (j = 0; j < families.length; j++) {
-                  for (k = 0; k < types.length; k++) {
-                    category[families[j]][types[k]].push(e.target)
-                  }
-                }
-
                 djDomClass.add(e.domNode, groupName)
                 loaded.push(e.loaded)
                 this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
