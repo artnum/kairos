@@ -1519,6 +1519,27 @@ define([
               }
               var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
               e.loadExtension().then(this.placeEntry.bind(this))
+              var families = []
+              var types = []
+              if (machine.family && machine.type) {
+                families = String(machine.family).split(',')
+                types = String(machine.type).split(',')
+                if (!djLang.isArray(families)) { families = new Array(families) }
+                if (!djLang.isArray(types)) { types = new Array(types) }
+                
+                for (var j = 0; j < families.length; j++) {
+                  if (!category[families[j]]) {
+                    category[families[j]] = {}
+                  }
+
+                  for (var k = 0; k < types.length; k++) {
+                    if (!category[families[j]][types[k]]) {
+                      category[families[j]][types[k]] = []
+                    }
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }
+              }
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
@@ -1529,6 +1550,11 @@ define([
                   var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
                   e.loadExtension().then(this.placeEntry.bind(this))
                   djDomClass.add(e.domNode, groupName)
+                  for (var j = 0; j < families.length; j++) {
+                    for (var k = 0; k < types.length; k++) {
+                      category[families[j]][types[k]].push(e.target)
+                    }
+                  }
 
                   loaded.push(e.loaded)
                   this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
@@ -1537,6 +1563,12 @@ define([
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
                 e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
                 e.loadExtension().then(this.placeEntry.bind(this))
+                for (j = 0; j < families.length; j++) {
+                  for (k = 0; k < types.length; k++) {
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }
+
                 djDomClass.add(e.domNode, groupName)
                 loaded.push(e.loaded)
                 this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
