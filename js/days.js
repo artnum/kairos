@@ -248,6 +248,19 @@
       return false
     }
 
+    Holiday.prototype.searchHoliday = function (begin, end) {
+      let b = begin.toISOString().split('T')[0]
+      let e = end.toISOString().split('T')[0]
+      let res = []
+      for (let k of this.rHoliday()) {
+        if (k >= b && k <= e) {
+          let days = [...this.rHolidays[k]]
+          res.push({day: days.shift(), c: days})
+        }
+      }
+      return res
+    }
+    
     return Holiday
   }())
 }())
