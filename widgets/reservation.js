@@ -1071,13 +1071,15 @@ define([
       }
 
       var range = this.get('dateRange')
+      range.begin.setHours(0, 0, 0)
+      range.end.setHours(0, 0, 0)
       var begin = this.get('trueBegin')
       if (djDate.compare(range.begin, begin, 'date') > 0) {
         begin = range.begin
         nobegin = true
       }
       var end = this.get('trueEnd')
-      if (djDate.compare(range.end, end, 'date') <= 0) {
+      if (djDate.compare(range.end, end, 'date') < 0) {
         end = range.end
         noend = true
       }
@@ -1138,6 +1140,9 @@ define([
           top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
         }
         var domstyle = ['position: absolute']
+        if (stopPoint < 20) {
+          stopPoint = 20
+        }
         domstyle.push('width: ' + stopPoint + 'px')
         domstyle.push('left: ' + startPoint + 'px')
         domstyle.push('top: ' + top + 'px')
