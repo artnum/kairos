@@ -97,6 +97,21 @@ define([
       document.getElementById('commandSearchBox').focus()
     },
 
+    mouseInteraction: function (event) {
+      console.log(event)
+      let node = event.target
+      while (node && !node.classList.contains('entry')) { node = node.parentNode }
+      if (!node) { return }
+      if (node.firstElementChild && !node.firstElementChild.classList.contains('key')) { return }
+      let key = node.firstElementChild.textContent
+      if (key) {
+        event.key = key.toLowerCase()
+        if (this.commandKeys(event)) {
+          this.switchCommandMode()
+        }
+      }
+    },
+
     switchCommandMode: function () {
       this.CommandMode = !this.CommandMode
       if (!this.CommandMode) {
@@ -106,6 +121,7 @@ define([
         var o = document.createElement('DIV')
         o.setAttribute('id', 'commandModeOverlay')
         o.innerHTML = innerHtmlOverlay
+        o.addEventListener('click', this.mouseInteraction.bind(this))
         this.CommandOverlay = o
         window.requestAnimationFrame(() => document.body.appendChild(o))
       }
@@ -173,7 +189,6 @@ define([
             return false
           }
           var d = parseInt(elements[0])
-          console.log(y, m, d)
           date.setFullYear(y, m, d)
           break
       }
