@@ -49,6 +49,16 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
+      window.addEventListener('click', function (event) {
+        if (this.CommandMode) {
+          let node = event.target
+          while (node) {
+            if (node.id === 'commandModeOverlay') { return }
+            node = node.parentNode
+          }
+          this.switchCommandMode()
+        }
+      }.bind(this))
       window.addEventListener('keydown', async function (event) {
         if (event.key === APPConf.CommandWindow.escapeKey) {
           this.switchCommandMode()
@@ -98,9 +108,8 @@ define([
     },
 
     mouseInteraction: function (event) {
-      console.log(event)
       let node = event.target
-      while (node && !node.classList.contains('entry')) { node = node.parentNode }
+      while (node && node.classList && !node.classList.contains('entry')) { node = node.parentNode }
       if (!node) { return }
       if (node.firstElementChild && !node.firstElementChild.classList.contains('key')) { return }
       let key = node.firstElementChild.textContent
@@ -112,7 +121,8 @@ define([
       }
     },
 
-    switchCommandMode: function () {
+    switchCommandMode: function (mouse = false) {
+      this.Mouse = mouse
       this.CommandMode = !this.CommandMode
       if (!this.CommandMode) {
         this.CommandOverlay = null
@@ -120,6 +130,9 @@ define([
       } else {
         var o = document.createElement('DIV')
         o.setAttribute('id', 'commandModeOverlay')
+        if (mouse) {
+          o.classList.add('mouse')
+        }
         o.innerHTML = innerHtmlOverlay
         o.addEventListener('click', this.mouseInteraction.bind(this))
         this.CommandOverlay = o

@@ -677,6 +677,7 @@ define([
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
       djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
+      window.addEventListener('mousemove', this.windowMouseMovement.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1144,6 +1145,36 @@ define([
       }.bind(this))
     },
 
+    windowMouseMovement: function (event) {
+      if (event.clientX < 2) {
+        if (!this.CommandModeMouseTo) {
+          if (!window.App.CommandMode) {
+            this.NextToZeroResetCommandMode = false
+            this.CommandModeMouseTo = window.setTimeout((event) => {
+              window.App.switchCommandMode(true)
+              this.CommandModeMouseTo = null
+            }, 350)
+          }
+        }
+        if (this.NextToZeroResetCommandMode) {
+          this.NextToZeroResetCommandMode = false
+          window.App.switchCommandMode(true)
+          this.CommandModeMouseTo = window.setTimeout((event) => {
+            this.CommandModeMouseTo = null
+          }, 500)
+        }
+      }
+
+      if (event.clientX > 2 && this.CommandModeMouseTo) {
+        window.clearTimeout(this.CommandModeMouseTo)
+        this.CommandModeMouseTo = null
+      }
+
+      if (event.clientX > 320 && window.App.CommandMode) {
+        this.NextToZeroResetCommandMode = true
+      }
+    },
+
     mouseOver: function (event) {
       if (this._mask) { return }
       if (event.type === 'touchmove') {
@@ -1163,7 +1194,6 @@ define([
       }
 
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
-
       /* Move, following mouse, timeline left/right and up/down when left button is held */
       if (event.buttons === 1 || event.type === 'touchmove') {
         if (!this.originalTarget) {
