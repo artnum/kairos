@@ -890,15 +890,8 @@ define([
 
           item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
-            this.wait()
             var date = dtRegistry.byId('menuTodoDay').get('value')
-            this.center = date
-            date.setHours(0, 0, 0)
-            this.Filter.postMessage({ ops: [
-              {filter: 'date', on: 'entry', params: { date: date, type: [ 'deliveryBegin', 'begin' ] }},
-              {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end', dayonly: true}},
-              {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
-            ]})
+            this.filters.todo(date, this.Entries)
           }))
           x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
@@ -906,6 +899,87 @@ define([
           that.searchMenu.addChild(item)
         }).then(() => { that.menu.startup() })
       })
+    },
+
+    filters: {
+      todo: (date, wEntries) => {
+        date.setHours(12, 0, 0)
+        let d1 = new Date(); d1.setTime(date.getTime() - 86400000)
+        let d2 = new Date(); d2.setTime(date.getTime() + 86400000)
+
+        let txtD1 = d1.toISOString().split('T')[0]
+        let txtD2 = d2.toISOString().split('T')[0]
+        let txtDate = date.toISOString().split('T')[0]
+
+        let q1 = Query.exec(Path.url('store/Reservation', {params: {
+          'search.begin': `~${txtDate}%`,
+          'search.deliveryBegin': `~${txtDate}%`,
+          'search._rules': 'begin OR deliveryBegin'}}))
+        let q2 = Query.exec(Path.url('store/Association', {params: {
+          'search.begin': `<${txtD2}`,
+          'search.end': `>${txtD1}`,
+          'search.type': `~%/4`}}))
+
+        let q3 = new Promise((resolve, reject) => {
+          Query.exec(Path.url('store/Reservation', {params: {
+            'search.begin': `<${txtD2}`,
+            'search.end': `>${txtD1}` }})).then((results) => {
+            if (!results.success || results.length <= 0) { resolve([]); return }
+            let queries = []
+            let entryBind = {}
+            results.data.forEach((e) => {
+              entryBind[e.id] = e.target
+              queries.push(Query.exec(Path.url('store/Association', {params: {
+                'search.reservation': e.id,
+                'search.type': `~%/4`,
+                'search.follow': '1'}})))
+            })
+            Promise.all(queries).then((results) => {
+              let entries = []
+              results.forEach((result) => {
+                if (result.success && result.length > 0) {
+                  result.data.forEach((x) => {
+                    if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
+                      entries.push(entryBind[x.reservation])
+                    }
+                    resolve(entries)
+                  })
+                }
+              })
+            })
+          })
+        })
+        Promise.all([q1, q2]).then((results) => {
+          console.log(results)
+          let entries = []
+          results.forEach((result) => {
+            if (result.success && result.length > 0) {
+              result.data.forEach((e) => {
+                if (entries.indexOf(e.target) === -1) {
+                  entries.push(e.target)
+                }
+              })
+            }
+          })
+          q3.then((results) => {
+            results.forEach((e) => {
+              if (entries.indexOf(e) === -1) {
+                entries.push(e)
+              }
+              window.App.searchMenu.filterNone.set('disabled', false)
+              window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
+              for (let e in wEntries) {
+                if (entries.indexOf(wEntries[e].get('target')) === -1) {
+                  wEntries[e].set('active', false)
+                } else {
+                  wEntries[e].set('active', true)
+                }
+                wEntries[e].resize()
+              }
+            })
+          })
+        })
+      }
     },
 
     filterNone: function () {
