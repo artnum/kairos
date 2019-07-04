@@ -1260,7 +1260,10 @@ define([
       delete object['uuid']
       delete object['id']
       delete object['arrival']
-      object['creator'] = window.localStorage.getItem(Path.bcname('user'))
+      let creator = window.localStorage.getItem(Path.bcname('user'))
+      if (creator) {
+        object['creator'] = `/store/User/${JSON.parse(creator).id}`
+      }
       return new Promise((resolve, reject) => {
         this.save(object).then((id) => {
           let newId = id
@@ -1301,6 +1304,7 @@ define([
         delete arrival.target
         delete reservation.arrival
       }
+
       let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
       let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
       let associations = []
