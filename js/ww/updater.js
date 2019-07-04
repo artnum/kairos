@@ -113,7 +113,6 @@ function startUpdater () {
       if (response.ok) {
         response.json().then((json) => {
           if (json.length > 0 && json.success) {
-
             cacheAndSend(json.data)
           }
           setTimeout(startUpdater, updateTimer * 1000)
