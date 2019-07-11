@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom, GEvent */
+/* global getElementRect, fastdom, Tooltip */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -199,6 +199,50 @@ define([
       this.domNode.dataset.reference = this.target
       this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
       this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
+
+      const weights = ['maxcapacity', 'weight']
+      const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
+      let x = {}
+      for (let i = 0; i < weights.length; i++) {
+        if (this.details[weights[i]] !== undefined) {
+          let v = parseInt(this.details[weights[i]])
+          if (!Number.isNaN(v)) {
+            x[weights[i]] = {
+              raw: v,
+              html: v >= 1000 ? `${v / 1000} T` : `${v} kg`
+            }
+          }
+        }
+      }
+      for (let i = 0; i < lengths.length; i++) {
+        if (this.details[lengths[i]] !== undefined) {
+          let v = parseInt(this.details[lengths[i]])
+          if (!Number.isNaN(v)) {
+            x[lengths[i]] = {
+              raw: v,
+              html: `${v / 100} m`
+            }
+          }
+        }
+      }
+      const labels = {
+        weight: 'Poids',
+        maxcapacity: 'Charge max',
+        workheight: 'Hauteur travail',
+        floorheight: 'Hauteur plancher',
+        sideoffset: 'Déport latéral',
+        width: 'Largeur',
+        height: 'Hauteur',
+        length: 'Longueur'
+      }
+      let txt = []
+      for (let k in labels) {
+        if (x[k]) {
+          txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
+        }
+      }
+      txt.push(`<p><a href="https://airnace.ch/${this.details.description}/pdf">Fiche technique</a></p>`)
+      this.DetailTooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: txt.join(''), placement: 'bottom-start', closeOnClickOutside: true})
     },
 
     loadExtension: function () {
