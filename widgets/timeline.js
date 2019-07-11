@@ -1669,7 +1669,7 @@ define([
         if (aT !== 99999 && bT === 99999) { b.domNode.dataset.pushToEnd = true; return -1 }
         if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
-        const techData = [ 'workheight:r', 'floorheight:r', 'sideoffset:r', 'maxcapacity:r' ]
+        const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
         for (let i = 0; i < techData.length; i++) {
           let [name, reverse] = techData[i].split(':', 2)
           let aT = a.get(name)
