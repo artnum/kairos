@@ -1662,6 +1662,11 @@ define([
       this.entries.sort((a, b) => {
         let aT = Number.isNaN(parseInt(a.get('target'))) ? 99999 : parseInt(a.get('target'))
         let bT = Number.isNaN(parseInt(b.get('target'))) ? 99999 : parseInt(b.get('target'))
+
+        a.domNode.dataset.groupId = Math.floor(aT / 100)
+        b.domNode.dataset.groupId = Math.floor(bT / 100)
+        if (aT === 99999 && bT !== 99999) { a.domNode.dataset.pushToEnd = true; return 1 }
+        if (aT !== 99999 && bT === 99999) { b.domNode.dataset.pushToEnd = true; return -1 }
         if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
         const techData = [ 'workheight:r', 'floorheight:r', 'sideoffset:r', 'maxcapacity:r' ]
@@ -1686,15 +1691,19 @@ define([
             return -1
           }
         }
-        
+
         return ((bT - (Math.floor(bT / 100) * 100)) - (aT - (Math.floor(aT / 100) * 100)))
       })
 
       this.entries.forEach((e) => {
         let inType = false
         let insertBefore = null
+        if (e.domNode.dataset.pushToEnd) {
+          this.domEntries.appendChild(e.domNode)
+          return
+        }
         for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
-          if (n.dataset.type === e.domNode.dataset.type && !inType) { inType = true }
+          if (n.dataset.groupId === e.domNode.dataset.groupId && n.dataset.type === e.domNode.dataset.type && !inType) { inType = true }
           if (n.dataset.type !== e.domNode.dataset.type && inType) { insertBefore = n; inType = false; break }
         }
         if (insertBefore) {
