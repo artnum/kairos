@@ -241,7 +241,7 @@ define([
           txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      txt.push(`<p><a href="https://airnace.ch/${this.details.description}/pdf">Fiche technique</a></p>`)
+      txt.push(`<p><a href="https://airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
       this.DetailTooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: txt.join(''), placement: 'bottom-start', closeOnClickOutside: true})
     },
 
