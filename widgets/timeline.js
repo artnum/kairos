@@ -1357,43 +1357,6 @@ define([
     placeEntry: function (entry) {
       this.Entries[entry.target] = entry
       this.entries.push(entry)
-
-      let cmpNodes = (a, b) => {
-        if (a.get('order') && b.get('order')) {
-          return parseInt(a.get('order')) - parseInt(b.get('order'))
-        } else if (!a.get('order') && b.get('order')) {
-          return 1
-        }
-        if (parseInt(a.get('target')) > 0 && parseInt(b.get('target')) > 0) {
-          if (Math.floor(parseInt(a.get('target')) / 100) === Math.floor(parseInt(b.get('target')) / 100)) {
-            let ha = parseInt(a.get('height') ? a.get('height') : (a.get('floorheight') ? a.get('floorheight') : (a.get('workheight') ? a.get('workheight') : 0)))
-            let hb = parseInt(b.get('height') ? b.get('height') : (b.get('floorheight') ? b.get('floorheight') : (b.get('workheight') ? b.get('workheight') : 0)))
-            return ha - hb
-          } else {
-            return parseInt(a.get('target')) - parseInt(b.get('target'))
-          }
-        } else {
-          if (parseInt(a.get('target')) > 0 && !(parseInt(b.get('target')) > 0)) {
-            return -1
-          } else if (!(parseInt(a.get('target')) > 0) && parseInt(b.get('target')) > 0) {
-            return 1
-          } else {
-            return 0
-          }
-        }
-      }
-
-      var p = null
-      var i = this.domEntries.lastChild
-      while (i && cmpNodes(dtRegistry.getEnclosingWidget(i), entry) > 0) {
-        p = i
-        i = i.previousSibling
-      }
-      this.domEntries.insertBefore(entry.domNode, p)
-      /* next node must be pushed on step  */
-      for (i = entry.nextSibling; i; i = i.nextSibling) {
-        dtRegistry.byNode(i).resize()
-      }
     },
 
     _getCompactAttr: function () {
@@ -1621,8 +1584,9 @@ define([
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
-              e.loadExtension().then(this.placeEntry.bind(this))
+              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel(), details: machine})
+              e.loadExtension()
+              this.placeEntry(e)
               var families = []
               var types = []
               if (machine.family && machine.type) {
@@ -1651,8 +1615,9 @@ define([
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
-                  e.loadExtension().then(this.placeEntry.bind(this))
+                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel(), details: machine})
+                  e.loadExtension()
+                  this.placeEntry(e)
                   djDomClass.add(e.domNode, groupName)
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
@@ -1665,8 +1630,9 @@ define([
                 }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
-                e.loadExtension().then(this.placeEntry.bind(this))
+                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel(), details: machine})
+                e.loadExtension()
+                this.placeEntry(e)
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
                     category[families[j]][types[k]].push(e.target)
@@ -1684,11 +1650,59 @@ define([
         }
         this.categories = category
         djAll(loaded).then(function () {
+          this.sortAndDisplayEntries()
           this.buildMenu()
           this.update()
           window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
         }.bind(this))
       }.bind(this))
+    },
+
+    sortAndDisplayEntries: function () {
+      this.entries.sort((a, b) => {
+        let aT = Number.isNaN(parseInt(a.get('target'))) ? 99999 : parseInt(a.get('target'))
+        let bT = Number.isNaN(parseInt(b.get('target'))) ? 99999 : parseInt(b.get('target'))
+        if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
+
+        const techData = [ 'workheight:r', 'floorheight:r', 'sideoffset:r', 'maxcapacity:r' ]
+        for (let i = 0; i < techData.length; i++) {
+          let [name, reverse] = techData[i].split(':', 2)
+          let aT = a.get(name)
+          let bT = b.get(name)
+
+          if (aT - bT !== 0) {
+            if (reverse === undefined) {
+              return aT - bT
+            } else {
+              return bT - aT
+            }
+          }
+        }
+
+        if (a.get('name') !== b.get('name')) {
+          if (a.get('name') > b.get('name')) {
+            return 1
+          } else {
+            return -1
+          }
+        }
+        
+        return ((bT - (Math.floor(bT / 100) * 100)) - (aT - (Math.floor(aT / 100) * 100)))
+      })
+
+      this.entries.forEach((e) => {
+        let inType = false
+        let insertBefore = null
+        for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.type === e.domNode.dataset.type && !inType) { inType = true }
+          if (n.dataset.type !== e.domNode.dataset.type && inType) { insertBefore = n; inType = false; break }
+        }
+        if (insertBefore) {
+          this.domEntries.insertBefore(e.domNode, insertBefore)
+        } else {
+          this.domEntries.appendChild(e.domNode)
+        }
+      })
     },
 
     updateChild: function () {

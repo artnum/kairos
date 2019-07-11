@@ -197,6 +197,8 @@ define([
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target
+      this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
+      this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
     },
 
     loadExtension: function () {
@@ -698,7 +700,39 @@ define([
     _getCompactAttr: function () {
       return this.sup.get('compact')
     },
-
+    _getNameAttr: function () {
+      const namesAttr = [ 'cn', 'cn;lang-de', 'cn;lang-en' ]
+      for (let i = 0; i < namesAttr.length; i++) {
+        if (this.details[namesAttr[i]] !== undefined) {
+          return this.details[namesAttr[i]] 
+        }
+      }
+      return ''
+    },
+    getNumTechData: function (name) {
+      if (this.details === undefined) {
+        return 0
+      }
+      if (this.details[name] === undefined) {
+        return 0
+      }
+      if (Number.isNaN(parseFloat(this.details[name]))) {
+        return 0
+      }
+      return parseFloat(this.details[name])
+    },
+    _getFloorheightAttr: function () {
+      return this.getNumTechData('floorheight')
+    },
+    _getWorkheightAttr: function () {
+      return this.getNumTechData('workheight')
+    },
+    _getSideoffsetAttr: function () {
+      return this.getNumTechData('sideoffset')
+    },
+    _getMaxcapacityAttr: function () {
+      return this.getNumTechData('maxcapacity')
+    },
     _setActiveAttr: function (active) {
       this._set('active', active)
       if (this.get('active')) {
