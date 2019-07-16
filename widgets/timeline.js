@@ -551,9 +551,29 @@ define([
       this.drawTimeline()
       this.drawVerticalLine()
 
-      for (var k in this.Entries) {
-        this.Entries[k].resize()
+      if (this.resizeTimeout) {
+        window.clearTimeout(this.resizeTimeout)
+        this.resizeTimeout = null
       }
+
+      this.resizeTimeout = window.setTimeout(() => {
+        for (let i = 0; i < this.entries.length; i++) {
+          this.entries[i].resize()
+        }
+        this.resizeTimeout = null
+      }, 250)
+
+      let i = Math.floor(window.scrollY / 76) - 1
+      let height = Math.floor(window.innerHeight / 76) + 1 + i
+      if (i < 0) { i = 0 }
+      if (height > this.entries.length) { height = this.entries.length }
+      if (height <= 0) { height = 1 }
+      for (; i < height; i++) {
+        if (this.entries[i]) {
+          this.entries[i].resize()
+        }
+      }
+
       this.drawSubline()
     },
 
@@ -1704,6 +1724,16 @@ define([
           this.domEntries.appendChild(e.domNode)
         }
       })
+
+      /* as we display we modify the order, so check the final order by using the DOM */
+      let entriesOrder = []
+      for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
+        let widget = dtRegistry.byNode(n)
+        if (widget) {
+          entriesOrder.push(widget)
+        }
+      }
+      this.entries = [...entriesOrder]
     },
 
     updateChild: function () {
