@@ -647,14 +647,6 @@ define([
       this.set('zoom', 'week')
       tContainer.startup()
 
-      /* tContainer.domNode.addEventListener('keydown', function (event) {
-        if (event.key === APPConf.exitKey) {
-          if (this.selectedChildWidget) {
-            this.removeChild(this.selectedChildWidget)
-          }
-        }
-      }.bind(tContainer), {capture: true}) */
-
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
           djDomStyle.set(this.domNode.parentNode, 'display', 'block')

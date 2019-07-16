@@ -242,7 +242,8 @@ define([
         }
       }
       txt.push(`<p><a href="https://airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
-      this.DetailTooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: txt.join(''), placement: 'bottom-start', closeOnClickOutside: true})
+      this.htmlDetails = txt.join('')
+      this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
     },
 
     loadExtension: function () {

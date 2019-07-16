@@ -733,6 +733,7 @@ define([
       tContainer.resize()
       tContainer.selectChild(cp.id)
 
+      f.nEntryDetails.innerHTML = `<label class="title">Caractéristiques</label>${this.sup.htmlDetails}`
       this.myForm = f
       this.syncForm()
       this.myContentPane = cp
