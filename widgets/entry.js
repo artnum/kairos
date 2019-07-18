@@ -199,7 +199,10 @@ define([
       this.domNode.dataset.reference = this.target
       this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
       this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
+      this.genDetails()
+    },
 
+    genDetails: function () {
       const weights = ['maxcapacity', 'weight']
       const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
       let x = {}
@@ -241,9 +244,13 @@ define([
           txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      txt.push(`<p><a href="https://airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
-      this.htmlDetails = txt.join('')
-      this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+      fetch(`https://www.local.airnace.ch/${this.details.description}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
+        if (response.ok) {
+          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
+        }
+        this.htmlDetails = txt.join('')
+        this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+      })
     },
 
     loadExtension: function () {
