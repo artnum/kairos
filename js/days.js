@@ -150,14 +150,14 @@
       }
       return null
     }
-    
+
     var findComputeFunction = function (name) {
       if (EasterRelative[name]) { return computeEasterDay }
       if (FixedDay[name]) { return computeFixedDay }
       if (RelativeDate[name]) { return computeRelativeDay }
       return null
     }
-    
+
     var computeEasterDay = function (name, year) {
       if (!EasterRelative[name]) { return null }
       let rule = EasterRelative[name]
@@ -260,7 +260,55 @@
       }
       return res
     }
-    
+
+    Holiday.prototype.bdays = function (begin, end, loc = 'vs') {
+      let yb = begin.getFullYear()
+      let ye = end.getFullYear()
+      for (let i = 0; yb + i < ye; i++) {
+        this.addYear(yb + i)
+      }
+      let bDay = 0
+      let tEnd = new Date(end.getTime()); tEnd.setHours(12, 0, 0)
+      let tBegin = new Date(begin.getTime()); tBegin.setHours(12, 0, 0)
+      for (let i = new Date(tBegin.getTime()); i.toISOString().split('T')[0] <= tEnd.toISOString().split('T')[0]; i.setTime(i.getTime() + 86400000)) {
+        if (i.getDay() !== 0 && i.getDay() !== 6) {
+          let h = this.isHoliday(i)
+          if (!h) {
+            bDay++
+          } else {
+            if (h.c.indexOf(loc) === -1) {
+              bDay++
+            }
+          }
+        }
+      }
+
+      return bDay
+    }
+
+    Holiday.prototype.hdays = function (begin, end, loc = 'vs') {
+      let yb = begin.getFullYear()
+      let ye = end.getFullYear()
+      for (let i = 0; yb + i < ye; i++) {
+        this.addYear(yb + i)
+      }
+      let hDay = 0
+      let tEnd = new Date(end.getTime()); tEnd.setHours(12, 0, 0)
+      let tBegin = new Date(begin.getTime()); tBegin.setHours(12, 0, 0)
+      for (let i = new Date(tBegin.getTime()); i.toISOString().split('T')[0] <= tEnd.toISOString().split('T')[0]; i.setTime(i.getTime() + 86400000)) {
+        if (i.getDay() === 0 || i.getDay() === 6) {
+          hDay++
+        } else {
+          let h = this.isHoliday(i)
+          if (h && h.c.indexOf(loc) !== -1) {
+            hDay++
+          }
+        }
+      }
+
+      return hDay
+    }
+
     return Holiday
   }())
 }())
