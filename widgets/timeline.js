@@ -924,15 +924,19 @@ define([
         let txtD2 = d2.toISOString().split('T')[0]
         let txtDate = date.toISOString().split('T')[0]
 
+        /* récupère les réservation commençant à la date */
         let q1 = Query.exec(Path.url('store/Reservation', {params: {
           'search.begin': `~${txtDate}%`,
           'search.deliveryBegin': `~${txtDate}%`,
           'search._rules': 'begin OR deliveryBegin'}}))
+        /* récupère les associations étant dans la période */
         let q2 = Query.exec(Path.url('store/Association', {params: {
-          'search.begin': `<${txtD2}`,
-          'search.end': `>${txtD1}`,
-          'search.type': `~%/4`}}))
+          'search.begin': `<=${txtD2}`,
+          'search.end': `>=${txtD1}`,
+          'search.type': `~%/4`
+        }}))
 
+        /* récupère les associations qui suivent la taille de la réservation */
         let q3 = new Promise((resolve, reject) => {
           Query.exec(Path.url('store/Reservation', {params: {
             'search.begin': `<${txtD2}`,
@@ -955,30 +959,57 @@ define([
                     if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
                       entries.push(entryBind[x.reservation])
                     }
-                    resolve(entries)
                   })
                 }
               })
+              resolve(entries)
             })
           })
         })
+
         Promise.all([q1, q2]).then((results) => {
-          console.log(results)
           let entries = []
-          results.forEach((result) => {
-            if (result.success && result.length > 0) {
-              result.data.forEach((e) => {
-                if (entries.indexOf(e.target) === -1) {
-                  entries.push(e.target)
+
+          /* il convient de récupérer les réservation pour connaître à quel entrée appartient l'association */
+          let q4 = new Promise((resolve, reject) => {
+            if (!results[1].success || results[1].length <= 0) {
+              resolve()
+              return
+            }
+
+            let queries = []
+            results[1].data.forEach((e) => {
+              queries.push(Query.exec(Path.url(`store/Reservation/${e.reservation}`)))
+            })
+
+            Promise.all(queries).then((results) => {
+              results.forEach((result) => {
+                if (result.success && result.length > 0) {
+                  if (entries.indexOf(result.data.target) === -1) {
+                    entries.push(result.data.target)
+                  }
                 }
               })
-            }
+
+              resolve()
+            })
           })
-          q3.then((results) => {
-            results.forEach((e) => {
-              if (entries.indexOf(e) === -1) {
-                entries.push(e)
+
+          if (results[0].success && results[0].length > 0) {
+            results[0].data.forEach((e) => {
+              if (entries.indexOf(e.target) === -1) {
+                entries.push(e.target)
               }
+            })
+          }
+
+          q4.then(() => {
+            q3.then((results) => {
+              results.forEach((e) => {
+                if (entries.indexOf(e) === -1) {
+                  entries.push(e)
+                }
+              })
               window.App.searchMenu.filterNone.set('disabled', false)
               window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
               for (let e in wEntries) {
