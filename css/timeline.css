@@ -39,10 +39,6 @@ body, html { margin: 0; padding: 0; }
 	margin-bottom: 60px;
 }
 
-.timeline .header .tools {
-	width: 220px;	
-}
-
 .timeline .header div {
 	display: inline-block;	
 	overflow: hidden;
@@ -88,13 +84,14 @@ body, html { margin: 0; padding: 0; }
 	display: inline-block;
 }
 
-.timeline .line {
-	margin-left: 220px;	
-}
-
 .day.weekend {
 	background-color: black;	
 	color: white;
+}
+
+.day.holiday {
+    background-color: hsla(40, 100%, 50%, 1);
+    color: black;
 }
 
 .day {

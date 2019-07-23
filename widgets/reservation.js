@@ -733,6 +733,7 @@ define([
       tContainer.resize()
       tContainer.selectChild(cp.id)
 
+      f.nEntryDetails.innerHTML = `<label class="title">Caractéristiques</label>${this.sup.htmlDetails}`
       this.myForm = f
       this.syncForm()
       this.myContentPane = cp
@@ -1071,13 +1072,15 @@ define([
       }
 
       var range = this.get('dateRange')
+      range.begin.setHours(0, 0, 0)
+      range.end.setHours(0, 0, 0)
       var begin = this.get('trueBegin')
       if (djDate.compare(range.begin, begin, 'date') > 0) {
         begin = range.begin
         nobegin = true
       }
       var end = this.get('trueEnd')
-      if (djDate.compare(range.end, end, 'date') <= 0) {
+      if (djDate.compare(range.end, end, 'date') < 0) {
         end = range.end
         noend = true
       }
@@ -1135,6 +1138,9 @@ define([
         height = height / this.get('hdivider')
         top += (height + myTopBorder) * this.get('hposition')
         var domstyle = ['position: absolute']
+        if (stopPoint < 20) {
+          stopPoint = 20
+        }
         domstyle.push('width: ' + stopPoint + 'px')
         domstyle.push('left: ' + startPoint + 'px')
         domstyle.push('top: ' + top + 'px')
@@ -1252,7 +1258,10 @@ define([
       delete object['uuid']
       delete object['id']
       delete object['arrival']
-      object['creator'] = window.localStorage.getItem(Path.bcname('user'))
+      let creator = window.localStorage.getItem(Path.bcname('user'))
+      if (creator) {
+        object['creator'] = `/store/User/${JSON.parse(creator).id}`
+      }
       return new Promise((resolve, reject) => {
         this.save(object).then((id) => {
           let newId = id
@@ -1293,6 +1302,7 @@ define([
         delete arrival.target
         delete reservation.arrival
       }
+
       let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
       let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
       let associations = []

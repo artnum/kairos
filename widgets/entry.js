@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom, GEvent */
+/* global getElementRect, fastdom, Tooltip */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -68,7 +68,6 @@ define([
   Query
 ) {
   return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
-
     baseClass: 'entry',
     templateString: _template,
     stores: {},
@@ -198,6 +197,60 @@ define([
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target
+      this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
+      this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
+      this.genDetails()
+    },
+
+    genDetails: function () {
+      const weights = ['maxcapacity', 'weight']
+      const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
+      let x = {}
+      for (let i = 0; i < weights.length; i++) {
+        if (this.details[weights[i]] !== undefined) {
+          let v = parseInt(this.details[weights[i]])
+          if (!Number.isNaN(v)) {
+            x[weights[i]] = {
+              raw: v,
+              html: v >= 1000 ? `${v / 1000} T` : `${v} kg`
+            }
+          }
+        }
+      }
+      for (let i = 0; i < lengths.length; i++) {
+        if (this.details[lengths[i]] !== undefined) {
+          let v = parseInt(this.details[lengths[i]])
+          if (!Number.isNaN(v)) {
+            x[lengths[i]] = {
+              raw: v,
+              html: `${v / 100} m`
+            }
+          }
+        }
+      }
+      const labels = {
+        weight: 'Poids',
+        maxcapacity: 'Charge max',
+        workheight: 'Hauteur travail',
+        floorheight: 'Hauteur plancher',
+        sideoffset: 'Déport latéral',
+        width: 'Largeur',
+        height: 'Hauteur',
+        length: 'Longueur'
+      }
+      let txt = []
+      for (let k in labels) {
+        if (x[k]) {
+          txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
+        }
+      }
+      fetch(`https://www.local.airnace.ch/${this.details.description}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
+        if (response.ok) {
+          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
+        }
+        this.htmlDetails = txt.join('')
+        this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+      })
     },
 
     loadExtension: function () {
@@ -416,9 +469,8 @@ define([
 
       var sup = this
       this.defaultStatus().then(function (s) {
-        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s })
+        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s})
         newReservation.save().then((id) => {
-          console.log(id)
           newReservation.set('uid', id)
           newReservation.popMeUp()
         })
@@ -676,7 +728,39 @@ define([
     _getCompactAttr: function () {
       return this.sup.get('compact')
     },
-
+    _getNameAttr: function () {
+      const namesAttr = [ 'cn', 'cn;lang-de', 'cn;lang-en' ]
+      for (let i = 0; i < namesAttr.length; i++) {
+        if (this.details[namesAttr[i]] !== undefined) {
+          return this.details[namesAttr[i]] 
+        }
+      }
+      return ''
+    },
+    getNumTechData: function (name) {
+      if (this.details === undefined) {
+        return 0
+      }
+      if (this.details[name] === undefined) {
+        return 0
+      }
+      if (Number.isNaN(parseFloat(this.details[name]))) {
+        return 0
+      }
+      return parseFloat(this.details[name])
+    },
+    _getFloorheightAttr: function () {
+      return this.getNumTechData('floorheight')
+    },
+    _getWorkheightAttr: function () {
+      return this.getNumTechData('workheight')
+    },
+    _getSideoffsetAttr: function () {
+      return this.getNumTechData('sideoffset')
+    },
+    _getMaxcapacityAttr: function () {
+      return this.getNumTechData('maxcapacity')
+    },
     _setActiveAttr: function (active) {
       this._set('active', active)
       if (this.get('active')) {
@@ -689,6 +773,5 @@ define([
         }
       }
     }
-
   })
 })

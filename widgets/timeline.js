@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf, DoWait */
+/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -48,7 +48,6 @@ define([
   'location/timeline/popup',
   'location/timeline/keys',
   'location/timeline/filters',
-  'location/timeline/gevent',
   'location/update',
   'location/count',
   'location/countList',
@@ -102,7 +101,7 @@ define([
 
   Entry,
 
-  tlPopup, tlKeys, update, Filters, GEvent,
+  tlPopup, tlKeys, update, Filters,
 
   Count,
   CountList,
@@ -114,11 +113,9 @@ define([
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
-
-
     OpenAtCreation: {},
     center: null,
-    offset: 220,
+    offset: 260,
     blockSize: 42,
     baseClass: 'timeline',
     templateString: _template,
@@ -173,37 +170,10 @@ define([
       this.LocalReservations = {}
       this.timelineMoving = false
       this.FirstLoad = true
+      this.Holidays = null
+      this.Tooltips = {}
 
       this.zoomCss = document.createElement('style')
-
-      /* this.Reservation = new Worker(Path.url('/js/ww/reservations.js')) */
-
-      /* this.Cleaner = new Worker(Path.url('/js/ww/cleaner.js'))
-      this.Cleaner.onmessage = djLang.hitch(this, function (e) {
-        if (!e || !e.data) { return }
-        if (e.data.op) {
-          switch (e.data.op.toLowerCase()) {
-            case 'rebuild':
-              window.location.reload(true)
-              break
-            case 'loaded':
-              this.revision()
-              this.update()
-              break
-          }
-
-          this.unwait()
-          return
-        }
-        for (var i = 0; i < e.data.length; i++) {
-          if (this.Entries[e.data[i]]) {
-            console.log('Cleaning ' + e.data[i])
-            this.Entries[e.data[i]].update()
-          }
-        }
-        this.unwait()
-      }) */
-
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
       this.Updater.onmessage = djLang.hitch(this, function (e) {
         if (!e || !e.data || !e.data.type) { return }
@@ -261,7 +231,9 @@ define([
 
       window.GEvent.listen('reservation.open', function (event) {
         if (event.detail.id) {
-          this.doSearchLocation(event.detail.id)
+          this.doSearchLocation(event.detail.id).then(() => {
+            let n = new Notification(`Réservation ${event.detail.id} ouverte`, {body: 'La réservation a été ouverte avec succès', tag: `reservationOpen${event.detail.id}`})
+          })
         }
       }.bind(this))
       window.GEvent.listen('reservation.attribute-click', function (event) {
@@ -456,8 +428,12 @@ define([
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
-      this.set('blockSize', (page[2] - 240) / days)
-      this.zoomCss.innerHTML = '.timeline .line span { width: ' + (this.get('blockSize') - 2) + 'px !important;} ' + style
+      this.set('blockSize', Math.floor((window.innerWidth - (this.get('offset') + 40)) / days))
+      this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
+                                 .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
+                                .timeline .header .tools { width: ${this.get('offset')}px !important; }
+                                .timeline .line { margin-left: ${this.get('offset')}px !important; }
+                                ${style}`
       this.resize()
     },
 
@@ -512,11 +488,25 @@ define([
       return false
     },
 
+    _trCantonName: function (c) {
+      switch (c) {
+        case 'vs': return 'Valais'
+        case 'vd': return 'Vaud'
+        case 'ge': return 'Genève'
+        case 'ju': return 'Jura'
+        case 'ne': return 'Neuchâtel'
+        case 'fr-cat': return 'Fribourg catholique'
+        case 'fr-prot': return 'Fribourg réformé'
+        case 'be': return 'Berne'
+        case 'fra': return 'France'
+        default: return 'Suisse'
+      }
+    },
+
     makeDay: function (newDay) {
       var txtDate = ''
+      newDay.setHours(12, 0, 0)
       var dayStamp = djDateStamp.toISOString(newDay, {selector: 'date'})
-      var c = 'day'
-      if (newDay.getDay() === 0 || newDay.getDay() === 6) { c = 'day weekend' }
 
       switch (newDay.getDay()) {
         case 0: txtDate = 'Dim ' + newDay.getDate(); break
@@ -530,7 +520,29 @@ define([
 
       var domDay = document.createElement('SPAN')
       domDay.setAttribute('data-artnum-day', dayStamp)
-      domDay.setAttribute('class', c)
+      domDay.classList.add('day')
+
+      let holiday = this.Holidays.isHoliday(newDay)
+      if (holiday && newDay.getDay() !== 0) {
+        domDay.classList.add('holiday')
+        let cantons = []
+        holiday.c.forEach((c) => {
+          cantons.push(this._trCantonName(c))
+        })
+        let text = `Férié ${cantons[0]}`
+        if (holiday.c.length > 1) {
+          text = `Férié ${cantons.join(', ')}`
+        }
+        if (this.Tooltips[newDay.toISOString().split('T')[0]]) {
+          this.Tooltips[newDay.toISOString().split('T')[0]].dispose()
+        }
+        this.Tooltips[newDay.toISOString().split('T')[0]] = new Tooltip(domDay, {title: text, placement: 'bottom'})
+      } else {
+        if (newDay.getDay() === 0 || newDay.getDay() === 6) {
+          domDay.classList.add('weekend')
+        }
+      }
+
       domDay.innerHTML = txtDate
       return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
     },
@@ -539,9 +551,29 @@ define([
       this.drawTimeline()
       this.drawVerticalLine()
 
-      for (var k in this.Entries) {
-        this.Entries[k].resize()
+      if (this.resizeTimeout) {
+        window.clearTimeout(this.resizeTimeout)
+        this.resizeTimeout = null
       }
+
+      this.resizeTimeout = window.setTimeout(() => {
+        for (let i = 0; i < this.entries.length; i++) {
+          this.entries[i].resize()
+        }
+        this.resizeTimeout = null
+      }, 250)
+
+      let i = Math.floor(window.scrollY / 76) - 1
+      let height = Math.floor(window.innerHeight / 76) + 1 + i
+      if (i < 0) { i = 0 }
+      if (height > this.entries.length) { height = this.entries.length }
+      if (height <= 0) { height = 1 }
+      for (; i < height; i++) {
+        if (this.entries[i]) {
+          this.entries[i].resize()
+        }
+      }
+
       this.drawSubline()
     },
 
@@ -635,14 +667,6 @@ define([
       this.set('zoom', 'week')
       tContainer.startup()
 
-      /* tContainer.domNode.addEventListener('keydown', function (event) {
-        if (event.key === APPConf.exitKey) {
-          if (this.selectedChildWidget) {
-            this.removeChild(this.selectedChildWidget)
-          }
-        }
-      }.bind(tContainer), {capture: true}) */
-
       djAspect.after(tContainer, 'addChild', function () {
         if (this.hasChildren()) {
           djDomStyle.set(this.domNode.parentNode, 'display', 'block')
@@ -665,12 +689,13 @@ define([
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
       djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
+      window.addEventListener('mousemove', this.windowMouseMovement.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
           if (window.location.hash) {
             if (Number(window.location.hash.substr(1))) {
-              that.doSearchLocation(window.location.hash.substr(1))
+              that.doSearchLocation(window.location.hash.substr(1), true)
             } else {
               var sub = window.location.hash.substr(1)
               switch (String(sub.substr(0, 3)).toLowerCase()) {
@@ -878,15 +903,8 @@ define([
 
           item = new DtMenuItem({label: 'À faire le '})
           djOn(item, 'click', djLang.hitch(that, () => {
-            this.wait()
             var date = dtRegistry.byId('menuTodoDay').get('value')
-            this.center = date
-            date.setHours(0, 0, 0)
-            this.Filter.postMessage({ ops: [
-              {filter: 'date', on: 'entry', params: { date: date, type: [ 'deliveryBegin', 'begin' ] }},
-              {filter: 'between', intersect: 'machinist', on: 'complement', params: {date: date, begin: 'begin', end: 'end', dayonly: true}},
-              {name: 'machinist', filter: 'equal', on: 'complement', params: { value: '4', attribute: 'type.id' }}
-            ]})
+            this.filters.todo(date, this.Entries)
           }))
           x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
           item.containerNode.appendChild(x.domNode)
@@ -894,6 +912,118 @@ define([
           that.searchMenu.addChild(item)
         }).then(() => { that.menu.startup() })
       })
+    },
+
+    filters: {
+      todo: (date, wEntries) => {
+        date.setHours(12, 0, 0)
+        let d1 = new Date(); d1.setTime(date.getTime() - 86400000)
+        let d2 = new Date(); d2.setTime(date.getTime() + 86400000)
+
+        let txtD1 = d1.toISOString().split('T')[0]
+        let txtD2 = d2.toISOString().split('T')[0]
+        let txtDate = date.toISOString().split('T')[0]
+
+        /* récupère les réservation commençant à la date */
+        let q1 = Query.exec(Path.url('store/Reservation', {params: {
+          'search.begin': `~${txtDate}%`,
+          'search.deliveryBegin': `~${txtDate}%`,
+          'search._rules': 'begin OR deliveryBegin'}}))
+        /* récupère les associations étant dans la période */
+        let q2 = Query.exec(Path.url('store/Association', {params: {
+          'search.begin': `<=${txtD2}`,
+          'search.end': `>=${txtD1}`,
+          'search.type': `~%/4`
+        }}))
+
+        /* récupère les associations qui suivent la taille de la réservation */
+        let q3 = new Promise((resolve, reject) => {
+          Query.exec(Path.url('store/Reservation', {params: {
+            'search.begin': `<${txtD2}`,
+            'search.end': `>${txtD1}` }})).then((results) => {
+            if (!results.success || results.length <= 0) { resolve([]); return }
+            let queries = []
+            let entryBind = {}
+            results.data.forEach((e) => {
+              entryBind[e.id] = e.target
+              queries.push(Query.exec(Path.url('store/Association', {params: {
+                'search.reservation': e.id,
+                'search.type': `~%/4`,
+                'search.follow': '1'}})))
+            })
+            Promise.all(queries).then((results) => {
+              let entries = []
+              results.forEach((result) => {
+                if (result.success && result.length > 0) {
+                  result.data.forEach((x) => {
+                    if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
+                      entries.push(entryBind[x.reservation])
+                    }
+                  })
+                }
+              })
+              resolve(entries)
+            })
+          })
+        })
+
+        Promise.all([q1, q2]).then((results) => {
+          let entries = []
+
+          /* il convient de récupérer les réservation pour connaître à quel entrée appartient l'association */
+          let q4 = new Promise((resolve, reject) => {
+            if (!results[1].success || results[1].length <= 0) {
+              resolve()
+              return
+            }
+
+            let queries = []
+            results[1].data.forEach((e) => {
+              queries.push(Query.exec(Path.url(`store/Reservation/${e.reservation}`)))
+            })
+
+            Promise.all(queries).then((results) => {
+              results.forEach((result) => {
+                if (result.success && result.length > 0) {
+                  if (entries.indexOf(result.data.target) === -1) {
+                    entries.push(result.data.target)
+                  }
+                }
+              })
+
+              resolve()
+            })
+          })
+
+          if (results[0].success && results[0].length > 0) {
+            results[0].data.forEach((e) => {
+              if (entries.indexOf(e.target) === -1) {
+                entries.push(e.target)
+              }
+            })
+          }
+
+          q4.then(() => {
+            q3.then((results) => {
+              results.forEach((e) => {
+                if (entries.indexOf(e) === -1) {
+                  entries.push(e)
+                }
+              })
+              window.App.searchMenu.filterNone.set('disabled', false)
+              window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
+              for (let e in wEntries) {
+                if (entries.indexOf(wEntries[e].get('target')) === -1) {
+                  wEntries[e].set('active', false)
+                } else {
+                  wEntries[e].set('active', true)
+                }
+                wEntries[e].resize()
+              }
+            })
+          })
+        })
+      }
     },
 
     filterNone: function () {
@@ -1058,6 +1188,36 @@ define([
       }.bind(this))
     },
 
+    windowMouseMovement: function (event) {
+      if (event.clientX < 2) {
+        if (!this.CommandModeMouseTo) {
+          if (!window.App.CommandMode) {
+            this.NextToZeroResetCommandMode = false
+            this.CommandModeMouseTo = window.setTimeout((event) => {
+              window.App.switchCommandMode(true)
+              this.CommandModeMouseTo = null
+            }, 350)
+          }
+        }
+        if (this.NextToZeroResetCommandMode) {
+          this.NextToZeroResetCommandMode = false
+          window.App.switchCommandMode(true)
+          this.CommandModeMouseTo = window.setTimeout((event) => {
+            this.CommandModeMouseTo = null
+          }, 500)
+        }
+      }
+
+      if (event.clientX > 2 && this.CommandModeMouseTo) {
+        window.clearTimeout(this.CommandModeMouseTo)
+        this.CommandModeMouseTo = null
+      }
+
+      if (event.clientX > 320 && window.App.CommandMode) {
+        this.NextToZeroResetCommandMode = true
+      }
+    },
+
     mouseOver: function (event) {
       if (this._mask) { return }
       if (event.type === 'touchmove') {
@@ -1077,7 +1237,6 @@ define([
       }
 
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
-
       /* Move, following mouse, timeline left/right and up/down when left button is held */
       if (event.buttons === 1 || event.type === 'touchmove') {
         if (!this.originalTarget) {
@@ -1241,42 +1400,6 @@ define([
     placeEntry: function (entry) {
       this.Entries[entry.target] = entry
       this.entries.push(entry)
-
-      let cmpNodes = (a, b) => {
-        if (a.get('order') && b.get('order')) {
-          return parseInt(a.get('order')) - parseInt(b.get('order'))
-        } else if (!a.get('order') && b.get('order')) {
-          return 1
-        }
-        if (parseInt(a.get('target')) > 0 && parseInt(b.get('target')) > 0) {
-          if (Math.floor(parseInt(a.get('target')) / 100) === Math.floor(parseInt(b.get('target')) / 100)) {
-            let ha = parseInt(a.get('height') ? a.get('height') : (a.get('floorheight') ? a.get('floorheight') : (a.get('workheight') ? a.get('workheight') : 0)))
-            let hb = parseInt(b.get('height') ? b.get('height') : (b.get('floorheight') ? b.get('floorheight') : (b.get('workheight') ? b.get('workheight') : 0)))
-            return ha - hb
-          } else {
-            return parseInt(a.get('target')) - parseInt(b.get('target'))
-          }
-        } else {
-          if (parseInt(a.get('target')) > 0 && !(parseInt(b.get('target')) > 0)) {
-            return -1
-          } else if (!(parseInt(a.get('target')) > 0) && parseInt(b.get('target')) > 0) {
-            return 1
-          } else {
-            return 0
-          }
-        }
-      }
-      var p = null
-      var i = this.domEntries.lastChild
-      while (i && cmpNodes(dtRegistry.getEnclosingWidget(i), entry) > 0) {
-        p = i
-        i = i.previousSibling
-      }
-      this.domEntries.insertBefore(entry.domNode, p)
-      /* next node must be pushed on step  */
-      for (i = entry.nextSibling; i; i = i.nextSibling) {
-        dtRegistry.byNode(i).resize()
-      }
     },
 
     _getCompactAttr: function () {
@@ -1343,6 +1466,12 @@ define([
       var hFrag = document.createDocumentFragment()
       var shFrag = document.createDocumentFragment()
 
+      if (!this.Holidays) {
+        this.Holidays = new Holiday(this.center.getFullYear())
+      } else {
+        this.Holidays.addYear(this.center.getFullYear())
+      }
+      
       this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {
@@ -1468,7 +1597,7 @@ define([
           var category = {}
           for (var i = 0; i < whole.length; i++) {
             var machine = whole[i]
-            var groupName = 'group' + (inc % 2)
+            let groupName = []
             var name = machine.description
             var label = machine.cn ? machine.cn : ''
 
@@ -1478,22 +1607,29 @@ define([
 
             if (machine.family) {
               if (Array.isArray(machine.family)) {
-                groupName = []
                 machine.family.forEach((g) => {
                   groupName.push(g.replace(/(\s|-)/g, ''))
                 })
               } else {
-                groupName = [ machine.family.replace(/(\s|-)/g, '') ]
+                groupName.push(machine.family.replace(/(\s|-)/g, ''))
               }
             }
-
+            if (machine.type) {
+              if (Array.isArray(machine.type)) {
+                machine.type.forEach((g) => {
+                  groupName.push(g.replace(/(\s|-)/g, ''))
+                })
+              } else {
+                groupName.push(machine.type.replace(/(\s|-)/g, ''))
+              }
+            }
             if (name) {
               if (machine.cn) {
                 name += '<div class="name">' + machine.cn + '</div>'
               }
-              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel()})
-              e.loadExtension().then(this.placeEntry.bind(this))
-
+              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel(), details: machine})
+              e.loadExtension()
+              this.placeEntry(e)
               var families = []
               var types = []
               if (machine.family && machine.type) {
@@ -1501,7 +1637,7 @@ define([
                 types = String(machine.type).split(',')
                 if (!djLang.isArray(families)) { families = new Array(families) }
                 if (!djLang.isArray(types)) { types = new Array(types) }
-
+                
                 for (var j = 0; j < families.length; j++) {
                   if (!category[families[j]]) {
                     category[families[j]] = {}
@@ -1522,22 +1658,24 @@ define([
               if (machine.airaltref && djLang.isArray(machine.airaltref)) {
                 machine.airaltref.forEach(function (altref) {
                   var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel()})
-                  e.loadExtension().then(this.placeEntry.bind(this))
+                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel(), details: machine})
+                  e.loadExtension()
+                  this.placeEntry(e)
+                  djDomClass.add(e.domNode, groupName)
                   for (var j = 0; j < families.length; j++) {
                     for (var k = 0; k < types.length; k++) {
                       category[families[j]][types[k]].push(e.target)
                     }
                   }
-                  djDomClass.add(e.domNode, groupName)
 
                   loaded.push(e.loaded)
                   this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
                 }.bind(this))
               } else if (machine.airaltref) {
                 name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel()})
-                e.loadExtension().then(this.placeEntry.bind(this))
+                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel(), details: machine})
+                e.loadExtension()
+                this.placeEntry(e)
                 for (j = 0; j < families.length; j++) {
                   for (k = 0; k < types.length; k++) {
                     category[families[j]][types[k]].push(e.target)
@@ -1555,11 +1693,78 @@ define([
         }
         this.categories = category
         djAll(loaded).then(function () {
+          this.sortAndDisplayEntries()
           this.buildMenu()
           this.update()
           window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
         }.bind(this))
       }.bind(this))
+    },
+
+    sortAndDisplayEntries: function () {
+      this.entries.sort((a, b) => {
+        let aT = Number.isNaN(parseInt(a.get('target'))) ? 99999 : parseInt(a.get('target'))
+        let bT = Number.isNaN(parseInt(b.get('target'))) ? 99999 : parseInt(b.get('target'))
+
+        a.domNode.dataset.groupId = Math.floor(aT / 100)
+        b.domNode.dataset.groupId = Math.floor(bT / 100)
+        if (aT === 99999 && bT !== 99999) { a.domNode.dataset.pushToEnd = true; return 1 }
+        if (aT !== 99999 && bT === 99999) { b.domNode.dataset.pushToEnd = true; return -1 }
+        if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
+
+        const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
+        for (let i = 0; i < techData.length; i++) {
+          let [name, reverse] = techData[i].split(':', 2)
+          let aT = a.get(name)
+          let bT = b.get(name)
+
+          if (aT - bT !== 0) {
+            if (reverse === undefined) {
+              return aT - bT
+            } else {
+              return bT - aT
+            }
+          }
+        }
+
+        if (a.get('name') !== b.get('name')) {
+          if (a.get('name') > b.get('name')) {
+            return 1
+          } else {
+            return -1
+          }
+        }
+
+        return ((bT - (Math.floor(bT / 100) * 100)) - (aT - (Math.floor(aT / 100) * 100)))
+      })
+
+      this.entries.forEach((e) => {
+        let inType = false
+        let insertBefore = null
+        if (e.domNode.dataset.pushToEnd) {
+          this.domEntries.appendChild(e.domNode)
+          return
+        }
+        for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.groupId === e.domNode.dataset.groupId && n.dataset.type === e.domNode.dataset.type && !inType) { inType = true }
+          if (n.dataset.type !== e.domNode.dataset.type && inType) { insertBefore = n; inType = false; break }
+        }
+        if (insertBefore) {
+          this.domEntries.insertBefore(e.domNode, insertBefore)
+        } else {
+          this.domEntries.appendChild(e.domNode)
+        }
+      })
+
+      /* as we display we modify the order, so check the final order by using the DOM */
+      let entriesOrder = []
+      for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
+        let widget = dtRegistry.byNode(n)
+        if (widget) {
+          entriesOrder.push(widget)
+        }
+      }
+      this.entries = [...entriesOrder]
     },
 
     updateChild: function () {

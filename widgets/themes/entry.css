@@ -1,4 +1,20 @@
-.entry .control .tools  {
+:root {
+    --default-entry-height: 76px;
+    --compact-entry-height: 24px;
+}
+
+.reservationContainer .entry {
+    margin: 0;
+    padding: 0;
+    height: var(--default-entry-height);
+    min-height: var(--default-entry-height);
+}
+
+.reservationContainer .entry:nth-child(even) {
+    background-color: hsla(var(--default-color-base), 0.05);
+}
+
+.reservationContainer .entry .control .tools  {
     float: left;
     font-size: 12px;
     height: 12px;
@@ -8,10 +24,119 @@
     color: hsla(0, 0%, 0%, 0.3);
 }
 
-.entry[data-refresh="outdated"] .tools .fa-sync {
+.reservationContainer .entry[data-refresh="outdated"] .tools .fa-sync {
     color: hsla(0, 100%, 40%, 0.3);
 }
 
-.entry[data-refresh="fresh"] .tools .fa-sync {
-    color: hsla(120, 100%, 40%, 0.3);                                                                                                                                                                               
+.reservationContainer .entry[data-refresh="fresh"] .tools .fa-sync {
+    color: hsla(120, 100%, 40%, 0.3);
+}
+
+.reservationContainer .entry .control {
+    width: calc(var(--offset-width) - 10px);
+    margin-left: 2px;
+}
+
+.control {
+    height: 100%;
+    width: 100%;
+    margin-left: 5px;
+}
+
+.compact .entry {
+    height: var(--compact-entry-height) !important;
+    min-height: var(--compact-entry-height) !important;
+}
+
+.compact .entry .tags, .compact .entry .location {
+    display: none;
+}
+
+.x1 .entry {
+    padding-left: 3px;
+    height: 52px;
+    min-height: 52px;
+}
+
+.x3 .entry {
+    padding-left: 7px;
+    height: 92px;
+    min-height: 92px;
+}
+
+.entry .tags, .entry .location, .entry .tags a {
+    width: 100%;
+    color: hsla(var(--default-color-base), 0.2);
+    text-decoration: none !important;
+}
+
+
+.entry .tags .tag:before {
+    font-family: "FontAwesome";
+    content: "\f02b\00A0";
+}
+
+.entry .tags .tag:after {
+    content: "\0020";
+}
+
+.entry .reference:after {
+    content: "\0020";
+}
+
+.entry .details {
+    padding: 0 3px 0 3px;
+    height: 100%;
+}
+
+.entry .tools {
+    margin-top: 16px;
+    height: 16px;
+}
+
+.reservation .tools {
+    margin: 0;
+    opacity: 1;
+    display: block;
+    position: relative;
+    top: -8px;
+    height: 8px;
+}
+
+.x1 .entry .tools {
+    height: 6px;
+    top: -6px;
+}
+
+.x3 .entry .tools {
+    height: 10px;
+    top: -10px;
+}
+
+.entry .tooltip {
+    width: calc(var(--offset-width) - 40px);
+}
+
+.entry .tooltip .label {
+    display: inline-block;
+    width: 75%;
+}
+
+.entry .tooltip .value {
+    display: inline-block;
+    width: 25%;
+    text-align: right;
+}
+
+
+.entry .tooltip p {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding-left: 2px;
+    padding-right: 2px;
+    line-height: 1.3em;    
+}
+
+.entry .tooltip .tooltip-inner p:nth-child(odd)  {
+    background-color: white !important;
 }

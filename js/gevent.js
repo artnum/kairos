@@ -7,7 +7,7 @@ if (typeof window.GEvent === 'undefined') {
     window.GEvent.GEventTarget.dispatchEvent(new CustomEvent(type, {detail: value}))
   }
   window.GEvent.GEventTarget = new EventTarget()
-  window.GEvent.GEventBC = new BroadcastChannel('gevent')
+  window.GEvent.GEventBC = new BroadcastChannel(window.GEventChannelName ? window.GEventChannelName : 'gevent')
   window.GEvent.GEventBC.onmessage = function (message) {
     if (message && message.data && message.data.type && message.data.value) {
       window.GEvent.GEventTarget.dispatchEvent(new CustomEvent(message.data.type, {detail: message.data.value}))

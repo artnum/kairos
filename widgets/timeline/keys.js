@@ -49,6 +49,16 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
+      window.addEventListener('click', function (event) {
+        if (this.CommandMode) {
+          let node = event.target
+          while (node) {
+            if (node.id === 'commandModeOverlay') { return }
+            node = node.parentNode
+          }
+          this.switchCommandMode()
+        }
+      }.bind(this))
       window.addEventListener('keydown', async function (event) {
         if (event.key === APPConf.CommandWindow.escapeKey) {
           this.switchCommandMode()
@@ -97,7 +107,22 @@ define([
       document.getElementById('commandSearchBox').focus()
     },
 
-    switchCommandMode: function () {
+    mouseInteraction: function (event) {
+      let node = event.target
+      while (node && node.classList && !node.classList.contains('entry')) { node = node.parentNode }
+      if (!node) { return }
+      if (node.firstElementChild && !node.firstElementChild.classList.contains('key')) { return }
+      let key = node.firstElementChild.textContent
+      if (key) {
+        event.key = key.toLowerCase()
+        if (this.commandKeys(event)) {
+          this.switchCommandMode()
+        }
+      }
+    },
+
+    switchCommandMode: function (mouse = false) {
+      this.Mouse = mouse
       this.CommandMode = !this.CommandMode
       if (!this.CommandMode) {
         this.CommandOverlay = null
@@ -105,7 +130,11 @@ define([
       } else {
         var o = document.createElement('DIV')
         o.setAttribute('id', 'commandModeOverlay')
+        if (mouse) {
+          o.classList.add('mouse')
+        }
         o.innerHTML = innerHtmlOverlay
+        o.addEventListener('click', this.mouseInteraction.bind(this))
         this.CommandOverlay = o
         window.requestAnimationFrame(() => document.body.appendChild(o))
       }
@@ -173,7 +202,6 @@ define([
             return false
           }
           var d = parseInt(elements[0])
-          console.log(y, m, d)
           date.setFullYear(y, m, d)
           break
       }
