@@ -83,8 +83,6 @@ var Select = function (input, qfunc) {
     }
     if (set) {
       set.dataset.hover = '1'
-      console.log(list.getBoundingClientRect())
-      console.log(set.getBoundingClientRect())
       if (set.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom) {
         set.scrollIntoView()
       } else if (set.getBoundingClientRect().top < list.getBoundingClientRect().top) {
@@ -98,11 +96,13 @@ var Select = function (input, qfunc) {
 
   var degenerate = () => {
     if (popper) { popper.destroy(); popper = null }
+    if (list.parentNode) {
+      list.parentNode.removeChild(list)
+    }
     list.innerHTML = ''
   }
 
   var generate = (event) => {
-    console.log(event)
     switch (event.key) {
       case 'Enter':
         for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
@@ -132,7 +132,7 @@ var Select = function (input, qfunc) {
     }
     window.requestAnimationFrame((event) => {
       if (!list.parentNode) {
-        input.parentNode.insertBefore(list, input.nextSiblintElement)
+        input.parentNode.insertBefore(list, input.nextSiblingElement)
         popper = new Popper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
       }
     })
