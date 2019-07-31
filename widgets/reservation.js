@@ -333,6 +333,13 @@ define([
       this.addAttr('locality')
       this._set('locality', value)
     },
+    _setWarehouseAttr: function (value) {
+      if (value && value.startsWith('Warehouse')) {
+        this._set('locality', value)
+      } else {
+        this._set('locality', `Warehouse/${value}`)
+      }
+    },
     _setCommentAttr: function (value) {
       this.addAttr('comment')
       this._set('comment', value)
@@ -619,10 +626,6 @@ define([
           locality.appendChild(document.createElement('SPAN'))
           locality.lastChild.setAttribute('class', 'address')
           locality.lastChild.appendChild(document.createTextNode(this.address))
-        }
-
-        if (this.get('warehouse')) {
-          this.locality = `Warehouse/${this.get('warehouse')}`
         }
 
         if (this.locality && this.locality !== null) {
