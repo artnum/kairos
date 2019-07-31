@@ -1,10 +1,43 @@
 /* eslint-env browser */
 /* global Popper */
 
-var Select = function (input, qfunc) {
+var Select = function (input, store) {
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
+
+  let obj = new Proxy(this, {
+    get: function (obj, prop) {
+      switch (prop) {
+        case 'value':
+          if (!input.dataset.value) {
+            return input.value ? input.value : ''
+          } else {
+            return input.dataset.value
+          }
+        case 'domNode':
+          return input
+        default:
+          return obj[prop]
+      }
+    },
+    set: function (obj, prop, value) {
+
+      switch (prop) {
+        case 'value':
+          store.get(value).then((entry) => {
+            if (entry) {
+              input.value = entry.label
+              this.value = input.value
+              input.dataset.value = entry.value
+            }
+          })
+          break
+        default:
+          input[prop] = value
+      }
+    }
+  })
 
   var list = document.createElement('DIV')
   list.classList.add('dropdown')
@@ -103,6 +136,9 @@ var Select = function (input, qfunc) {
   }
 
   var generate = (event) => {
+    if (event.key) {
+      delete input.dataset.value
+    }
     switch (event.key) {
       case 'Enter':
         for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
@@ -136,7 +172,8 @@ var Select = function (input, qfunc) {
         popper = new Popper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
       }
     })
-    qfunc(input.value).then((data) => {
+
+    store.query(input.value).then((data) => {
       let frag = document.createDocumentFragment()
       if (data.length < 1) {
         degenerate()
@@ -164,7 +201,19 @@ var Select = function (input, qfunc) {
     })
   }
 
-  input.addEventListener('blur', (event) => degenerate)
+  input.addEventListener('change', (event) => {
+    if (input.dataset.value) {
+      store.get(input.dataset.value).then((entry) => {
+        if (entry) {
+          input.value = entry.label
+        }
+      })
+    }
+  })
+
+  input.addEventListener('blur', degenerate)
   input.addEventListener('keyup', generate)
   input.addEventListener('focus', generate)
+
+  return obj
 }

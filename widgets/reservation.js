@@ -548,65 +548,28 @@ define([
         frag.lastChild.appendChild(this.confirmedDom())
       }
 
-      var ident = document.createElement('SPAN')
+      if (!this.htmlIdentity) {
+        this.htmlIdentity = document.createElement('SPAN')
+      }
+      let ident = this.htmlIdentity
+      ident.classList.add('identity')
+      ident.innerHTML = ' <i class="fas fa-folder"> </i><i class="fas fa-wrench"> </i><i class="fas fa-exchange-alt"> </i><i class="fas fa-bullseye"> </i><i class="fas fa-exclamation-triangle"> </i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        var i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-folder')
-
-        ident.lastChild.appendChild(i)
+        ident.dataset.folder = this.get('folder')
       }
       if (this.get('equipment') !== '' && this.get('equipment') != null && this.get('equipment') !== '%') {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-wrench')
-
-        ident.lastChild.appendChild(i)
+        ident.dataset.equipment = this.get('equipment')
       }
 
       if (this.get('title') !== '' && this.get('title') != null) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-exchange-alt')
-
-        ident.lastChild.setAttribute('data-balloon', this.get('title'))
-        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-
-        ident.lastChild.appendChild(i)
-      }
-
-      if (this.get('warehouse')) {
-        var warehouse = this.get('_warehouse')
-        if (warehouse) {
-          ident.appendChild(document.createElement('SPAN'))
-          ident.lastChild.appendChild(document.createTextNode(' '))
-          i = document.createElement('I')
-          i.setAttribute('class', 'fas fa-bullseye')
-          if (warehouse.color) {
-            i.setAttribute('style', 'color: ' + warehouse.color)
-          }
-          if (warehouse.name) {
-            ident.lastChild.setAttribute('data-balloon', warehouse.name)
-            ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-          }
-
-          ident.lastChild.appendChild(i)
-        }
+        ident.dataset.exchange = this.get('title')
       }
 
       if (this.get('other') && this.get('other').critic) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-exclamation-triangle')
-        ident.lastChild.setAttribute('data-balloon', this.get('other').critic)
-        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-        ident.lastChild.appendChild(i)
+        ident.dataset.critiy = this.get('other').critic
       }
+
       frag.lastChild.appendChild(ident)
 
       frag.lastChild.appendChild(document.createElement('address'))
@@ -658,11 +621,63 @@ define([
           locality.lastChild.appendChild(document.createTextNode(this.address))
         }
 
-        if (this.locality) {
-          locality.appendChild(document.createElement('SPAN'))
-          locality.lastChild.setAttribute('class', 'locality')
-          locality.lastChild.appendChild(document.createTextNode(this.locality))
+        if (this.get('warehouse')) {
+          this.set('locality', `Warehouse/${this.get('warehouse')}`)
         }
+
+        if (this.locality && this.locality !== null) {
+          if (/^PC\/[0-9a-f]{32,32}$/.test(this.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(this.locality)) {
+            let locText = new Promise((resolve, reject) => {
+              if (this._locality && this._locality[0] === this.locality) {
+                resolve(this._locality)
+              } else {
+                Query.exec(Path.url(`store/${this.locality}`)).then((result) => {
+                  if (result.success && result.length === 1) {
+                    if (result.data.np) {
+                      this._locality = [this.locality, `${result.data.np} ${result.data.name}`, 'black']
+                    } else {
+                      this._locality = [this.locality, `---WAREHOUSE:${result.data.name}`, result.data.color]
+                    }
+                    resolve(this._locality)
+                  } else {
+                    resolve([])
+                  }
+                })
+              }
+            })
+            locText.then((res) => {
+              if (res.length === 0) {
+                delete this.htmlIdentity.dataset.warehouse
+                return
+              }
+              let txt = res[1]
+              if (txt.startsWith('---WAREHOUSE:')) {
+                let x = txt.split(':')
+                this.htmlIdentity.dataset.warehouse = x[1]
+                for (let i = this.htmlIdentity.firstElementChild; i; i = i.nextElementSibling) {
+                  if (i.classList.contains('fa-bullseye')) {
+                    window.requestAnimationFrame(() => {
+                      i.style.color = res[2]
+                    })
+                    return
+                  }
+                }
+              } else {
+                delete this.htmlIdentity.dataset.warehouse
+                locality.appendChild(document.createElement('SPAN'))
+                locality.lastChild.setAttribute('class', 'locality')
+                locality.lastChild.appendChild(document.createTextNode(txt !== null ? `${txt}` : ''))
+              }
+            })
+          } else {
+            delete this.htmlIdentity.dataset.warehouse
+            locality.appendChild(document.createElement('SPAN'))
+            locality.lastChild.setAttribute('class', 'locality')
+            locality.lastChild.appendChild(document.createTextNode(this.locality !== null ? this.locality : ''))
+          }
+        }
+      } else {
+        delete this.htmlIdentity.dataset.warehouse
       }
 
       if (this.comment) {
@@ -803,7 +818,6 @@ define([
           this.domNode.parentNode.removeChild(this.domNode)
           this.set('deleted', true)
           Query.exec(Path.url('/store/Arrival', {params: {'search.target': this.uid}})).then((result) => {
-            console.log(result)
             if (result.success && result.length > 0) {
               result.data.forEach((r) => {
                 Query.exec(Path.url(`/store/Arrival/${r.id}`), {method: 'DELETE', body: {id: r.id}})
@@ -1311,7 +1325,6 @@ define([
       let associations = []
       let contacts = []
       Promise.all([pContacts, pAssociations]).then((results) => {
-        console.log(results)
         if (results[1].length > 0) {
           results[1].data.forEach((a) => {
             delete a.reservation

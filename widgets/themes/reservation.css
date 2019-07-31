@@ -7,3 +7,44 @@
 .reservation.done.highlight {
     filter: opacity(0.5) !important;
 }
+
+.reservation .identity .fa-folder {
+    display: none;
+}
+
+.reservation .identity[data-folder] .fa-folder {
+    display: inline;
+}
+
+.reservation .identity .fa-wrench {
+    display: none;
+}
+
+.reservation .identity[data-equipment] .fa-wrench {
+    display: inline;
+}
+
+
+.reservation .identity .fa-exchange-alt {
+    display: none;
+}
+
+.reservation .identity[data-exchange] .fa-exchange-alt {
+    display: inline;
+}
+
+.reservation .identity .fa-bullseye {
+    display: none;
+}
+
+.reservation .identity[data-warehouse] .fa-bullseye {
+    display: inline;
+}
+
+.reservation .identity .fa-exclamation-triangle {
+    display: none;
+}
+
+.reservation .identity[data-critic] .fa-exclamation-triangle {
+    display: inline;
+}

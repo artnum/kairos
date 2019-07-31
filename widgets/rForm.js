@@ -45,6 +45,7 @@ define([
   'location/dateentry',
   'location/count',
   'location/countList',
+  'location/Stores/Locality',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -94,6 +95,7 @@ define([
   dateentry,
   Count,
   CountList,
+  Locality,
 
   Req,
   Path,
@@ -139,16 +141,13 @@ define([
     },
 
     _setWarehouseAttr: function (value) {
-      this._set('warehouse', value)
-      if (this.loaded.warehouse) {
-        var store = this.nLocality.get('store')
-        if (store && value && value.id) {
-          var item = store.get(value.id)
-          if (item) {
-            this.nLocality.set('value', item.name)
-          }
+      Query.exec(Path.url(`store/Warehouse/${value}`)).then((result) => {
+        if (result.success && result.length === 1) {
+          this._set('warehouse', value)
+          this._set('locality', `Warehouse/${value}`)
+          this.nLocality.value = `Warehous/${value}`
         }
-      }
+      })
     },
 
     getUser: async function (value) {
@@ -272,9 +271,20 @@ define([
     },
 
     _setLocalityAttr: function (value) {
-      if (value) {
-        this.nLocality.set('value', value)
-      }
+        this.nLocality.value = value
+      /*if (value) {
+        if (/^PC\/[a-f0-9]{32,32}$/.test(value) || /^Warehouse\/[0-9]*$/.test(value)) {
+          this.
+          Query.exec(Path.url(`store/${value}`)).then((result) => {
+            if (result.success && result.length === 1) {
+              this.nLocality.value = value
+            }
+          })
+        } else {
+          console.log('set attr', `val "${value}"`)
+          this.nLocality.value = value
+        }
+      }*/
     },
 
     _setCommentAttr: function (value) {
@@ -605,6 +615,9 @@ define([
     postCreate: function () {
       this.inherited(arguments)
 
+      let L = new Locality()
+      this.nLocality = new Select(this.nLocality, L)
+      
       var entries = this.reservation.get('entries')
       for (var i = 0; i < entries.length; i++) {
         this.nMachineChange.addOption({
@@ -752,25 +765,7 @@ define([
         }
         that.loaded.association = true
       }
-
-      if (!this.loaded.warehouse) {
-        url = Path.url('store/Warehouse')
-        results = await Query.exec(url)
-        var data = []
-        results.data.forEach(function (d) {
-          data.push({
-            name: 'Dépôt ' + d.name,
-            id: d.id
-          })
-        })
-        that.nLocality.set('store', new DjMemory({data: data}))
-        that.loaded.warehouse = true
-        if (that.reservation.get('warehouse')) {
-          that.set('warehouse', that.reservation.get('_warehouse'))
-        }
-      } else {
-        that.set('warehouse', that.reservation.get('_warehouse'))
-      }
+      this.set('warehouse', this.reservation.get('warehouse'))
 
       if (!this.loaded.user) {
         fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
@@ -1309,17 +1304,8 @@ define([
           this.reservation.set('deliveryEnd', deliveryEnd)
           this.reservation.set('address', f.nAddress)
           this.reservation.set('reference', f.nReference)
-          this.reservation.set('equipment', f.nEquipment)
-
-          var store = this.nLocality.get('store')
-          var item = store.query({name: this.nLocality.get('value')})
-          if (item.length === 1) {
-            this.reservation.set('warehouse', item[0].id)
-            this.reservation.set('locality', '')
-          } else {
-            this.reservation.set('warehouse', '')
-            this.reservation.set('locality', f.nLocality)
-          }
+          this.reservation.set('equipment', f.nEquipmenta)
+          this.reservation.set('locality', this.nLocality.value)
           this.reservation.set('comment', f.nComments)
           this.reservation.set('note', f.nNote)
           this.reservation.set('folder', f.folder)
@@ -1357,6 +1343,7 @@ define([
       console.log(this.nEquipment)
       this.nEquipment.set('value', '%')
     },
+
     destroyReservation: function (reservation) {
       this.reservation.destroyReservation(reservation)
     },

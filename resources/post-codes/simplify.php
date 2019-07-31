@@ -8,7 +8,8 @@ while (($line = fgetcsv($fp1))) {
     fputcsv($fp2, $line);
     continue;
   }
-
+ 
+  $line [] = md5($line[2] . '-' . $line[5]);
   if ($line[3] === '+') {
     if (!in_array($line[0] . $line[2], $doubles)) {
       fputcsv($fp2, $line);
