@@ -22,7 +22,6 @@ var Select = function (input, store) {
       }
     },
     set: function (obj, prop, value) {
-
       switch (prop) {
         case 'value':
           store.get(value).then((entry) => {
@@ -30,6 +29,8 @@ var Select = function (input, store) {
               input.value = entry.label
               this.value = input.value
               input.dataset.value = entry.value
+            } else {
+              input.value = value
             }
           })
           break
