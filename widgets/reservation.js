@@ -622,7 +622,7 @@ define([
         }
 
         if (this.get('warehouse')) {
-          this.set('locality', `Warehouse/${this.get('warehouse')}`)
+          this.locality = `Warehouse/${this.get('warehouse')}`
         }
 
         if (this.locality && this.locality !== null) {
