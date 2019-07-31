@@ -235,6 +235,41 @@ define([
       }
     },
 
+    tooltipShow: function (event) {
+      /**/
+      let node = event.target
+      if (node.dataset.name) {
+        if (this.htmlIdentity.dataset[node.dataset.name]) {
+          if (this.nTooltip && this.nTooltip.parentNode) {
+            this.nTooltip.parentNode.removeChild(this.nTooltip)
+            this.nTooltip = null
+          }
+          if (this.TooltipPopper) {
+            this.TooltipPopper.destroy()
+            this.TooltipPopper = null
+          }
+          this.nTooltip = document.createElement('DIV')
+          this.nTooltip.classList.add('smallTooltip')
+          this.nTooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
+          this.domNode.parentNode.insertBefore(this.nTooltip, this.domNode)
+          this.TooltipPopper = new Popper(this.domNode, this.nTooltip, {placement: 'top-start'})
+        }
+      }
+    },
+
+    tooltipHide: function (event) {
+      /**/
+      if (this.nTooltip) {
+        if (this.nTooltip.parentNode) {
+          this.nTooltip.parentNode.removeChild(this.nTooltip)
+          this.nTooltip = null
+        }
+      }
+      if (this.TooltipPopper) {
+        this.TooltipPopper.destroy()
+        this.TooltipPopper = null
+      }
+    },
     evTouchStart: function (event) {
       event.stopPropagation()
       event.preventDefault()
@@ -557,10 +592,12 @@ define([
 
       if (!this.htmlIdentity) {
         this.htmlIdentity = document.createElement('SPAN')
+        this.htmlIdentity.addEventListener('mouseover', this.tooltipShow.bind(this))
+        this.htmlIdentity.addEventListener('mouseout', this.tooltipHide.bind(this))
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')
-      ident.innerHTML = ' <i class="fas fa-folder"> </i><i class="fas fa-wrench"> </i><i class="fas fa-exchange-alt"> </i><i class="fas fa-bullseye"> </i><i class="fas fa-exclamation-triangle"> </i>'
+      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"> </i><i class="fas fa-wrench" data-name="equipment"> </i><i class="fas fa-exchange-alt" data-name="exchange"> </i><i class="fas fa-bullseye" data-name="warehouse"> </i><i class="fas fa-exclamation-triangle" data-name="critic"> </i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.dataset.folder = this.get('folder')
