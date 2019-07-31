@@ -145,7 +145,7 @@ define([
         if (result.success && result.length === 1) {
           this._set('warehouse', value)
           this._set('locality', `Warehouse/${value}`)
-          this.nLocality.value = `Warehous/${value}`
+          this.nLocality.value = `Warehouse/${value}`
         }
       })
     },
