@@ -2,6 +2,7 @@
 @import 'dtable.css';
 @import 'tel.css';
 @import 'select.css';
+@import 'tooltip.css';
 
 body, html { margin: 0; padding: 0; }
 

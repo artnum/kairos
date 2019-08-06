@@ -61,7 +61,7 @@
        la séquence <numéroDuJour>|<nomDuJourdeRemplacement> peut se répéter à l'infini.
        le numéro du jour va de 1 à 7 ou 1 est lundi et 7 est dimanche.
      */
-    var cantons = {
+    const States = {
       'all': [ 'newYear:f', 'ascensionDay:f', 'christmas:f' ],
       'vs': [ 'nationalCHDay:f', 'saintJoseph:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
       'vd': [ 'nationalCHDay:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'lundiDuJeune:f' ],
@@ -77,18 +77,18 @@
     var computeYear = function (year) {
       let days = {}
       let common = []
-      cantons['all'].forEach((day) => {
+      States['all'].forEach((day) => {
         let [name, type] = day.split(':', 2)
         let result = computeDay(name, year)
         if (result) {
           common.push({name: name, date: result, type: type})
         }
       })
-      for (let c in cantons) {
+      for (let c in States) {
         if (c === 'all') { continue }
         let current = []
         let replaced = []
-        cantons[c].forEach((day) => {
+        States[c].forEach((day) => {
           let [name, type] = day.split(':', 2)
           let result = null
           /* certains cantons (NE uniquement) remplace automatiquement des jours feriées par un autre s'il tombe le dimanche */
@@ -217,7 +217,11 @@
     function Holiday (year) {
       this.holidays = {}
       this.rHolidays = {}
-      this.addYear(year)
+      if (year === undefined) {
+        this.addYear((new Date()).getFullYear())
+      } else {
+        this.addYear(year)
+      }
     }
 
     Holiday.prototype.addYear = function (year) {
@@ -259,6 +263,13 @@
         }
       }
       return res
+    }
+
+    Holiday.prototype.hasState = function (state) {
+      if (States[state]) {
+        return true
+      }
+      return false
     }
 
     Holiday.prototype.bdays = function (begin, end, loc = 'vs') {

@@ -1,5 +1,5 @@
 /* eslint-env amd, browser */
-/* global Artnum, Address, DoWait */
+/* global Artnum, Address, DoWait, Holiday */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -207,6 +207,7 @@ define([
     },
 
     addReservation: async function (reservation) {
+      console.log(reservation)
       var url = Path.url('store/CountReservation')
       url.searchParams.set('search.count', this.get('data-id'))
       url.searchParams.set('search.reservation', reservation)
@@ -222,11 +223,19 @@ define([
           }
         }
 
-        rData.then(function (result) {
+        rData.then(async function (result) {
+          let H = new Holiday()
           if (result.success && result.length === 1) {
+            let state = 'vs'
+            if (/^PC\/[0-9a-f]{32,32}$/.test(result.data.locality)) {
+              let locality = await Query.exec(Path.url(`store/${result.data.locality}`))
+              if (locality.success && locality.length === 1) {
+                state = locality.data.state.toLowerCase()
+              }
+            }
             var unit = this.get('units').find(x => x.default > 0).id
-            var days = 0
-            this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days}, true), this.tbody.firstChild)
+            var days = H.bdays(new Date(result.data.begin), new Date(result.data.end), H.hasState(state) ? state : 'vs')
+            this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days, state: state}, true), this.tbody.firstChild)
           }
         }.bind(this))
       }
@@ -316,7 +325,20 @@ define([
         var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
         if (x.success && x.length) {
           x = x.data
+          x.state = 'vs'
           if (x.locality) {
+            if (/^PC\/[0-9a-f]{32,32}$/.test(x.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(x.locality)) {
+              let locality = await Query.exec(Path.url(`store/${x.locality}`))
+              if (locality.success && locality.length === 1) {
+                locality = locality.data
+                if (locality.np) {
+                  x.locality = `${locality.np} ${locality.name} (${locality.state.toUpperCase()})`
+                  x.state = locality.state
+                } else {
+                  x.locality = `Dépôt ${locality.name}`
+                }
+              }
+            }
             if (x.address && x.address.length > 0) {
               x.address = x.address.trim() + ', ' + x.locality.trim()
             } else {
@@ -392,7 +414,7 @@ define([
             machines.push(reservations[i].target)
           }
           if (reservations[i].reference) {
-            references += `<div data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
+            references += `<div data-action="select-reference" data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
           }
           if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
             begin = reservations[i].begin
@@ -491,7 +513,7 @@ define([
               DoWait(false)
             }, (error) => { DoWait(false); window.App.error(error.message) })
             break
-          default:
+          case 'select-reference':
             if (node.getAttribute('data-reference-value')) {
               var value = node.getAttribute('data-reference-value')
               while (node.tagName !== 'INPUT') { node = node.nextSibling }
@@ -676,14 +698,7 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-
-        txt = '<td>&#10023;</td><td>' + rselect + '</td><td><input name="reference" type="text" value="' + String(value.reference ? value.reference : '').html() +
-          '" /><td><input name="description" type="text" value="' + String(value.description ? value.description : '').html() +
-          '" /></td><td><input step="any" name="quantity" type="number" lang="en" value="' + String(value.quantity ? value.quantity : '').html() +
-          '" /></td><td>' + units + '</td><td><input name="price" lang="en" step="any" type="number" value="' + String(value.price ? value.price : '').html() +
-          '" /></td><td><input name="discount" lang="en" step="any" type="number" value="' + String(value.discount ? value.discount : '').html() +
-          '" /></td><td><input lang="en" name="total" type="number" step="any" value="' + String(value.total ? value.total : '').html() +
-          '" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
+        txt = `<td>&#10023;</td><td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" ${value.state ? 'data-tooltip="Fériés : ' + value.state.toUpperCase() + '"' : ''} /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter') {
             this.save(event)
