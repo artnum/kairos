@@ -206,8 +206,17 @@ define([
       return ''
     },
 
+    setCanton: function (canton) {
+      let selects = this.domNode.getElementsByTagName('SELECT')
+      for (let i = 0; i < selects.length; i++) {
+        if (selects[i].name === 'canton') {
+          selects[i].value = canton
+          break
+        }
+      }
+    },
+
     addReservation: async function (reservation) {
-      console.log(reservation)
       var url = Path.url('store/CountReservation')
       url.searchParams.set('search.count', this.get('data-id'))
       url.searchParams.set('search.reservation', reservation)
@@ -232,6 +241,10 @@ define([
               if (locality.success && locality.length === 1) {
                 state = locality.data.state.toLowerCase()
               }
+            }
+            if (!this.get('data').canton) {
+              this.setCanton(state)
+              this.data.canton = state
             }
             var unit = this.get('units').find(x => x.default > 0).id
             var days = H.bdays(new Date(result.data.begin), new Date(result.data.end), H.hasState(state) ? state : 'vs')
@@ -333,7 +346,7 @@ define([
                 locality = locality.data
                 if (locality.np) {
                   x.locality = `${locality.np} ${locality.name} (${locality.state.toUpperCase()})`
-                  x.state = locality.state
+                  x.canton = locality.state
                 } else {
                   x.locality = `Dépôt ${locality.name}`
                 }
@@ -408,13 +421,14 @@ define([
       var begin = null
       var end = null
       var machines = []
+      let refs = []
       if (reservations.length > 0) {
         for (var i = 0; i < reservations.length; i++) {
           if (machines.indexOf(reservations[i].target) === -1) {
             machines.push(reservations[i].target)
           }
           if (reservations[i].reference) {
-            references += `<div data-action="select-reference" data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Réservation ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`
+            refs.push(`<div class="reference" data-action="select-reference" data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Rés. ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`)
           }
           if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
             begin = reservations[i].begin
@@ -423,6 +437,10 @@ define([
             end = reservations[i].end
           }
         }
+      }
+      if (refs.length > 0) {
+        references += refs.join('<span class="separator"> | </span>')
+        references += '<br />'
       }
       if (reservations.length === 1 && !this.get('data').reference) {
         references += `<input type="text" name="reference" value="${reservations[0].reference ? reservations[0].reference : ''}"></fieldset>`
@@ -464,10 +482,28 @@ define([
         <fieldset><legend>Période</legend><label for="begin">Début</label>
         <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
         <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" />
-        <label for="state"> décompte final</label> <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/>
+        <label for="state"> Final <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/></label>
+        <label for="canton">Feriés : <select name="canton">
+        <option value="vs">Valais</option>
+        <option value="vd">Vaud</option>
+        <option value="ge">Genève</option>
+        <option value="fr-cat">Fribourg (catholique)</option>
+        <option value="fr-prot">Fribourg (protestant)</option>
+        <option value="ne">Neuchâtel</option>
+        <option value="be">Berne</option>
+        <option value="ju">Jura</option>
+        </select>
         </fieldset>
         <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
+
+      let selects = div.getElementsByTagName('select')
+      for (let i = 0; i < selects.length; i++) {
+        if (selects[i].name === 'canton') {
+          selects[i].value = this.get('data').canton
+          break
+        }
+      }
 
       div.addEventListener('click', async function (event) {
         var node = event.target
@@ -659,6 +695,11 @@ define([
           String(value.discount ? value.discount + '%' : '').html() + '</td><td>' +
           String(value.total ? value.total : '0').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('focus', this.edit.bind(this))
+        tr.addEventListener('blur', (event) => {
+          if (event.target.name === 'unit') {
+            /* UNIT */
+          }
+        }, {passive: true, capture: true})
       } else {
         var reservations = this.get('reservations')
         if (reservations.length > 1) {
@@ -698,7 +739,7 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-        txt = `<td>&#10023;</td><td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" ${value.state ? 'data-tooltip="Fériés : ' + value.state.toUpperCase() + '"' : ''} /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
+        txt = `<td>&#10023;</td><td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" ${value.canton ? 'data-tooltip="Fériés : ' + value.canton.toUpperCase() + '"' : ''} /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter') {
             this.save(event)

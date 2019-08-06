@@ -451,9 +451,6 @@ body.waiting * {
 	padding: 0;
 }
 
-.DocCount label:after{
-  content: ' : ';
-}
 .DocCount tfoot {
   font-style: italic;
 }
@@ -487,12 +484,12 @@ body.waiting * {
 }
 
 .DocCount input:invalid, .DocCount input:out-of-range {
-  border-bottom: 2px #FF0000 solid;
-	box-shadow: none;
+  border-bottom: 2px hsla(var(--error-color-base), 1.0) solid;
+  box-shadow: none;
 }
 
 .DocCount fieldset {
-  display: flex;
+    display: flex;
 }
 
 .DocCount fieldset[name=contacts] {
@@ -511,6 +508,29 @@ body.waiting * {
 .DocCount div[data-reference-value] {
   padding: 4px;
   cursor: pointer;
+  max-width: 200px;
+  text-overlow: ellipsis;
+}
+
+.DocCount .reference {
+    display: inline-block;
+    text-decoration: none !important;
+    padding: 2;
+}
+
+.DocCount label {
+    min-width: 60px;
+}
+
+.DocCount input[type="text"], .DocCount select, .DocCount input[type="date"] {
+    min-width: 80px;
+    height: 36px;
+}
+
+.DocCount .card {
+    filter: grayscale(1.0) opacity(0.5);
+    width: 200px;
+    max-width: 200px;
 }
 
 .DocCount div[data-address-id] {
@@ -520,13 +540,13 @@ body.waiting * {
 }
 
 .DocCount div[data-selected] {
-  border: 2px solid black;
-  background-color: var(--default-bg-color);
+    filter: none;
+    border: 2px solid var(--default-color);
+    background-color: var(--default-bg-color);
 }
 
 .DocCount form[name=details] {
     display: block;
-    width: 50%;
 }
 
 /* Remove spinner for input type number element */

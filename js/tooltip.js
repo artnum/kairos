@@ -1,6 +1,5 @@
 /* global Popper */
 window.addEventListener('focus', (event) => {
-  console.log(event)
   if (event.target && event.target.dataset && event.target.dataset.tooltip) {
     showTooltip(event.target)
   }
