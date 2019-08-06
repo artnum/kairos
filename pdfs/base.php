@@ -42,11 +42,32 @@ class LocationPDF extends artnum\PDF {
       $this->SetY(280);
       $this->setFontSize(2.4);
       $this->hr();
-      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route du Rhône 20, 1902 Evionnaz'), array('break' => false));
+      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route des Îles Vieilles 8-10, 1902 Evionnaz'), array('break' => false));
       $this->printTaggedLn(array('%c', ' | Téléphone: +41 27 767 30 38, Fax: +41 27 767 30 28'), array('break' => false));
       $this->printTaggedLn(array('%c', ' | info@airnace.ch | https://www.airnace.ch'));
       $this->resetFontSize();
    }
+}
+
+function getLocality ($JClient, $locality) {
+  if (empty($locality)) { return NULL; }
+
+  if (preg_match('/PC\/[0-9a-f]{32,32}$/', $locality) || preg_match('/^Warehouse\/[a-zA-Z0-9]*$/', $locality)) {
+    $l = explode('/', $locality);
+    $res = $JClient->get($l[1], $l[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $entry = $res['data'];
+      if (isset($entry['np'])) {
+        return array('locality', "$entry[np] $entry[name] (" . strtoupper($entry['state']) . ")");
+      } else {
+        return array('warehouse', $entry['name']);
+      }
+    } else {
+      return NULL;
+    }
+  } else {
+    return array('raw', $locality);
+  }
 }
 
 function format_address($addr, $options = array()) {

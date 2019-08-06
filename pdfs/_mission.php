@@ -143,29 +143,43 @@ if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
 
-if(!empty($reservation['address']) || !empty($reservation['locality']) || !empty($reservation['_warehouse'])) {
-   if (!empty($reservation['_warehouse'])) {
-      $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' ,$reservation['_warehouse']['name']));
-   } else {
-      $line = '';
-      if(!empty($reservation['address'])) {
-         $l = explode("\n", $reservation['address']);
-         foreach($l as $_l)  {
-            if($line != '') { $line .= ', '; }
-            $line .= trim($_l);
-         }
-      }
-      if(!empty($reservation['locality'])) {
-         if($line != '') { $line .= ', '; }
-         $line .= $reservation['locality'];
-      }
-
-      if($line != '') {
-         $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
-      }
-   }
+/* Locality handling */
+if (isset($reservation['warehouse']) && (!isset($reservation['locality']) && !empty($reservation['locality']))) {
+  $reservation['locality'] = $reservation['warehouse'];
 }
-$PDF->br();
+
+if(!empty($reservation['address']) || !empty($reservation['locality'])) {
+  $line = '';
+  if(!empty($reservation['address'])) {
+    $l = explode("\n", $reservation['address']);
+    $lout = [];
+    foreach($l as $_l)  {
+      $_l = trim($_l);
+      if (!empty($_l)) {
+        $lout[] = $_l;
+      }
+    }
+    $line = implode(', ', $lout);
+  }
+
+  $locality = getLocality($JClient, $reservation['locality']);
+  if ($locality === NULL) {
+    /* NOP */
+  } else if ($locality[0] === 'raw' || $locality[0] === 'locality') {
+    if ($line === '') {
+      $line = $locality[1];
+    } else {
+      $line = implode(', ', [$line, $locality[1]]);
+    }
+  } else {
+    $line = '';
+    $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' , $locality[1]));
+  }
+
+  if($line != '') {
+    $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb', $line));
+  }
+}
 
 $txt = 'Début location : date ';
 if(is_null($reservation['deliveryBegin'])) {
