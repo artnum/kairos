@@ -519,8 +519,7 @@ define([
             if (begin && begin.value) {
               this.Current.begin = new Date(begin.value)
               for (let k in this.Days) {
-                if (compareDate(this.Days[k].begin, this.Current.begin) >= 0 &&
-                    compareDate(this.Days[k].end, this.Current.begin) < 0) {
+                if (compareDate(this.Days[k].begin, this.Current.begin) <= 0) {
                   this.Days[k].effectiveBegin = this.Current.begin
                 } else {
                   this.Days[k].days = -1
@@ -530,8 +529,7 @@ define([
             if (end && end.value) {
               this.Current.end = new Date(end.value)
               for (let k in this.Days) {
-                if (compareDate(this.Days[k].end, this.Current.end) >= 0 &&
-                    compareDate(this.Days[k].begin, this.Current.end) > 0) {
+                if (compareDate(this.Days[k].end, this.Current.end) >= 0) {
                   this.Days[k].effectiveEnd = this.Current.end
                 } else {
                   this.Days[k].days = -1
@@ -818,7 +816,9 @@ define([
               tooltip.push(`Réservation ${rid}: ${this.Days[rid].days} jours ouvré`)
             } else {
               for (let r in this.Days) {
-                tooltip.push(`Réservation ${r}: ${this.Days[r].days} jours ouvrés`)
+                if (this.Days[r].days !== -1) {
+                  tooltip.push(`Réservation ${r}: ${this.Days[r].days} jours ouvrés`)
+                }
               }
             }
             showTooltip(event.target, tooltip.join('<br />'))
