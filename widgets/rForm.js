@@ -271,20 +271,7 @@ define([
     },
 
     _setLocalityAttr: function (value) {
-        this.nLocality.value = value
-      /*if (value) {
-        if (/^PC\/[a-f0-9]{32,32}$/.test(value) || /^Warehouse\/[0-9]*$/.test(value)) {
-          this.
-          Query.exec(Path.url(`store/${value}`)).then((result) => {
-            if (result.success && result.length === 1) {
-              this.nLocality.value = value
-            }
-          })
-        } else {
-          console.log('set attr', `val "${value}"`)
-          this.nLocality.value = value
-        }
-      }*/
+      this.nLocality.value = value
     },
 
     _setCommentAttr: function (value) {
@@ -617,6 +604,7 @@ define([
 
       let L = new Locality()
       this.nLocality = new Select(this.nLocality, L)
+      this.nArrivalLocality = new Select(this.nArrivalLocality, L)
       
       var entries = this.reservation.get('entries')
       for (var i = 0; i < entries.length; i++) {
@@ -871,6 +859,7 @@ define([
         if (retval.id && !retval.deleted) {
           this.nConfirmed.set('checked', true)
         }
+        console.log(retval)
         this.nArrivalDone.set('checked', Boolean(retval.done))
         this.nArrivalInprogress.set('checked', Boolean(retval.inprogress))
         if (retval.reported) {
@@ -889,7 +878,7 @@ define([
           this.nArrivalComment.set('value', retval.comment)
         }
         if (retval.locality) {
-          this.nArrivalLocality.set('value', retval.locality)
+          this.nArrivalLocality.value = retval.locality
         }
         if (retval.creator) {
         }
@@ -1269,7 +1258,7 @@ define([
             }
             arrival.comment = f.arrivalComment
             arrival.contact = f.arrivalAddress
-            arrival.locality = f.arrivalLocality
+            arrival.locality = this.nArrivalLocality.value
             arrival.other = f.arrivalKeys
 
             if (f.arrivalDone.length > 0) {
