@@ -674,6 +674,12 @@ define([
       if (arguments[0]) { entries = arguments[0] } else {
         entries = []
         for (var k in this.entries) {
+          if (!this.entries[k]) { delete this.entries[k]; continue }
+          if (this.entries[k].deleted) {
+            this.entries[k].hide()
+            delete this.entries[k]
+            continue
+          }
           this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
           entries.push(this.entries[k])
         }
