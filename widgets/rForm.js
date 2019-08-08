@@ -1304,7 +1304,7 @@ define([
           this.reservation.set('deliveryEnd', deliveryEnd)
           this.reservation.set('address', this.nAddress.value)
           this.reservation.set('reference', f.nReference)
-          this.reservation.set('equipment', f.nEquipmenta)
+          this.reservation.set('equipment', f.nEquipment)
           this.reservation.set('locality', this.nLocality.value)
           this.reservation.set('comment', f.nComments)
           this.reservation.set('note', f.nNote)
