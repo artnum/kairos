@@ -255,7 +255,7 @@ Arrival.prototype.sort = function (idx, direction = 'asc') {
   }
 }
 
-Arrival.prototype.add = function (retval) {
+Arrival.prototype.add = async function (retval) {
   var now = new Date()
   if (this.entry[retval.id] && this.entry[retval.id].domNode) {
     this.parent.removeChild(this.entry[retval.id].domNode)
@@ -297,7 +297,24 @@ Arrival.prototype.add = function (retval) {
   if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }
   dom.appendChild(this.html.label(retval._target._target.cn + rep))
   dom.appendChild(this.html.label(retval._target.target))
-  dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
+
+  let locality = retval.locality ? retval.locality : retval._target.locality
+  if (locality) {
+    if (/^PC\/[0-9a-f]{32,32}$/.test(locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(locality)) {
+      let locQuery = await Artnum.Query.exec(Artnum.Path.url(`store/${locality}`))
+      if (locQuery.success && locQuery.length === 1) {
+        if (locQuery.data.np) {
+          locality = `${locQuery.data.np} ${locQuery.data.name} (${locQuery.data.state.toUpperCase()})`
+        } else {
+          locality = `Dépôt ${locQuery.data.name}`
+        }
+      }
+    }
+  } else {
+    locality = ''
+  }
+  dom.appendChild(this.html.label(locality))
+
   dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
   dom.appendChild(this.html.label(new Date(retval._target.end)))
   if (retval._target.contacts && retval._target.contacts._client && retval._target.contacts._client[0]) {
