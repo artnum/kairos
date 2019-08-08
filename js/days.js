@@ -68,7 +68,7 @@
       'ge': [ 'nationalCHDay:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'jeuneGenevois:f', 'restaurationRepublique:f' ],
       'ju': [ 'nationalCHDay:f', 'easter:f', 'easterMonday:f', 'pentecostMonday:f', 'labourDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'jeuneFederal:f', 'allSaintsDay:f', 'berchtoldsTag:f', 'commemorationPlebiscite:f' ],
       'ne': [ 'nationalCHDay:f', 'newYear7|berchtoldsTag:f', 'instaurationRepublique:f', 'goodFriday:f', 'ascensionDay:f', 'labourDay:f', 'christmas7|saintEtienne:f' ],
-      'fr-cat': [ 'nationalCHDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
+      'fr': [ 'nationalCHDay:f', 'goodFriday:f', 'corpusChristi:f', 'assumption:f', 'allSaintsDay:f', 'immaculateConception:f' ],
       'fr-prot': [ 'nationalCHDay:f', 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ],
       'be': [ 'nationalCHDay:f', 'berchtoldsTag:f', 'goodFriday:f', 'easterMonday:f', 'pentecostMonday:f', 'saintEtienne:f' ],
       'fra': [ 'easterMonday:f', 'labourDay:f', 'pentecostMonday:f', 'nationalFRDay:f', 'assumption:f', 'allSaintsDay:f', 'armistice:f', 'victoireAllie:f' ]

@@ -1,5 +1,5 @@
 /* eslint-env amd, browser */
-/* global Artnum, Address, DoWait, Holiday */
+/* global DoWait, Holiday, compareDate, hideTooltip, showTooltip */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -20,6 +20,8 @@ define([
 ) {
   return djDeclare('location/count', [ _dtWidgetBase, djEvented ], {
     constructor: function () {
+      this.Days = {}
+      this.Current = {begin: null, end: null, canton: 'vs'}
       this.inherited(arguments)
       var args = arguments
       this.AddReservationToCount = null
@@ -70,8 +72,15 @@ define([
         data = await Query.exec(url)
         if (data.success && data.length > 0) {
           var deleted = []
-          for (var i = 0; i < data.length; i++) {
+          let H = new Holiday()
+          for (let i = 0; i < data.length; i++) {
             r.push(data.data[i].reservation)
+            Query.exec(Path.url(`store/Reservation/${data.data[i].reservation}`)).then((_r) => {
+              if (_r.success && _r.length === 1) {
+                let days = H.bdays(new Date(_r.data.begin), new Date(_r.data.end), this.data.canton ? this.data.canton : 'vs')
+                this.Days[data.data[i].reservation] = {begin: new Date(_r.data.begin), end: new Date(_r.data.end), days: days, effectiveBegin: new Date(_r.data.begin), effectiveEnd: new Date(_r.data.end)}
+              }
+            })
           }
           if (this.AddReservationToCount && r.indexOf(this.AddReservationToCount) < 0) { r.push(this.AddReservationToCount) }
           this.set('reservations', r)
@@ -248,6 +257,7 @@ define([
             }
             var unit = this.get('units').find(x => x.default > 0).id
             var days = H.bdays(new Date(result.data.begin), new Date(result.data.end), H.hasState(state) ? state : 'vs')
+            this.Days[r] = {begin: new Date(result.data.begin), end: new Date(result.data.end), days: days, effectiveBegin: new Date(result.data.begin), effectiveEnd: new Date(result.data.end)}
             this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days, state: state}, true), this.tbody.firstChild)
           }
         }.bind(this))
@@ -487,7 +497,7 @@ define([
         <option value="vs">Valais</option>
         <option value="vd">Vaud</option>
         <option value="ge">Genève</option>
-        <option value="fr-cat">Fribourg (catholique)</option>
+        <option value="fr">Fribourg (catholique)</option>
         <option value="fr-prot">Fribourg (protestant)</option>
         <option value="ne">Neuchâtel</option>
         <option value="be">Berne</option>
@@ -497,9 +507,52 @@ define([
         <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
 
+      div.addEventListener('change', (event) => {
+        switch (event.target.name) {
+          case 'begin':
+          case 'end':
+          case 'canton':
+            let begin = event.target.parentNode.querySelector('input[name="begin"]')
+            let end = event.target.parentNode.querySelector('input[name="end"]')
+            let canton = event.target.parentNode.querySelector('select[name="canton"]')
+
+            if (begin && begin.value) {
+              this.Current.begin = new Date(begin.value)
+              for (let k in this.Days) {
+                if (compareDate(this.Days[k].begin, this.Current.begin) >= 0 &&
+                    compareDate(this.Days[k].end, this.Current.begin) < 0) {
+                  this.Days[k].effectiveBegin = this.Current.begin
+                } else {
+                  this.Days[k].days = -1
+                }
+              }
+            }
+            if (end && end.value) {
+              this.Current.end = new Date(end.value)
+              for (let k in this.Days) {
+                if (compareDate(this.Days[k].end, this.Current.end) >= 0 &&
+                    compareDate(this.Days[k].begin, this.Current.end) > 0) {
+                  this.Days[k].effectiveEnd = this.Current.end
+                } else {
+                  this.Days[k].days = -1
+                }
+              }
+            }
+            this.Current.canton = canton.value
+            let H = new Holiday()
+            for (let k in this.Days) {
+              if (this.Days[k].days !== -1) {
+                this.Days[k].days = H.bdays(this.Days[k].effectiveBegin, this.Days[k].effectiveEnd, this.Current.canton)
+              }
+            }
+            break
+        }
+      })
+
       let selects = div.getElementsByTagName('select')
       for (let i = 0; i < selects.length; i++) {
         if (selects[i].name === 'canton') {
+          /* for Fribourg, default to catholique Fribourg */
           selects[i].value = this.get('data').canton
           break
         }
@@ -566,7 +619,7 @@ define([
       div.lastChild.focus()
 
       this.thead = document.createElement('THEAD')
-      this.thead.innerHTML = '<tr><td class="short">ID</td><td class="short">Réservation</td><td class="short">Référence</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Rabais</td><td class="short">Total</td><td></td></tr>'
+      this.thead.innerHTML = '<tr><td class="short">Réservation</td><td class="short">Référence</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Rabais</td><td class="short">Total</td><td></td></tr>'
       this.tbody = document.createElement('TBODY')
       this.tfoot = document.createElement('TFOOT')
 
@@ -647,7 +700,7 @@ define([
             }
           }
           this.newEmpty()
-          this.tfoot.innerHTML = `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>${this.Total}</td></tr>`
+          this.tfoot.innerHTML = `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td name="total">${String(this.Total).toMoney()}</td></tr>`
           resolve()
         }.bind(this))
         this.draw_contacts()
@@ -688,12 +741,12 @@ define([
             }
           })
         }
-        var txt = '<td>' + String(value.id ? value.id : '&#10022;') + '</td><td>' + String(value.reservation ? value.reservation : '') + '</td><td>' +
+        var txt = '<td>' + String(value.reservation ? value.reservation : '') + '</td><td>' +
           String(value.reference ? value.reference : '').html() + '</td><td>' +
           String(value.description ? value.description : '-').html() + '</td><td>' + String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
-          String(unit).html() + '</td><td>' + String(value.price ? value.price : '').html() + '</td><td>' +
+            String(unit).html() + '</td><td>' + String(value.price ? String(value.price).toMoney() : '').html() + '</td><td>' +
           String(value.discount ? value.discount + '%' : '').html() + '</td><td>' +
-          String(value.total ? value.total : '0').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
+            String(value.total ? String(value.total).toMoney() : '').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('focus', this.edit.bind(this))
         tr.addEventListener('blur', (event) => {
           if (event.target.name === 'unit') {
@@ -713,7 +766,7 @@ define([
           })
           rselect += '</select>'
         } else {
-          rselect = ''
+          rselect = reservations[0]
         }
 
         var units = '<select name="unit"><option value=""></option>'
@@ -739,14 +792,52 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-        txt = `<td>&#10023;</td><td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" ${value.canton ? 'data-tooltip="Fériés : ' + value.canton.toUpperCase() + '"' : ''} /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
+        txt = `<td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter') {
             this.save(event)
           }
         }.bind(this))
         tr.setAttribute('data-edit', '1')
+        tr.addEventListener('focus', (event) => {
+          if (event.target.name === 'quantity') {
+            let tr = event.target
+            while (tr && tr.nodeName !== 'TR') { tr = tr.parentNode }
+            let rid = ''
+            if (tr.dataset.reservationId) {
+              rid = tr.dataset.reservationId
+            } else {
+              let s = tr.querySelector('select[name="reservation"]')
+              if (s && s.value) {
+                rid = s.value
+              }
+            }
+
+            let tooltip = []
+            if (rid !== '') {
+              tooltip.push(`Réservation ${rid}: ${this.Days[rid].days} jours ouvré`)
+            } else {
+              for (let r in this.Days) {
+                tooltip.push(`Réservation ${r}: ${this.Days[r].days} jours ouvrés`)
+              }
+            }
+            showTooltip(event.target, tooltip.join('<br />'))
+          }
+        }, {capture: true})
+        tr.addEventListener('blur', hideTooltip, {capture: true})
+                  
         tr.addEventListener('change', this.calculate.bind(this))
+        tr.addEventListener('keyup', (event) => {
+          if (event.keyCode < 32) { return }
+          switch (event.target.name) {
+            case 'price':
+            case 'quantity':
+            case 'discount':
+            case 'total':
+              this.calculate(event)
+              break
+          }
+        })
       }
 
       tr.addEventListener('mousedown', this.click.bind(this))
@@ -968,7 +1059,10 @@ define([
         parent = parent.parentNode
       }
 
-      if (event.target.getAttribute('name') === 'quantity' || event.target.getAttribute('name') === 'price' || event.target.getAttribute('name') === 'total' || event.target.getAttribute('name') === 'discount') {
+      if (event.target.getAttribute('name') === 'quantity' ||
+          event.target.getAttribute('name') === 'price' ||
+          event.target.getAttribute('name') === 'total' ||
+          event.target.getAttribute('name') === 'discount') {
         var q = -1
         var p = -1
         var discount = -1
@@ -987,6 +1081,10 @@ define([
             priinput = input
             if (input.value) {
               p = parseFloat(input.value)
+              if (q === -1) {
+                q = 1
+                parent.querySelector('input[name="quantity"]').value = q
+              }
             }
           }
 
@@ -1011,6 +1109,16 @@ define([
           priinput.value = ''
         }
       }
+
+      let totals = this.tbody.querySelectorAll('input[name="total"]')
+      let grandTotal = 0
+      for (let i = 0; i < totals.length; i++) {
+        if (!isNaN(parseFloat(totals[i].value))) {
+          grandTotal += parseFloat(totals[i].value)
+        }
+      }
+      let total = this.tfoot.querySelector('td[name="total"]')
+      total.innerHTML = String(grandTotal).toMoney()
     }
   })
 })

@@ -8,9 +8,9 @@ window.addEventListener('blur', (event) => {
   hideTooltip()
 }, {passive: true, capture: true})
 
-function showTooltip (node) {
-  if (node.dataset.name || node.dataset.tooltip) {
-    let content = node.dataset.name ? node.dataset.name : node.dataset.tooltip
+function showTooltip (node, value = null) {
+  if (value || node.dataset.name || node.dataset.tooltip) {
+    let content = value !== null ? value : (node.dataset.name ? node.dataset.name : node.dataset.tooltip)
     hideTooltip()
     let tt = document.createElement('DIV')
     tt.classList.add('smallTooltip')

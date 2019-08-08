@@ -495,7 +495,7 @@ define([
         case 'ge': return 'Genève'
         case 'ju': return 'Jura'
         case 'ne': return 'Neuchâtel'
-        case 'fr-cat': return 'Fribourg catholique'
+        case 'fr': return 'Fribourg catholique'
         case 'fr-prot': return 'Fribourg réformé'
         case 'be': return 'Berne'
         case 'fra': return 'France'
