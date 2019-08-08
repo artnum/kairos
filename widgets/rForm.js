@@ -254,7 +254,7 @@ define([
 
     _setAddressAttr: function (value) {
       if (value) {
-        this.nAddress.set('value', value)
+        this.nAddress.value = value
       }
     },
 
@@ -1302,7 +1302,7 @@ define([
           this.reservation.set('end', end)
           this.reservation.set('deliveryBegin', deliveryBegin)
           this.reservation.set('deliveryEnd', deliveryEnd)
-          this.reservation.set('address', f.nAddress)
+          this.reservation.set('address', this.nAddress.value)
           this.reservation.set('reference', f.nReference)
           this.reservation.set('equipment', f.nEquipmenta)
           this.reservation.set('locality', this.nLocality.value)
