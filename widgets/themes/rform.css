@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css?family=B612+Mono&display=swap');
+
 .rForm {
     max-height: calc(100% - 140px);
     height: calc(100% - 140px);
@@ -5,7 +7,7 @@
     overflow: auto;
 }
 
-.rForm .targetable {
+.rForm .targetable, .rForm *[data-href] {
     cursor: pointer;
     text-decoration: underline dotted;
 }
@@ -24,20 +26,10 @@
     flex-wrap: wrap;
 }
 
-.rForm label.title {
-    font-weight: bold;
-    display: block;
-}
-
 .rForm button {
     color: var(--default-color);
     display: block;
     text-decoration: none;
-}
-
-.rForm label.fixedSize {
-    width: 100px;
-    display: inline-block;
 }
 
 .rForm .fullWidth {
@@ -47,11 +39,11 @@
     display: flex;
 }
 
-.rForm .group.twocol > fieldset, .rForm .group.twocol > div.fieldset {
-    margin-top: 1em;
-    margin-bottom: 1em;
-    width: 48%;
-    margin-left: 1%;
+.rForm legend {
+    font-weight: bold;
+    padding: 0 2ch 0 2ch;
+    color: hsla(var(--default-bg-color-base), 1);
+    background-color: hsla(var(--default-color-base), 1);
 }
 
 .rForm textarea {
@@ -148,34 +140,73 @@
     margin: 0;
 }
 
-.rForm .features p {
-    line-height: 1em;
-    margin: 0;
+.rForm fieldset.ui {
+    border: 1px solid hsla(var(--default-color-base), 0.4);
+    padding: 1ex 1ch 1ex 1ch;
+    width: calc(50% - 2ch - 6px); /* border + margin + padding */
+    max-width: calc(50% - 2ch - 6px);
+    min-width: calc(50% - 2ch - 6px);
+    margin: 1ex 2px 0 2px;
+    overflow: hidden;
+}
+
+.rForm fieldset.full {
+    width: calc(100% - 2ch - 6px);
+    max-width: calc(100% - 2ch - 6px);
+    min-width: calc(100% - 2ch - 6px);
+}
+
+.rForm .ui > label {
+    display: block;
+}
+
+.rForm p {
     padding: 0;
+    margin: 0;
 }
 
-.rForm .features .label {
+.rForm label.small > span {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+}
+
+.rForm label > span, .rForm span.label {
     display: inline-block;
-    width: 75%;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
 }
 
-.rForm .features .value {
-    display: inline-block;
-    width: 25%;
-    text-align: right;
+.rForm p.detail span.label {
+    width: 200px !important;
+    max-width: 200px !important;
+    min-width: 200px !important;
 }
 
-.rForm .features {
-    background-color: hsla(var(--default-highlight-color-base), 0.2);
-    color: black;
-    padding: 3px;
+.rForm input.ui, .rForm .dijitTextBox, .rForm .dijitSelect, .rForm textarea.ui, .rForm span.value {
+    font-family: 'B612 Mono', monospace;
+    font-size: 10pt;
+    min-width: calc(100% - 130px);
+    max-width: calc(100% - 130px);
 }
 
-
-.rForm fieldset.big, .rForm div.fieldset.big {
-    width: 60% !important;
+.rForm .description span.value {
+    max-width: initial;
+    min-width: initial;
 }
 
-.rForm fieldset.small, .rForm div.fieldset.small {
-    width: 38% !important;
+.rForm p.detail span.value {
+    max-width: calc(100% - 210px) !important;
+}
+
+.rForm .dijitDateTextBox {
+    width: 18ch !important;
+    max-width: 18ch !important;
+    min-width: 18ch !important;
+}
+.rForm .dijitTimeTextBox {
+    width: 8ch !important;
+    max-width: 8ch !important;
+    min-width: 8ch !important;
 }

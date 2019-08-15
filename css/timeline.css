@@ -321,8 +321,7 @@ fieldset {
 }
 
 .dijitDateTextBox {
-	width: 15ch;
-	max-width: 15ch;
+    width: 15ch;
 }
 
 .dijitDialog {

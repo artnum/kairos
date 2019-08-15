@@ -1,11 +1,12 @@
 /* eslint-env browser */
 /* global Popper */
 
-var Select = function (input, store) {
+var Select = function (input, store, options = {allowFreeText: true}) {
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
-
+  let originalValue = input.value
+  
   let obj = new Proxy(this, {
     get: function (obj, prop) {
       switch (prop) {
@@ -24,13 +25,25 @@ var Select = function (input, store) {
     set: function (obj, prop, value) {
       switch (prop) {
         case 'value':
+        if (!value) { break }
           store.get(value).then((entry) => {
             if (entry) {
+              this.lastEntry = entry
               input.value = entry.label
               this.value = input.value
               input.dataset.value = entry.value
             } else {
-              input.value = value
+              if (options.allowFreeText) {
+                input.value = value
+              } else {
+                if (!this.lastEntry) {
+                  this.value = ''
+                  input.value = ''
+                } else {
+                  this.value = this.lastEntry.value
+                  input.value = this.lastEntry.label
+                }
+              }
             }
           })
           break
@@ -44,8 +57,10 @@ var Select = function (input, store) {
   list.classList.add('dropdown')
   var popper = null
 
-  var select = (target) => {
-    input.value = target.textContent
+  var select = (target, dontMessValue = false) => {
+    if (!dontMessValue) {
+      input.value = target.textContent
+    }
     input.dataset.value = target.dataset.value
   }
 
@@ -122,6 +137,9 @@ var Select = function (input, store) {
       } else if (set.getBoundingClientRect().top < list.getBoundingClientRect().top) {
         set.scrollIntoView(false)
       }
+      if (!options.allowFreeText) {
+        select(set, true)
+      }
     }
     if (reset && set !== reset) {
       reset.dataset.hover = '0'
@@ -137,6 +155,9 @@ var Select = function (input, store) {
   }
 
   var generate = (event) => {
+    if (event.type === 'focus') {
+      input.setSelectionRange(0, input.value.length)
+    }
     if (event.key) {
       delete input.dataset.value
     }
@@ -197,6 +218,9 @@ var Select = function (input, store) {
         window.requestAnimationFrame(() => {
           list.innerHTML = ''
           list.appendChild(frag)
+          if (!options.allowFreeText) {
+            select(list.firstElementChild, true)
+          }
         })
       }
     })
@@ -216,5 +240,6 @@ var Select = function (input, store) {
   input.addEventListener('keyup', generate)
   input.addEventListener('focus', generate)
 
+  obj.value = originalValue
   return obj
 }

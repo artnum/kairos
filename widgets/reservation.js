@@ -774,7 +774,7 @@ define([
         return
       }
       window.App.setOpen(this.uid)
-      var f = new RForm({ reservation: this })
+      var f = new RForm({ reservation: this, htmlDetails: this.sup.htmlDetails })
       var title = 'Réservation ' + this.uid
 
       var cp = new DtContentPane({
@@ -788,7 +788,6 @@ define([
       tContainer.resize()
       tContainer.selectChild(cp.id)
 
-      f.nEntryDetails.innerHTML = `<label class="title">Caractéristiques</label>${this.sup.htmlDetails}`
       this.myForm = f
       this.syncForm()
       this.myContentPane = cp

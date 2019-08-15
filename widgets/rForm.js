@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global pSBC, Artnum, GEvent */
+/* global pSBC, Artnum, Select */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -46,7 +46,9 @@ define([
   'location/count',
   'location/countList',
   'location/Stores/Locality',
-
+  'location/Stores/User',
+  'location/Stores/Machine',
+  
   'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
@@ -96,7 +98,9 @@ define([
   Count,
   CountList,
   Locality,
-
+  User,
+  Machine,
+  
   Req,
   Path,
   Query
@@ -141,6 +145,7 @@ define([
     },
 
     _setWarehouseAttr: function (value) {
+      if (!value) { return }
       Query.exec(Path.url(`store/Warehouse/${value}`)).then((result) => {
         if (result.success && result.length === 1) {
           this._set('warehouse', value)
@@ -161,45 +166,11 @@ define([
     },
 
     _setCreatorAttr: function (value) {
-      this.getUser(value).then(function (user) {
-        if (user) {
-          this._set('creator', value)
-          this.nCreator.innerHTML = user.name + ' '
-          var current = window.localStorage.getItem(Path.bcname('user'))
-          if (current) {
-            current = JSON.parse(current)
-            if ('store/User/' + current.id !== value) {
-              var b = document.createElement('BUTTON')
-              b.innerHTML = 'S\'attribuer'
-              b.setAttribute('type', 'button')
-              b.setAttribute('data-target', 'c')
-              b.addEventListener('click', this.eChangeUser.bind(this))
-              this.nCreator.appendChild(b)
-            }
-          }
-        }
-      }.bind(this))
+      this.nCreator.value = value
     },
 
     _setArrivalCreatorAttr: function (value) {
-      this.getUser(value).then(function (user) {
-        if (user) {
-          this._set('arrivalCreator', value)
-          this.nArrivalCreator.innerHTML = user.name + ' '
-          var current = window.localStorage.getItem(Path.bcname('user'))
-          if (current) {
-            current = JSON.parse(current)
-            if ('store/User/' + current.id !== value) {
-              var b = document.createElement('BUTTON')
-              b.innerHTML = 'S\'attribuer'
-              b.setAttribute('type', 'button')
-              b.setAttribute('data-target', 'ac')
-              b.addEventListener('click', this.eChangeUser.bind(this))
-              this.nArrivalCreator.appendChild(b)
-            }
-          }
-        }
-      }.bind(this))
+      this.nArrivalCreator.value = value
     },
 
     eChangeUser: async function (event) {
@@ -268,10 +239,6 @@ define([
       if (value) {
         this.nEquipment.set('value', value)
       }
-    },
-
-    _setLocalityAttr: function (value) {
-      this.nLocality.value = value
     },
 
     _setCommentAttr: function (value) {
@@ -603,22 +570,39 @@ define([
       this.inherited(arguments)
 
       let L = new Locality()
+      let U = new User()
+      let M = new Machine()
       this.nLocality = new Select(this.nLocality, L)
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-      
-      var entries = this.reservation.get('entries')
-      for (var i = 0; i < entries.length; i++) {
-        this.nMachineChange.addOption({
-          label: entries[i].target + ' - ' + entries[i].label,
-          value: entries[i].target
-        })
-      }
+      this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false})
+      this.nCreator = new Select(this.nCreator, U, {allowFreeText: false})
+      this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false})
+
+      this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
 
       djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
+        let n = this.nMFollow.domNode
+        while (n && n.nodeName !== 'LABEL') {
+          n = n.parentNode
+        }
         if (this.nMFollow.get('value')) {
-          djDomStyle.set(this.nMFollowToggle, 'display', 'none')
+          n = n.nextElementSibling
+          if (n) {
+            n.style.display = 'none'
+            n = n.nextElementSibling
+            if (n) {
+              n.style.display = 'none'
+            }
+          }
         } else {
-          djDomStyle.set(this.nMFollowToggle, 'display', '')
+          n = n.nextElementSibling
+          if (n) {
+            n.style.display = ''
+            n = n.nextElementSibling
+            if (n) {
+              n.style.display = ''
+            }
+          }
         }
       }))
 
@@ -639,16 +623,19 @@ define([
     },
 
     clickForm: function (event) {
-      if (event.target.nodeName === 'LABEL') {
-        let labelFor = event.target.getAttribute('for')
-        switch (labelFor) {
+      if (event.target.dataset.href) {
+        let href = event.target.dataset.href
+        switch (href) {
           case 'beginDate':
           case 'endDate':
-            let date = this[labelFor].get('value')
+            let date = this[href].get('value')
             window.App.gotoMachine(this.reservation.get('target'))
             window.App.set('center', date)
             window.App.update()
             this.reservation.highlight()
+            break
+          default:
+            window.open(href, href)
             break
         }
       }
@@ -682,7 +669,7 @@ define([
       this.initCancel()
 
       var that = this
-      this.nMachineChange.set('value', this.reservation.get('target'))
+      this.nMachineChange.value = this.reservation.get('target')
 
       if (this.reservation.get('title') != null) {
         this.nTitle.set('value', this.reservation.get('title'))
@@ -691,34 +678,19 @@ define([
       if (this.reservation.get('folder')) {
         var folder = this.reservation.get('folder')
         this.nFolder.set('value', this.reservation.get('folder'))
-        var url = folder
+        let url = folder
         if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
           url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
         }
-
-        var a = document.createElement('A')
-        a.setAttribute('href', url); a.setAttribute('target', '_blank')
-        a.appendChild(document.createTextNode(' '))
-        a.appendChild(document.createElement('I'))
-        a.lastChild.setAttribute('class', 'fas fa-external-link-alt')
-        if (this.fLink.previousSibling.nodeName === 'A') {
-          this.fLink.parentNode.removeChild(this.fLink.previousSibling)
-        }
-        this.fLink.parentNode.insertBefore(a, this.fLink)
+        let node = this.nFolder.domNode.previousElementSibling
+        node.dataset.href = url
       }
 
       if (this.reservation.get('gps')) {
         this.nGps.set('value', this.reservation.get('gps'))
 
-        a = document.createElement('A')
-        a.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.reservation.get('gps')).replace(/\s/g, '')); a.setAttribute('target', '_blank')
-        a.appendChild(document.createTextNode(' '))
-        a.appendChild(document.createElement('I'))
-        a.lastChild.setAttribute('class', 'fas fa-external-link-alt')
-        if (this.gLink.previousSibling.nodeName === 'A') {
-          this.gLink.parentNode.removeChild(this.gLink.previousSibling)
-        }
-        this.gLink.parentNode.insertBefore(a, this.gLink)
+        let node = this.nGps.domNode.previousElementSibling
+        node.dataset.href = `https://www.google.com/maps/place/${String(this.reservation.get('gps')).replace(/\s/g, '')}`
       }
 
       if (!this.loaded.status) {
@@ -778,6 +750,7 @@ define([
               that.set('creator', 'store/User/' + _c.id)
             }
           }
+          /*
           if (that.reservation.get('_arrival') && that.reservation.get('_arrival').creator) {
             that.set('arrivalCreator', that.reservation.get('_arrival').creator)
           } else {
@@ -785,10 +758,10 @@ define([
               _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
               that.set('arrivalCreator', 'store/User/' + _c.id)
             }
-          }
+          }*/
         })
       } else {
-        that.set('creator', that.reservation.get('creator'))
+        this.set('creator', this.reservation.get('creator'))
       }
 
       if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
@@ -881,6 +854,9 @@ define([
           this.nArrivalLocality.value = retval.locality
         }
         if (retval.creator) {
+          if (this.nArrivalCreator) {
+            this.nArrivalCreator.value = retval.creator
+          }
         }
       }
 
@@ -928,13 +904,7 @@ define([
         this.endDate.set('readOnly', true)
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
-        if (this.get('arrivalCreator')) {
-
-        } else {
-          if (!dontset && window.localStorage.getItem('user')) {
-            this.set('arrivalCreator', JSON.parse(window.localStorage.getItem('user')))
-          }
-        }
+        this.nArrivalCreator.value = this.get('arrivalCreator')
       } else {
         this.nBack.setAttribute('style', 'display: none')
         this.endTime.set('readOnly', false)
@@ -1204,8 +1174,8 @@ define([
           reject(new Error('Not valid'))
         }
         var changeMachine = false
-        if (this.reservation.get('target') !== this.nMachineChange.get('value')) {
-          var newEntry = window.App.getEntry(this.nMachineChange.get('value'))
+        if (this.reservation.get('target') !== this.nMachineChange.value) {
+          var newEntry = window.App.getEntry(this.nMachineChange.value)
           if (newEntry == null) {
             alert('Déplacement vers machine inexistante')
             reject(new Error('Target not found'))
@@ -1213,7 +1183,7 @@ define([
           changeMachine = this.reservation.get('target')
           this.reservation.set('sup', newEntry)
           this.reservation.set('previous', changeMachine)
-          this.reservation.set('target', this.nMachineChange.get('value'))
+          this.reservation.set('target', this.nMachineChange.value)
         }
 
         let f = this.nForm.get('value')
@@ -1237,7 +1207,8 @@ define([
           deliveryEnd = ''
         }
 
-        Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.uid}})).then(function (res) {
+        Query.exec(Path.url('store/Arrival',
+                            {params: {'search.target': this.reservation.uid}})).then((res) => {
           let arrival = {}
           if (res.success && res.length > 0) {
             arrival = Object.assign(arrival, res.data[0])
@@ -1253,9 +1224,7 @@ define([
                 arrival.reported = f.arrivalDate
               }
             }
-            if (!arrival.creator) {
-              arrival.creator = this.get('arrivalCreator')
-            }
+            arrival.creator = this.nArrivalCreator.value
             arrival.comment = f.arrivalComment
             arrival.contact = f.arrivalAddress
             arrival.locality = this.nArrivalLocality.value
@@ -1318,7 +1287,7 @@ define([
             this.domNode.removeAttribute('style')
             resolve()
           })
-        }.bind(this))
+        })
       }.bind(this))
     },
 
