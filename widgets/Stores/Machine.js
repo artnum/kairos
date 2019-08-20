@@ -39,27 +39,26 @@ define([
           }
         }
         let entries = []
-        Query.exec(Path.url('store/Machine', {params: {'search.cn': `${searchName}*`, 'search.description': `${searchId}*`}})).then((result) => {
+        var highlight = function (val, txt) {
+          let s = txt.toLowerCase().toAscii().indexOf(val.toLowerCase())
+          if (s !== -1) {
+            return txt.substring(0, s) + '<span class="match">' +
+              txt.substring(s, s + val.length) + '</span>' +
+              txt.substring(s + val.length)
+          } 
+          return txt
+        }
+        Query.exec(Path.url('store/Machine', {params: {'search.cn': `${searchName}*`, 'search.description': `${searchId}*`, 'search.airaltref': `${searchId}*`}})).then((result) => {
           if (result.success && result.length > 0) {
             result.data.forEach((entry) => {
-              let s = entry.cn.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
-              let name = entry.cn
-              if (s !== -1) {
-                name = entry.cn.substring(0, s) + '<span class="match">' +
-                  entry.cn.substring(s, s + searchName.length) + '</span>' +
-                  entry.cn.substring(s + searchName.length)
-              }
+              let name = highlight(searchName, entry.cn)
 
-              let id = entry.description
-              s = entry.description.toLowerCase().toAscii().indexOf(searchId.toLowerCase())
-              if (s !== -1) {
-                id = entry.description.substring(0, s) + '<span class="match">' +
-                  entry.description.substring(s, s + searchId.length) + '</span>' +
-                  entry.description.substring(s + searchId.length)
-              }
+              let id = highlight(searchId, entry.description)
 
               entry.label = `${id} ${name}`
               entry.value = entry.description
+              entry.sortInteger = parseInt(entry.description)
+              if (isNaN(entry.sortInteger)) { entry.sortInteger = 0 }
               if (entry.airaltref) {
                 if (!Array.isArray(entry.airaltref)) {
                   entry.airaltref = [ entry.airaltref ]
@@ -67,8 +66,11 @@ define([
                 entry.airaltref.forEach((ref) => {
                   let e = Object.assign({}, entry)
                   e.description = ref
-                  e.label = `${ref} ${name}`
+
+                  e.label = `${highlight(searchId, ref)} ${name}`
                   e.value = ref
+                  e.sortInteger = parseInt(ref)
+                  if (isNaN(e.sortInteger)) { e.sortInteger = 0 }
                   entries.push(e)
                 })
               }
@@ -77,12 +79,15 @@ define([
           }
 
           entries.sort((a, b) => {
-            let v = a.cn.localeCompare(b.cn)
+            let v = a.sortInteger - b.sortInteger
             if (v === 0) {
-              if (!isNaN(parseInt(a.description)) && !isNaN(parseInt(b.description))) {
-                v = parseInt(a.description) - parseInt(b.description)
-              } else {
-                v = a.description.localeCompare(b.description)
+              v = a.cn.localeCompare(b.cn)
+              if (v === 0) {
+                if (!isNaN(parseInt(a.description)) && !isNaN(parseInt(b.description))) {
+                  v = parseInt(a.description) - parseInt(b.description)
+                } else {
+                  v = a.description.localeCompare(b.description)
+                }
               }
             }
             return v
