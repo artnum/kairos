@@ -18,7 +18,7 @@ define([
         Query.exec(Path.url(`store/Machine/?search.description=${id}&search.airaltref=${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data[0]
-            entry.label = `${entry.description} ${entry.cn}`
+            entry.label = `${id} ${entry.cn}`
             entry.value = id
           }
           resolve(entry)
@@ -57,10 +57,21 @@ define([
                   entry.description.substring(s, s + searchId.length) + '</span>' +
                   entry.description.substring(s + searchId.length)
               }
-              
+
               entry.label = `${id} ${name}`
               entry.value = entry.description
-
+              if (entry.airaltref) {
+                if (!Array.isArray(entry.airaltref)) {
+                  entry.airaltref = [ entry.airaltref ]
+                }
+                entry.airaltref.forEach((ref) => {
+                  let e = Object.assign({}, entry)
+                  e.description = ref
+                  e.label = `${ref} ${name}`
+                  e.value = ref
+                  entries.push(e)
+                })
+              }
               entries.push(entry)
             })
           }
