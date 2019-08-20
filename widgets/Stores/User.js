@@ -20,8 +20,11 @@ define([
         }
         let entry = null
         let s = id.split('/')
-        if (s[0] === 'store') {
+        if (s[0] === 'store' || s[0] === '') {
           s.shift()
+          if (s[0] === 'store') {
+            s.shift()
+          }
           id = s.join('/')
         }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
