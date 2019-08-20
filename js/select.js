@@ -1,12 +1,11 @@
 /* eslint-env browser */
 /* global Popper */
 
-var Select = function (input, store, options = {allowFreeText: true}) {
+var Select = function (input, store, options = {allowFreeText: true, realSelect: false}) {
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
   let originalValue = input.value
-  
   let obj = new Proxy(this, {
     get: function (obj, prop) {
       switch (prop) {
@@ -25,7 +24,7 @@ var Select = function (input, store, options = {allowFreeText: true}) {
     set: function (obj, prop, value) {
       switch (prop) {
         case 'value':
-        if (!value) { break }
+          if (!value) { break }
           store.get(value).then((entry) => {
             if (entry) {
               this.lastEntry = entry
@@ -186,7 +185,7 @@ var Select = function (input, store, options = {allowFreeText: true}) {
         return
       case 'Backspace':
       case 'Delete':
-        if (input.value.length === 0) { return degenerate() }
+        if (input.value.length === 0 && !options.realSelect) { return degenerate() }
     }
     window.requestAnimationFrame((event) => {
       if (!list.parentNode) {

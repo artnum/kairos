@@ -574,9 +574,9 @@ define([
       let M = new Machine()
       this.nLocality = new Select(this.nLocality, L)
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-      this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false})
-      this.nCreator = new Select(this.nCreator, U, {allowFreeText: false})
-      this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false})
+      this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false, realSelect: true})
+      this.nCreator = new Select(this.nCreator, U, {allowFreeText: false, realSelect: true})
+      this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
 
       this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
 
@@ -832,7 +832,7 @@ define([
         if (retval.id && !retval.deleted) {
           this.nConfirmed.set('checked', true)
         }
-        console.log(retval)
+
         this.nArrivalDone.set('checked', Boolean(retval.done))
         this.nArrivalInprogress.set('checked', Boolean(retval.inprogress))
         if (retval.reported) {

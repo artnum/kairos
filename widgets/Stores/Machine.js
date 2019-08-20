@@ -45,7 +45,7 @@ define([
             return txt.substring(0, s) + '<span class="match">' +
               txt.substring(s, s + val.length) + '</span>' +
               txt.substring(s + val.length)
-          } 
+          }
           return txt
         }
         Query.exec(Path.url('store/Machine', {params: {'search.cn': `${searchName}*`, 'search.description': `${searchId}*`, 'search.airaltref': `${searchId}*`}})).then((result) => {
@@ -58,7 +58,7 @@ define([
               entry.label = `${id} ${name}`
               entry.value = entry.description
               entry.sortInteger = parseInt(entry.description)
-              if (isNaN(entry.sortInteger)) { entry.sortInteger = 0 }
+              if (isNaN(entry.sortInteger)) { entry.sortInteger = Infinity }
               if (entry.airaltref) {
                 if (!Array.isArray(entry.airaltref)) {
                   entry.airaltref = [ entry.airaltref ]
@@ -70,7 +70,7 @@ define([
                   e.label = `${highlight(searchId, ref)} ${name}`
                   e.value = ref
                   e.sortInteger = parseInt(ref)
-                  if (isNaN(e.sortInteger)) { e.sortInteger = 0 }
+                  if (isNaN(e.sortInteger)) { e.sortInteger = Infinity }
                   entries.push(e)
                 })
               }
