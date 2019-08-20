@@ -100,7 +100,7 @@ define([
   Locality,
   User,
   Machine,
-  
+
   Req,
   Path,
   Query
@@ -142,6 +142,11 @@ define([
 
     _setDescriptionAttr: function (value) {
       this.description = value
+    },
+
+    _setLocality: function (value) {
+      this._set('locality', value)
+      this.nLocality.value = value
     },
 
     _setWarehouseAttr: function (value) {
@@ -670,7 +675,7 @@ define([
 
       var that = this
       this.nMachineChange.value = this.reservation.get('target')
-
+      this.nLocality.value = this.reservation.get('locality')
       if (this.reservation.get('title') != null) {
         this.nTitle.set('value', this.reservation.get('title'))
       }
@@ -694,7 +699,7 @@ define([
       }
 
       if (!this.loaded.status) {
-        url = Path.url('store/Status')
+        let url = Path.url('store/Status')
         url.searchParams.set('search.type', 0)
         var results = await Query.exec(url)
         if (results.type === 'results') {
@@ -712,7 +717,7 @@ define([
       }
 
       if (!this.loaded.association) {
-        url = Path.url('store/Status')
+        let url = Path.url('store/Status')
         url.searchParams.set('search.type', 1)
         results = await Query.exec(url)
         if (results.type === 'results') {
@@ -776,7 +781,7 @@ define([
       }
       this.toggleDelivery()
 
-      url = Path.url('store/ReservationContact')
+      let url = Path.url('store/ReservationContact')
       url.searchParams.set('search.reservation', this.reservation.uid)
       var res = await Query.exec(url)
       if (res.length > 0) {
@@ -787,7 +792,7 @@ define([
           } else {
             var linkId = contact.id
             var comment = contact.comment
-            url = Path.url('store/' + contact.target)
+            let url = Path.url('store/' + contact.target)
             results = await Query.exec(url)
             if (results.length > 0) {
               var e = results.data[0]
