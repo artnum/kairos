@@ -739,9 +739,15 @@ define([
             }
           })
         }
+        let desc = ''
+        if (value.description) {
+          desc = value.description.split('\n')
+          if (desc[desc.length - 1] === '') { desc.pop() }
+          desc = desc.join(', ')
+        }
         var txt = '<td>' + String(value.reservation ? value.reservation : '') + '</td><td>' +
-          String(value.reference ? value.reference : '').html() + '</td><td>' +
-          String(value.description ? value.description : '-').html() + '</td><td>' + String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
+            String(value.reference ? value.reference : '').html() + '</td><td>' + desc.html() + '</td><td>' +
+            String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
             String(unit).html() + '</td><td>' + String(value.price ? String(value.price).toMoney() : '').html() + '</td><td>' +
           String(value.discount ? value.discount + '%' : '').html() + '</td><td>' +
             String(value.total ? String(value.total).toMoney() : '').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
@@ -790,9 +796,9 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-        txt = `<td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><input name="description" type="text" value="${String(value.description ? value.description : '').html()}" /></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
+        txt = `<td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><textarea rows="1" name="description">${String(value.description ? value.description : '').html()}</textarea></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
-          if (event.key === 'Enter') {
+          if (event.key === 'Enter' && event.target.nodeName !== 'TEXTAREA') {
             this.save(event)
           }
         }.bind(this))
@@ -934,23 +940,17 @@ define([
         this.calculate({target: parent})
         var id = parent.getAttribute('data-id')
 
-        var inputs = parent.getElementsByTagName('INPUT')
         var query = {count: this.get('data-id')}
-        for (var i = 0; i < inputs.length; i++) {
-          if (inputs[i].value) {
-            query[inputs[i].getAttribute('name')] = inputs[i].value
-          } else {
-            query[inputs[i].getAttribute('name')] = null
+        ;['INPUT', 'TEXTAREA', 'SELECT'].forEach((e) => {
+          let inputs = parent.getElementsByTagName(e)
+          for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].value) {
+              query[inputs[i].name] = inputs[i].value
+            } else {
+              query[inputs[i].name] = null
+            }
           }
-        }
-        var selects = parent.getElementsByTagName('SELECT')
-        for (i = 0; i < selects.length; i++) {
-          if (selects[i].value) {
-            query[selects[i].getAttribute('name')] = selects[i].value
-          } else {
-            query[selects[i].getAttribute('name')] = null
-          }
-        }
+        })
 
         if (!query.description && !query.quantity && !query.price && !query.total && !query.reference) {
           var remove = parent
@@ -985,8 +985,8 @@ define([
 
       query = {}
       ;['INPUT', 'SELECT'].forEach(function (element) {
-        inputs = this.form_invoice.getElementsByTagName(element)
-        for (i = 0; i < inputs.length; i++) {
+        let inputs = this.form_invoice.getElementsByTagName(element)
+        for (let i = 0; i < inputs.length; i++) {
           var val = inputs[i].value
           query[inputs[i].getAttribute('name')] = val
         }
@@ -1014,8 +1014,8 @@ define([
       }
 
       ;['INPUT', 'SELECT'].forEach(function (element) {
-        inputs = [...this.form_details.elements, ...document.querySelectorAll('*[form=details]')]
-        for (i = 0; i < inputs.length; i++) {
+        let inputs = [...this.form_details.elements, ...document.querySelectorAll('*[form=details]')]
+        for (let i = 0; i < inputs.length; i++) {
           var val = inputs[i].value
           if (!val) { continue }
           switch (inputs[i].getAttribute('name')) {
