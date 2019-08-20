@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
-<link rel="stylesheet" href="../widgets/themes/default.css" />
+
 <link rel="stylesheet" href="../css/timeline.css" />
 <link href="../css/dtable.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
@@ -37,6 +37,17 @@ function storageAvailable(type) {
       storage.length !== 0;
   }
 }
+
+ let themeCss = document.createElement('LINK')
+ themeCss.type="text/css"
+ themeCss.rel="stylesheet"
+ themeCss.href="../widgets/themes/default/default.css"
+ if (localStorage.getItem('location/theme')) {
+   let theme = localStorage.getItem('location/theme')
+   themeCss.href=`../widgets/themes/${theme}/${theme}.css`
+ }
+ document.head.appendChild(themeCss)
+ 
 if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
   document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
 }

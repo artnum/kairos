@@ -21,6 +21,17 @@ body.waiting * {
 	color: red;
 }
 
+#leftMenuPop {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 40px;
+    padding-left: 6px;
+    font-size: 18px;
+    float: left;
+}
+
 .leftpane {
   position: fixed;
   width: 680px;
@@ -208,7 +219,6 @@ body.waiting * {
 }
 
 .entry .edit button, .entry .edit input {
-    font-size: 1em;
     padding: 2px;
     border: 1px solid var(--default-color);
     margin: 1px;
