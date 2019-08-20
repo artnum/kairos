@@ -692,6 +692,7 @@ define([
         var root = true
         entries[i].overlap.order = i
         for (var j = 0; j < overlapRoot.length; j++) {
+          if (!overlapRoot[j].range) { continue }
           if (overlapRoot[j].range.overlap(entries[i].range)) {
             if (overlapRoot[j].duration > entries[i].duration) {
               overlapRoot[j].overlap.elements.push(entries[i])

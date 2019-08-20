@@ -15,7 +15,7 @@ define([
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = null
-        Query.exec(Path.url(`store/Machine/?search.description=${id}`)).then((results) => {
+        Query.exec(Path.url(`store/Machine/?search.description=${id}&search.airaltref=${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data[0]
             entry.label = `${entry.description} ${entry.cn}`
