@@ -1,7 +1,7 @@
 <?PHP
 class MachineModel extends artnum\LDAP {
   function __construct($db, $config) {
-    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'floorheight', 'workheight', 'height'), $config);
+    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height'), $config);
   }
 
   function read($dn) {
@@ -15,7 +15,9 @@ class MachineModel extends artnum\LDAP {
           $stmt->bindParam(':ref', $entry_ref, \PDO::PARAM_STR);
           if ($stmt->execute()) {
             while (($data = $stmt->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-              $result[0][$k][$data['entry_name']] = $data['entry_value'];
+              $result[0][$k][$data['entry_name']] = array(
+                'value' => $data['entry_value'], 'id' => $data['entry_id']
+              );
             }
           }
         } catch(\Exception $e) {

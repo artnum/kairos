@@ -253,18 +253,11 @@ define([
       })
     },
 
+    /* this function can be deleted and replaced by just a call to displayLocation */
     loadExtension: function () {
       return new Promise(function (resolve, reject) {
-        Query.exec(Path.url('store/Entry', {params: {'search.ref': this.get('target')}})).then(function (result) {
-          if (result.success && result.length > 0) {
-            for (var i = 0; i < result.length; i++) {
-              this.set(result.data[i].name, result.data[i].value)
-              this.set('_' + result.data[i].name, result.data[i])
-            }
-          }
-          this.displayLocation()
-          resolve(this)
-        }.bind(this))
+        this.displayLocation()
+        resolve(this)
       }.bind(this))
     },
 
@@ -347,7 +340,7 @@ define([
     },
 
     displayLocation: function () {
-      var location = this.get('_currentLocation')
+      var location = this.get('currentLocation')
       if (location && location.value) {
         window.requestAnimationFrame(function () {
           this.nControl.setAttribute('class', 'control ' + location.value.tagify())
@@ -363,7 +356,7 @@ define([
     },
 
     eEditLocation: function (event) {
-      var location = this.get('_currentLocation')
+      var location = this.get('currentLocation')
       var frag = document.createDocumentFragment()
       var saveLocFn = function (event) {
         var node = null
@@ -384,7 +377,7 @@ define([
           if (result.success && result.length === 1) {
             Query.exec(Path.url('store/Entry/' + result.data[0].id)).then(function (result) {
               if (result.success && result.length === 1) {
-                this.set('_currentLocation', result.data)
+                this.set('currentLocation', result.data)
                 this.displayLocation()
               }
             }.bind(this))
@@ -680,7 +673,7 @@ define([
             delete this.entries[k]
             continue
           }
-          this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
+          Object.assign(this.entries[k].overlap, { elements: [], level: 0, order: 0, do: false })
           entries.push(this.entries[k])
         }
       }
@@ -765,6 +758,15 @@ define([
         if (this.details[namesAttr[i]] !== undefined) {
           return this.details[namesAttr[i]] 
         }
+      }
+      return ''
+    },
+    _setCurrentLocationAttr: function (value) {
+      this.details.currentLocation = value
+    },
+    _getCurrentLocationAttr: function () {
+      if (this.details.currentLocation) {
+        return this.details.currentLocation
       }
       return ''
     },

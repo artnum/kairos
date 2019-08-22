@@ -1594,7 +1594,7 @@ define([
       this.currentPosition = 0
       this.update()
 
-      Query.exec(new URL('https://aircluster.local.airnace.ch/store/Machine')).then(async function (response) {
+      Query.exec(Path.url('store/Machine')).then(async function (response) {
         /* TODO when updated completly use new fetch api */
         if (response.data) {
           var whole = response.data
