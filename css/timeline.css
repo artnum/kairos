@@ -41,6 +41,11 @@ body, html { margin: 0; padding: 0; }
 	margin-bottom: 60px;
 }
 
+span.day.anniversary {
+    background-color: #e3001b;
+    color: white;
+}
+
 .timeline .header div {
 	display: inline-block;	
 	overflow: hidden;

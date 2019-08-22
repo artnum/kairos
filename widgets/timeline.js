@@ -543,6 +543,11 @@ define([
         }
       }
 
+      if (dayStamp === '2019-09-06' || dayStamp === '2019-09-07') {
+        domDay.classList.add('anniversary')
+        txtDate = `🎔 ${txtDate} 🎔`
+      }
+      
       domDay.innerHTML = txtDate
       return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
     },
