@@ -359,9 +359,7 @@ if($reservation['comment']) {
    $PDF->SetY($YPos + 1);
 
    foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
-      $y = $PDF->GetY();
-      $PDF->printTaggedLn(array('%c', $line));
-      $PDF->SetY($y + 4);
+      $PDF->printTaggedLn(array('%c', $line), array('multiline' => true));
    }
 }
 
