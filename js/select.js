@@ -153,6 +153,20 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     list.innerHTML = ''
   }
 
+  var handleTab = (event) => {
+    switch (event.key) {
+      case 'Tab':
+        for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.hover === '1') {
+            select(n)
+            degenerate()
+            return
+          }
+        }
+        break
+    }
+  }
+
   var generate = (event) => {
     if (event.type === 'focus') {
       input.setSelectionRange(0, input.value.length)
@@ -179,7 +193,6 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       case 'ArrowLeft':
       case 'ArrowRight':
       case 'Escape':
-      case 'Tab':
       case 'Alt':
       case 'AltGraph':
         return
@@ -237,6 +250,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
 
   input.addEventListener('blur', degenerate)
   input.addEventListener('keyup', generate)
+  input.addEventListener('keydown', handleTab)
   input.addEventListener('focus', generate)
 
   obj.value = originalValue
