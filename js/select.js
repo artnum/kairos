@@ -18,7 +18,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         case 'domNode':
           return input
         default:
-          return obj[prop]
+          return obj[prop] ? obj[prop] : ''
       }
     },
     set: function (obj, prop, value) {

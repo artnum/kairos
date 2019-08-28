@@ -203,9 +203,13 @@ define([
     },
 
     genDetails: function () {
+      const texts = ['reference']
       const weights = ['maxcapacity', 'weight']
       const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
       let x = {}
+      for (let i = 0; i < texts.length; i++) {
+        x[texts[i]] = { raw: this.details[texts[i]], html: this.details[texts[i]] }
+      }
       for (let i = 0; i < weights.length; i++) {
         if (this.details[weights[i]] !== undefined) {
           let v = parseInt(this.details[weights[i]])
@@ -229,6 +233,7 @@ define([
         }
       }
       const labels = {
+        reference: 'Originale',
         weight: 'Poids',
         maxcapacity: 'Charge max',
         workheight: 'Hauteur travail',
@@ -244,9 +249,9 @@ define([
           txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      fetch(`https://www.local.airnace.ch/${this.details.description}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
+      fetch(`https://www.local.airnace.ch/${this.details.reference}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
         if (response.ok) {
-          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
+          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.reference}/pdf" target="_blank">Fiche technique</a></p>`)
         }
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})

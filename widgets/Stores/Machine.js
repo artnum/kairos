@@ -15,7 +15,7 @@ define([
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = null
-        Query.exec(Path.url(`store/Machine/?search.description=${id}&search.airaltref=${id}`)).then((results) => {
+        Query.exec(Path.url(`store/Machine/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data[0]
             entry.label = `${id} ${entry.cn}`
@@ -53,27 +53,11 @@ define([
             result.data.forEach((entry) => {
               let name = highlight(searchName, entry.cn)
 
-              let id = highlight(searchId, entry.description)
-
+              let id = highlight(searchId, entry.uid)
               entry.label = `${id} ${name}`
-              entry.value = entry.description
-              entry.sortInteger = parseInt(entry.description)
+              entry.value = entry.uid
+              entry.sortInteger = parseInt(entry.uid)
               if (isNaN(entry.sortInteger)) { entry.sortInteger = Infinity }
-              if (entry.airaltref) {
-                if (!Array.isArray(entry.airaltref)) {
-                  entry.airaltref = [ entry.airaltref ]
-                }
-                entry.airaltref.forEach((ref) => {
-                  let e = Object.assign({}, entry)
-                  e.description = ref
-
-                  e.label = `${highlight(searchId, ref)} ${name}`
-                  e.value = ref
-                  e.sortInteger = parseInt(ref)
-                  if (isNaN(e.sortInteger)) { e.sortInteger = Infinity }
-                  entries.push(e)
-                })
-              }
               entries.push(entry)
             })
           }

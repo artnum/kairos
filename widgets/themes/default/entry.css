@@ -137,6 +137,3 @@
     line-height: 1.3em;    
 }
 
-.entry .tooltip .tooltip-inner p:nth-child(odd)  {
-    background-color: white !important;
-}

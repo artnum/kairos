@@ -1476,7 +1476,7 @@ define([
       } else {
         this.Holidays.addYear(this.center.getFullYear())
       }
-      
+
       this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {
@@ -1597,19 +1597,15 @@ define([
       Query.exec(Path.url('store/Machine')).then(async function (response) {
         /* TODO when updated completly use new fetch api */
         if (response.data) {
-          var whole = response.data
-          var inc = 0
           var category = {}
-          for (var i = 0; i < whole.length; i++) {
-            var machine = whole[i]
+          for (var i = 0; i < response.data.length; i++) {
+            var machine = response.data[i]
             let groupName = []
-            var name = machine.description
-            var label = machine.cn ? machine.cn : ''
 
-            if (machine.state && machine.state.indexOf('SOLD') !== -1) {
-              continue
-            }
+            if (!machine.cn || !machine.uid) { continue }
+            if (machine.state && machine.state.indexOf('SOLD') !== -1) { continue }
 
+            let name = `${machine.uid} <div class="name">${machine.cn}</div>`
             if (machine.family) {
               if (Array.isArray(machine.family)) {
                 machine.family.forEach((g) => {
@@ -1628,71 +1624,34 @@ define([
                 groupName.push(machine.type.replace(/(\s|-)/g, ''))
               }
             }
-            if (name) {
-              if (machine.cn) {
-                name += '<div class="name">' + machine.cn + '</div>'
-              }
-              var e = new Entry({name: name, sup: this, isParent: true, target: machine.description, label: machine.cn, url: '/store/Machine/' + machine.description, channel: new MessageChannel(), details: machine})
-              e.loadExtension()
-              this.placeEntry(e)
-              var families = []
-              var types = []
-              if (machine.family && machine.type) {
-                families = String(machine.family).split(',')
-                types = String(machine.type).split(',')
-                if (!djLang.isArray(families)) { families = new Array(families) }
-                if (!djLang.isArray(types)) { types = new Array(types) }
-                
-                for (var j = 0; j < families.length; j++) {
-                  if (!category[families[j]]) {
-                    category[families[j]] = {}
-                  }
+            console.log(machine)
+            let e = new Entry({name: name, sup: this, isParent: true, target: machine.uid, label: machine.cn, url: `/store/Machine/${machine.uid}`, channel: new MessageChannel(), details: machine})
+            this.placeEntry(e)
 
-                  for (var k = 0; k < types.length; k++) {
-                    if (!category[families[j]][types[k]]) {
-                      category[families[j]][types[k]] = []
-                    }
-                    category[families[j]][types[k]].push(e.target)
+            var families = []
+            var types = []
+            if (machine.family && machine.type) {
+              families = String(machine.family).split(',')
+              types = String(machine.type).split(',')
+              if (!djLang.isArray(families)) { families = new Array(families) }
+              if (!djLang.isArray(types)) { types = new Array(types) }
+
+              for (var j = 0; j < families.length; j++) {
+                if (!category[families[j]]) {
+                  category[families[j]] = {}
+                }
+
+                for (var k = 0; k < types.length; k++) {
+                  if (!category[families[j]][types[k]]) {
+                    category[families[j]][types[k]] = []
                   }
+                  category[families[j]][types[k]].push(e.target)
                 }
               }
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
               this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
-              if (machine.airaltref && djLang.isArray(machine.airaltref)) {
-                machine.airaltref.forEach(function (altref) {
-                  var name = altref + '<div class="name">' + machine.cn + '</div>'
-                  var e = new Entry({name: name, sup: this, isParent: false, target: altref.trim(), label: label, url: '/store/Machine/' + altref.trim(), channel: new MessageChannel(), details: machine})
-                  e.loadExtension()
-                  this.placeEntry(e)
-                  djDomClass.add(e.domNode, groupName)
-                  for (var j = 0; j < families.length; j++) {
-                    for (var k = 0; k < types.length; k++) {
-                      category[families[j]][types[k]].push(e.target)
-                    }
-                  }
-
-                  loaded.push(e.loaded)
-                  this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
-                }.bind(this))
-              } else if (machine.airaltref) {
-                name = machine.airaltref + '<div class="name">' + machine.cn + '</div>'
-                e = new Entry({name: name, sup: this, isParent: false, target: machine.airaltref.trim(), label: label, url: '/store/Machine/' + machine.airaltref.trim(), channel: new MessageChannel(), details: machine})
-                e.loadExtension()
-                this.placeEntry(e)
-                for (j = 0; j < families.length; j++) {
-                  for (k = 0; k < types.length; k++) {
-                    category[families[j]][types[k]].push(e.target)
-                  }
-                }
-
-                djDomClass.add(e.domNode, groupName)
-                loaded.push(e.loaded)
-                this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
-              }
-
-              inc++
             }
           }
         }
@@ -1707,14 +1666,18 @@ define([
     },
 
     sortAndDisplayEntries: function () {
+      console.log(this.entries)
       this.entries.sort((a, b) => {
-        let aT = Number.isNaN(parseInt(a.get('target'))) ? 99999 : parseInt(a.get('target'))
-        let bT = Number.isNaN(parseInt(b.get('target'))) ? 99999 : parseInt(b.get('target'))
+        let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
+        let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
+
+        let ida = aT
+        let idb = bT
 
         a.domNode.dataset.groupId = Math.floor(aT / 100)
         b.domNode.dataset.groupId = Math.floor(bT / 100)
-        if (aT === 99999 && bT !== 99999) { a.domNode.dataset.pushToEnd = true; return 1 }
-        if (aT !== 99999 && bT === 99999) { b.domNode.dataset.pushToEnd = true; return -1 }
+        if (aT === Infinity && bT !== Infinity) { a.domNode.dataset.pushToEnd = true; return 1 }
+        if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
         if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
         const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
@@ -1732,15 +1695,7 @@ define([
           }
         }
 
-        if (a.get('name') !== b.get('name')) {
-          if (a.get('name') > b.get('name')) {
-            return 1
-          } else {
-            return -1
-          }
-        }
-
-        return ((bT - (Math.floor(bT / 100) * 100)) - (aT - (Math.floor(aT / 100) * 100)))
+        return idb - ida
       })
 
       this.entries.forEach((e) => {
@@ -1759,6 +1714,7 @@ define([
         } else {
           this.domEntries.appendChild(e.domNode)
         }
+        e.displayLocation()
       })
 
       /* as we display we modify the order, so check the final order by using the DOM */
