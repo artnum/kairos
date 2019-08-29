@@ -1625,6 +1625,7 @@ define([
               }
             }
             let e = new Entry({name: name, sup: this, isParent: true, target: machine.uid, label: machine.cn, url: `/store/Machine/${machine.uid}`, channel: new MessageChannel(), details: machine})
+            this.Updater.postMessage({op: 'newTarget', target: machine.uid}, [e.port()])
             this.placeEntry(e)
 
             var families = []
@@ -1650,7 +1651,6 @@ define([
 
               djDomClass.add(e.domNode, groupName)
               loaded.push(e.loaded)
-              this.Updater.postMessage({op: 'newTarget', target: e.get('target')}, [e.port()])
             }
           }
         }
