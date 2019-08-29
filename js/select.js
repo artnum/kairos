@@ -5,6 +5,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
+  input.classList.add('select')
   let originalValue = input.value
   let obj = new Proxy(this, {
     get: function (obj, prop) {
@@ -25,6 +26,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       switch (prop) {
         case 'value':
           if (!value) { break }
+          input.dataset.loading = '1'
           store.get(value).then((entry) => {
             if (entry) {
               this.lastEntry = entry
@@ -44,6 +46,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
                 }
               }
             }
+            input.dataset.loading = '0'
           })
           break
         default:

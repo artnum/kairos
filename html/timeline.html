@@ -13,7 +13,21 @@
 <link rel="stylesheet" href="../css/balloon.css/balloon.min.css" />
 </head>
 <body class="claro">
-<script>
+  <script>
+   var Images = new Array()
+   function preload() {
+     for (let i = 0; i < preload.arguments.length; i++) {
+       Images[i] = new Image()
+       Images[i].src = preload.arguments[i]
+     }
+   }
+   
+   /* Preload image */
+   preload(
+     '../resources/images/ripple-loader-32px.gif'
+   )
+
+   
 Notification.requestPermission();
 function storageAvailable(type) {
   try {
