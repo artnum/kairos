@@ -1665,7 +1665,6 @@ define([
     },
 
     sortAndDisplayEntries: function () {
-      console.log(this.entries)
       this.entries.sort((a, b) => {
         let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
         let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
