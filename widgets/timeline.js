@@ -1624,7 +1624,6 @@ define([
                 groupName.push(machine.type.replace(/(\s|-)/g, ''))
               }
             }
-            console.log(machine)
             let e = new Entry({name: name, sup: this, isParent: true, target: machine.uid, label: machine.cn, url: `/store/Machine/${machine.uid}`, channel: new MessageChannel(), details: machine})
             this.placeEntry(e)
 
