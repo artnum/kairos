@@ -1,9 +1,9 @@
 @import 'rform.css';
 @import 'entry.css';
 @import 'reservation.css';
-@import 'tooltip.css';
-@import 'command.css';
-@import 'count.css';
+@import '../default/tooltip.css';
+@import '../default/command.css';
+@import '../default/count.css';
 
 html {
 	overflow-x: hidden;

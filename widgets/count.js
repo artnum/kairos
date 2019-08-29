@@ -796,7 +796,7 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-        txt = `<td>${rselect}</td><td><input name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><textarea rows="1" name="description">${String(value.description ? value.description : '').html()}</textarea></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
+        txt = `<td>${rselect}</td><td><input class="number" name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><textarea rows="1" name="description">${String(value.description ? value.description : '').html()}</textarea></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter' && event.target.nodeName !== 'TEXTAREA') {
             this.save(event)
@@ -831,7 +831,6 @@ define([
           }
         }, {capture: true})
         tr.addEventListener('blur', hideTooltip, {capture: true})
-                  
         tr.addEventListener('change', this.calculate.bind(this))
         tr.addEventListener('keyup', (event) => {
           if (event.keyCode < 32) { return }

@@ -23,6 +23,7 @@
 
 .DocCount tbody {
     background-color: var(--default-bg-color);
+    max-width: 100%;
 }
 
 .DocCount thead th {
@@ -117,8 +118,14 @@
 }
 
 .DocCount input[type="text"], .DocCount select, .DocCount input[type="date"] {
-    min-width: 80px;
+    min-width: 60px;
+    max-width: 80px;
     height: 36px;
+}
+
+.DocCount input[type="number"], .DocCount input.number {
+    max-width: 80px;
+    min-width: 60px;
 }
 
 .DocCount textarea[name="description"] {
