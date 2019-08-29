@@ -25,6 +25,7 @@ class MachineModel extends artnum\LDAP {
     $result = parent::read($dn);
     if ($result[0]) {
       $res = $result[0][0];
+      if (!isset($res['description'])) { return array(NULL, 0); }
       if ($res['description']) {
         $entry_ref = strval($res['description']);
         $res['uid'] = $entry_ref;

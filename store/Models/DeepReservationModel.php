@@ -102,7 +102,6 @@ class DeepReservationModel extends ReservationModel {
           if (count($pathType) >= 2) {
             $table = strtolower($pathType[count($pathType) - 2]);
             $subid = $pathType[count($pathType) - 1];
-
             try {
               $subst = $this->DB->prepare(sprintf('SELECT * FROM %s WHERE %s = :value', $table, $table . '_id'));
               $subst->bindParam(':value', $subid, \PDO::PARAM_STR);
@@ -124,6 +123,8 @@ class DeepReservationModel extends ReservationModel {
         $contacts = array();
         foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
           $contact = $this->unprefix($contact, 'contacts');
+          $contact['_displayname'] = '';
+          $dname = array();
           
           /* Request contact */ 
           if($contact['target']) {
@@ -147,19 +148,24 @@ class DeepReservationModel extends ReservationModel {
             }
             foreach (array('displayname', 'o', 'cn') as $a) {
               if (isset($contact['target'][$a]) && !empty($contact['target'][$a])) {
-                $contact['_displayname'] = $contact['target'][$a];
+                $dname[] = $contact['target'][$a];
                 break;
               }
             }
             foreach (array('mobile', 'telephonenumber') as $a) {
-              if (isset($contact['target'][$a]) && !empty($contact['target'][$a])) {
-                if (!isset($contact['_displayname'])) {
-                  $contact['_displayname'] = $contact['target'][$a];
-                } else {
-                  $contact['_displayname'] .= ', '. (is_array($contact['target'][$a]) ? join(', ', $contact['target'][$a]) : $contact['target'][$a]);
+              if (!isset($contact['target'][$a]) || empty($contact['target'][$a])) { continue; }
+              $dname[] = $contact['target'][$a];
+              break;
+            }
+            if (!empty($dname)) {
+              foreach ($dname as &$v) {
+                if (is_array($v)) {
+                  $v = join(', ', $v);
                 }
-                break;
               }
+              $contact['_displayname'] = join(', ', $dname);
+            } else {
+              $contact['_displayname'] = '';
             }
           } else {
             $contact['_displayname'] = str_replace("\n", ', ', $contact['freeform']);
