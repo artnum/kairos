@@ -83,6 +83,7 @@ define([
     entries: {},
     locked: false,
     currentLocation: '',
+    modified: true,
 
     constructor: function (args) {
       this.lastTouchEndEv = 0
@@ -133,7 +134,7 @@ define([
               this.entries[entry.id].fromJson(entry)
             }
           })
-          setTimeout(function () { this.resize(); this.domNode.dataset.refresh = 'fresh'; }.bind(this), 1)
+          this.modified = true
           break
       }
     },
@@ -594,14 +595,21 @@ define([
     },
 
     resizeChild: function () {
+    },
+    resize: function () {
+      this.modified = true
+      this.domNode.dataset.refresh = 'outdated'
+    },
+    _resizeChild: function () {
       for (let e in this.entries) {
-        setTimeout(() => {
-          this.entries[e].resize()
-        }, 0)
+        this.entries[e].resize()
       }
     },
 
-    resize: function () {
+    _resize: function () {
+      if (!this.modified) {
+        return
+      }
       for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
         let widget = dtRegistry.getEnclosingWidget(entry)
         if (widget && widget.resize) {
@@ -609,10 +617,10 @@ define([
         }
       }
       this.overlap()
-      fastdom.measure(function () {
-        this.view.rectangle = getElementRect(this.domNode)
-      }.bind(this))
-      this.resizeChild()
+      this.view.rectangle = getElementRect(this.domNode)
+      this._resizeChild()
+      this.modified = false
+      this.domNode.dataset.refresh = 'fresh'
     },
 
     addOrUpdateReservation: function (reservations) {

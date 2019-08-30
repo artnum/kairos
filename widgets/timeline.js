@@ -666,6 +666,17 @@ define([
     },
 
     postCreate: function () {
+      DisplayLoop(function (runId) {
+        return new Promise((resolve, reject) => {
+          let o = runId % 2
+          let s = o + 1
+          for (let i = o; i < this.entries.length; i += s) {
+            this.entries[i]._resize()
+          }
+          resolve()
+        })
+      }.bind(this))
+
       var tContainer = dtRegistry.byId('tContainer')
       this.bc = new BroadcastChannel(Path.bcname('artnum/location'))
       this.view = {}

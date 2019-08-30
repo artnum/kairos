@@ -72,7 +72,8 @@ define([
     complements: [],
     hdivider: 1,
     hposition: 0,
-
+    modified: true,
+      
     constructor: function () {
       this.destroyed = false
       this.attrs = ['special']
@@ -89,14 +90,14 @@ define([
       this._gui = {
         hidden: false
       }
-
+      
       this.Lock = new Lock(null)
       this.own(this.Lock)
     },
 
     fromJson: function (json) {
       if (!json) { return }
-
+      this.modified = true
       if (this.get('_hash')) {
         if (json._hash === this.get('_hash')) {
           this.set('updated', false)
@@ -112,7 +113,7 @@ define([
           delete oldEntry.entries[this.uid]
           newEntry.entries[this.uid] = this
           oldEntry.overlap()
-          oldEntry.resize()
+          // oldEntry.resize()
         }
       }
 
@@ -227,7 +228,7 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
-      this.resize()
+      // this.resize()
       if (window.App.OpenAtCreation[this.uid]) {
         delete window.App.OpenAtCreation[this.uid]
         this.popMeUp()
@@ -1042,7 +1043,7 @@ define([
       this.hide()
       this.inherited(arguments)
       this.sup.overlap()
-      this.sup.resize()
+      // this.sup.resize()
     },
 
     show: function () {
@@ -1080,6 +1081,7 @@ define([
     },
 
     resize: async function (fromEntry = false) {
+      if (!this.modified) { return }
       if (this.deleted) {
         if (!this.destroyed) {
           this.destroy()
@@ -1180,71 +1182,70 @@ define([
       }
       var domclass = {reservation: true, overlap: this.overlap.do > 0, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
       var supRect = this.sup.view.rectangle
-      fastdom.measure(djLang.hitch(this, function () {
-        var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
-        var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
-        var myTopBorder = 1
-        var myBottomBorder = 1
 
-        var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
-        var top = supRect[1] + supTopBorder
-        if (this.overlap.do) {
-          var overlapLevel = this.getOverlapLevel()
-          height /= overlapLevel
-          top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
-        }
-        var domstyle = ['position: absolute']
-        if (stopPoint < 20) {
-          stopPoint = 20
-        }
-        domstyle.push('width: ' + stopPoint + 'px')
-        domstyle.push('left: ' + startPoint + 'px')
-        domstyle.push('top: ' + top + 'px')
-        domstyle.push('height: ' + height + 'px')
-
-        var tools = document.createElement('DIV')
-        tools.setAttribute('style', 'background-color:' + bgcolor)
-        tools.setAttribute('class', 'tools')
-
-        if (toolsOffsetBegin > 0) {
-          var div = document.createElement('DIV')
-          div.setAttribute('class', 'delivery')
-          div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
-          tools.appendChild(div)
-        }
-
-        if (toolsOffsetEnd > 0) {
-          div = document.createElement('DIV')
-          div.setAttribute('class', 'delivery')
-          div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
-          tools.appendChild(div)
-        }
-
-        var txtdiv = this._setTextDesc()
-        var compdiv = this._drawComplement()
-
-        fastdom.mutate(djLang.hitch(this, function () {
-          if (this.domNode) {
-            this.domNode.innerHTML = ''
-            this.domNode.setAttribute('style', domstyle.join(';'))
-            for (let c in domclass) {
-              if (domclass[c]) {
-                this.domNode.classList.add(c)
-              } else {
-                this.domNode.classList.remove(c)
-              }
-            }
-            this.domNode.appendChild(compdiv)
-            if (txtdiv == null) {
-              this.domNode.appendChild(this._currentTextDesc)
+      var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
+      var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
+      var myTopBorder = 1
+      var myBottomBorder = 1
+      
+      var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
+      var top = supRect[1] + supTopBorder
+      if (this.overlap.do) {
+        var overlapLevel = this.getOverlapLevel()
+        height /= overlapLevel
+        top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
+      }
+      var domstyle = ['position: absolute']
+      if (stopPoint < 20) {
+        stopPoint = 20
+      }
+      domstyle.push('width: ' + stopPoint + 'px')
+      domstyle.push('left: ' + startPoint + 'px')
+      domstyle.push('top: ' + top + 'px')
+      domstyle.push('height: ' + height + 'px')
+      
+      var tools = document.createElement('DIV')
+      tools.setAttribute('style', 'background-color:' + bgcolor)
+      tools.setAttribute('class', 'tools')
+      
+      if (toolsOffsetBegin > 0) {
+        var div = document.createElement('DIV')
+        div.setAttribute('class', 'delivery')
+        div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
+        tools.appendChild(div)
+      }
+      
+      if (toolsOffsetEnd > 0) {
+        div = document.createElement('DIV')
+        div.setAttribute('class', 'delivery')
+        div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
+        tools.appendChild(div)
+      }
+      
+      var txtdiv = this._setTextDesc()
+      var compdiv = this._drawComplement()
+      
+      window.requestAnimationFrame(() => {
+        if (this.domNode) {
+          this.domNode.innerHTML = ''
+          this.domNode.setAttribute('style', domstyle.join(';'))
+          for (let c in domclass) {
+            if (domclass[c]) {
+              this.domNode.classList.add(c)
             } else {
-              this.domNode.appendChild(txtdiv)
-              txtdiv.appendChild(tools)
+              this.domNode.classList.remove(c)
             }
-            this.domNode.dataset.uid = this.uid
           }
-        }))
-      }))
+          this.domNode.appendChild(compdiv)
+          if (txtdiv == null) {
+            this.domNode.appendChild(this._currentTextDesc)
+          } else {
+              this.domNode.appendChild(txtdiv)
+            txtdiv.appendChild(tools)
+          }
+          this.domNode.dataset.uid = this.uid
+        }
+      })
     },
 
     highlight: function () {
@@ -1273,6 +1274,7 @@ define([
     },
 
     save: function (object = null) {
+      this.modified = true
       return new Promise(function (resolve, reject) {
         let reservation = object === null ? this.toObject() : object
         let arrival = reservation.arrival
