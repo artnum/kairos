@@ -43,7 +43,6 @@ define([
         let entries = []
         let searchName = txt.toAscii()
         Query.exec(Path.url('store/User', {params: {'search.name': `~${searchName}%`}})).then((results) => {
-          console.log(results)
           if (results.success && results.length > 0) {
             results.data.forEach((entry) => {
               let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
@@ -58,7 +57,6 @@ define([
               entry.value = `User/${entry.id}`
 
               entries.push(entry)
-              console.log(entry)
             })
           }
           entries.sort((a, b) => {

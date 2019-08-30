@@ -1274,6 +1274,7 @@ define([
           this.reservation.set('folder', f.folder)
           this.reservation.set('gps', f.gps)
           this.reservation.set('title', f.title)
+          this.reservation.set('creator', this.nCreator.value)
 
           this.reservation.save().then((id) => {
             this.resize()
