@@ -895,21 +895,23 @@ define([
     },
 
     toggleConfirmed: function (dontset = false) {
+      let user = JSON.parse(localStorage.getItem('/location/user'))
       if (this.nConfirmed.get('checked')) {
         var retVal = this.reservation.get('_arrival')
         if (retVal && retVal.id && retVal.reported) {
           this.nArrivalDate.set('value', retVal.reported)
           this.nArrivalTime.set('value', retVal.reported)
+          this.nArrivalCreator.value = retVal.creator
         } else {
           this.nArrivalDate.set('value', new Date())
           this.nArrivalTime.set('value', new Date())
+          this.nArrivalCreator.value = `User/${user.id}`
         }
         this.nBack.setAttribute('style', '')
         this.endTime.set('readOnly', true)
         this.endDate.set('readOnly', true)
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
-        this.nArrivalCreator.value = this.get('arrivalCreator')
       } else {
         this.nBack.setAttribute('style', 'display: none')
         this.endTime.set('readOnly', false)
