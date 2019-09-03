@@ -1082,6 +1082,9 @@ define([
       if (printType) {
         if (this.doSave(event)) {
           this._print(printType)
+          if (printType === 'mission') {
+            this._print('livraison')
+          }
         }
       }
     },
