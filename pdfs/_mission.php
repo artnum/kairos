@@ -3,7 +3,6 @@ include('base.php');
 include('../lib/format.php');
 
 $JClient = new artnum\JRestClient(base_url('/store'));
-$Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
 $res = $JClient->get($_GET['id'], 'DeepReservation');
 if($res['type'] != 'results') {
@@ -15,7 +14,18 @@ if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
 }
 $reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['data']);
 
-$res = $Machine->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
+$creator = null;
+if (isset($reservation['creator']) && !empty($reservation['creator'])) {
+  if (strpos($reservation['creator'], '/') !== FALSE) {
+    $url = explode('/', $reservation['creator'], 2);
+    $res = $JClient->get($url[1], $url[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $creator = $res['data'];
+    }
+  }
+}
+
+$res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;
 if($res['type'] == 'results') {
    $machine = $res['data'][0];
@@ -197,6 +207,10 @@ $PDF->printTaggedLn(array( '%c',
          $reservation['begin']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
       array('break' => true));
+
+if (!is_null($creator)) {
+  $PDF->printTaggedLn(array('%c', 'Responsable Airnace : ', '%cb', $creator['name'], ' / ' . $creator['phone']));
+}
 
 $PDF->br();
 $PDF->hr();
