@@ -12,9 +12,9 @@ function e404($msg = 'aucun') {
    exit(0);
 }
 
-class LocationPDF extends artnum\PDF {
+class BlankLocationPDF extends artnum\PDF {
    function __construct($options = array()) {
-      parent::__construct();
+      parent::__construct($options);
 
       if (!isset($options['margins'])) {
          $this->SetMargins(20, 10, 10);
@@ -26,7 +26,9 @@ class LocationPDF extends artnum\PDF {
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);
       $this->SetFont('century-gothic');
    }
+}
 
+class LocationPDF extends BlankLocationPDF {
    function Header() {
       $w = ($this->w / 2.4) - $this->lMargin;
       $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
