@@ -15,6 +15,17 @@ if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
 }
 $reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['data']);
 
+$type = 'livraison';
+if (isset($reservation['complements']) && is_array($reservation['complements'])) {
+  foreach($reservation['complements'] as $c) {
+    if (isset($c['type']) && is_array($c['type'])) {
+      if ($c['type']['type'] == '1') {
+        $type = 'travail';
+      }
+    }
+  }
+}  
+
 $creator = null;
 if (isset($reservation['creator']) && !empty($reservation['creator'])) {
   if (strpos($reservation['creator'], '/') !== FALSE) {
@@ -55,23 +66,40 @@ foreach($addrs as $k => $v) {
 $PDF = new BlankLocationPDF();
 $PDF->SetFont('century-gothic-bold');
 $PDF->AddPage();
-$PDF->Image('../resources/images/Livr_p1.png', 0, 0, 210, 297);
+$PDF->Image('../resources/images/' . $type . '-0.png', 0, 0, 210, 297);
 $PDF->SetXY(162, 9);
-$PDF->Cell(27, 4, $reservation['id']);
-$PDF->SetXY(62, 17);
-$PDF->Cell(88, 4, $machine['cn']);
-$PDF->SetXY(162, 17);
-$PDF->Cell(27, 4, $reservation['target']);
+$PDF->Cell(27, 6, $reservation['id']);
+$PDF->SetXY(46, 9);
+$PDF->Cell(100, 6, $reservation['target'] . ' - ' . $machine['cn']);
+$PDF->SetXY(52, 47);
+$PDF->Cell(130, 6, $reservation['reference'] ? $reservation['reference'] : '');
+$PDF->SetXY(52, 55);
+$a = array();
+$locality = '';
+if ($reservation['address']) { $a[] = $reservation['address']; }
+if ($reservation['locality']) {
+  $l = getLocality($JClient, $reservation['locality']);
+  if ($l) {
+    if ($l[0] === 'warehouse') {
+      $a[] = 'Dépôt ' . $l[1];
+      $locality = 'Dépôt ' . $l[1];
+    } else {
+      $a[] = $l[1];
+      $locality = $l[1];
+    }
+  }
+}
 
-$PDF->SetXY(50, 254);
-$PDF->Cell(52, 4, $addrs['client'] ? $addrs['client'][0] : '');
+$PDF->Cell(130, 6, count($a) > 0 ? implode(', ', $a) : '');                                                                                                                                    
 
-$locality = getLocality($JClient, $reservation['locality']);
-$PDF->SetXY(50, 265);
-$PDF->Cell(52, 4, $locality ? $locality[1] : '');
+$PDF->SetXY(52, 250);
+$PDF->Cell(52, 4, $reservation['client_'] ? $reservation['client_']  : '');
+
+$PDF->SetXY(52, 262);
+$PDF->Cell(52, 4, $locality);
 
 $PDF->AddPage();
-$PDF->Image('../resources/images/Livr_p2.png', 0, 0, 210, 297);
+$PDF->Image('../resources/images/' . $type . '-1.png', 0, 0, 210, 297);
 
 if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
