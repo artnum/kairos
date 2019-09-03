@@ -55,7 +55,7 @@ foreach($addrs as $k => $v) {
 $PDF = new BlankLocationPDF();
 $PDF->SetFont('century-gothic-bold');
 $PDF->AddPage();
-$PDF->Image('../resources/images/Livr_p1.png', 0, 0, -150, -150);
+$PDF->Image('../resources/images/Livr_p1.png', 0, 0, -96, -96);
 $PDF->SetXY(162, 9);
 $PDF->Cell(27, 4, $reservation['id']);
 $PDF->SetXY(62, 17);
@@ -71,7 +71,7 @@ $PDF->SetXY(50, 265);
 $PDF->Cell(52, 4, $locality ? $locality[1] : '');
 
 $PDF->AddPage();
-$PDF->Image('../resources/images/Livr_p2.png', 0, 0, -150, -150);
+$PDF->Image('../resources/images/Livr_p2.png', 0, 0, -96, -96);
 
 if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
