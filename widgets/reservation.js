@@ -126,7 +126,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -171,7 +171,7 @@ define([
         }
       }))
 
-      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
+      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -326,6 +326,10 @@ define([
     _setCreatorAttr: function (value) {
       this.addAttr('creator')
       this._set('creator', value)
+    },
+    _setTechnicianAttr: function (value) {
+      this.addAttr('technician')
+      this._set('technician', value)
     },
     _setFolderAttr: function (value) {
       this.addAttr('folder')
@@ -808,7 +812,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
+        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'technician', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()

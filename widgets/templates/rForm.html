@@ -39,16 +39,21 @@
       </fieldset>
       
       <fieldset class="full ui">
-        <legend>Détails</legend>
+        <legend>Chantier</legend>
 	<label><span>Référence :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" /></label>
         <label><span>Status :</span><input class="ui" data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="nStatus" /></label>
 	<label><span>Adresse :</span><textarea class="ui" name="nAddress" data-dojo-attach-point="nAddress" style="min-height: 2ex;"></textarea></label>
 	<label><span>Localité :</span><input class="ui" type="text" name="nLocality" data-dojo-attach-point="nLocality" /></label>
         <label><span>GPS :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /></label>
-	<label><span>Dossier :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /></label>
-        <label><span>Responsable :</span><input class="ui" type="text" name="creator" data-dojo-attach-point="nCreator" /></label>
       </fieldset> 
-        
+
+      <fieldset class="full ui">
+        <legend>Dossier</legend>
+        <label><span>Responsable :</span><input class="ui" type="text" name="creator" data-dojo-attach-point="nCreator" /></label>
+        <label><span>Technicien :</span><input class="ui" type="text" name="technician" data-dojo-attach-point="nTechnician" /></label>
+        <label><span>Lien :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /></label>
+      </fieldset>
+      
       <fieldset class="full ui"><legend>Contacts</legend>
         <div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 40ex;" data-dojo-props="isLayoutContainer: true"></div>
         <div class="contacts" data-dojo-attach-point="nContacts">

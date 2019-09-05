@@ -173,7 +173,9 @@ define([
     _setCreatorAttr: function (value) {
       this.nCreator.value = value
     },
-
+    _setTechnicianAttr: function (value) {
+      this.nTechnician.value = value
+    },
     _setArrivalCreatorAttr: function (value) {
       this.nArrivalCreator.value = value
     },
@@ -581,6 +583,7 @@ define([
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
       this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false, realSelect: true})
       this.nCreator = new Select(this.nCreator, U, {allowFreeText: false, realSelect: true})
+      this.nTechnician = new Select(this.nTechnician, U, {allowFreeText: false, realSelect: true})
       this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
 
       this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
@@ -1280,7 +1283,8 @@ define([
           this.reservation.set('gps', f.gps)
           this.reservation.set('title', f.title)
           this.reservation.set('creator', this.nCreator.value)
-
+          this.reservation.set('technician', this.nTechnician.value)
+                              
           this.reservation.save().then((id) => {
             this.resize()
             var reservation = this.reservation
