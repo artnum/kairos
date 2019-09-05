@@ -21,9 +21,22 @@ if (isset($reservation['creator']) && !empty($reservation['creator'])) {
     $res = $JClient->get($url[1], $url[0]);
     if ($res['success'] && $res['length'] === 1) {
       $creator = $res['data'];
+      $creator['phone'] = phoneHumanize($creator['phone']);
     }
   }
 }
+$technician = null;
+if (isset($reservation['technician']) && !empty($reservation['technician'])) {
+  if (strpos($reservation['technician'], '/') !== FALSE) {
+    $url = explode('/', $reservation['technician'], 2);
+    $res = $JClient->get($url[1], $url[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $technician = $res['data'];
+      $technician['phone'] = phoneHumanize($technician['phone']);
+    }
+  }
+}
+
 
 $res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;
@@ -208,12 +221,16 @@ $PDF->printTaggedLn(array( '%c',
          '%c'),
       array('break' => true));
 
+$PDF->br();
+$PDF->hr();
+$PDF->br();
 if (!is_null($creator)) {
   $PDF->printTaggedLn(array('%c', 'Responsable Airnace : ', '%cb', $creator['name'], ' / ' . $creator['phone']));
 }
+if (!is_null($technician)) {
+  $PDF->printTaggedLn(array('%c', 'Technicien Airnace : ', '%cb', $technician['name'], ' / ' . $technician['phone']));
+}
 
-$PDF->br();
-$PDF->hr();
 $PDF->br();
 $PDF->printTaggedLn(array('%cb', 'Machine'), array('underline' => true));
 $PDF->printTaggedLn(array('%c', $reservation['target'], ' - ' . $machine['cn']));
