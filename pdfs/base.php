@@ -157,4 +157,24 @@ function format_address($addr, $options = array()) {
    return $lines;
 }
 
+function strFromArrayLimit($array, $thingy, $max) {
+  $result = '';
+  foreach ($array as $line) {
+    if (strlen($result) + strlen($line) + strlen($thingy) > $max) {
+      $line = preg_replace('/[\n\r\t\f]/', ' / ', $line);
+      if ($result == '') {
+        return substr($line, 0, $max - 4) . ' ...';
+      } else {
+        return $result;
+      }
+    } else {
+      if ($result != '') {
+        $result .= $thingy;
+      }
+      $result .= $line;
+    }
+  }
+  return $result;
+}
+
 ?>

@@ -72,7 +72,7 @@ $PDF->Cell(27, 6, $reservation['id']);
 $PDF->SetXY(46, 9);
 $PDF->Cell(100, 6, $reservation['target'] . ' - ' . $machine['cn']);
 $PDF->SetXY(52, 47);
-$PDF->Cell(130, 6, $reservation['reference'] ? $reservation['reference'] : '');
+$PDF->Cell(130, 6, $reservation['reference'] ? strFromArrayLimit(array($reservation['reference']), ', ', 68) : '');
 $PDF->SetXY(52, 55);
 $a = array();
 $locality = '';
@@ -90,10 +90,10 @@ if ($reservation['locality']) {
   }
 }
 
-$PDF->Cell(130, 6, count($a) > 0 ? implode(', ', $a) : '');                                                                                                                                    
+$PDF->Cell(130, 6, count($a) > 0 ? strFromArrayLimit($a, ', ', 68) : '');                                                                                                                                    
 
 $PDF->SetXY(52, 250);
-$PDF->Cell(52, 4, $reservation['client_'] ? $reservation['client_']  : '');
+$PDF->Cell(52, 4, $reservation['client_'] ? strFromArrayLimit(array($reservation['client_']), ', ', 68)  : '');
 
 $PDF->SetXY(52, 262);
 $PDF->Cell(52, 4, $locality);
