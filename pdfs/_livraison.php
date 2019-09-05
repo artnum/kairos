@@ -96,7 +96,7 @@ $PDF->SetXY(52, 250);
 $PDF->Cell(52, 4, $reservation['client_'] ? strFromArrayLimit(array($reservation['client_']), ', ', 68)  : '');
 
 $PDF->SetXY(52, 262);
-$PDF->Cell(52, 4, $locality);
+$PDF->Cell(52, 4, strFromArrayLimit(array($locality, '.........................................................................................................'), ', le ', 96));
 
 $PDF->AddPage();
 $PDF->Image('../resources/images/' . $type . '-1.png', 0, 0, 210, 297);

@@ -165,6 +165,9 @@ function strFromArrayLimit($array, $thingy, $max) {
       if ($result == '') {
         return substr($line, 0, $max - 4) . ' ...';
       } else {
+        if (strlen($result) + strlen($thingy) < $max) {
+          $result .= $thingy . substr($line, 0, $max - (strlen($result) + strlen($thingy)));
+        }
         return $result;
       }
     } else {
