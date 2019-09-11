@@ -45,6 +45,7 @@ define([
         Query.exec(Path.url('store/User', {params: {'search.name': `~${searchName}%`}})).then((results) => {
           if (results.success && results.length > 0) {
             results.data.forEach((entry) => {
+              if (entry.disabled && entry.disabled !== '0') { return }
               let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
               let name = entry.name
               if (s !== -1) {
