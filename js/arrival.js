@@ -62,7 +62,7 @@ Arrival.prototype.query = function (retval) {
       if (response.ok) {
         response.json().then(function (reservation) {
           if (reservation.type === 'results' && reservation.data !== null) {
-            fetch('https://aircluster.local.airnace.ch/store/Machine/?search.description=' + reservation.data.target + '&search.airaltref=' + reservation.data.target).then(function (response) {
+            fetch(Artnum.Path.url('/store/Machine/', {params: {'search.description': reservation.data.target,'search.airaltref': reservation.data.target}})).then(function (response) {
               if (response.ok) {
                 response.json().then(function (machine) {
                   retval._target = reservation.data
