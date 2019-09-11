@@ -616,7 +616,7 @@ define([
       }
 
       if (this.get('other') && this.get('other').critic) {
-        ident.dataset.critiy = this.get('other').critic
+        ident.dataset.critic = this.get('other').critic
       }
 
       frag.lastChild.appendChild(ident)
