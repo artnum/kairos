@@ -784,7 +784,7 @@ define([
       }
       that.searchMenu.addChild(new DtMenuSeparator())
 
-      /*Req.get(Path.url('/store/Category')).then((response) => {
+      Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
         if (response && response.data && response.data.length > 0) {
           var names = {}
           for (var i = 0; i < response.data.length; i++) {
@@ -814,7 +814,7 @@ define([
         }
 
         that.searchMenu.addChild(new DtMenuSeparator())
-        */
+        
         /* */
 
         Query.exec(Path.url('store/User')).then(function (users) {
@@ -927,7 +927,7 @@ define([
           item.own(x)
           that.searchMenu.addChild(item)
         }).then(() => { that.menu.startup() })
-/*      })*/
+      })
     },
 
     filters: {
