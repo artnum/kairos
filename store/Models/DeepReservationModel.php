@@ -41,14 +41,14 @@ class DeepReservationModel extends ReservationModel {
 
   function getTodo ($options) {
     $req = "SELECT * FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
-           "WHERE (RIGHT(reservation_begin, 10) < :day1 AND arrival_done IS NULL) OR (RIGHT(reservation_begin, 10) > :day2 AND " .
+           "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) < :day1 AND arrival_done IS NULL) OR (RIGHT(reservation_begin, 10) > :day2 AND " .
            "(reservation_status = :status OR " .
            "NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_client' AND contacts_reservation = reservation_id) OR " .
            "(NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_place' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE 'Warehouse/%') OR " .
            "(reservation_equipment IS NULL OR TRIM(reservation_equipment) = '') OR " .
            "(reservation_locality IS NULL OR TRIM(reservation_locality) = '') OR " .
            "((reservation_address IS NULL OR TRIM(reservation_address) = '') AND reservation_locality NOT LIKE 'Warehouse/%') " .
-           ") )";
+           ") ) )";
 
     $status = 2;
     $day = new DateTime();
