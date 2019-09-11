@@ -39,6 +39,60 @@ class DeepReservationModel extends ReservationModel {
     return array(NULL, 0);
   }
 
+  function getTodo ($options) {
+    $req = "SELECT * FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
+           "WHERE (RIGHT(reservation_begin, 10) < :day1 AND arrival_done IS NULL) OR (RIGHT(reservation_begin, 10) > :day2 AND " .
+           "(reservation_status = :status OR " .
+           "NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_client' AND contacts_reservation = reservation_id) OR " .
+           "(NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_place' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE 'Warehouse/%') OR " .
+           "(reservation_equipment IS NULL OR TRIM(reservation_equipment) = '') OR " .
+           "(reservation_locality IS NULL OR TRIM(reservation_locality) = '') OR " .
+           "((reservation_address IS NULL OR TRIM(reservation_address) = '') AND reservation_locality NOT LIKE 'Warehouse/%') " .
+           ") )";
+
+    $status = 2;
+    $day = new DateTime();
+    if (isset($options['search'])) {
+      if(isset($options['search']['day'])) {
+        try {
+          $day = new DateTime($options['search']['day']);
+        } catch (\Exception $e) {
+          $day = new DateTime();
+        }
+      }
+      if (isset($options['search']['status']) && is_numeric($options['search']['status'])){
+        $status = $options['search']['status'];
+        
+      }
+    } 
+
+    if (isset($options['sort']) && !empty($options['sort'])) {
+      $req .= $this->prepareSort($req, $options);
+    }
+    if (isset($options['limit']) && !empty($options['limit'])) {
+      $req .= $this->prepareLimit($req, $options);
+    }
+
+    $results = array();
+    try {
+      $st = $this->DB->prepare($req);
+      $st->bindValue(':day1', $day->format('Y-m-d'), PDO::PARAM_STR);
+      $st->bindValue(':day2', $day->format('Y-m-d'), PDO::PARAM_STR);
+      $st->bindValue(':status', $status, PDO::PARAM_INT);
+      if ($st->execute()) {
+        $count = 0;
+        while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $results[] = $this->unprefix($row);
+          $count++;
+        }
+      }
+      if ($count > 0) {
+        return array($results, $count);
+      }
+    } catch (\Exception $e) {}
+    return array(NULL, 0);
+  }
+  
   function get($id) {
     $pre_statement = '
          SELECT warehouse.*, reservation.*, arrival.* FROM reservation
