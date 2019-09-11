@@ -583,7 +583,7 @@ define([
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
       this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false, realSelect: true})
       this.nCreator = new Select(this.nCreator, U, {allowFreeText: false, realSelect: true})
-      this.nTechnician = new Select(this.nTechnician, U, {allowFreeText: false, realSelect: true})
+      this.nTechnician = new Select(this.nTechnician, U, {allowFreeText: true, realSelect: false})
       this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
 
       this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
