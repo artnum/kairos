@@ -72,7 +72,7 @@ define([
     complements: [],
     hdivider: 1,
     hposition: 0,
-    modified: true,
+    modifiedState: true,
       
     constructor: function () {
       this.destroyed = false
@@ -97,7 +97,7 @@ define([
 
     fromJson: function (json) {
       if (!json) { return }
-      this.modified = true
+      this.modifiedState = true
       if (this.get('_hash')) {
         if (json._hash === this.get('_hash')) {
           this.set('updated', false)
@@ -1085,7 +1085,7 @@ define([
     },
 
     resize: async function (fromEntry = false) {
-      if (!this.modified) { return }
+      if (!this.modifiedState) { return }
       if (this.deleted) {
         if (!this.destroyed) {
           this.destroy()
@@ -1278,7 +1278,7 @@ define([
     },
 
     save: function (object = null) {
-      this.modified = true
+      this.modifiedState = true
       return new Promise(function (resolve, reject) {
         let reservation = object === null ? this.toObject() : object
         let arrival = reservation.arrival
