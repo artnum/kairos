@@ -55,7 +55,7 @@ class PCModel extends artnum\JStore\OP {
               break;
             default:
             case 'name':
-              if (empty($v)) { continue; }
+              if (empty($v)) { break; }
               $v = $this->_searchableString($v);
               $cmpVal = $entry[$k];
               if (isset($entry['tr_' . $k])) {
