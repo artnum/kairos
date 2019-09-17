@@ -79,10 +79,10 @@ class PCModel extends artnum\JStore\OP {
     }
   }
   
-  function _write($arg) {
+  function _write($arg, $id = NULL) {
     return false;
   }
-  function _overwrite($arg) {
+  function _overwrite($arg, $id = NULL) {
     return false;
   }
   function _delete($arg) {
