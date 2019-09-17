@@ -181,7 +181,7 @@ function strFromArrayLimit($array, $thingy, $max) {
 }
 
 function phoneHumanize ($str) {
-  return substr($str, 0, 3) . ' ' . substr($str, 3, 2) . ' ' . substr($str, 5, 3) . ' '  . substr($str, 7, 2) . ' ' . substr($str, 9);
+  return substr($str, 0, 3) . ' ' . substr($str, 3, 2) . ' ' . substr($str, 5, 3) . ' '  . substr($str, 8, 2) . ' ' . substr($str, 10);
 }
 
 ?>
