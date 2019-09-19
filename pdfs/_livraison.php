@@ -65,6 +65,10 @@ foreach($addrs as $k => $v) {
 /* PDF Generation */
 $PDF = new BlankLocationPDF();
 $PDF->SetFont('century-gothic-bold');
+
+$PDF->AddPage();
+$PDF->Image('../resources/images/' . $type . '-1.png', 0, 0, 210, 297);
+
 $PDF->AddPage();
 $PDF->Image('../resources/images/' . $type . '-0.png', 0, 0, 210, 297);
 $PDF->SetXY(162, 9);
@@ -97,9 +101,6 @@ $PDF->Cell(52, 4, $reservation['client_'] ? strFromArrayLimit(array($reservation
 
 $PDF->SetXY(52, 262);
 $PDF->Cell(52, 4, strFromArrayLimit(array($locality, '.........................................................................................................'), ', le ', 96));
-
-$PDF->AddPage();
-$PDF->Image('../resources/images/' . $type . '-1.png', 0, 0, 210, 297);
 
 if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
