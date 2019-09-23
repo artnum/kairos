@@ -419,7 +419,8 @@ if ($res['success'] && $res['length'] > 0) {
         if (is_dir($uploadDir . '/' . $dir)) {
           $file = $uploadDir . '/' . $dir . '/' . $image['fichier'];
           if (is_readable($file)) {
-            $files[] = $file;
+            $image['fichier'] = $file;
+            $files[] = $image;
           }
         }
       }
@@ -438,66 +439,101 @@ $PDF->DisableHeaderFooter();
 if (count($files) > 0) {
   $PDF->AddPage();
 }
-foreach ($files as $img) {
-  $PDF->AddPage();
-  $type = mime_content_type($img);
-  $gd = null;
-  switch ($type) {
-    case 'image/png':
-      $gd = imagecreatefrompng($img);
-      break;
-    case 'image/jpeg':
-      $gd = imagecreatefromjpeg($img);
-      break;
-    case 'image/gif':
-      $gd = imagecreatefromgif($img);
-      break;
-    case 'image/bmp':
-    case 'image/x-ms-bmp':
-      $jpegfile = tempnam(sys_get_temp_dir(), 'image');
-      exec(sprintf('convert %s %s', escapeshellarg($img), escapeshellarg($jpegfile . '.jpeg')));
-      $gd = imagecreatefromjpeg($jpegfile . '.jpeg');
-      unlink($jpegfile . '.jpeg');
-      break;
-  }
-  if (!is_null($gd)) {
-    $endWidth = round(($cmWidth / INCH) * $dpi);
-    $endHeight = round(($cmHeight / INCH) * $dpi); 
-    $outfile = tempnam(sys_get_temp_dir(), 'image');
 
-    if (imagesx($gd) > imagesy($gd)) {
-      $gdx = imagerotate($gd, 90, 0);
-      imagedestroy($gd);
-      $gd = $gdx;
-    }
-
-    $ra = imagesx($gd) / imagesy($gd);
-    if ($endHeight * $ra > $endWidth) {
-      $endWidth = round(($cmWidth / INCH) * $dpi);
-      $endHeight = $endWidth / $ra;
-    } else if ($endWidth / $ra > $endHeight) {
-      $endHeight = round(($cmHeight / INCH) * $dpi);
-      $endWidth = $endHeight * $ra;
-    } else {
-      $endHeight = round((($cmHeight / INCH) * $dpi) / $ra);
-      $endWidth = round((($cmWidth / INCH) * $dpi) * $ra);
-    }
-    
-    $gd2 = imagecreatetruecolor($endWidth, $endHeight);
-    imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
-    imagedestroy($gd);
-
-    imagejpeg($gd2, $outfile);
-    imagedestroy($gd2);
-    $endMmWidth = round($endWidth / $dpi * INCH);
-    $endMmHeight = round($endHeight / $dpi * INCH);
-    $left = abs(round(($cmWidth - $endMmWidth)) / 2) + 5;
-    $top = abs(round(($cmHeight - $endMmHeight) / 2)) + 5;
-    $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
-    $unlink_files[] = $outfile;
+$dispfile = array('full' => array(), 'quarter' => array());
+foreach ($files as $file) {
+  switch (strtolower($file['disposition'])) {
+    default: case 'fullpage':
+      $dispfile['full'][] = $file;
+      break;
+    case 'quarter':
+      $dispfile['quarter'][] = $file;
+      break;
   }
 }
 
+$DispositionSizes = array(
+                                                                            /* x, y */
+  'full' => array('width' => 200, 'height' => 287, 'positions' => array(array(5, 5))),
+  'quarter' => array('width' => 99, 'height' => 140, 'positions' => array(array(5, 5),
+                                                                          array(101, 5),
+                                                                          array(5, 146),
+                                                                          array(101, 146)))
+);
+foreach (array('full', 'quarter') as $dispo) {
+  $posCount = -1;
+  $addPage = false;
+  foreach ($dispfile[$dispo] as $file) {
+    $img = $file['fichier'];
+    $cmWidth = $DispositionSizes[$dispo]['width'];
+    $cmHeight = $DispositionSizes[$dispo]['height'];
+
+    if ($posCount === -1 || $posCount + 1 >= count($DispositionSizes[$dispo]['positions'])) {
+      $posCount = 0;
+      $PDF->AddPage();
+    } else {
+      $posCount++;
+    }
+    
+    $position = $DispositionSizes[$dispo]['positions'][$posCount];
+    $type = mime_content_type($img);
+    $gd = null;
+    switch ($type) {
+      case 'image/png':
+        $gd = imagecreatefrompng($img);
+        break;
+      case 'image/jpeg':
+        $gd = imagecreatefromjpeg($img);
+        break;
+      case 'image/gif':
+        $gd = imagecreatefromgif($img);
+        break;
+      case 'image/bmp':
+      case 'image/x-ms-bmp':
+        $jpegfile = tempnam(sys_get_temp_dir(), 'image');
+        exec(sprintf('convert %s %s', escapeshellarg($img), escapeshellarg($jpegfile . '.jpeg')));
+        $gd = imagecreatefromjpeg($jpegfile . '.jpeg');
+        unlink($jpegfile . '.jpeg');
+        break;
+    }
+    if (!is_null($gd)) {
+      $endWidth = round(($cmWidth / INCH) * $dpi);
+      $endHeight = round(($cmHeight / INCH) * $dpi); 
+      $outfile = tempnam(sys_get_temp_dir(), 'image');
+
+      if (imagesx($gd) > imagesy($gd)) {
+        $gdx = imagerotate($gd, 90, 0);
+        imagedestroy($gd);
+        $gd = $gdx;
+      }
+
+      $ra = imagesx($gd) / imagesy($gd);
+      if ($endHeight * $ra > $endWidth) {
+        $endWidth = round(($cmWidth / INCH) * $dpi);
+        $endHeight = $endWidth / $ra;
+      } else if ($endWidth / $ra > $endHeight) {
+        $endHeight = round(($cmHeight / INCH) * $dpi);
+        $endWidth = $endHeight * $ra;
+      } else {
+        $endHeight = round((($cmHeight / INCH) * $dpi) / $ra);
+        $endWidth = round((($cmWidth / INCH) * $dpi) * $ra);
+      }
+      
+      $gd2 = imagecreatetruecolor($endWidth, $endHeight);
+      imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
+      imagedestroy($gd);
+
+      imagejpeg($gd2, $outfile);
+      imagedestroy($gd2);
+      $endMmWidth = round($endWidth / $dpi * INCH);
+      $endMmHeight = round($endHeight / $dpi * INCH);
+      $left = abs(round(($cmWidth - $endMmWidth)) / 2) + $position[0];
+      $top = abs(round(($cmHeight - $endMmHeight) / 2)) + $position[1];
+      $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
+      $unlink_files[] = $outfile;
+    }
+  }
+}
 if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
 } else {
