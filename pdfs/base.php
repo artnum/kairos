@@ -29,7 +29,23 @@ class BlankLocationPDF extends artnum\PDF {
 }
 
 class LocationPDF extends BlankLocationPDF {
-   function Header() {
+    protected $NoHeaderFooter = false;
+  
+    function __construct($options = array()) {
+      parent::__construct($options);
+      $this->NoHeaderFooter = false;
+    }
+
+    function DisableHeaderFooter() {
+      $this->NoHeaderFooter = true;
+    }
+
+    function EnableHeaderFooter() {
+      $this->NoHeaderFooter = true;
+    }
+
+    function Header() {
+      if ($this->NoHeaderFooter) { return; }
       $w = ($this->w / 2.4) - $this->lMargin;
       $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
       if(!empty($this->title)) {
@@ -42,6 +58,7 @@ class LocationPDF extends BlankLocationPDF {
    }
 
    function Footer() {
+      if ($this->NoHeaderFooter) { return; }
       $this->SetY(280);
       $this->setFontSize(2.4);
       $this->hr();

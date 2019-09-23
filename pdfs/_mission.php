@@ -429,11 +429,12 @@ if ($res['success'] && $res['length'] > 0) {
 
 $dpi = 300;
 /* mm */
-$cmWidth = 180;
-$cmHeight = 240;
+$cmWidth = 200;
+$cmHeight = 287;
 define('INCH', 25.4);
 
 $unlink_files = array();
+$PDF->DisableHeaderFooter();
 if (count($files) > 0) {
   $PDF->AddPage();
 }
@@ -490,8 +491,8 @@ foreach ($files as $img) {
     imagedestroy($gd2);
     $endMmWidth = round($endWidth / $dpi * INCH);
     $endMmHeight = round($endHeight / $dpi * INCH);
-    $left = abs(round(($cmWidth - $endMmWidth)) / 2) + 20;
-    $top = abs(round(($cmHeight - $endMmHeight) / 2)) + 30;
+    $left = abs(round(($cmWidth - $endMmWidth)) / 2) + 5;
+    $top = abs(round(($cmHeight - $endMmHeight) / 2)) + 5;
     $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
     $unlink_files[] = $outfile;
   }
