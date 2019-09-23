@@ -88,6 +88,11 @@
       <fieldset class="ui full"><legend>Note interne</legend>
         <textarea class="ui" style="width: 100%; min-width: 100%;" data-dojo-type="dijit/form/Textarea" name="nNote" data-dojo-attach-point="nNote"></textarea>
       </fieldset>
+
+      <fieldset class="ui full"><legend>Mission</legend>
+        <div class="imageZone" data-dojo-attach-point="nMissionDisplay"></div>
+        <div tabindex="0" class="dropZone" data-dojo-attach-point="nMissionDrop">Glisser ou copier des images pour ajouter !</div>
+      </fieldset>
       
       <fieldset class="ui full">
         <legend>Décompte</legend>
@@ -120,5 +125,4 @@
     <button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"
             type="button" data-dojo-attach-event="click:doDelete" ><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
   </div>
-</div>
-    
+</div>    

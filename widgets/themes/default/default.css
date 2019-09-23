@@ -4,6 +4,7 @@
 @import 'tooltip.css';
 @import 'command.css';
 @import 'count.css';
+@import 'overlay.css';
 
 html {
 	overflow-x: hidden;

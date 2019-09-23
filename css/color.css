@@ -15,6 +15,7 @@
     --default-reverse-bg-color-base: 0, 0%, 0%; /* black */
     --default-reverse-color-base: 0, 0%, 100%; /* white */
 
+    --delete-color-base: 0, 100%, 50%; /* red */
     --error-color-base: 0, 100%, 50%; /* red */
     --warn-color-base: 50, 100%, 50%; /* orange */
     --info-color-base: 200 100% 50%; /* blue */

@@ -394,10 +394,107 @@ if($reservation['comment']) {
    }
 }
 
+$ini_conf = parse_ini_file('../conf/location.ini', true);
+if (!isset($ini_conf['pictures'])) {
+  $ini_conf['pictures'];
+}
+if (!isset($ini_conf['pictures']['storage'])) {
+  $ini_conf['pictures']['storage'] = '../private/pictures';
+}
+$uploadDir = $ini_conf['pictures']['storage'];
+
+/* Load images */
+$files = array();
+$res = $JClient->search(array('search.reservation' => $reservation['id']), 'Mission');
+if ($res['success'] && $res['length'] > 0) {
+  $mission = $res['data'][0]['uid'];
+  $images = $JClient->search(array('search.mission' => $mission), 'MissionFichier');
+  if ($images['success'] && $images['length'] > 0) {
+    $array = $images['data'];
+    usort($array, function ($a, $b) { return intval($a['ordre']) - intval($b['ordre']); });
+    foreach($array as $image) {
+      $dir = substr($image['fichier'], 0, 2);
+      if (is_dir($uploadDir . '/' . $dir)) {
+        $dir .= '/' . substr($image['fichier'], 2, 2);
+        if (is_dir($uploadDir . '/' . $dir)) {
+          $file = $uploadDir . '/' . $dir . '/' . $image['fichier'];
+          if (is_readable($file)) {
+            $files[] = $file;
+          }
+        }
+      }
+    }
+  }
+}
+
+$dpi = 300;
+/* mm */
+$cmWidth = 180;
+$cmHeight = 240;
+define('INCH', 25.4);
+
+$unlink_files = array();
+foreach ($files as $img) {
+  $PDF->AddPage();
+  $type = mime_content_type($img);
+  $gd = null;
+  switch ($type) {
+    case 'image/png':
+      $gd = imagecreatefrompng($img);
+      break;
+    case 'image/jpeg':
+      $gd = imagecreatefromjpeg($img);
+      break;
+    case 'image/gif':
+      $gd = imagecreatefromgif($img);
+      break;
+  }
+  if (!is_null($gd)) {
+    $endWidth = round(($cmWidth / INCH) * $dpi);
+    $endHeight = round(($cmHeight / INCH) * $dpi); 
+    $outfile = tempnam(sys_get_temp_dir(), 'image');
+
+    if (imagesx($gd) > imagesy($gd)) {
+      $gdx = imagerotate($gd, 90, 0);
+      imagedestroy($gd);
+      $gd = $gdx;
+    }
+    /* calculate ratio, then calculate dimension if bigger, fix the biggest 
+    $ra = imagesx($gd) / imagesy($gd);
+    if ($endHeight * $ra > $endWidth) {
+      $endWidth = round(($cmWidth / INCH) * $dpi);
+      $endHeight = $endWidth / $ra;
+    } else if ($endWidth / $ra > $endHeight) {
+      $endHeight = round(($cmHeight / INCH) * $dpi);
+      $endWidth = $endHeight * $ra;
+    } else {
+      $endHeight = round((($cmHeight / INCH) * $dpi) / $ra);
+      $endWidth = round((($cmWidth / INCH) * $dpi) * $ra);
+    }
+    
+    $fp = fopen($outfile, 'w');
+    $gd2 = imagecreatetruecolor($endWidth, $endHeight);
+    imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
+    imagedestroy($gd);
+
+    imagepng($gd2, $fp);
+    imagedestroy($gd2);
+    $endMmWidth = round($endWidth / $dpi * INCH);
+    $endMmHeight = round($endHeight / $dpi * INCH);
+    $left = abs(round(($cmWidth - $endMmWidth)) / 2) + 20;
+    $top = abs(round(($cmHeight - $endMmHeight) / 2)) + 30;
+    $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'PNG');
+    $unlink_files[] = $outfile;
+  }
+}
+
 if(is_null($addrs['client'])) {
    $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
 } else {
    $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+}
 
+foreach($unlink_files as $f) {
+//unlink($f);
 }
 ?>

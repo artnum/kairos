@@ -241,3 +241,25 @@ CREATE TABLE IF NOT EXISTS "centry" (
 	FOREIGN KEY ("centry_article") REFERENCES "article"("article_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL ) CHARACTER SET "utf8mb4";
+
+-- Files linked to reservation
+CREATE TABLE IF NOT EXISTS "mission" (
+       "mission_uid" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "mission_reservation" INTEGER NOT NULL,
+       FOREIGN KEY ("mission_reservation") REFERENCES "reservation"("reservation_id")
+       	       ON UPDATE CASCADE ON DELETE CASCADE
+) CHARACTER SET "utf8mb4";
+
+-- CREATE TABLE IF NOT EXISTS "missionFichier" (
+--        "missionFichier_uid" INTEGER PRIMARY KEY AUTO_INCREMENT,
+--        "missionFichier_fichier" CHAR(40) NOT NULL,
+--        "missionFichier_mission" INTEGER NOT NULL,
+--        "missionFichier_order" INTEGER DEFAULT 0
+-- ) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "missionFichier" (
+       "missionFichier_fichier" CHAR(40),
+       "missionFichier_mission" INTEGER,
+       "missionFichier_ordre" INTEGER DEFAULT 0,
+       PRIMARY KEY("missionFichier_fichier", "missionFichier_mission")
+) CHARACTER SET "utf8mb4";

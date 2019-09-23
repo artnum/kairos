@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global pSBC, Artnum, Select */
+/* global APPConf, pSBC, Artnum, Select */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -576,6 +576,23 @@ define([
     postCreate: function () {
       this.inherited(arguments)
 
+      this.nMissionDrop.addEventListener('paste', this.evCopyDrop.bind(this), {capture: true})
+      this.nMissionDrop.addEventListener('drop', this.evCopyDrop.bind(this), {capture: true})
+      this.nMissionDrop.addEventListener('dragover', (event) => {
+        event.stopPropagation()
+        event.preventDefault()
+        let n = event.target
+        for (;n && n.nodeName !== 'DIV'; n = n.parentNode) ;
+        n.classList.add('dragOver')
+      }, {capture: true})
+      this.nMissionDrop.addEventListener('dragleave', (event) => {
+        event.stopPropagation()
+        event.preventDefault()
+        let n = event.target
+        for (;n && n.nodeName !== 'DIV'; n = n.parentNode) ;
+        n.classList.remove('dragOver')
+      }, {capture: true})
+
       let L = new Locality()
       let U = new User()
       let M = new Machine()
@@ -587,7 +604,6 @@ define([
       this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
 
       this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
-
       djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
         let n = this.nMFollow.domNode
         while (n && n.nodeName !== 'LABEL') {
@@ -628,6 +644,22 @@ define([
       this.nMEndTime.set('value', this.endTime.get('value'))
       this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
       djOn(this.nForm, 'click', this.clickForm.bind(this))
+
+      Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}})).then((result) => {
+        if (result.success && result.length > 0) {
+          this.nMissionDisplay.dataset.uid = result.data[0].uid
+          Query.exec(Path.url('store/MissionFichier', {params: {'search.mission': result.data[0].uid}})).then(async (result) => {
+            if (result.length <= 0) { return }
+            let images = result.data
+            images = images.sort((a, b) => {
+              return parseInt(a.ordre) - parseInt(b.ordre)
+            })
+            for (let i = 0; i < images.length; i++) {
+              await this.addMissionImage(images[i], true)
+            }
+          })
+        }
+      })
     },
 
     clickForm: function (event) {
@@ -1169,6 +1201,7 @@ define([
       }.bind(this))
     },
     doSave: function (event) {
+      this.doNumbering()
       this.domNode.setAttribute('style', 'opacity: 0.2')
       return new Promise(function (resolve, reject) {
         if (!this.HashLastSave) {
@@ -1220,8 +1253,7 @@ define([
           deliveryEnd = ''
         }
 
-        Query.exec(Path.url('store/Arrival',
-                            {params: {'search.target': this.reservation.uid}})).then((res) => {
+        Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.uid}})).then((res) => {
           let arrival = {}
           if (res.success && res.length > 0) {
             arrival = Object.assign(arrival, res.data[0])
@@ -1284,7 +1316,7 @@ define([
           this.reservation.set('title', f.title)
           this.reservation.set('creator', this.nCreator.value)
           this.reservation.set('technician', this.nTechnician.value)
-                              
+
           this.reservation.save().then((id) => {
             this.resize()
             var reservation = this.reservation
@@ -1330,6 +1362,218 @@ define([
     clickExport: function () {
       this.reservation.export()
     },
+
+    dropToDeleteBegin: function () {
+      window.requestAnimationFrame(() => {
+        this.nMissionDrop.classList.add('dragToDelete')
+        this.nMissionDrop.innerText = 'Glisser pour supprimer !'
+      })
+    },
+    dropToDeleteEnd: function () {
+      window.requestAnimationFrame(() => {
+        this.nMissionDrop.classList.remove('dragToDelete')
+        this.nMissionDrop.innerText = 'Glisser ou copier des images pour ajouter !'
+      })
+    },
+    doNumbering: function () {
+      let parent = this.nMissionDisplay
+      for (let i = 0, n = parent.firstElementChild; n; n = n.nextElementSibling) {
+        n.dataset.number = i
+        Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`)).then((result) => {
+          if (result.success && result.length <= 0) {
+            Query.exec(Path.url(`store/MissionFichier/`), {
+              method: 'post',
+              body: {
+                mission: this.nMissionDisplay.dataset.uid,
+                fichier: n.dataset.hash,
+                ordre: i
+              }
+            })
+          } else {
+            Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`), {
+              method: 'patch',
+              body: {
+                fichier: n.dataset.hash,
+                mission: this.nMissionDisplay.dataset.uid,
+                ordre: i
+              }
+            })
+          }
+        })
+        i++
+      }
+    },
+    deleteImage: function (hash) {
+      Query.exec(Path.url(`store/MissionFichier/${hash},${this.nMissionDisplay.dataset.uid}`), {method: 'delete'}).then((result) => {
+        if (result.success) {
+          for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
+            if (n.dataset.hash === hash) {
+              n.parentNode.removeChild(n)
+              break
+            }
+          }
+        }
+      })
+    },
+
+    addMissionImage: function (image, skipNumbering = false) {
+      return new Promise((resolve, reject) => {
+        let hash = image.name ? image.name : image.fichier
+        for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.hash === hash) {
+            return
+          }
+        }
+
+        let div = document.createElement('DIV')
+        div.dataset.hash = hash
+        div.setAttribute('draggable', 'true')
+        div.addEventListener('dragover', (event) => {
+          if (event.dataTransfer.items.length < 0) { return }
+          if (event.dataTransfer.items[0].type !== 'text/x-location-image-hash') { return }
+          event.dataTransfer.items[0].getAsString((hash) => {
+            let n = event.target
+            for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+            if (n.dataset.hash === hash) { return }
+            let p = n.parentNode
+            let spacer = p.firstElementChild
+            for (; spacer && !spacer.classList.contains('ddSpacer'); spacer = spacer.nextElementSibling);
+
+            let brect = n.getBoundingClientRect()
+            let m = brect.x + (brect.width / 2) + 1
+            if (event.clientX > m) {
+              window.requestAnimationFrame(() => {
+                p.removeChild(spacer)
+                p.insertBefore(spacer, n.nextElementSibling)
+              })
+            } else {
+              window.requestAnimationFrame(() => {
+                p.removeChild(spacer)
+                p.insertBefore(spacer, n)
+              })
+            }
+          })
+        })
+        div.addEventListener('dragstart', (event) => {
+          this.dropToDeleteBegin()
+          let n = event.target
+          for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+          event.dataTransfer.effectAllowed = 'move'
+          event.dataTransfer.setData('text/x-location-image-hash', n.dataset.hash)
+
+          let p = n.parentNode
+          if (p.firstElementChild === n && !n.nextElementSibling) { return }
+
+          let spacer = document.createElement('DIV')
+          spacer.classList.add('ddSpacer')
+          window.requestAnimationFrame(() => {
+            if (p.firstElementChild === n) {
+              p.insertBefore(spacer, n.nextElementSibling)
+            } else {
+              p.insertBefore(spacer, n)
+            }
+            n.style.opacity = '0.4'
+          })
+        })
+        div.addEventListener('dragend', (event) => {
+          this.dropToDeleteEnd()
+          let n = event.target
+          for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+          let p = n.parentNode
+          let spacer = p.firstElementChild
+          for (; spacer && !spacer.classList.contains('ddSpacer'); spacer = spacer.nextElementSibling);
+          window.requestAnimationFrame(() => {
+            if (spacer) {
+              if (n) {
+                p.removeChild(n)
+                p.insertBefore(n, spacer)
+              }
+              p.removeChild(spacer)
+            }
+            n.style.opacity = ''
+          })
+        })
+        /* add div in place */
+        window.requestAnimationFrame(() => {
+          this.nMissionDisplay.appendChild(div)
+          div.style.backgroundImage = `url('/${APPConf.base}/${APPConf.uploader}/${hash}')`
+          if (!skipNumbering) { this.doNumbering(this.nMissionDisplay) }
+          resolve()
+        })
+      })
+    },
+
+    evCopyDrop: function (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      this.dropToDeleteEnd()
+      if (event.dataTransfer && event.dataTransfer.items.length > 0) {
+        if (event.dataTransfer.items[0].type === 'text/x-location-image-hash') {
+          event.dataTransfer.items[0].getAsString(this.deleteImage.bind(this))
+        }
+      }
+      if (!this.nMissionDisplay.dataset.uid) {
+        Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}}))
+          .then((result) => {
+            console.log(result)
+            if (result.success && result.length <= 0) {
+              Query.exec(
+                Path.url('store/Mission'), {method: 'post', body: {reservation: this.reservation.uid}}
+              ).then((result) => {
+                if (result.success && result.length === 1) {
+                  this.nMissionDisplay.dataset.uid = result.data[0].uid
+                }
+              })
+            } else {
+              if (result.success && result.length === 1) {
+                this.nMissionDisplay.dataset.uid = result.data[0].uid
+              }
+            }
+          })
+      }
+
+      let upload = (formData) => {
+        fetch(`/${APPConf.base}/${APPConf.uploader}`, {
+          method: 'POST',
+          body: formData
+        }).then((response) => {
+          response.json().then((result) => {
+            if (result.success) {
+              this.addMissionImage(result)
+            }
+          })
+        })
+      }
+
+      let data = null
+      if (event.type === 'paste') {
+        data = event.clipboardData
+      } else {
+        event.target.classList.remove('dragOver')
+        data = event.dataTransfer
+      }
+      for (let i = 0; i < data.items.length; i++) {
+        let form = null
+        let item = data.items[i]
+        if (item.kind === 'file' && item.type.indexOf('image') === 0) {
+          form = new FormData()
+          form.append('upload', item.getAsFile())
+          upload(form)
+        } else if (item.kind === 'string') {
+          switch (item.type) {
+            case 'text/uri-list':
+              form = new FormData()
+              item.getAsString((url) => {
+                form = new FormData()
+                form.append('upload', new File([url], 'url-file', {type: 'text/plain'}))
+                upload(form)
+              })
+              break
+          }
+        }
+      }
+    },
+
     refreshCount: async function () {
       Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.uid}})).then(async function (counts) {
         var frag = document.createDocumentFragment()

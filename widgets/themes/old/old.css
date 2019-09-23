@@ -4,6 +4,7 @@
 @import '../default/tooltip.css';
 @import '../default/command.css';
 @import '../default/count.css';
+@import '../default/overlay.css';
 
 html {
 	overflow-x: hidden;
@@ -463,3 +464,58 @@ input[type=number]::-webkit-outer-spin-button {
     color: white;
     font-weight: bold;
 }
+
+
+.rForm .dropZone {
+    text-align: center;
+    border: 3px dashed hsla(var(--default-color-base), 0.3);
+    color: hsla(var(--default-color-base), 0.3);
+    min-height: 6ex;
+}
+
+.rForm .dropZone:focus, .rForm .dropZone.dragOver {
+    border: 3px dashed hsla(var(--default-color-base), 0.5);
+    color: hsla(var(--default-color-base), 0.5);
+}
+
+.rForm .dropZone.dragToDelete {
+    color: hsla(var(--delete-color-base), 0.3) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.3) !important;
+}
+
+.rForm .dropZone.dragToDelete.dragOver {
+    color: hsla(var(--delete-color-base), 0.5) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.5) !important;
+}
+
+.rForm .imageZone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.rForm .imageZone div {
+    display: inline-block;
+    max-width: 180px;
+    max-height: 100px;
+    width: 180px;
+    height: 120px;    
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    margin: 3px;
+}
+
+.rForm .imageZone img {
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.rForm .imageZone .ddSpacer {
+    border: 1px dotted hsla(var(--default-color-base), 1);
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQImWNgYGD4z4AE/gMADwMB/414xEUAAAAASUVORK5CYII=) repeat;
+    height: 120px;
+    min-height: 120px;
+    width: 4px;
+}
+
