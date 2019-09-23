@@ -434,6 +434,9 @@ $cmHeight = 240;
 define('INCH', 25.4);
 
 $unlink_files = array();
+if (count($files) > 0) {
+  $PDF->AddBlankPage();
+}
 foreach ($files as $img) {
   $PDF->AddPage();
   $type = mime_content_type($img);
