@@ -647,7 +647,7 @@ define([
 
       Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}})).then((result) => {
         if (result.success && result.length > 0) {
-          this.nMissionDisplay.dataset.uid = result.data[0].id
+          this.nMissionDisplay.dataset.uid = result.data[0].uid
           Query.exec(Path.url('store/MissionFichier', {params: {'search.mission': result.data[0].uid}})).then(async (result) => {
             if (result.length <= 0) { return }
             let images = result.data
@@ -1525,7 +1525,7 @@ define([
               })
             } else {
               if (result.success && result.length === 1) {
-                this.nMissionDisplay.dataset.uid = result.data[0].id
+                this.nMissionDisplay.dataset.uid = result.data[0].uid
               }
             }
           })
