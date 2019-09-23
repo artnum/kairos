@@ -448,6 +448,13 @@ foreach ($files as $img) {
     case 'image/gif':
       $gd = imagecreatefromgif($img);
       break;
+    case 'image/bmp':
+    case 'image/x-ms-bmp':
+      $jpegfile = tempnam(sys_get_temp_dir(), 'image');
+      exec(sprintf('convert %s %s', escapeshellarg($img), escapeshellarg($jpegfile . '.jpeg')));
+      $gd = imagecreatefromjpeg($jpegfile . '.jpeg');
+      unlink($jpegfile . '.jpeg');
+      break;
   }
   if (!is_null($gd)) {
     $endWidth = round(($cmWidth / INCH) * $dpi);
