@@ -647,7 +647,7 @@ define([
 
       Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}})).then((result) => {
         if (result.success && result.length > 0) {
-          this.nMissionDisplay.dataset.uid = result.data[0].uid
+          this.nMissionDisplay.dataset.uid = result.data[0].id
           Query.exec(Path.url('store/MissionFichier', {params: {'search.mission': result.data[0].uid}})).then(async (result) => {
             if (result.length <= 0) { return }
             let images = result.data
@@ -1375,7 +1375,7 @@ define([
         this.nMissionDrop.innerText = 'Glisser ou copier des images pour ajouter !'
       })
     },
-    doNumbering: function () {
+    doNumbering: async function () {
       let parent = this.nMissionDisplay
       for (let i = 0, n = parent.firstElementChild; n; n = n.nextElementSibling) {
         n.dataset.number = i
@@ -1515,18 +1515,17 @@ define([
       if (!this.nMissionDisplay.dataset.uid) {
         Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}}))
           .then((result) => {
-            console.log(result)
             if (result.success && result.length <= 0) {
               Query.exec(
                 Path.url('store/Mission'), {method: 'post', body: {reservation: this.reservation.uid}}
               ).then((result) => {
                 if (result.success && result.length === 1) {
-                  this.nMissionDisplay.dataset.uid = result.data[0].uid
+                  this.nMissionDisplay.dataset.uid = result.data[0].id
                 }
               })
             } else {
               if (result.success && result.length === 1) {
-                this.nMissionDisplay.dataset.uid = result.data[0].uid
+                this.nMissionDisplay.dataset.uid = result.data[0].id
               }
             }
           })
