@@ -459,7 +459,7 @@ foreach ($files as $img) {
       imagedestroy($gd);
       $gd = $gdx;
     }
-    /* calculate ratio, then calculate dimension if bigger, fix the biggest 
+
     $ra = imagesx($gd) / imagesy($gd);
     if ($endHeight * $ra > $endWidth) {
       $endWidth = round(($cmWidth / INCH) * $dpi);
@@ -472,18 +472,17 @@ foreach ($files as $img) {
       $endWidth = round((($cmWidth / INCH) * $dpi) * $ra);
     }
     
-    $fp = fopen($outfile, 'w');
     $gd2 = imagecreatetruecolor($endWidth, $endHeight);
     imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
     imagedestroy($gd);
 
-    imagepng($gd2, $fp);
+    imagejpeg($gd2, $outfile);
     imagedestroy($gd2);
     $endMmWidth = round($endWidth / $dpi * INCH);
     $endMmHeight = round($endHeight / $dpi * INCH);
     $left = abs(round(($cmWidth - $endMmWidth)) / 2) + 20;
     $top = abs(round(($cmHeight - $endMmHeight) / 2)) + 30;
-    $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'PNG');
+    $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
     $unlink_files[] = $outfile;
   }
 }
@@ -495,6 +494,6 @@ if(is_null($addrs['client'])) {
 }
 
 foreach($unlink_files as $f) {
-//unlink($f);
+  unlink($f);
 }
 ?>
