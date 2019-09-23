@@ -346,7 +346,7 @@ if(isset($reservation['equipment'])) {
 
          $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), 180 - $PDF->GetX()  , 0, 'dotted', array('color' => 'gray') );
 
-         $PDF->SetX($origin + 174);
+         $PDF->SetX(174);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
@@ -435,7 +435,7 @@ define('INCH', 25.4);
 
 $unlink_files = array();
 if (count($files) > 0) {
-  $PDF->AddBlankPage();
+  $PDF->AddPage();
 }
 foreach ($files as $img) {
   $PDF->AddPage();

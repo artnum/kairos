@@ -38,6 +38,7 @@ class LocationPDF extends BlankLocationPDF {
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
+      $this->SetY(30);
    }
 
    function Footer() {
@@ -49,17 +50,6 @@ class LocationPDF extends BlankLocationPDF {
       $this->printTaggedLn(array('%c', ' | info@airnace.ch | https://www.airnace.ch'));
       $this->resetFontSize();
    }
-
-  function AddBlankPage() {
-    if ($this->page > 0) {
-      $this->InFooter = true;
-      $this->Footer();
-      $this->InFooter = false;
-      $this->_endpage();
-    }
-    $this->_beginpage('', '');
-    $this->_endpage();
-  }
 }
 
 function getLocality ($JClient, $locality) {
