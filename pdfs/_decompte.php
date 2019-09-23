@@ -51,6 +51,7 @@ $PDF->addTab('right', 'right');
 $PDF->addTab('middle');
 $PDF->addTab(62);
 $PDF->addTab(123);
+$PDF->SetHeaderFooterEvenOnly();
 for ($pages = 0; $pages < 3; $pages++) {
   $PDF->AddPage();
   $PDF->setFontSize(5);
@@ -317,6 +318,8 @@ for ($pages = 0; $pages < 3; $pages++) {
   $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, $PDF->getRemainingWidth() - 2, 0, 'dotted', array('color' => '#999') );
   $PDF->br();
   $PDF->reset_blocks();
+
+  $PDF->AddPage();
 }
 
 if(is_null($addrs['client'])) {
