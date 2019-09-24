@@ -179,9 +179,6 @@ Arrival.prototype.done = function (event) {
   }
   Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then(function (result) {
     if (result.success && result.length === 1) {
-      if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
-        fetch(Artnum.Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + reservationId}}))
-      }
       this.RChannel.postMessage({op: 'touch', id: reservationId})
     }
   }.bind(this))
