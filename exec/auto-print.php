@@ -53,6 +53,7 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
    } else {
       $result = array('success' => false, 'message' => '', 'type' => 'results', 'data' => NULL, 'length' => 0);
    }
+   unlink($tmp);
    echo json_encode($result);
 }
 ?>
