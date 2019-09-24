@@ -1,4 +1,4 @@
-OA<!DOCTYPE>
+<!DOCTYPE>
 <html>
 <head>
 <title>Réservations passées</title>
@@ -8,20 +8,20 @@ OA<!DOCTYPE>
   <table
     data-source="store/DeepReservation" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
-      <th data-attribute="id:integer" data-class="clickable">N°</th>
-      <th data-attribute="target:integer">Machine</th>
-      <th data-attribute="@store/Status/$status name">Status</th>
-      <th data-attribute="begin:date">Début</th>
-      <th data-attribute="end:date">Fin</th>
-      <th data-attribute="reference">Référence</th>
-      <th data-attribute="@$creator name">Responsable Airnace</th>
-      <th data-attribute="client_">Client</th>
-      <th data-attribute="responsable_">Responsable client</th>      
-      <th data-attribute="place_">Contact sur place</th>
-      <th data-attribute="equipment">Équipement</th>
-      <th data-attribute="address">Adresse</th>
-      <th data-attribute="@store/Warehouse/$warehouse name:'Dépôt %%|locality">Localité</th>
-      <th data-attribute="comment">Commentaire</th>
+      <th data-attribute="id:integer" class="size1" data-class="clickable">N°</th>
+      <th data-attribute="target:integer" class="size1">Machine</th>
+      <th data-attribute="@store/Status/$status name" class="size3">Status</th>
+      <th data-attribute="begin:date" class="size3" >Début</th>
+      <th data-attribute="end:date" class="size3">Fin</th>
+      <th data-attribute="@$creator name" class="size4">Responsable Airnace</th>
+      <th data-attribute="client_" class="size7">Client</th>
+      <th data-attribute="responsable_" class="size7">Responsable client</th>      
+      <th data-attribute="place_" class="size7">Contact sur place</th>
+      <th data-attribute="reference" class="size5">Référence</th>
+      <th data-attribute="address" class="size5">Adresse</th>
+      <th data-attribute="@store/$locality label" class="size6">Localité</th>
+      <th data-attribute="equipment" class="size8">Équipement</th>
+      <th data-attribute="comment" class="size8">Commentaire</th>
     </tr></thead>
   </table>
 </body>

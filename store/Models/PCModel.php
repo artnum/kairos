@@ -20,7 +20,8 @@ class PCModel extends artnum\JStore\OP {
           'township' => $line[5], /* nom de commune, maximum 24 caractères */
           'tsid' => $line[4], /* numéro OFS de la commune */
           /* transliterated lowercase name to help search */
-          'tr_name' => $this->_searchableString($line[2])
+          'tr_name' => $this->_searchableString($line[2]),
+          'label' => $line[7] . ' ' . $line[2]
         );
       }
     }
