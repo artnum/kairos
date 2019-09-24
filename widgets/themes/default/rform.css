@@ -219,8 +219,8 @@
 }
 
 .rForm .dropZone:focus, .rForm .dropZone.dragOver {
-    border: 3px dashed hsla(var(--default-color-base), 0.5);
-    color: hsla(var(--default-color-base), 0.5);
+    border: 3px dashed hsla(var(--default-color-base), 0.8);
+    color: hsla(var(--default-color-base), 0.8);
 }
 
 .rForm .dropZone.dragToDelete {
@@ -229,8 +229,8 @@
 }
 
 .rForm .dropZone.dragToDelete.dragOver {
-    color: hsla(var(--delete-color-base), 0.5) !important;
-    border-color: 3px dashed hsla(var(--delete-color-base), 0.5) !important;
+    color: hsla(var(--delete-color-base), 0.8) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.8) !important;
 }
 
 .rForm .imageZone {
