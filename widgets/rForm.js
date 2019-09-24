@@ -1460,6 +1460,7 @@ define([
           for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
           event.dataTransfer.effectAllowed = 'move'
           event.dataTransfer.setData('text/x-location-image-hash', n.dataset.hash)
+          event.dataTransfer.setData('text/uri-list', Path.url(`${APPConf.uploader}/${hash}`))
 
           let p = n.parentNode
           if (p.firstElementChild === n && !n.nextElementSibling) { return }
