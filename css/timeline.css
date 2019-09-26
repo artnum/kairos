@@ -22,6 +22,10 @@ body, html { margin: 0; padding: 0; }
 	color: fuchsia !important;
 }
 
+.aclens .location {
+    color: hotpink !important;
+}
+
 .compact .sion.control {
 	background-color: orange !important;
 }
@@ -32,6 +36,14 @@ body, html { margin: 0; padding: 0; }
 
 .compact .nyon.control {
 	background-color: blue !important;
+}
+
+.compact .chatelstdenis.control, .compact .chatelsaintdenis.control {
+	color: fuchsia !important;
+}
+
+.compact .aclens.control {
+    color: hotpink !important;
 }
 
 .timeline {
