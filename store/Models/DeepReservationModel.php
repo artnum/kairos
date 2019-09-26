@@ -39,6 +39,46 @@ class DeepReservationModel extends ReservationModel {
     return array(NULL, 0);
   }
 
+  function getUncounted ($options) {
+    $req = 'SELECT * FROM uncounted ';
+    if (isset($options['search'])) {
+      $where = array();
+      if (isset($options['search']['day'])) {
+        try {
+          $day = new DateTime($options['search']['day']);
+          $day = $day->format('Y-m-d');
+          $where[] = 'LEFT(reservation_begin, 10) < \' . $day . \'';
+        } catch (\Exception $e) {
+          // nothing
+        }
+      }
+      if (isset($options['search']['status'])) {
+        if (ctype_digit($options['search']['status'])) {
+          $where[] = 'reservation_status = ' . trim($options['search']['status']);
+        }
+      }
+    }
+    if (count($where) > 0) {
+      $req .= ' WHERE ' . implode(' AND ', $where) . ' ORDER BY reservation_id DESC';
+    }
+   
+    $results = array();
+    try {
+      $st = $this->DB->prepare($req);
+      if ($st->execute()) {
+        $count = 0;
+        while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $results[] = $this->unprefix($row);
+          $count++;
+        }
+      }
+      if ($count > 0) {
+        return array($results, $count);
+      }
+    } catch (\Exception $e) {}
+    return array(NULL, 0);    
+  }
+  
   function getTodo ($options) {
     $req = "SELECT * FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
            "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) < :day1 AND arrival_done IS NULL) OR (RIGHT(reservation_begin, 10) > :day2 AND " .

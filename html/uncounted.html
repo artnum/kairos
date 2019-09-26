@@ -6,20 +6,19 @@
 </head>
 <body>
   <table
-    data-source="store/DeepReservation" data-options="{parameters: {'sort.id': 'DESC', 'search.status': '1', 'search.deleted': '-', 'search.closed': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1'}}" data-entry-id="id"> <!-- data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">-->
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>
-      <th data-attribute="client_">Client</th>
-      <!--      <th data-process="countDays" data-attribute="@store/Count?search.id=$_countReservation.count&sort.end=DESC end:date" data-condition="@store/Count?search.id=$_countReservation.count&search.state=FINAL;state FINAL ne">Fin dernier décompte</th>//-->
-      <th data-process="oldest" data-condition="@store/Count?search.id=$_countReservation.count&search.state=FINAL;state FINAL ne">Fin dernier décompte</th>
-      <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
+      <th data-attribute="@store/$_contacts.target displayname">Client</th>
+<!--      <th data-process="oldest" data-condition="@store/Count?search.id=$_countReservation.count&search.state=FINAL;state FINAL ne">Fin dernier décompte</th>-->
+<!--      <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>-->
       <th data-attribute="_creator.name">Responsable</th>
-      <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- reported:bool">Fin confirmée</th>
-      <th data-attribute="@store/Arrival/?search.target=$id&search.deleted=- done:bool">Retournée</th>
+      <th data-attribute="_arrival.reported:bool">Fin confirmée</th>
+      <th data-attribute="_arrival.done:bool">Retournée</th>
     </tr></thead>
   </table>
 </body>
@@ -39,7 +38,7 @@
      if (transliterate) {
        dtable.transliterate = transliterate
      }
-     dtable.addPfunc('countDays', async function (value, entry) {
+/*     dtable.addPfunc('countDays', async function (value, entry) {
        let today = new Date()
        today.setHours(12, 0, 0, 0)
        let counts = await Artnum.Query.exec(Artnum.Path.url('store/CountReservation/', {params: {'search.reservation': entry.id}}))
@@ -91,7 +90,7 @@
            window.GEvent('reservation.attribute-click', {attribute: this.Column[i].attr, value: node.getAttribute('data-sort-value') ? node.getAttribute('data-sort-value') : node.contentText})
          }
        }
-     }.bind(dtable))
+     }.bind(dtable))*/
      dtable.run()
    }
  }
