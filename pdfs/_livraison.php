@@ -73,7 +73,7 @@ for ($copies = 0; $copies < 3; $copies++) {
   $PDF->SetXY(162, 9);
   $PDF->Cell(27, 6, $reservation['id']);
   $PDF->SetXY(46, 9);
-  $PDF->Cell(100, 6, $machine['cn']);
+  $PDF->Cell(100, 6, $machine['cn'] . ' - N°........');
   $PDF->SetY(17);
   if ($creator && isset($creator['name'])) {
     $PDF->SetFontSize(3);
