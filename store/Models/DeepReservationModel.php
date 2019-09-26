@@ -80,8 +80,10 @@ class DeepReservationModel extends ReservationModel {
   }
   
   function getTodo ($options) {
-    $req = "SELECT * FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
-           "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) < :day1 AND arrival_done IS NULL) OR (RIGHT(reservation_begin, 10) > :day2 AND " .
+    $req = "SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone " .
+           "FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
+           "LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE('/', REVERSE(reservation.reservation_creator)) - 1))  " .
+           "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) > :day2 AND " .
            "(reservation_status = :status OR " .
            "NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_client' AND contacts_reservation = reservation_id) OR " .
            "(NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_place' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE 'Warehouse/%') OR " .
@@ -116,7 +118,7 @@ class DeepReservationModel extends ReservationModel {
     $results = array();
     try {
       $st = $this->DB->prepare($req);
-      $st->bindValue(':day1', $day->format('Y-m-d'), PDO::PARAM_STR);
+//      $st->bindValue(':day1', $day->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':day2', $day->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':status', $status, PDO::PARAM_INT);
       if ($st->execute()) {
