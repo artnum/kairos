@@ -1,5 +1,9 @@
---- Views
+
 SET SQL_MODE=ANSI_QUOTES;
+
+DROP VIEW IF EXISTS "firstContactClient";
+CREATE VIEW "firstContactClient" AS
+       SELECT * FROM "contacts" WHERE "contacts_comment" = '_client' GROUP BY "contacts_reservation";
 
 DROP VIEW IF EXISTS "uncounted";
 CREATE VIEW "uncounted" AS
@@ -19,6 +23,6 @@ CREATE VIEW "uncounted" AS
 	     LEFT JOIN "arrival" ON "arrival_target" = "reservation_id"
 	     LEFT JOIN "user" AS "creator" ON "creator"."user_id" = REVERSE(SUBSTR(REVERSE("reservation"."reservation_creator"), 1, LOCATE('/', REVERSE("reservation"."reservation_creator")) - 1))
 	     LEFT JOIN "user" AS "technician" ON "technician"."user_id" = REVERSE(SUBSTR(REVERSE("reservation"."reservation_technician"), 1, LOCATE('/', REVERSE("reservation"."reservation_technician")) - 1))
-	     LEFT JOIN (SELECT * FROM "contacts" WHERE "contacts_comment" = '_client' GROUP BY "contacts_reservation") AS contact ON "reservation_id" = "contact"."contacts_reservation"
+	     LEFT JOIN "firstContactClient" AS contact ON "reservation_id" = "contact"."contacts_reservation"
 	WHERE "reservation_deleted" IS NULL AND "reservation_closed" IS NULL AND ("count_state" != 'FINAL' OR "countReservation_id" IS NULL)
-	GROUP BY "reservation_id"
+	GROUP BY "reservation_id";
