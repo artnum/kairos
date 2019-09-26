@@ -261,7 +261,7 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
    }
 
    $origin = $PDF->GetX();
-   foreach($association as $k => $v) {
+  foreach($association as $k => $v) {
       $startY = $PDF->GetY();
       $stopY = $startY;
       $first = true;
@@ -276,8 +276,12 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
                $startY = $stopY;
             }
          }
-         $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col['c']);
+         $font = '%c';
+         if (isset($data['type']) && isset($data['type']['id']) && $data['type']['id'] == 4) {
+           $font ='%cb';
+         }
 
+         $PDF->printTaggedLn(array($font, $k ), array('break' => false)); $PDF->SetX($col['c']);
          $comment = trim($data['comment']);
          if($remSize < $PDF->GetStringWidth($data['comment'])) {
             $c = ''; $_c = '';
@@ -297,25 +301,25 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
          }
          foreach(explode("\n", $comment) as $c) {
             if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); }
-            $PDF->printTaggedLn(array('%c', $c)); $PDF->SetX($col['c']);
+            $PDF->printTaggedLn(array($font, $c)); $PDF->SetX($col['c']);
          }
          $PDF->SetY($startY);
 
          $PDF->SetX($col['r']);      
-         $PDF->printTaggedLn(array('%c', $data['number']), array('break' => false)); $PDF->SetX($col['q']);
+         $PDF->printTaggedLn(array($font, $data['number']), array('break' => false)); $PDF->SetX($col['q']);
 
          if( ! (int)$data['follow']) {
             $begin = new DateTime($data['begin']) ;
             $begin->setTimezone(new DateTimeZone(date_default_timezone_get()));
             $end = new DateTime($data['end']);
             $end->setTimezone(new DateTimeZone(date_default_timezone_get()));
-            $PDF->printTaggedLn(array( '%c', 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col['q']);
-            $PDF->printTaggedLn(array('au ',  $end->format('d.m.Y H:i')), array('break' => false));$PDF->SetX($col['d']);
+            $PDF->printTaggedLn(array( $font, 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col['q']);
+            $PDF->printTaggedLn(array($font, 'au ',  $end->format('d.m.Y H:i')), array('break' => false));$PDF->SetX($col['d']);
             if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); } $PDF->SetY($startY);
          } else {
-            $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
+            $PDF->printTaggedLn(array($font, 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
          }
-         $PDF->SetX($origin + 174);
+         $PDF->SetX(194);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
 
          $first = false;
@@ -324,7 +328,6 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
       $PDF->br();
    }
 }
-$PDF->resetFontSize();
 
 if(isset($reservation['equipment'])) {
    $equipment = array();
@@ -346,7 +349,7 @@ if(isset($reservation['equipment'])) {
 
          $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), 180 - $PDF->GetX()  , 0, 'dotted', array('color' => 'gray') );
 
-         $PDF->SetX(174);
+         $PDF->SetX(194);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
@@ -355,6 +358,7 @@ if(isset($reservation['equipment'])) {
    $PDF->br();
    $PDF->hr();
 }
+$PDF->resetFontSize();
 
 $PDF->br();
 $PDF->printTaggedLn(array('%cb', 'Tarifs'), array('underline'=>true));

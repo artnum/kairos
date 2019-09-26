@@ -64,6 +64,7 @@ foreach($addrs as $k => $v) {
 
 /* PDF Generation */
 $PDF = new BlankLocationPDF();
+$PDF->SetRightMargin(21);
 $PDF->SetFont('century-gothic-bold');
 
 for ($copies = 0; $copies < 3; $copies++) {
@@ -72,7 +73,13 @@ for ($copies = 0; $copies < 3; $copies++) {
   $PDF->SetXY(162, 9);
   $PDF->Cell(27, 6, $reservation['id']);
   $PDF->SetXY(46, 9);
-  $PDF->Cell(100, 6, $reservation['target'] . ' - ' . $machine['cn']);
+  $PDF->Cell(100, 6, $machine['cn']);
+  $PDF->SetY(17);
+  if ($creator && isset($creator['name'])) {
+    $PDF->SetFontSize(3);
+    $PDF->printLn($creator['name'], array('align' => 'right'));
+    $PDF->ResetFontSize();
+  }
   $PDF->SetXY(52, 47);
   $PDF->Cell(130, 6, $reservation['reference'] ? strFromArrayLimit(array($reservation['reference']), ', ', 68) : '');
   $PDF->SetXY(52, 55);
