@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, GEvent */
+/* global DateRange, pSBC, fastdom, GEvent, Popper */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -25,6 +25,7 @@ define([
   'location/rForm',
   'location/_Mouse',
   'location/lock',
+  'location/Stores/Locality',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -55,6 +56,7 @@ define([
   RForm,
   Mouse,
   Lock,
+  Locality,
 
   Req,
   Path,
@@ -73,10 +75,9 @@ define([
     hdivider: 1,
     hposition: 0,
     modifiedState: true,
-      
+
     constructor: function () {
       this.destroyed = false
-      this.attrs = ['special']
       this.detailsHtml = ''
       this.special = 0
       this.form = null
@@ -90,9 +91,11 @@ define([
       this._gui = {
         hidden: false
       }
-      
       this.Lock = new Lock(null)
       this.own(this.Lock)
+      this.Stores = {
+        Locality: new Locality()
+      }
     },
 
     fromJson: function (json) {
@@ -126,7 +129,7 @@ define([
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
+      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.set(attr, json[attr])
         }
@@ -171,7 +174,7 @@ define([
         }
       }))
 
-      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
+      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
         } else {
@@ -313,65 +316,11 @@ define([
         }
       }
     },
-
-    addAttr: function (attr) {
-      if (this.attrs.indexOf(attr) === -1) {
-        this.attrs.push(attr)
-      }
-    },
-    _setPreviousAttr: function (value) {
-      this.addAttr('previous')
-      this._set('previous', value)
-    },
-    _setCreatorAttr: function (value) {
-      this.addAttr('creator')
-      this._set('creator', value)
-    },
-    _setTechnicianAttr: function (value) {
-      this.addAttr('technician')
-      this._set('technician', value)
-    },
-    _setFolderAttr: function (value) {
-      this.addAttr('folder')
-      this._set('folder', value)
-    },
-    _setTitleAttr: function (value) {
-      this.addAttr('title')
-      this._set('title', value)
-    },
-    _setStatusAttr: function (value) {
-      this.addAttr('status')
-      this._set('status', value)
-    },
-    _setNoteAttr: function (value) {
-      this.addAttr('note')
-      this._set('note', value)
-    },
     _setUidAttr: function (value) {
       this.uid = value
       if (this.domNode) {
         this.domNode.dataset.uid = value
       }
-    },
-    _setEquipmentAttr: function (value) {
-      this.addAttr('equipment')
-      this._set('equipment', value)
-    },
-    _setReferenceAttr: function (value) {
-      this.addAttr('reference')
-      this._set('reference', value)
-    },
-    _setGpsAttr: function (value) {
-      this.addAttr('gps')
-      this._set('gps', value)
-    },
-    _setAddressAttr: function (value) {
-      this.addAttr('address')
-      this._set('address', value)
-    },
-    _setLocalityAttr: function (value) {
-      this.addAttr('locality')
-      this._set('locality', value)
     },
     _setWarehouseAttr: function (value) {
       if (value && value.startsWith('Warehouse')) {
@@ -379,10 +328,6 @@ define([
       } else {
         this._set('locality', `Warehouse/${value}`)
       }
-    },
-    _setCommentAttr: function (value) {
-      this.addAttr('comment')
-      this._set('comment', value)
     },
     _setEnableAttr: function () {
       this.set('active', true)
@@ -411,7 +356,7 @@ define([
       })
     },
     _setStartAttr: function (value) {
-      this.addAttr('begin')
+
       if (value === this.get('stop')) { value -= this.get('blockSize') }
       this._set('start', value)
     },
@@ -424,26 +369,26 @@ define([
       return this.xFromTime(this.get('trueEnd'))
     },
     _setBeginAttr: function (value) {
-      this.addAttr('begin')
+
       this._set('begin', value)
       this._set('start', this.xFromTime(value))
     },
     _setStopAttr: function (value) {
-      this.addAttr('end')
+
       if (value === this.get('start')) { value += this.get('blockSize') }
       this._set('stop', value)
     },
     _setEndAttr: function (value) {
-      this.addAttr('end')
+
       this._set('end', value)
       this._set('stop', this.xFromTime(value))
     },
     _setDeliveryBeginAttr: function (value) {
-      this.addAttr('deliveryBegin')
+
       this._set('deliveryBegin', value)
     },
     _setDeliveryEndAttr: function (value) {
-      this.addAttr('deliveryEnd')
+
       this._set('deliveryEnd', value)
     },
     _setSupAttr: function (sup) {
@@ -672,46 +617,20 @@ define([
 
         if (this.locality && this.locality !== null) {
           if (/^PC\/[0-9a-f]{32,32}$/.test(this.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(this.locality)) {
-            let locText = new Promise((resolve, reject) => {
-              if (this._locality && this._locality[0] === this.locality) {
-                resolve(this._locality)
-              } else {
-                Query.exec(Path.url(`store/${this.locality}`)).then((result) => {
-                  if (result.success && result.length === 1) {
-                    if (result.data.np) {
-                      this._locality = [this.locality, `${result.data.np} ${result.data.name}`, 'black']
-                    } else {
-                      this._locality = [this.locality, `---WAREHOUSE:${result.data.name}`, result.data.color]
-                    }
-                    resolve(this._locality)
-                  } else {
-                    resolve([])
-                  }
-                })
-              }
-            })
-            locText.then((res) => {
-              if (res.length === 0) {
-                delete this.htmlIdentity.dataset.warehouse
-                return
-              }
-              let txt = res[1]
-              if (txt.startsWith('---WAREHOUSE:')) {
-                let x = txt.split(':')
-                this.htmlIdentity.dataset.warehouse = x[1]
-                for (let i = this.htmlIdentity.firstElementChild; i; i = i.nextElementSibling) {
-                  if (i.classList.contains('fa-bullseye')) {
-                    window.requestAnimationFrame(() => {
-                      i.style.color = res[2]
-                    })
-                    return
-                  }
-                }
-              } else {
+            this.Stores.Locality.get(this.locality).then((entry) => {
+              if (entry.state) {
                 delete this.htmlIdentity.dataset.warehouse
                 locality.appendChild(document.createElement('SPAN'))
                 locality.lastChild.setAttribute('class', 'locality')
-                locality.lastChild.appendChild(document.createTextNode(txt !== null ? `${txt}` : ''))
+                locality.lastChild.appendChild(document.createTextNode(entry.label))
+              } else {
+                this.htmlIdentity.dataset.warehouse = entry.label
+                for (let i = this.htmlIdentity.firstElementChild; i; i = i.nextElementSibling) {
+                  if (i.classList.contains('fa-bullseye')) {
+                    window.requestAnimationFrame(() => { i.style.color = entry.color })
+                    return
+                  }
+                }
               }
             })
           } else {
@@ -812,7 +731,7 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'technician', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
+        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'technician', 'gps', 'folder', 'warehouse', 'note', 'padlock' ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()
@@ -1191,7 +1110,7 @@ define([
       var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
       var myTopBorder = 1
       var myBottomBorder = 1
-      
+
       var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
       var top = supRect[1] + supTopBorder
       if (this.overlap.do) {
@@ -1207,28 +1126,28 @@ define([
       domstyle.push('left: ' + startPoint + 'px')
       domstyle.push('top: ' + top + 'px')
       domstyle.push('height: ' + height + 'px')
-      
+
       var tools = document.createElement('DIV')
       tools.setAttribute('style', 'background-color:' + bgcolor)
       tools.setAttribute('class', 'tools')
-      
+
       if (toolsOffsetBegin > 0) {
         var div = document.createElement('DIV')
         div.setAttribute('class', 'delivery')
         div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
         tools.appendChild(div)
       }
-      
+
       if (toolsOffsetEnd > 0) {
         div = document.createElement('DIV')
         div.setAttribute('class', 'delivery')
         div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
         tools.appendChild(div)
       }
-      
+
       var txtdiv = this._setTextDesc()
       var compdiv = this._drawComplement()
-      
+
       window.requestAnimationFrame(() => {
         if (this.domNode) {
           this.domNode.innerHTML = ''
@@ -1244,7 +1163,7 @@ define([
           if (txtdiv == null) {
             this.domNode.appendChild(this._currentTextDesc)
           } else {
-              this.domNode.appendChild(txtdiv)
+            this.domNode.appendChild(txtdiv)
             txtdiv.appendChild(tools)
           }
           this.domNode.dataset.uid = this.uid
@@ -1390,11 +1309,12 @@ define([
           })
         }
         RFileObject.content = [
-          {reservation: rid,
-           content: reservation,
-           arrival: arrival,
-           association: associations,
-           contact: contacts
+          {
+            reservation: rid,
+            content: reservation,
+            arrival: arrival,
+            association: associations,
+            contact: contacts
           }
         ]
         let OutFile = btoa(JSON.stringify(RFileObject))

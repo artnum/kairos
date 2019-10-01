@@ -14,7 +14,16 @@ define([
     entries: [],
     get: function (id) {
       return new Promise((resolve, reject) => {
-        let entry = null
+        let entry = window.localStorage.getItem(`location/locality/${id}`)
+        if (entry) {
+          try {
+            entry = JSON.parse(entry)
+            if (entry.lastFetch >= new Date().getTime() - 2592000) {
+              resolve(entry)
+              return
+            }
+          } catch (error) { /* NOP */ }
+        }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
@@ -24,6 +33,9 @@ define([
             }
             entry.label = name
             entry.value = id
+
+            entry.lastFetch = new Date().getTime()
+            window.localStorage.setItem(`location/locality/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
         })
