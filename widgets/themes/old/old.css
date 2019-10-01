@@ -1,5 +1,5 @@
 @import 'rform.css';
-@import 'entry.css';
+@import '../default/entry.css';
 @import 'reservation.css';
 @import '../default/tooltip.css';
 @import '../default/command.css';

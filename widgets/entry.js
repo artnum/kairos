@@ -184,17 +184,8 @@ define([
 
       var a = document.createElement('A')
       a.setAttribute('name', 'entry_' + this.get('target'))
-
-      var s = document.createElement('SPAN')
-      s.setAttribute('class', 'reference')
-      s.appendChild(document.createTextNode('(' + this.get('target') + ')'))
-      a.appendChild(s)
-
-      s = document.createElement('SPAN')
-      s.setAttribute('class', 'commonName label')
-      s.appendChild(document.createTextNode(this.get('label')))
-      a.appendChild(s)
-
+      a.innerHTML = `<span class="reference">${this.get('target')}</span><span class="commonName label">${this.get('label')}</span>${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
+      
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target

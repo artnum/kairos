@@ -31,6 +31,7 @@ class MachineModel extends artnum\LDAP {
         $res['uid'] = $entry_ref;
         $res['reference'] = $entry_ref;
         $details = $this->getEntryDetails($entry_ref);
+        $res['parent'] = '';
         $res = array_merge($res, $details);
       }
       $result = array(array($res), 1);
@@ -82,6 +83,9 @@ class MachineModel extends artnum\LDAP {
           }
           $details = $this->getEntryDetails($ret['uid']);
           $ret = array_merge($ret, $details);
+          if ($ret['description'] !== $ret['uid']) {
+            $ret['parent'] = $ret['description'];
+          }
           $result = array(array($ret), 1);
         }
       }

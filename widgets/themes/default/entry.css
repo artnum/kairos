@@ -137,3 +137,14 @@
     line-height: 1.3em;    
 }
 
+.entry .parentMachine:before {
+    content: ' (';
+}
+
+.entry .parentMachine:after {
+    content: ')';
+}
+
+.entry .parentMachine {
+    color: hsla(var(--default-color-base), 0.5);
+}
