@@ -21,6 +21,7 @@ class PCModel extends artnum\JStore\OP {
           'tsid' => $line[4], /* numéro OFS de la commune */
           /* transliterated lowercase name to help search */
           'tr_name' => $this->_searchableString($line[2]),
+          'tr_township' => $this->_searchableString($line[5]),
           'label' => $line[7] . ' ' . $line[2]
         );
       }
@@ -55,6 +56,7 @@ class PCModel extends artnum\JStore\OP {
               }
               break;
             default:
+            case 'township':
             case 'name':
               if (empty($v)) { break; }
               $v = $this->_searchableString($v);
