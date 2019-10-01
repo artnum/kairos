@@ -11,8 +11,21 @@ define([
   Query
 ) {
   return djDeclare('location.Stores.Locality', [], {
-    lastUpdate: 1569925012,
+    lastUpdate: 1569933892,
     entries: [],
+    getLabel: function (entry) {
+      let label = `${entry.name} (Dépôt)`
+      if (entry.state) {
+        let township = entry.township
+        township = township.replace(`(${entry.state.toUpperCase()})`, '').trim() // remove state specifier when already in database
+        if (township === entry.name) {
+          label = `${entry.np} ${entry.name} (${entry.state.toUpperCase()})`
+        } else {
+          label = `${entry.np} ${entry.name} (${township} ${entry.state.toUpperCase()})`
+        }
+      }
+      return label
+    },
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = window.localStorage.getItem(`location/locality/${id}`)
@@ -28,11 +41,7 @@ define([
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
-            let name = `${entry.name} (Dépôt)`
-            if (entry.state) {
-              name = `${entry.np} ${entry.name} (${entry.township} ${entry.state.toUpperCase()})`
-            }
-            entry.label = name
+            entry.label = this.getLabel(entry)
             entry.value = id
 
             entry.lastFetch = new Date().getTime()
@@ -75,28 +84,28 @@ define([
                 }
 
                 if (entry.np) {
-                  let s = entry.np.indexOf(searchNp)
+                  s = entry.np.indexOf(searchNp)
                   let np = entry.np
                   if (s !== -1) {
                     np = entry.np.substring(0, s) + '<span class="match">' +
                       entry.np.substring(s, searchNp.length) + '</span>' +
                       entry.np.substring(s + searchNp.length)
                   }
+                  let township = entry.township
                   if (entry.name !== entry.township) {
-                    let township = entry.township
                     s = entry.township.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
                     if (s !== -1) {
                       township = entry.township.substring(0, s) + '<span class="match">' +
                         entry.township.substring(s, searchName.length) + '</span>' +
                         entry.township.substring(s + searchName.length)
                     }
-                    entry.label = `${np} ${name} (${township} ${entry.state.toUpperCase()})`
                   } else {
-                    entry.label = `${np} ${name} (${entry.state.toUpperCase()})`
+                    township = ''
                   }
+                  entry.label = this.getLabel(Object.assign(entry, {np: np, township: township, name: name}))
                   entry.value = `PC/${entry.uid}`
                 } else {
-                  entry.label = `${name} (Dépôt)`
+                  entry.label = this.getLabel(entry)
                   entry.value = `Warehouse/${entry.id}`
                 }
                 if (entry.np) {
