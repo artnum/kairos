@@ -250,12 +250,37 @@ define([
           txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      fetch(`https://www.local.airnace.ch/${this.details.reference}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
-        if (response.ok) {
-          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.reference}/pdf" target="_blank">Fiche technique</a></p>`)
+      this.getDatasheet().then((url) => {
+        if (url) {
+          txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
         }
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+      })
+    },
+
+    getDatasheet: function () {
+      return new Promise((resolve, reject) => {
+        let datasheet = window.localStorage.getItem(`location/datasheet/${this.details.reference}`)
+        if (datasheet) {
+          try { datasheet = JSON.parse(datasheet) } catch (error) { datasheet = null }
+        } else {
+          datasheet = null
+        }
+        if (datasheet && datasheet.lastFetch < new Date().getTime() - 2592000) {
+          datasheet = null
+        }
+        if (datasheet) { resolve(datasheet.url) } else {
+          fetch(`https://www.local.airnace.ch/${this.details.reference}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
+            if (response.ok) {
+              let datasheet = {lastFetch: new Date().getTime(), url: `https://www.local.airnace.ch/${this.details.reference}/pdf`}
+              window.localStorage.setItem(`location/datasheet/${this.details.reference}`, JSON.stringify(datasheet))
+              resolve(datasheet.url)
+            } else {
+              resolve(null)
+            }
+          })
+        }
       })
     },
 
