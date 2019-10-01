@@ -11,6 +11,7 @@ define([
   Query
 ) {
   return djDeclare('location.Stores.Locality', [], {
+    lastUpdate: 1569925012,
     entries: [],
     get: function (id) {
       return new Promise((resolve, reject) => {
@@ -18,7 +19,7 @@ define([
         if (entry) {
           try {
             entry = JSON.parse(entry)
-            if (entry.lastFetch >= new Date().getTime() - 2592000) {
+            if (entry.lastFetch >= new Date().getTime() - 2592000 && entry.lastFetch > this.lastUpdate) {
               resolve(entry)
               return
             }
@@ -29,7 +30,7 @@ define([
             entry = results.data
             let name = `${entry.name} (Dépôt)`
             if (entry.state) {
-              name = `${entry.name} (${entry.np}, ${entry.state.toUpperCase()})`
+              name = `${entry.np} ${entry.name} (${entry.township} ${entry.state.toUpperCase()})`
             }
             entry.label = name
             entry.value = id
@@ -58,7 +59,7 @@ define([
         }
 
         queries.push(Query.exec(Path.url('store/Warehouse', {params: {'search.name': `~${searchName}%`}})))
-        queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': searchName, 'search.np': searchNp}})))
+        queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': searchName, 'search.township': searchName, 'search.np': searchNp}})))
         Promise.all(queries).then((results) => {
           let entriesA = []
           let entriesB = []
@@ -81,7 +82,18 @@ define([
                       entry.np.substring(s, searchNp.length) + '</span>' +
                       entry.np.substring(s + searchNp.length)
                   }
-                  entry.label = `${name} (${np}, ${entry.state.toUpperCase()})`
+                  if (entry.name !== entry.township) {
+                    let township = entry.township
+                    s = entry.township.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
+                    if (s !== -1) {
+                      township = entry.township.substring(0, s) + '<span class="match">' +
+                        entry.township.substring(s, searchName.length) + '</span>' +
+                        entry.township.substring(s + searchName.length)
+                    }
+                    entry.label = `${np} ${name} (${township} ${entry.state.toUpperCase()})`
+                  } else {
+                    entry.label = `${np} ${name} (${entry.state.toUpperCase()})`
+                  }
                   entry.value = `PC/${entry.uid}`
                 } else {
                   entry.label = `${name} (Dépôt)`
