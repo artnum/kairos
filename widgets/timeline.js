@@ -1643,15 +1643,13 @@ define([
       this.entries.sort((a, b) => {
         let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
         let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
-
         let ida = aT
         let idb = bT
-
         a.domNode.dataset.groupId = Math.floor(aT / 100)
         b.domNode.dataset.groupId = Math.floor(bT / 100)
         if (aT === Infinity && bT !== Infinity) { a.domNode.dataset.pushToEnd = true; return 1 }
         if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
-        if (Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
+        if (aT !== Infinity && bT !== Infinity && Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
         const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
         for (let i = 0; i < techData.length; i++) {
@@ -1666,6 +1664,9 @@ define([
               return bT - aT
             }
           }
+        }
+        if (aT === Infinity && bT === Infinity) {
+          return a.get('target').localeCompare(b.get('target'))
         }
 
         return idb - ida
