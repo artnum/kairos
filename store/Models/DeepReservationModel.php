@@ -80,19 +80,21 @@ class DeepReservationModel extends ReservationModel {
   }
   
   function getTodo ($options) {
-    $req = "SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color " .
-           "FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
-           "LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE('/', REVERSE(reservation.reservation_creator)) - 1))  " .
-           "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) > :day2 AND " .
-           "(reservation_status = :status OR " .
-           "NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_client' AND contacts_reservation = reservation_id) OR " .
-           "(NOT EXISTS (SELECT NULL FROM contacts WHERE contacts_comment = '_place' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE 'Warehouse/%') OR " .
-           "(reservation_equipment IS NULL OR TRIM(reservation_equipment) = '') OR " .
-           "(reservation_locality IS NULL OR TRIM(reservation_locality) = '') OR " .
-           "((reservation_address IS NULL OR TRIM(reservation_address) = '') AND reservation_locality NOT LIKE 'Warehouse/%') " .
-           ") ) )";
-
-    $status = 2;
+    $req = 'SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color FROM reservation
+           LEFT JOIN arrival ON arrival_target = reservation_id
+           LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE(\'/\', REVERSE(reservation.reservation_creator)) - 1))
+           WHERE reservation_deleted IS NULL AND (LEFT(reservation_begin, 10) > :day2 AND LEFT(reservation_begin, 10) < :day)
+           AND 
+            (
+             reservation_creator IS NULL OR
+             reservation_status != :status OR           
+             NOT EXISTS (SELECT 1 FROM contacts WHERE contacts_comment = \'_client\' AND contacts_reservation = reservation_id) OR
+             (NOT EXISTS (SELECT 1 FROM contacts WHERE contacts_comment = \'_place\' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE \'Warehouse/%\') OR
+             (reservation_equipment IS NULL OR TRIM(reservation_equipment) = \'\') OR
+             (reservation_locality IS NULL OR TRIM(reservation_locality) = \'\') OR
+             ((reservation_address IS NULL OR TRIM(reservation_address) = \'\') AND reservation_locality NOT LIKE \'Warehouse/%\')
+            );';
+    $status = 3;
     $day = new DateTime();
     if (isset($options['search'])) {
       if(isset($options['search']['day'])) {
@@ -118,7 +120,13 @@ class DeepReservationModel extends ReservationModel {
     $results = array();
     try {
       $st = $this->DB->prepare($req);
-//      $st->bindValue(':day1', $day->format('Y-m-d'), PDO::PARAM_STR);
+      $day1 = clone $day;
+      $day1->add(new DateInterval('P3D'));
+
+      if ($day1->format('w') == 1) { $day1->add(new DateInterval('P2D')); }
+      else if ($day1->format('w') == 0) { $day1->add(new DateInterval('P1D')); }
+      
+      $st->bindValue(':day', $day1->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':day2', $day->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':status', $status, PDO::PARAM_INT);
       if ($st->execute()) {
@@ -128,6 +136,7 @@ class DeepReservationModel extends ReservationModel {
           $count++;
         }
       }
+     
       if ($count > 0) {
         return array($results, $count);
       }
