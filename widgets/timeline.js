@@ -408,7 +408,7 @@ define([
           classname = 'month'
           break
         case 'week':
-          days = 7
+          days = 14
           classname = 'week'
           break
         case 'quarter':
