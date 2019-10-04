@@ -547,7 +547,7 @@ define([
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')
-      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i><i class="fas fa-user" data-name="creator"></i>'
+      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i><i class="far fa-user" data-name="creator"></i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.dataset.folder = this.get('folder')
