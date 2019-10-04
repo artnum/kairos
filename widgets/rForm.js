@@ -744,6 +744,7 @@ define([
             addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
           }
           if (locality) {
+            if (!locality.np) { return } // in warehouse
             if (addr !== '') {
               addr += ','
             }
@@ -754,7 +755,6 @@ define([
             }
             addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
           }
-          console.log(addr)
           if (addr) {
             node.dataset.href = `https://www.google.com/maps/dir/Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz/${addr}`
           }
