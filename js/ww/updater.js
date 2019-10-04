@@ -54,6 +54,8 @@ function getUrl (suffix) {
   return new URL(`${self.location.origin}/${first}/${suffix}`)
 }
 
+/*const MaxCacheCleanAge = 60
+var cacheLastAge = 0*/
 function cacheAndSend (data) {
   let entries = {}
   data.forEach((entry) => {
@@ -64,8 +66,21 @@ function cacheAndSend (data) {
       entries[btoa(entry.target)] = []
     }
     let hash = objectHash.sha1(entry)
-    if (!Entries[entry.id] || hash !== Entries[entry.id]) {
-      Entries[entry.id] = hash
+    if (Entries[entry.id]) {
+      if (hash !== Entries[entry.id][0]) {
+        if (Entries[entry.id][1] !== btoa(entry.target)) {
+          if (!entries[Entries[entry.id][1]]) {
+            entries[Entries[entry.id][1]] = []
+          }
+          console.log(entries[Entries[entry.id][1]], Entries[entry.id][1], btoa(entry.target), entry)
+          entries[Entries[entry.id][1]].push(entry)
+          delete Entries[entry.id]
+        }
+        Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
+        entries[btoa(entry.target)].push(entry)
+      }
+    } else {
+      Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
       entries[btoa(entry.target)].push(entry)
     }
   })
@@ -86,7 +101,28 @@ function cacheAndSend (data) {
       Channels[k].postMessage({op: 'entries', value: []})
     }
   }
+
+  /*
+  if (cacheLastAge === 0) {
+    cacheLastAge = new Date().getTime()
+  } else {
+    if (new Date().getTime() - cacheLastAge > MaxCacheCleanAge * 1000) {
+      cacheLastAge = new Date().getTime()
+      cleanCache()
+    }
+  } */
 }
+/*
+const MaxObjectAge = 600
+function cleanCache () {
+  console.log('Run cleanCache')
+  for (let k in Entries) {
+    if (new Date().getTime() - Entries[k][2] > MaxObjectAge * 1000) {
+      console.log(`Clean entries ${k} from cache`)
+      delete Entries[k]
+    }
+  }
+} */
 
 function runUpdater () {
   let url = getUrl('store/DeepReservation')

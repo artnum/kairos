@@ -128,10 +128,16 @@ define([
       switch (msgData.op) {
         case 'entries':
           msgData.value.forEach((entry) => {
-            if (!this.entries[entry.id]) {
-              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+            if (entry.target !== this.get('target')) {
+              if (this.entries[entry.id]) {
+                this.destroyReservation(this.entries[entry.id])
+              }
             } else {
-              this.entries[entry.id].fromJson(entry)
+              if (!this.entries[entry.id]) {
+                this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+              } else {
+                this.entries[entry.id].fromJson(entry)
+              }
             }
           })
           this.modified = true
@@ -757,7 +763,6 @@ define([
       if (reservation) {
         reservation.destroy()
         delete this.entries[reservation.id]
-        window.App.Reservation.remove(reservation.id)
       }
     },
 
