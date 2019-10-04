@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_previous" TEXT DEFAULT NULL,
 	"reservation_warehouse" TEXT DEFAULT NULL,
 	"reservation_note" TEXT DEFAULT NULL,
+	"reservation_padlock" TEXT DEFAULT NULL,
 	"reservation_other" TEXT DEFAULT NULL, -- json data
 	"reservation_created" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
@@ -54,7 +55,8 @@ CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT,
-						  "user_phone" VARCHAR(15) DEFAULT ''
+						  "user_phone" VARCHAR(15) DEFAULT '',
+						  "user_color" VARCHAR(32) DEFAULT 'black'
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,

@@ -547,7 +547,7 @@ define([
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')
-      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i>'
+      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i><i class="fas fa-user" data-name="creator"></i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.dataset.folder = this.get('folder')
@@ -555,7 +555,29 @@ define([
       if (this.get('equipment') !== '' && this.get('equipment') != null && this.get('equipment') !== '%') {
         ident.dataset.equipment = this.get('equipment')
       }
-
+      if (this.get('_creator')) {
+        let creator = this.get('_creator')
+        if (creator.name) {
+          ident.dataset.creator = creator.name
+        }
+        if (creator.color) {
+          let i = this.htmlIdentity.firstElementChild
+          for (; i; i = i.nextElementSibling) {
+            if (i.classList.contains('fa-user')) {
+              break
+            }
+          }
+          let colors = creator.color.split(';')
+          if (colors.length === 2) {
+            colors[0] = colors[0].trim().toLowerCase()
+            colors[1] = colors[1].trim().toLowerCase()
+            window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
+          } else {
+            colors[0] = colors[0].trim().toLowerCase()
+            window.requestAnimationFrame(() => { i.style.color = colors[0] })
+          }
+        }
+      }
       if (this.get('title') !== '' && this.get('title') != null) {
         ident.dataset.exchange = this.get('title')
       }

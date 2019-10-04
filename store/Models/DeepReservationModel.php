@@ -80,7 +80,7 @@ class DeepReservationModel extends ReservationModel {
   }
   
   function getTodo ($options) {
-    $req = "SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone " .
+    $req = "SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color " .
            "FROM reservation LEFT JOIN arrival ON arrival_target = reservation_id " .
            "LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE('/', REVERSE(reservation.reservation_creator)) - 1))  " .
            "WHERE reservation_deleted IS NOT NULL AND ((RIGHT(reservation_begin, 10) > :day2 AND " .
@@ -137,7 +137,7 @@ class DeepReservationModel extends ReservationModel {
   
   function get($id) {
     $pre_statement = '
-         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id FROM reservation
+         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color FROM reservation
                LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
                LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
                LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE(\'/\', REVERSE(reservation.reservation_creator))-1))

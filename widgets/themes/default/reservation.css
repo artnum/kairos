@@ -41,6 +41,14 @@
     display: inline-block;
 }
 
+.reservation .identity .fa-user {
+    display: none;
+}
+
+.reservation .identity[data-creator] .fa-user {
+    display: inline-block;
+}
+
 .reservation .identity .fa-exclamation-triangle {
     display: none;
 }
