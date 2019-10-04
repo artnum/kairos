@@ -547,7 +547,7 @@ define([
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')
-      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"> </i><i class="fas fa-wrench" data-name="equipment"> </i><i class="fas fa-exchange-alt" data-name="exchange"> </i><i class="fas fa-bullseye" data-name="warehouse"> </i><i class="fas fa-exclamation-triangle" data-name="critic"> </i>'
+      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.dataset.folder = this.get('folder')
@@ -627,7 +627,16 @@ define([
                 this.htmlIdentity.dataset.warehouse = entry.label
                 for (let i = this.htmlIdentity.firstElementChild; i; i = i.nextElementSibling) {
                   if (i.classList.contains('fa-bullseye')) {
-                    window.requestAnimationFrame(() => { i.style.color = entry.color })
+                    let colors = entry.color.split(';')
+                    if (colors.length === 2) {
+                      colors[0] = colors[0].trim().toLowerCase()
+                      colors[1] = colors[1].trim().toLowerCase()
+                      console.log(colors)
+                      window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
+                    } else {
+                      colors[0] = colors[0].trim().toLowerCase()
+                      window.requestAnimationFrame(() => { i.style.color = colors[0] })
+                    }
                     return
                   }
                 }

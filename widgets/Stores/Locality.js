@@ -11,7 +11,7 @@ define([
   Query
 ) {
   return djDeclare('location.Stores.Locality', [], {
-    lastUpdate: 1569933892,
+    lastUpdate: 1570179778,
     entries: [],
     getLabel: function (entry) {
       let label = `${entry.name} (Dépôt)`

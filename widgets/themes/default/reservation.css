@@ -13,7 +13,7 @@
 }
 
 .reservation .identity[data-folder] .fa-folder {
-    display: inline;
+    display: inline-block;
 }
 
 .reservation .identity .fa-wrench {
@@ -21,7 +21,7 @@
 }
 
 .reservation .identity[data-equipment] .fa-wrench {
-    display: inline;
+    display: inline-block;
 }
 
 
@@ -30,7 +30,7 @@
 }
 
 .reservation .identity[data-exchange] .fa-exchange-alt {
-    display: inline;
+    display: inline-block;
 }
 
 .reservation .identity .fa-bullseye {
@@ -38,7 +38,7 @@
 }
 
 .reservation .identity[data-warehouse] .fa-bullseye {
-    display: inline;
+    display: inline-block;
 }
 
 .reservation .identity .fa-exclamation-triangle {
@@ -46,5 +46,5 @@
 }
 
 .reservation .identity[data-critic] .fa-exclamation-triangle {
-    display: inline;
+    display: inline-block;
 }

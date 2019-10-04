@@ -3,48 +3,9 @@
 @import 'tel.css';
 @import 'select.css';
 @import 'tooltip.css';
+@import '../exec/css.php';
 
 body, html { margin: 0; padding: 0; }
-
-.montreux .location {
-	color: green !important;
-}
-
-.nyon .location {
-	color: blue !important;
-}
-
-.sion .location {
-	color: orange !important;
-}
-
-.chatelstdenis .location, .chatelsaintdenis .location {
-	color: fuchsia !important;
-}
-
-.aclens .location {
-    color: hotpink !important;
-}
-
-.compact .sion.control {
-	background-color: orange !important;
-}
-
-.compact .montreux.control {
-	background-color: green !important;
-}
-
-.compact .nyon.control {
-	background-color: blue !important;
-}
-
-.compact .chatelstdenis.control, .compact .chatelsaintdenis.control {
-	color: fuchsia !important;
-}
-
-.compact .aclens.control {
-    color: hotpink !important;
-}
 
 .timeline {
 	font-family: 'Roboto', sans-serif;
