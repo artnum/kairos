@@ -83,11 +83,10 @@ class DeepReservationModel extends ReservationModel {
     $req = 'SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color FROM reservation
            LEFT JOIN arrival ON arrival_target = reservation_id
            LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE(\'/\', REVERSE(reservation.reservation_creator)) - 1))
-           WHERE reservation_deleted IS NULL AND (LEFT(reservation_begin, 10) > :day2 AND LEFT(reservation_begin, 10) < :day)
+           WHERE reservation_deleted IS NULL AND (LEFT(reservation_begin, 10) > :day2 AND LEFT(reservation_begin, 10) < :day) AND reservation_status != :status
            AND 
             (
              reservation_creator IS NULL OR
-             reservation_status != :status OR           
              NOT EXISTS (SELECT 1 FROM contacts WHERE contacts_comment = \'_client\' AND contacts_reservation = reservation_id) OR
              (NOT EXISTS (SELECT 1 FROM contacts WHERE contacts_comment = \'_place\' AND contacts_reservation = reservation_id) AND reservation_locality NOT LIKE \'Warehouse/%\') OR
              (reservation_equipment IS NULL OR TRIM(reservation_equipment) = \'\') OR
