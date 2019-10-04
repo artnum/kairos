@@ -184,8 +184,8 @@ define([
 
       var a = document.createElement('A')
       a.setAttribute('name', 'entry_' + this.get('target'))
-      a.innerHTML = `<span class="reference">${this.get('target')}</span><span class="commonName label">${this.get('label')}</span>${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
-      
+      a.innerHTML = `<span class="reference">(${this.get('target')})</span><span class="commonName label">${this.get('label')}</span>${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
+
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target

@@ -39,6 +39,7 @@ define([
           } catch (error) { /* NOP */ }
         }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
+          entry = null
           if (results.success && results.length === 1) {
             entry = results.data
             entry.label = this.getLabel(entry)
@@ -48,7 +49,7 @@ define([
             window.localStorage.setItem(`location/locality/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
-        })
+        }, (error) => { console.log(error); resolve(null) })
       })
     },
     query: function (txt) {

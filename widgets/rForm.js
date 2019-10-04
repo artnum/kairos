@@ -596,6 +596,11 @@ define([
       let L = new Locality()
       let U = new User()
       let M = new Machine()
+      this.Stores = {
+        Locality: L,
+        User: U,
+        Machine: M
+      }
       this.nLocality = new Select(this.nLocality, L)
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
       this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false, realSelect: true})
@@ -730,9 +735,31 @@ define([
         this.nGps.set('value', this.reservation.get('gps'))
 
         let node = this.nGps.domNode.previousElementSibling
-        node.dataset.href = `https://www.google.com/maps/place/${String(this.reservation.get('gps')).replace(/\s/g, '')}`
+        node.dataset.href = `https://www.google.com/maps/dir/Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz/${String(this.reservation.get('gps')).replace(/\s/g, '+')}`
+      } else {
+        let node = this.nGps.domNode.previousElementSibling
+        let addr = ''
+        this.Stores.Locality.get(this.reservation.get('locality')).then((locality) => {
+          if (this.reservation.get('address')) {
+            addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
+          }
+          if (locality) {
+            if (addr !== '') {
+              addr += ','
+            }
+            addr += `${locality.np.trim()}+${locality.name.trim()}`
+          } else if (this.reservation.get('locality')) {
+            if (addr !== '') {
+              addr += ','
+            }
+            addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+          }
+          console.log(addr)
+          if (addr) {
+            node.dataset.href = `https://www.google.com/maps/dir/Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz/${addr}`
+          }
+        })
       }
-
       if (!this.loaded.status) {
         let url = Path.url('store/Status')
         url.searchParams.set('search.type', 0)
@@ -790,15 +817,6 @@ define([
               that.set('creator', 'store/User/' + _c.id)
             }
           }
-          /*
-          if (that.reservation.get('_arrival') && that.reservation.get('_arrival').creator) {
-            that.set('arrivalCreator', that.reservation.get('_arrival').creator)
-          } else {
-            if (window.localStorage.getItem(Path.bcname('user'))) {
-              _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-              that.set('arrivalCreator', 'store/User/' + _c.id)
-            }
-          }*/
         })
       } else {
         this.set('creator', this.reservation.get('creator'))
