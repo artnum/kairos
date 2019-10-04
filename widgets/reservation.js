@@ -631,7 +631,6 @@ define([
                     if (colors.length === 2) {
                       colors[0] = colors[0].trim().toLowerCase()
                       colors[1] = colors[1].trim().toLowerCase()
-                      console.log(colors)
                       window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
                     } else {
                       colors[0] = colors[0].trim().toLowerCase()
