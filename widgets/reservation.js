@@ -557,25 +557,20 @@ define([
       }
       if (this.get('_creator')) {
         let creator = this.get('_creator')
+        let currentCreator = JSON.parse(localStorage.getItem('/location/user'))
+        if (currentCreator && creator) {
+          if (currentCreator.id === creator.id) {
+            let i = this.htmlIdentity.firstElementChild
+            for (; i; i = i.nextElementSibling) {
+              if (i.classList.contains('fa-user')) {
+                i.classList.replace('far', 'fas')
+                break
+              }
+            }        
+          }
+        }
         if (creator.name) {
           ident.dataset.creator = creator.name
-        }
-        if (creator.color) {
-          let i = this.htmlIdentity.firstElementChild
-          for (; i; i = i.nextElementSibling) {
-            if (i.classList.contains('fa-user')) {
-              break
-            }
-          }
-          let colors = creator.color.split(';')
-          if (colors.length === 2) {
-            colors[0] = colors[0].trim().toLowerCase()
-            colors[1] = colors[1].trim().toLowerCase()
-            window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
-          } else {
-            colors[0] = colors[0].trim().toLowerCase()
-            window.requestAnimationFrame(() => { i.style.color = colors[0] })
-          }
         }
       }
       if (this.get('title') !== '' && this.get('title') != null) {
