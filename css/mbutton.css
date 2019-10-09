@@ -26,21 +26,17 @@
 .mbutton button.mbuttonRight {
     border-left: 1px dotted gray;
     float: right;
-    width: 4ch;
+    width: 28px;
 }
 
 .mbutton button.mbuttonLeft {
-    width: 20ch;
+    width: 180px;
     font-weight: bold;
     border-right: 1px solid transparent;
 }
 
 .mbuttonSingle button {
     width: 100% !important;
-}
-
-.mbuttonSingle {
-    width: 24ch;
 }
 
 .mbuttonSubmenu {
@@ -61,6 +57,7 @@
 }
 
 .mbutton {
+   width: 208px;
    border: 1px solid hsla(var(--button-color), 1);
    border-right: 2px solid hsla(var(--button-color), 0.8);
    border-bottom: 2px solid hsla(var(--button-color), 0.8);
