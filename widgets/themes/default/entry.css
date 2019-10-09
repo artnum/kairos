@@ -94,6 +94,10 @@
     height: 16px;
 }
 
+.entry[data-active="0"] {
+    display: none;
+}
+
 .reservation .tools {
     margin: 0;
     opacity: 1;

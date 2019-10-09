@@ -197,6 +197,8 @@ define([
       this.domNode.dataset.reference = this.target
       this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
       this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
+      this.domNode.dataset.details = JSON.stringify(this.details)
+      
       this.genDetails()
     },
 
@@ -828,18 +830,6 @@ define([
     },
     _getMaxcapacityAttr: function () {
       return this.getNumTechData('maxcapacity')
-    },
-    _setActiveAttr: function (active) {
-      this._set('active', active)
-      if (this.get('active')) {
-        djDomStyle.set(this.domNode, 'display', '')
-        this.update()
-      } else {
-        djDomStyle.set(this.domNode, 'display', 'none')
-        for (var k in this.entries) {
-          this.entries[k].set('active', false)
-        }
-      }
     }
   })
 })

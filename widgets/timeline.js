@@ -1,4 +1,4 @@
-/* eslint-env browser, amd */
+$65;5402;1c/* eslint-env browser, amd */
 /* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip */
 define([
   'dojo/_base/declare',
@@ -197,15 +197,12 @@ define([
       this.Filter.onmessage = djLang.hitch(this, function (event) {
         this.searchMenu.filterNone.set('disabled', false)
         if (event.data) {
-          for (var k in this.Entries) {
-            if (event.data[k]) {
-              this.Entries[k].set('active', true)
-            } else {
-              this.Entries[k].set('active', false)
-            }
+          let filtered = []
+          for (let k in event.data) {
+            filtered.push(k)
           }
+          this.filterApply(filtered)
         }
-        this.resize()
         this.unwait()
       })
 
@@ -767,15 +764,11 @@ define([
 
     buildMenu: async function () {
       var that = this
-
       var item = new DtMenuItem({label: 'Tout', disabled: true})
       djOn(item, 'click', djLang.hitch(that, that.filterNone))
+
       that.searchMenu.addChild(item)
       that.searchMenu.filterNone = item
-
-      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        this.paramAutoprint.set('checked', true)
-      }
       that.searchMenu.addChild(new DtMenuSeparator())
 
       Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
@@ -791,14 +784,18 @@ define([
               that.searchMenu.addChild(item)
 
               var all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
-              djOn(all, 'click', djLang.hitch(that, that.filterFamily))
+              djOn(all, 'click', function (event) {
+                this.filterApply(this.filterFamily(event))
+              }.bind(this))
               item.popup.addChild(all)
               item.popup.addChild(new DtMenuSeparator())
 
               for (var subkey in that.categories[key]) {
                 if (names[subkey]) {
                   var subitem = new DtMenuItem({ label: names[subkey], value: {name: subkey, content: that.categories[key][subkey]} })
-                  djOn(subitem, 'click', djLang.hitch(that, that.filterFamily))
+                  djOn(subitem, 'click', function (event) {
+                    this.filterApply(this.filterFamily(event))
+                  }.bind(this))
                   all.value.content = all.value.content.concat(that.categories[key][subkey])
                   item.popup.addChild(subitem)
                 }
@@ -806,11 +803,9 @@ define([
             }
           }
         }
-
         that.searchMenu.addChild(new DtMenuSeparator())
-        
-        /* */
 
+        /* */
         Query.exec(Path.url('store/User')).then(function (users) {
           var currentUser = null
           if (window.localStorage.getItem(Path.bcname('user'))) {
@@ -838,198 +833,144 @@ define([
           }
         }.bind(this))
 
-        Req.get(String(Path.url('store/Status/'))).then((results) => {
-          if (results && results.data && results.data.length > 0) {
-            var p = new DtPopupMenuItem({label: 'Par status', popup: new DtDropDownMenu()})
-            results.data.forEach(djLang.hitch(this, function (entry) {
-              if (entry.type === '0') {
-                var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
-                var item = new DtMenuItem({label: html, value: entry})
-                djOn(item, 'click', djLang.hitch(that, (event) => {
-                  var node = dtRegistry.byNode(event.selectorTarget)
-                  this.wait()
-                  this.Filter.postMessage({ ops: [
-                    {filter: 'equal', params: { value: Number(node.value.id), attribute: 'status' }}
-                  ]})
-                  this.update()
-                }))
+        var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
-                p.popup.addChild(item)
-              }
-            }))
-            that.searchMenu.addChild(p)
+        item = new DtMenuItem({label: 'Commence le '})
+        var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
+        item.containerNode.appendChild(x.domNode)
+        item.own(x)
+        djOn(item, 'click', djLang.hitch(that, (e) => {
+          this.filterReset()
+          var date = dtRegistry.byId('menuStartDay').get('value')
+          this.center = date
+          this.filterApply(this.filterDate(this.entries, date))
+        }))
+        that.searchMenu.addChild(item)
 
-            p = new DtPopupMenuItem({label: 'Par complément', popup: new DtDropDownMenu()})
-            results.data.forEach((entry) => {
-              if (entry.type === 1) {
-                var html = '<li class="fa fa-square" style="color: #' + entry.color + '"></li> ' + entry.name
-                var item = new DtMenuItem({ label: html, value: entry })
-                djOn(item, 'click', djLang.hitch(that, (e) => {
-                  var node = dtRegistry.byNode(e.selectorTarget)
-                  if (node.value && node.value.id) {
-                    this.searchMenu.filterNone.set('disabled', false)
-                    var out = that.filterComplement(this.entries, node.value.id)
-                    this.filterApply(out)
-                    this.resize()
-                  }
-                }))
-                p.popup.addChild(item)
-              }
-            })
-            that.searchMenu.addChild(p)
-          }
+        item = new DtMenuItem({label: 'Termine le '})
+        djOn(item, 'click', djLang.hitch(that, () => {
+          this.filterReset()
+          var date = dtRegistry.byId('menuEndDay').get('value')
+          this.center = date
+          that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
+        }))
+        x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
+        item.containerNode.appendChild(x.domNode)
+        item.own(x)
+        that.searchMenu.addChild(item)
 
-          that.searchMenu.addChild(new DtMenuSeparator())
+        that.searchMenu.addChild(new DtMenuSeparator())
 
-          var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
-
-          var item = new DtMenuItem({label: 'Commence le '})
-          var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
-          item.containerNode.appendChild(x.domNode)
-          item.own(x)
-          djOn(item, 'click', djLang.hitch(that, (e) => {
-            this.filterReset()
-            var date = dtRegistry.byId('menuStartDay').get('value')
-            this.center = date
-            this.update()
-            this.filterApply(this.filterDate(this.entries, date))
-          }))
-          that.searchMenu.addChild(item)
-
-          item = new DtMenuItem({label: 'Termine le '})
-          djOn(item, 'click', djLang.hitch(that, () => {
-            this.filterReset()
-            var date = dtRegistry.byId('menuEndDay').get('value')
-            this.center = date
-            this.update()
-            that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
-          }))
-          x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
-          item.containerNode.appendChild(x.domNode)
-          item.own(x)
-          that.searchMenu.addChild(item)
-
-          that.searchMenu.addChild(new DtMenuSeparator())
-
-          item = new DtMenuItem({label: 'À faire le '})
-          djOn(item, 'click', djLang.hitch(that, () => {
-            var date = dtRegistry.byId('menuTodoDay').get('value')
-            this.filters.todo(date, this.Entries)
-          }))
-          x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
-          item.containerNode.appendChild(x.domNode)
-          item.own(x)
-          that.searchMenu.addChild(item)
-        }).then(() => { that.menu.startup() })
-      })
+        item = new DtMenuItem({label: 'À faire le '})
+        djOn(item, 'click', djLang.hitch(that, () => {
+          var date = dtRegistry.byId('menuTodoDay').get('value')
+          this.filters.todo(date, this.Entries).then((entries) => {
+            this.filterApply(entries)
+          })
+        }))
+        x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
+        item.containerNode.appendChild(x.domNode)
+        item.own(x)
+        that.searchMenu.addChild(item)
+      }).then(() => { that.menu.startup() })
     },
 
     filters: {
       todo: (date, wEntries) => {
-        date.setHours(12, 0, 0)
-        let d1 = new Date(); d1.setTime(date.getTime() - 86400000)
-        let d2 = new Date(); d2.setTime(date.getTime() + 86400000)
+        return new Promise((resolve, reject) => {
+          date.setHours(12, 0, 0)
+          let d1 = new Date(); d1.setTime(date.getTime() - 86400000)
+          let d2 = new Date(); d2.setTime(date.getTime() + 86400000)
 
-        let txtD1 = d1.toISOString().split('T')[0]
-        let txtD2 = d2.toISOString().split('T')[0]
-        let txtDate = date.toISOString().split('T')[0]
+          let txtD1 = d1.toISOString().split('T')[0]
+          let txtD2 = d2.toISOString().split('T')[0]
+          let txtDate = date.toISOString().split('T')[0]
 
-        /* récupère les réservation commençant à la date */
-        let q1 = Query.exec(Path.url('store/Reservation', {params: {
-          'search.begin': `~${txtDate}%`,
-          'search.deliveryBegin': `~${txtDate}%`,
-          'search._rules': 'begin OR deliveryBegin'}}))
-        /* récupère les associations étant dans la période */
-        let q2 = Query.exec(Path.url('store/Association', {params: {
-          'search.begin': `<=${txtD2}`,
-          'search.end': `>=${txtD1}`,
-          'search.type': `~%/4`
-        }}))
+          /* récupère les réservation commençant à la date */
+          let q1 = Query.exec(Path.url('store/Reservation', {params: {
+            'search.begin': `~${txtDate}%`,
+            'search.deliveryBegin': `~${txtDate}%`,
+            'search._rules': 'begin OR deliveryBegin'}}))
+          /* récupère les associations étant dans la période */
+          let q2 = Query.exec(Path.url('store/Association', {params: {
+            'search.begin': `<=${txtD2}`,
+            'search.end': `>=${txtD1}`,
+            'search.type': `~%/4`
+          }}))
 
-        /* récupère les associations qui suivent la taille de la réservation */
-        let q3 = new Promise((resolve, reject) => {
-          Query.exec(Path.url('store/Reservation', {params: {
-            'search.begin': `<${txtD2}`,
-            'search.end': `>${txtD1}` }})).then((results) => {
-            if (!results.success || results.length <= 0) { resolve([]); return }
-            let queries = []
-            let entryBind = {}
-            results.data.forEach((e) => {
-              entryBind[e.id] = e.target
-              queries.push(Query.exec(Path.url('store/Association', {params: {
-                'search.reservation': e.id,
-                'search.type': `~%/4`,
-                'search.follow': '1'}})))
-            })
-            Promise.all(queries).then((results) => {
-              let entries = []
-              results.forEach((result) => {
-                if (result.success && result.length > 0) {
-                  result.data.forEach((x) => {
-                    if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
-                      entries.push(entryBind[x.reservation])
+          /* récupère les associations qui suivent la taille de la réservation */
+          let q3 = new Promise((resolve, reject) => {
+            Query.exec(Path.url('store/Reservation', {params: {
+              'search.begin': `<${txtD2}`,
+              'search.end': `>${txtD1}` }})).then((results) => {
+                if (!results.success || results.length <= 0) { resolve([]); return }
+                let queries = []
+                let entryBind = {}
+                results.data.forEach((e) => {
+                  entryBind[e.id] = e.target
+                  queries.push(Query.exec(Path.url('store/Association', {params: {
+                    'search.reservation': e.id,
+                    'search.type': `~%/4`,
+                    'search.follow': '1'}})))
+                })
+                Promise.all(queries).then((results) => {
+                  let entries = []
+                  results.forEach((result) => {
+                    if (result.success && result.length > 0) {
+                      result.data.forEach((x) => {
+                        if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
+                          entries.push(entryBind[x.reservation])
+                        }
+                      })
                     }
                   })
+                  resolve(entries)
+                })
+              })
+          })
+
+          Promise.all([q1, q2]).then((results) => {
+            let entries = []
+
+            /* il convient de récupérer les réservation pour connaître à quel entrée appartient l'association */
+            let q4 = new Promise((resolve, reject) => {
+              if (!results[1].success || results[1].length <= 0) {
+                resolve()
+                return
+              }
+
+              let queries = []
+              results[1].data.forEach((e) => {
+                queries.push(Query.exec(Path.url(`store/Reservation/${e.reservation}`)))
+              })
+
+              Promise.all(queries).then((results) => {
+                results.forEach((result) => {
+                  if (result.success && result.length > 0) {
+                    if (entries.indexOf(result.data.target) === -1) {
+                      entries.push(result.data.target)
+                    }
+                  }
+                })
+
+                resolve()
+              })
+            })
+
+            if (results[0].success && results[0].length > 0) {
+              results[0].data.forEach((e) => {
+                if (entries.indexOf(e.target) === -1) {
+                  entries.push(e.target)
                 }
               })
-              resolve(entries)
-            })
-          })
-        })
-
-        Promise.all([q1, q2]).then((results) => {
-          let entries = []
-
-          /* il convient de récupérer les réservation pour connaître à quel entrée appartient l'association */
-          let q4 = new Promise((resolve, reject) => {
-            if (!results[1].success || results[1].length <= 0) {
-              resolve()
-              return
             }
 
-            let queries = []
-            results[1].data.forEach((e) => {
-              queries.push(Query.exec(Path.url(`store/Reservation/${e.reservation}`)))
-            })
-
-            Promise.all(queries).then((results) => {
-              results.forEach((result) => {
-                if (result.success && result.length > 0) {
-                  if (entries.indexOf(result.data.target) === -1) {
-                    entries.push(result.data.target)
-                  }
-                }
+            q4.then(() => {
+              q3.then((results) => {
+                window.App.searchMenu.filterNone.set('disabled', false)
+                window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
+                resolve(results)
               })
-
-              resolve()
-            })
-          })
-
-          if (results[0].success && results[0].length > 0) {
-            results[0].data.forEach((e) => {
-              if (entries.indexOf(e.target) === -1) {
-                entries.push(e.target)
-              }
-            })
-          }
-
-          q4.then(() => {
-            q3.then((results) => {
-              results.forEach((e) => {
-                if (entries.indexOf(e) === -1) {
-                  entries.push(e)
-                }
-              })
-              window.App.searchMenu.filterNone.set('disabled', false)
-              window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
-              for (let e in wEntries) {
-                if (entries.indexOf(wEntries[e].get('target')) === -1) {
-                  wEntries[e].set('active', false)
-                } else {
-                  wEntries[e].set('active', true)
-                }
-                wEntries[e].resize()
-              }
             })
           })
         })
@@ -1039,20 +980,12 @@ define([
     filterNone: function () {
       this.searchMenu.filterNone.set('disabled', true)
       this.filterReset()
-      this.resize()
     },
 
     filterFamily: function (event) {
-      this.filterReset()
       var node = dtRegistry.byNode(event.selectorTarget)
       this.searchMenu.filterNone.set('disabled', false)
-      for (var i = 0; i < this.entries.length; i++) {
-        if (node.value.content.indexOf(this.entries[i].target) === -1) {
-          this.entries[i].set('active', false)
-        } else {
-          this.entries[i].set('active', true)
-        }
-      }
+      return node.value.content
     },
 
     filterDate: function (entries) {
@@ -1071,38 +1004,11 @@ define([
       for (var i = 0; i < entries.length; i++) {
         for (var k in entries[i].entries) {
           if (djDate.compare(entries[i].entries[k].get(what), date, 'date') === 0) {
-            out.push(entries[i].get('id')); break
+            out.push(entries[i].get('target')); break
           }
         }
       }
-
       return out
-    },
-
-    filterStatus: function (event) {
-      this.filterReset()
-      var node = dtRegistry.byNode(event.selectorTarget)
-      this.searchMenu.filterNone.set('disabled', false)
-      for (var i = 0; i < this.entries.length; i++) {
-        var entry = this.entries[i]
-        var active = entry.get('activeReservations')
-        if (active.length <= 0) {
-          entry.set('active', false)
-        } else {
-          var count = 0
-          for (var j = 0; j < active.length; j++) {
-            if (active[j].status === node.value.id) {
-              count++; break
-            }
-          }
-          if (count > 0) {
-            entry.set('active', true)
-          } else {
-            entry.set('active', false)
-          }
-        }
-      }
-      this.resize()
     },
 
     filterComplementDate: function (date, complement) {
@@ -1160,19 +1066,19 @@ define([
     },
 
     filterApply: function (entries) {
-      this.filterReset()
-      for (var i = 0; i < this.entries.length; i++) {
-        if (entries.indexOf(this.entries[i].get('id')) === -1) {
-          this.entries[i].set('active', false)
+      for (let k in this.entries) {
+        if (entries.indexOf(this.entries[k].get('target')) === -1) {
+          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '0' })
         } else {
-          this.entries[i].set('active', true)
+          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1' })
         }
       }
+      this.resize()
     },
 
     filterReset: function (prefilter = false) {
-      for (var i = 0; i < this.entries.length; i++) {
-        this.entries[i].set('active', true)
+      for (let k in this.entries) {
+        window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1' })
       }
     },
 
