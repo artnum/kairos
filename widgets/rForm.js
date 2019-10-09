@@ -576,7 +576,7 @@ define([
     buttonCreate: function () {
       this.Buttons = {
         save: new MButton(this.nSaveButton, [
-          {label: 'Sauvegarder', events: {click: this.doSave.bind(this)}}
+          {label: 'et quitter', events: {click: this.doSaveAndQuit.bind(this)}}
         ]),
         copy: new MButton(this.nCopyButton),
         printMission: new MButton(this.nPrintMission, [
@@ -613,7 +613,7 @@ define([
         )
       })
       this.Buttons.copy.addEventListener('click', this.doCopy.bind(this))
-      this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
+      this.Buttons.save.addEventListener('click', this.doSave.bind(this))
     },
 
     postCreate: function () {
