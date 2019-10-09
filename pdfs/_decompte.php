@@ -323,9 +323,9 @@ for ($pages = 0; $pages < 3; $pages++) {
 }
 
 if(is_null($addrs['client'])) {
-   $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
+   $PDF->Output('Reçu ' . $reservation['id'] .  '.pdf', 'I'); 
 } else {
-   $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+   $PDF->Output('Reçu ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
 
 }
 ?>

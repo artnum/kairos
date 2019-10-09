@@ -119,9 +119,9 @@ for ($copies = 0; $copies < 3; $copies++) {
 }
 
 if(is_null($addrs['client'])) {
-   $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
+   $PDF->Output(ucfirst($type) . ' ' . $reservation['id'] .  '.pdf', 'I'); 
 } else {
-   $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+   $PDF->Output(ucfirst($type) . ' ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
 
 }
 ?>

@@ -539,9 +539,9 @@ foreach (array('full', 'quarter') as $dispo) {
   }
 }
 if(is_null($addrs['client'])) {
-   $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
+   $PDF->Output('Mission ' . $reservation['id'] .  '.pdf', 'I'); 
 } else {
-   $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+   $PDF->Output('Mission ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
 }
 
 foreach($unlink_files as $f) {
