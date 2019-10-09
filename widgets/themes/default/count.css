@@ -117,18 +117,22 @@
     min-width: 60px;
 }
 
-.DocCount input[type="text"], .DocCount select, .DocCount input[type="date"] {
+.DocCount input, .DocCount select {
+    height: 36px;
+}
+
+.DocCount tbody input[type="text"], .DocCount tbody select {
     min-width: 60px;
     max-width: 80px;
     height: 36px;
 }
 
-.DocCount input[type="number"], .DocCount input.number {
+.DocCount tbody input[type="number"], .DocCount tbody input.number {
     max-width: 80px;
     min-width: 60px;
 }
 
-.DocCount textarea[name="description"] {
+.DocCount tbody textarea[name="description"] {
     min-width: 40ch;
     height: 8ex;
 }
