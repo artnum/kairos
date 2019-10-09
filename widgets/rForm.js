@@ -1653,7 +1653,7 @@ define([
                 if (count.period !== '') { count.period += ' - ' }
                 count.period += (new Date(count.end)).shortDate(true)
               }
-              tr.innerHTML = '<td class="clickable" data-id="' + count.id + '">' + count.id + '</td><td>' + (count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '') + '</td><td>' + (count._status ? (count._status.name ? count._status.name : '') : '') + '</td><td>' + (count.period ? count.period : '') + '</td>'
+              tr.innerHTML = `<td class="clickable" data-id="${count.id}">${count.id}</td><td>${(count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '')}</td><td>${count._status ? (count._status.name ? count._status.name : '') : ''}</td><td>${(count.period ? count.period : '')} ${count.state !== 'INTERMEDIATE' ? '⯁' : ''}</td>`
               tr.setAttribute('data-sort', sortBegin)
               trs.push(tr)
 
