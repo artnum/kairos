@@ -576,7 +576,7 @@ define([
     buttonCreate: function () {
       this.Buttons = {
         save: new MButton(this.nSaveButton, [
-          {label: 'et quitter', events: {click: this.doSaveAndQuit.bind(this)}}
+          {label: 'Sauvergarder', events: {click: this.doSave.bind(this)}}
         ]),
         copy: new MButton(this.nCopyButton),
         printMission: new MButton(this.nPrintMission, [
@@ -613,7 +613,7 @@ define([
         )
       })
       this.Buttons.copy.addEventListener('click', this.doCopy.bind(this))
-      this.Buttons.save.addEventListener('click', this.doSave.bind(this))
+      this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
     },
 
     postCreate: function () {
@@ -1153,28 +1153,32 @@ define([
     autoPrint: function (file, params = {}) {
       let type = params.forceType ? params.forceType : file
       return new Promise((resolve, reject) => {
-        Query.exec((Path.url('exec/auto-print.php', {
-          params: {
-            type: type, file: `pdfs/${file}/${this.reservation.uid}`
-          }
-        }))).then((result) => {
-          if (result.success) {
-            window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
-            resolve()
-          } else {
-            window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-            reject(new Error('Print error'))
-          }
+        this.doSave().then(() => {
+          Query.exec((Path.url('exec/auto-print.php', {
+            params: {
+              type: type, file: `pdfs/${file}/${this.reservation.uid}`
+            }
+          }))).then((result) => {
+            if (result.success) {
+              window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+              resolve()
+            } else {
+              window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
+              reject(new Error('Print error'))
+            }
+          })
         })
       })
     },
 
     showPrint: function (type, params = {}) {
-      let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
-      for (let k in params) {
-        url.searchParams.append(k, params[k])
-      }
-      window.open(url)
+      this.doSave().then(() => {
+        let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+        for (let k in params) {
+          url.searchParams.append(k, params[k])
+        }
+        window.open(url)
+      })
     },
 
     doDelete: function (event) {
