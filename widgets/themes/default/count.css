@@ -159,3 +159,9 @@
 .DocCount form[name=details] {
     display: block;
 }
+
+
+.DocCount .mbutton button {
+    color: black !important;
+    text-decoration: none !important;
+}

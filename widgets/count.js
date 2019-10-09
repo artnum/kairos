@@ -1,5 +1,5 @@
 /* eslint-env amd, browser */
-/* global DoWait, Holiday, compareDate, hideTooltip, showTooltip */
+/* global DoWait, Holiday, compareDate, hideTooltip, showTooltip, MButton */
 /* eslint no-template-curly-in-string: "off" */
 define([
   'dojo/_base/declare',
@@ -627,23 +627,29 @@ define([
 
       div.appendChild(domStatus)
 
-      var save = document.createElement('input')
-      save.setAttribute('type', 'button')
-      save.setAttribute('value', 'Sauvegarder')
-      save.addEventListener('click', this.save.bind(this))
-      var saveQuit = document.createElement('input')
-      saveQuit.setAttribute('type', 'button')
-      saveQuit.setAttribute('value', 'Sauvegarder et quitter')
-      saveQuit.addEventListener('click', this.saveQuit.bind(this))
-      var print = document.createElement('input')
-      print.setAttribute('type', 'button')
-      print.setAttribute('value', 'Imprimer')
-      print.addEventListener('click', this.print.bind(this))
-      var del = document.createElement('input')
-      del.setAttribute('type', 'button')
-      del.setAttribute('value', 'Supprimer')
-      del.setAttribute('style', 'float: right');
-      del.addEventListener('click', function () {
+      var save = document.createElement('button')
+      save.innerHTML = 'Sauvegarder'
+      let sButton = new MButton(save)
+      sButton.addEventListener('click', this.save.bind(this))
+
+      var saveQuit = document.createElement('button')
+      saveQuit.innerHTML = 'Sauvegarder et quitter'
+      let sqButton = new MButton(saveQuit)
+      sqButton.addEventListener('click', this.saveQuit.bind(this))
+
+      var print = document.createElement('button')
+      print.innerHTML = 'Imprimer'
+      let pButton = new MButton(print, [
+        {label: 'Afficher', events: {click: () => this.print()}}
+      ])
+      pButton.addEventListener('click', () => this.autoPrint('count'))
+
+      var del = document.createElement('button')
+      del.innerHTML = 'Supprimer'
+      del.setAttribute('style', 'float: right')
+
+      let dButton = new MButton(del)
+      dButton.addEventListener('click', function () {
         if (confirm(`Confirmez la suppression du décompte ${this.get('data-id')}`)) {
           DoWait()
           this.deleteCount(this.get('data-id')).then(function () {
@@ -929,7 +935,7 @@ define([
     },
 
     save: async function (event) {
-      event.preventDefault()
+      if (event) { event.preventDefault() }
       var parent = this.tbody.firstChild
       while (parent) {
         if (!parent.getAttribute('data-edit')) {
@@ -1035,8 +1041,30 @@ define([
     },
 
     print: async function (event) {
-      await this.save(event)
-      window.open(Path.url('pdfs/count/' + this.get('data-id')))
+      this.save(event).then(() => {
+        window.open(Path.url('pdfs/count/' + this.get('data-id')))
+      })
+    },
+
+    autoPrint: function (file, params = {}) {
+      let type = params.forceType ? params.forceType : file
+      return new Promise((resolve, reject) => {
+        this.save().then(() => {
+          Query.exec((Path.url('exec/auto-print.php', {
+            params: {
+              type: type, file: `pdfs/${file}/${this.get('data-id')}`
+            }
+          }))).then((result) => {
+            if (result.success) {
+              window.App.info(`Impression du décompte ${this.get('data-id')} en cours`)
+              resolve()
+            } else {
+              window.App.error(`Erreur d'impression du décompte ${this.get('data-id')}`)
+              reject(new Error('Print error'))
+            }
+          })
+        })
+      })
     },
 
     click: function (event) {
