@@ -26,6 +26,13 @@ if (isset($reservation['complements']) && is_array($reservation['complements']))
   }
 }  
 
+if (isset($_GET['forceType'])) {
+  switch(strtolower(trim($_GET['forceType']))) {
+    case 'livraison': case 'travail':
+      $type = strtolower(trim($_GET['forceType']));
+  }
+}
+
 $creator = null;
 if (isset($reservation['creator']) && !empty($reservation['creator'])) {
   if (strpos($reservation['creator'], '/') !== FALSE) {

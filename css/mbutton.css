@@ -1,0 +1,75 @@
+:root {
+    --button-color: 60, 0%, 30%;
+    --button-color2: 0, 100%, 100%;
+    --button-height: 26px;
+}
+
+.mbutton button {
+    font-variant: small-caps;
+    background: linear-gradient(hsla(var(--button-color), 0.3), transparent) hsla(var(--button-color2), 1);
+    text-align: center;
+    height: 100%;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.mbutton button:hover {
+    background: linear-gradient(hsla(var(--button-color), 0.6), transparent) hsla(var(--button-color2), 1);
+}
+
+.mbutton button:active {
+    background: linear-gradient(hsla(var(--button-color), 0.8), hsla(var(--button-color), 0.2)) hsla(var(--button-color2), 1);
+}
+
+.mbutton button.mbuttonRight {
+    border-left: 1px dotted gray;
+    float: right;
+    width: 4ch;
+}
+
+.mbutton button.mbuttonLeft {
+    width: 20ch;
+    font-weight: bold;
+    border-right: 1px solid transparent;
+}
+
+.mbuttonSingle button {
+    width: 100% !important;
+}
+
+.mbuttonSingle {
+    width: 24ch;
+}
+
+.mbuttonSubmenu {
+    display: block;
+    width: 32ch;
+    border: 1px solid hsla(var(--button-color), 1);
+    background-color: hsla(var(--button-color2), 1);
+}
+
+.mbuttonSubmenu button {
+    width: 100%;
+    height: var(--button-height) !important;
+    border-bottom: 1px solid hsla(var(--button-color), 0.8);
+}
+
+.mbuttonSubmenu button:last-child {
+    border-bottom: none;
+}
+
+.mbutton {
+   border: 1px solid hsla(var(--button-color), 1);
+   border-right: 2px solid hsla(var(--button-color), 0.8);
+   border-bottom: 2px solid hsla(var(--button-color), 0.8);
+   margin: 1px;
+}
+
+.mbuttonMain {
+    height: var(--button-height);
+    display: inline-block;
+}
+
+

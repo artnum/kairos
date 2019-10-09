@@ -26,7 +26,6 @@
 
 .rForm button {
     color: var(--default-color);
-    display: block;
     text-decoration: none;
 }
 
@@ -128,7 +127,7 @@
 .rForm .command {
     position: fixed;
     bottom: 0;
-    background-color: hsla(var(--default-color-base), 0.5);
+    background-color: hsla(var(--default-color-base), 0.4);
     border-top: 2px solid var(--default-color);
     height: 116px;
     padding: 0;

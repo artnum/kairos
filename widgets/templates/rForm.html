@@ -105,24 +105,14 @@
   </form>
   
   <div class="command">
-    <button data-dojo-type="dijit/form/Button" value="Sauvegarder"
-            type="button" data-dojo-attach-event="click:doSave" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder</button>
-    <button data-dojo-type="dijit/form/Button" value="Sauvegarder et quitter"
-            type="button" data-dojo-attach-event="click:doSaveAndQuit" ><i class="far fa-save" aria-hidden="true"></i> Sauvegarder et quitter</button>
-    <button data-dojo-type="dijit/form/Button" value="Dupliquer"
-            type="button" data-dojo-attach-event="click:doCopy" ><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
-    <span data-print-type="mission"><button data-dojo-type="dijit/form/Button" value="Mission"
-                                            type="button" data-dojo-attach-event="click:evPrint" data-print-type="mission" ><i class="fa fa-print" aria-hidden="true"></i> Mission</button></span>
-    <span data-print-type="decompte"><button data-dojo-type="dijit/form/Button" value="Décompte"
-                                             type="button" data-dojo-attach-event="click:evPrint" data-print-type="decompte" ><i class="fa fa-print" aria-hidden="true"></i> Reçus</button></span>
-    <button data-dojo-type="dijit/form/Button" value="Décompte"
-            type="button" data-dojo-attach-event="click:openCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
+    <button data-dojo-attach-point="nSaveButton" value="Sauvegarder"><i class="far fa-save" aria-hidden="true"></i> Sauvegarder et Quitter</button>
+    <button data-dojo-attach-point="nCopyButton" value="Dupliquer" ype="button"><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
+    <button data-dojo-attach-point="nPrintMission" value="Mission" type="button"><i class="fa fa-print" aria-hidden="true"></i> Mission</button>
+    <button data-dojo-attach-point="nPrintRecu" value="Décompte" type="button"><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
+    <button data-dojo-attach-point="nAddCount" value="Décompte" type="button"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
     
-    <button data-dojo-type="dijit/form/Button" value="Ajouter au décompte"
-            type="button" data-dojo-attach-event="click:openAddCount" ><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Ajouter à un décompte</button>
     
     <br/ >
-    <button data-dojo-type="dijit/form/Button" value="Supprimer" style="float: right;"
-            type="button" data-dojo-attach-event="click:doDelete" ><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
+    <button data-dojo-attach-point="nDelete" value="Supprimer" style="float: right;" type="button"><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
   </div>
 </div>    

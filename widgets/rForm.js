@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global APPConf, pSBC, Artnum, Select */
+/* global APPConf, pSBC, Artnum, Select, MButton */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -573,6 +573,49 @@ define([
       }
     },
 
+    buttonCreate: function () {
+      this.Buttons = {
+        save: new MButton(this.nSaveButton, [
+          {label: 'Sauvegarder', events: {click: this.doSave.bind(this)}}
+        ]),
+        copy: new MButton(this.nCopyButton),
+        printMission: new MButton(this.nPrintMission, [
+          {label: 'Afficher mission', events: {click: () => this.showPrint('mission')}},
+          {label: 'Afficher bon de travail', events: {click: () => this.showPrint('bulletin', {forceType: 'travail'})}},
+          {label: 'Afficher bulletin de livraison', events: {click: () => this.showPrint('bulletin', {forceType: 'livraison'})}},
+          {label: 'Imprimer mission', events: {click: () => this.autoPrint('mission')}},
+          {label: 'Imprimer bon de travail', events: {click: () => this.autoPrint('bulletin', {forceType: 'travail'})}},
+          {label: 'Imprimer bulletin de livraison', events: {click: () => this.autoPrint('bulletin', {forceType: 'livraison'})}}
+        ]),
+        printRecu: new MButton(this.nPrintRecu, [
+          {label: 'Afficher reçu', events: {click: () => this.showPrint('decompte')}}
+        ]),
+        addCount: new MButton(this.nAddCount, [
+          {label: 'Ajouter à un décompte', events: {click: () => this.openAddCount()}}
+        ]),
+        del: new MButton(this.nDelete)
+      }
+
+      this.Buttons.del.addEventListener('click', () => {
+        this.doDelete()
+      })
+      this.Buttons.addCount.addEventListener('click', () => {
+        this.openCount()
+      })
+      this.Buttons.printRecu.addEventListener('click', () => {
+        this.autoPrint('decompte')
+      })
+      this.Buttons.printMission.addEventListener('click', () => {
+        this.autoPrint('mission').then(
+          () => {
+            this.autoPrint('bulletin')
+          }
+        )
+      })
+      this.Buttons.copy.addEventListener('click', this.doCopy.bind(this))
+      this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
+    },
+
     postCreate: function () {
       this.inherited(arguments)
 
@@ -665,6 +708,7 @@ define([
           })
         }
       })
+      this.buttonCreate()
     },
 
     clickForm: function (event) {
@@ -1106,40 +1150,31 @@ define([
       this.destroy(noevent)
     },
 
-    _print: function (type) {
-      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        Query.exec((Path.url('exec/auto-print.php', {params: {type: type, file: 'pdfs/' + type + '/' + this.reservation.uid}}))).then(function (result) {
+    autoPrint: function (file, params = {}) {
+      let type = params.forceType ? params.forceType : file
+      return new Promise((resolve, reject) => {
+        Query.exec((Path.url('exec/auto-print.php', {
+          params: {
+            type: type, file: `pdfs/${file}/${this.reservation.uid}`
+          }
+        }))).then((result) => {
           if (result.success) {
             window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+            resolve()
           } else {
             window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
+            reject(new Error('Print error'))
           }
-        }.bind(this))
-      } else {
-        window.App.print('../pdfs/' + type + '/' + this.reservation.uid)
-      }
+        })
+      })
     },
 
-    evPrint: function (event) {
-      var printType = null
-      if (event.target.getAttribute('data-print-type')) {
-        printType = event.target.getAttribute('data-print-type')
-      } else {
-        for (var node = event.target; node; node = node.parentNode) {
-          if (node.getAttribute('data-print-type')) {
-            printType = node.getAttribute('data-print-type')
-            break
-          }
-        }
+    showPrint: function (type, params = {}) {
+      let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+      for (let k in params) {
+        url.searchParams.append(k, params[k])
       }
-      if (printType) {
-        if (this.doSave(event)) {
-          this._print(printType)
-          if (printType === 'mission') {
-            this._print('livraison')
-          }
-        }
-      }
+      window.open(url)
     },
 
     doDelete: function (event) {

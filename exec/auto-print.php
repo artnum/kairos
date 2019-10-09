@@ -24,7 +24,11 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
 
    $result = array('success' => true, 'message' => '', 'type' => 'results');
    $tmp = tempnam(sys_get_temp_dir(), 'auto-print-file');
-   $ctx = curl_init(base_url($_GET['file']));
+   if ($_GET['file'] !== $_GET['type']) {
+      $ctx = curl_init(base_url($_GET['file']) . '?forceType=' . $_GET['type']);
+   } else {
+      $ctx = curl_init(base_url($_GET['file']));
+   }
    if ($ctx) {
       curl_setopt($ctx, CURLOPT_RETURNTRANSFER, true);
       curl_setopt($ctx, CURLOPT_BINARYTRANSFER, true);
