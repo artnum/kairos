@@ -1,4 +1,4 @@
-$65;5402;1c/* eslint-env browser, amd */
+/* eslint-env browser, amd */
 /* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip */
 define([
   'dojo/_base/declare',
