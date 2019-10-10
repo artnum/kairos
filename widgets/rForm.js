@@ -48,6 +48,7 @@ define([
   'location/Stores/Locality',
   'location/Stores/User',
   'location/Stores/Machine',
+  'location/Stores/Status',
   
   'artnum/dojo/Request',
   'artnum/Path',
@@ -100,7 +101,8 @@ define([
   Locality,
   User,
   Machine,
-
+  Status,
+  
   Req,
   Path,
   Query
@@ -616,6 +618,122 @@ define([
       this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
     },
 
+    interventionCreate: function () {
+      return new Promise((resolve, reject) => {
+        this.Stores.Status1 = new Status({type: 3})
+        let fset = this.domNode.getElementsByTagName('fieldset')
+        for (let k in fset) {
+          if (fset[k].classList.contains('intervention')) {
+            fset = fset[k]
+            break
+          }
+        }
+        this.Intervention = {}
+        let inputs = fset.getElementsByTagName('input')
+        for (let k in inputs) {
+          switch (inputs[k].name) {
+          case 'iDate':
+            inputs[k].value = new Date().toISOString().split('T')[0]
+            break
+          case 'iType':
+            this.Intervention.type = new Select(inputs[k], this.Stores.Status1)
+            break
+          case 'iPerson':
+            this.Intervention.person = new Select(inputs[k], this.Stores.User)
+            break
+          }
+        }
+        let button = fset.getElementsByTagName('button')[0]
+        button = new MButton(button)
+        button.addEventListener('click', this.interventionAdd.bind(this))
+        this.interventionReload(fset)
+      })
+    },
+
+    interventionAdd: function (event) {
+      event.preventDefault()
+      let fset = event.target
+      for (; fset && fset.nodeName !== 'FIELDSET'; fset = fset.parentNode) ;
+      let inputs = fset.getElementsByTagName('input')
+      let data = {reservation: this.reservation.get('id'), technician: this.Intervention.person.value, type: this.Intervention.type.value}
+      for (let k in inputs) {
+        switch (inputs[k].name) {
+        case 'iDate':
+          let day
+          try {
+            day = new Date(inputs[k].value)
+            day.setHours(12, 0, 0)
+          } catch (e) {
+            day = new Date()
+          }
+          data.date = day.toISOString()
+          break
+        case 'iComment': data.comment = inputs[k].value; break
+        }
+      }
+      Query.exec(Path.url('store/Intervention'), {method: 'post', body: data}).then((result) => {
+        this.interventionReload(fset)
+      })
+    },
+
+    interventionReload: function (fset) {
+      Query.exec(Path.url('store/Intervention', {params: {'search.reservation': this.reservation.get('id'), 'sort.date': 'DESC'}})).then(async function (results) {
+        let div = fset.getElementsByTagName('DIV')
+        for (let i = 0; i < div.length; i++) {
+          if (div[i].getAttribute('name') === 'iContent') {
+            div = div[i]
+            break
+          }
+        }
+        if (!div) { return }
+        let frag = document.createDocumentFragment()
+        for (let i = 0; i < results.length; i++) {
+          let n = document.createElement('DIV')
+          n.dataset.id = results.data[i].id
+          let date = new Date(results.data[i].date)
+
+          let technician = results.data[i].technician
+          let t = await this.Stores.User.get(technician)
+          if (t !== null) {
+            technician = t.name
+          }
+          let type = results.data[i].type
+          t = await this.Stores.Status1.get(type)
+          if (t !== null) {
+            type = t.name
+          }
+          let comment = results.data[i].comment
+          n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${type}</span><span class="technician">${technician}</span><span class="delete"><i class="far fa-trash-alt"> </i></span>${comment === '' ? '' : '<span class="comment">' + comment + '</span>'}`
+          for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
+            if (s.classList.contains('delete')) {
+              s.addEventListener('click', this.interventionDelete.bind(this))
+              break
+            }
+          }
+          frag.appendChild(n)
+        }
+        window.requestAnimationFrame(() => {
+          div.innerHTML = ''
+          div.appendChild(frag)
+        })
+      }.bind(this))
+    },
+
+    interventionDelete: function (event) {
+      let line = event.target
+      for (; line && line.dataset.id === undefined; line = line.parentNode) ;
+      let id = line.dataset.id
+      Query.exec(Path.url(`store/Intervention/${id}`), {method: 'delete'}).then((result) => {
+        if (result.success) {
+          window.requestAnimationFrame(() => {
+            if (line.parentNode) {
+              line.parentNode.removeChild(line)
+            }
+          })
+        }
+      })
+    },
+
     postCreate: function () {
       this.inherited(arguments)
 
@@ -650,6 +768,8 @@ define([
       this.nCreator = new Select(this.nCreator, U, {allowFreeText: false, realSelect: true})
       this.nTechnician = new Select(this.nTechnician, U, {allowFreeText: true, realSelect: false})
       this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
+
+      this.interventionCreate()
 
       this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
       djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
@@ -1402,7 +1522,6 @@ define([
           return
         }
       }
-      console.log(this.nEquipment)
       this.nEquipment.set('value', '%')
     },
 

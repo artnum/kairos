@@ -262,3 +262,52 @@
     min-height: 120px;
     width: 4px;
 }
+
+.rForm .intervention label {
+    display: inline;
+}
+
+.rForm .intervention label.one input {
+    width: calc(100% - 120px);
+}
+
+.rForm .intervention label.one {
+    clear: left;
+    width: 100%;
+    display: inline-block;
+}
+
+
+.rForm .intervention div.content {
+    max-height: 18ex;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.rForm .intervention .content span {
+    font-family: 'B612 Mono', monospace;
+    display: inline-block;
+    margin-left: 1ch;
+    max-width: 200px;
+    max-height: 2ex;
+    height: 2ex;
+    text-overflow: ellipsis;
+}
+
+.rForm .intervention .content span.date {
+    width: 100px;
+}
+
+.rForm .intervention .content span.comment {
+    display: block;
+    max-height: unset;
+    height: unset;
+    max-width: calc(100% - 24px);
+    margin-left: 24px;
+}
+
+.rForm .intervention .content span.delete {
+    float: right;
+    width: 32px;
+    cursor: pointer;
+}

@@ -84,6 +84,14 @@
 	<button data-dojo-type="dijit/form/Button" value="Ajouter" data-dojo-attach-point="nAddEditComplementButton" type="button" data-dojo-attach-event="click:doAddEditComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
 	<button data-dojo-type="dijit/form/Button" value="Reset" type="button" data-dojo-attach-event="click:doResetComplement" ><i class="fas fa-eraser" aria-hidden="true"></i> Annuler</button>
       </fieldset>
+
+      <fieldset class="ui full intervention"><legend>Intervention</legend>
+        <label><span>Date :</span><input type="date" name="iDate" /></label><label><span>Type :</span><input name="iType" type="text" /></label>
+        <label><span>Personne :</span><input type="text" name="iPerson" /></label><label class="one"><span>Remarque :</span><input name="iComment" type="text" /></label>
+        <button type="button" name="iAdd">Ajout</button>
+        <div class="content" name="iContent">
+        </div>
+      </fieldset>
       
       <fieldset class="ui full"><legend>Note interne</legend>
         <textarea class="ui" style="width: 100%; min-width: 100%;" data-dojo-type="dijit/form/Textarea" name="nNote" data-dojo-attach-point="nNote"></textarea>

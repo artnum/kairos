@@ -14,11 +14,11 @@ define([
     entries: [],
     constructor: function (options = {}) {
       this.params = {}
-      if (options.type) {
-        this.params = {'search.function': options.type}
+      if (options.type !== undefined) {
+        this.params = {'search.type': options.type}
       }
     },
-    
+
     get: function (id) {
       return new Promise((resolve, reject) => {
         if (!id) {
@@ -34,6 +34,7 @@ define([
           }
           id = s.join('/')
         }
+        if (!id.includes('Status')) { id = `Status/${id}` }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
@@ -49,7 +50,7 @@ define([
       return new Promise((resolve, reject) => {
         let entries = []
         let searchName = txt.toAscii()
-        Query.exec(Path.url('store/User', {params: Object.assign({'search.name': `~${searchName}%`}, this.params)})).then((results) => {
+        Query.exec(Path.url('store/Status', {params: Object.assign({'search.name': `~${searchName}%`}, this.params)})).then((results) => {
           if (results.success && results.length > 0) {
             results.data.forEach((entry) => {
               if (entry.disabled && entry.disabled !== '0') { return }
@@ -62,7 +63,7 @@ define([
               }
 
               entry.label = `${name}`
-              entry.value = `User/${entry.id}`
+              entry.value = `Status/${entry.id}`
 
               entries.push(entry)
             })

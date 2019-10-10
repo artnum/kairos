@@ -56,7 +56,8 @@ CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "user_name" TEXT,
 						  "user_phone" VARCHAR(15) DEFAULT '',
-						  "user_color" VARCHAR(32) DEFAULT 'black'
+						  "user_color" VARCHAR(32) DEFAULT 'black',
+						  "user_function" VARCHAR(16) DEFAULT 'admin'
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -265,3 +266,15 @@ CREATE TABLE IF NOT EXISTS "missionFichier" (
        "missionFichier_ordre" INTEGER DEFAULT 0,
        PRIMARY KEY("missionFichier_fichier", "missionFichier_mission")
 ) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "intervention" (
+       "intervention_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "intervention_reservation" INTEGER,
+       "intervention_type" TEXT DEFAULT NULL,
+       "intervention_comment" TEXT,
+       "intervention_date" VARCHAR(32) NOT NULL, -- ISO8601
+       "intervention_duration" INTEGER DEFAULT 0, -- in seconds
+       "intervention_technician" TEXT DEFAULT NULL,
+       FOREIGN KEY ("intervention_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+) CHARACTER SET "utf8mb4";
+       
