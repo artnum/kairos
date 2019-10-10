@@ -66,6 +66,7 @@ function cacheAndSend (data) {
       entries[btoa(entry.target)] = []
     }
     let hash = objectHash.sha1(entry)
+    entry._hash = hash
     if (Entries[entry.id]) {
       if (hash !== Entries[entry.id][0]) {
         if (Entries[entry.id][1] !== btoa(entry.target)) {
