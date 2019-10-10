@@ -78,6 +78,52 @@ class DeepReservationModel extends ReservationModel {
     } catch (\Exception $e) {}
     return array(NULL, 0);    
   }
+
+  function getToprepare ($options) {
+    $req = 'SELECT reservation_target FROM reservation
+            LEFT JOIN association ON reservation_id = association_reservation
+            WHERE (
+              (association_id IS NOT NULL AND IdFromURL(association_type) = :status
+                AND LEFT(COALESCE(NULLIF(association_begin,\'\'), reservation_deliveryBegin, reservation_begin), 10) <= :day
+                AND LEFT(COALESCE(NULLIF(association_end,\'\'), reservation_deliveryEnd, reservation_end), 10) >= :day)
+              OR (LEFT(COALESCE(reservation_deliveryBegin, reservation_begin), 10) = :day))
+              AND reservation_deleted IS NULL
+            GROUP BY reservation_target;';
+    $status= 4;
+    $day = new DateTime();
+    if (isset($options['search'])) {
+      if(isset($options['search']['day'])) {
+        try {
+          $day = new DateTime($options['search']['day']);
+        } catch (\Exception $e) {
+          $day = new DateTime();
+        }
+      }
+      if (isset($options['search']['status']) && is_numeric($options['search']['status'])){
+        $status = $options['search']['status'];
+      }
+    }
+
+    $results = array();
+    try {
+      $st = $this->DB->prepare($req);
+      $st->bindValue(':day', $day->format('Y-m-d'), PDO::PARAM_STR);
+      $st->bindValue(':status', $status, PDO::PARAM_INT);
+      $count = 0;
+
+      if ($st->execute()) {
+        while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $results[] = $this->unprefix($row);
+          $count++;
+        }
+      }
+
+      if ($count > 0) {
+        return array($results, $count);
+      }
+    } catch (\Exception $e) { print_r($e); }
+    return array(NULL, 0);
+  }
   
   function getTodo ($options) {
     $req = 'SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color FROM reservation

@@ -864,7 +864,7 @@ define([
         item = new DtMenuItem({label: 'À faire le '})
         djOn(item, 'click', djLang.hitch(that, () => {
           var date = dtRegistry.byId('menuTodoDay').get('value')
-          this.filters.todo(date, this.Entries).then((entries) => {
+          this.filters.todo(date).then((entries) => {
             this.filterApply(entries)
           })
         }))
@@ -876,102 +876,20 @@ define([
     },
 
     filters: {
-      todo: (date, wEntries) => {
+      todo: (date) => {
         return new Promise((resolve, reject) => {
           date.setHours(12, 0, 0)
-          let d1 = new Date(); d1.setTime(date.getTime() - 86400000)
-          let d2 = new Date(); d2.setTime(date.getTime() + 86400000)
-
-          let txtD1 = d1.toISOString().split('T')[0]
-          let txtD2 = d2.toISOString().split('T')[0]
-          let txtDate = date.toISOString().split('T')[0]
-
-          /* récupère les réservation commençant à la date */
-          let q1 = Query.exec(Path.url('store/Reservation', {params: {
-            'search.begin': `~${txtDate}%`,
-            'search.deliveryBegin': `~${txtDate}%`,
-            'search._rules': 'begin OR deliveryBegin'}}))
-          /* récupère les associations étant dans la période */
-          let q2 = Query.exec(Path.url('store/Association', {params: {
-            'search.begin': `<=${txtD2}`,
-            'search.end': `>=${txtD1}`,
-            'search.type': `~%/4`
-          }}))
-
-          /* récupère les associations qui suivent la taille de la réservation */
-          let q3 = new Promise((resolve, reject) => {
-            Query.exec(Path.url('store/Reservation', {params: {
-              'search.begin': `<${txtD2}`,
-              'search.end': `>${txtD1}` }})).then((results) => {
-                if (!results.success || results.length <= 0) { resolve([]); return }
-                let queries = []
-                let entryBind = {}
-                results.data.forEach((e) => {
-                  entryBind[e.id] = e.target
-                  queries.push(Query.exec(Path.url('store/Association', {params: {
-                    'search.reservation': e.id,
-                    'search.type': `~%/4`,
-                    'search.follow': '1'}})))
-                })
-                Promise.all(queries).then((results) => {
-                  let entries = []
-                  results.forEach((result) => {
-                    if (result.success && result.length > 0) {
-                      result.data.forEach((x) => {
-                        if (entryBind[x.reservation] && entries.indexOf(entryBind[x.reservation]) === -1) {
-                          entries.push(entryBind[x.reservation])
-                        }
-                      })
-                    }
-                  })
-                  resolve(entries)
-                })
-              })
-          })
-
-          Promise.all([q1, q2]).then((results) => {
-            let entries = []
-
-            /* il convient de récupérer les réservation pour connaître à quel entrée appartient l'association */
-            let q4 = new Promise((resolve, reject) => {
-              if (!results[1].success || results[1].length <= 0) {
-                resolve()
-                return
+          let day = date.toISOString().split('T')[0]
+          Query.exec(Path.url('store/DeepReservation/.toprepare', {params: {'search.day': day}})).then((results) => {
+            if (results.success && results.length > 0) {
+              let ids = []
+              for (let i = 0; i < results.length; i++) {
+                ids.push(results.data[i].target)
               }
-
-              let queries = []
-              results[1].data.forEach((e) => {
-                queries.push(Query.exec(Path.url(`store/Reservation/${e.reservation}`)))
-              })
-
-              Promise.all(queries).then((results) => {
-                results.forEach((result) => {
-                  if (result.success && result.length > 0) {
-                    if (entries.indexOf(result.data.target) === -1) {
-                      entries.push(result.data.target)
-                    }
-                  }
-                })
-
-                resolve()
-              })
-            })
-
-            if (results[0].success && results[0].length > 0) {
-              results[0].data.forEach((e) => {
-                if (entries.indexOf(e.target) === -1) {
-                  entries.push(e.target)
-                }
-              })
+              resolve(ids)
+              window.App.searchMenu.filterNone.set('disabled', false)
+              window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
             }
-
-            q4.then(() => {
-              q3.then((results) => {
-                window.App.searchMenu.filterNone.set('disabled', false)
-                window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
-                resolve(results)
-              })
-            })
           })
         })
       }
