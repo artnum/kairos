@@ -72,7 +72,6 @@ function cacheAndSend (data) {
           if (!entries[Entries[entry.id][1]]) {
             entries[Entries[entry.id][1]] = []
           }
-          console.log(entries[Entries[entry.id][1]], Entries[entry.id][1], btoa(entry.target), entry)
           entries[Entries[entry.id][1]].push(entry)
           delete Entries[entry.id]
         }

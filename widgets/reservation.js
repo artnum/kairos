@@ -208,9 +208,7 @@ define([
 
     modified: function () {
       if (!this.get('deleted')) {
-        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}}).then((result) => {
-          console.log(result)
-        })
+        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}})
       }
     },
 
