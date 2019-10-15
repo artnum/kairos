@@ -417,6 +417,7 @@ if ($res['success'] && $res['length'] > 0) {
     $array = $images['data'];
     usort($array, function ($a, $b) { return intval($a['ordre']) - intval($b['ordre']); });
     foreach($array as $image) {
+      $image['disposition'] = 'full';
       $dir = substr($image['fichier'], 0, 2);
       if (is_dir($uploadDir . '/' . $dir)) {
         $dir .= '/' . substr($image['fichier'], 2, 2);

@@ -61,9 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type = mime_content_type($dirname . '/' . $filename);
     echo '{"success": true, "name": "' . $filename . '", "size": ' . filesize($dirname . '/' . $filename) . ', "mimetype": "' . $type . '"}';
   } else {
+    unlink($tmpFile);
     echo '{"sucess": false, "name": "", "size": 0, "type": ""}';
   }
-  unlink($tmpFile);
 } else {
   if (isset($_SERVER['PATH_INFO'])) {
     $id = substr($_SERVER['PATH_INFO'], 1);
