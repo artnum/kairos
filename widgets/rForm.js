@@ -1287,6 +1287,9 @@ define([
               reject(new Error('Print error'))
             }
           })
+        }, () => {
+          window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
+          reject(new Error('Print error'))
         })
       })
     },
@@ -1381,16 +1384,6 @@ define([
       this.doNumbering()
       this.domNode.setAttribute('style', 'opacity: 0.2')
       return new Promise(function (resolve, reject) {
-        if (!this.HashLastSave) {
-          this.HashLastSave = this.reservation.get('_hash')
-        } else {
-          if (this.HashLastSave === this.reservation.get('_hash')) {
-            window.App.warn('Dernière sauvegare pas encore validée (double-clique sur "sauvegarder" ?)')
-            reject(new Error('Not saved yet'))
-          } else {
-            this.HashLastSave = this.reservation.get('_hash')
-          }
-        }
         var err = this.validate()
         if (!err[1]) {
           window.App.error(err[0])
