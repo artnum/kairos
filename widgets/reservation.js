@@ -1284,9 +1284,42 @@ define([
               })
               url = Path.url('/store/Association')
             })
-          })
-          Promise.all(all).then((results) => {
-            resolve(newId)
+
+            new Promise((resolve, reject) => {
+              Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
+                if (result.success && result.length > 0) {
+                  let oMId = result.data[0].uid
+                  Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
+                    if (result.success && result.length === 1) {
+                      let mId = result.data[0].id
+                      Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
+                        if (results.success && results.length > 0) {
+                          (async function () {
+                            for (let i = 0; i < results.length; i++) {
+                              let entry = results.data[i]
+                              delete entry.uid
+                              entry.mission = mId
+                              await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
+                            }
+                            resolve()
+                          })()
+                        } else {
+                          resolve()
+                        }
+                      })
+                    } else {
+                      resolve()
+                    }
+                  })
+                } else {
+                  resolve()
+                }
+              })
+            }).then(() => {
+              Promise.all(all).then((results) => {
+                resolve(newId)
+              })
+            })
           })
         })
       })
