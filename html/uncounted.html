@@ -15,7 +15,7 @@
       <th data-attribute="end:date">Fin</th>
       <th data-attribute="@store/$_contacts.target displayname|_contacts.freeform">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
-      <th data-attribute="_creator.name">Responsable</th>
+      <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
       <th data-attribute="_arrival.reported:bool">Fin confirmée</th>
       <th data-attribute="_arrival.done:bool">Retournée</th>
     </tr></thead>
@@ -31,9 +31,15 @@
 <script>
  window.onload = function () {
    var tables = document.getElementsByTagName('TABLE') 
-   
+
+   let params = new URLSearchParams(window.location.search.substring(1))
+   let currentUser = window.localStorage.getItem(Artnum.Path.bcname('user'))
+   if (currentUser) {
+     params.append('creator', JSON.parse(currentUser).name)
+   }
+
    for (var i = 0; i < tables.length; i++) {
-     var dtable = new Artnum.DTable({table: tables[i]}, true)
+     var dtable = new Artnum.DTable({table: tables[i], search: params}, true)
      if (transliterate) {
        dtable.transliterate = transliterate
      }
