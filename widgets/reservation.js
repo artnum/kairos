@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, GEvent, Popper */
+/* global DateRange, pSBC, fastdom, GEvent, Popper, Tooltip, GSymbol */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -1027,6 +1027,7 @@ define([
     },
 
     resize: async function (fromEntry = false) {
+      let moving = false
       if (!this.modifiedState) { return }
       if (this.deleted) {
         if (!this.destroyed) {
@@ -1080,11 +1081,16 @@ define([
         begin = range.begin
         nobegin = true
       }
+      if (!this.DisplayBegin || (this.DisplayBegin.getTime() !== begin.getTime())) { moving = true }
+      if (!moving && !this.updated) { return }
+      this.DisplayBegin = new Date(begin.getTime())
+
       var end = this.get('trueEnd')
       if (djDate.compare(range.end, end, 'date') < 0) {
         end = range.end
         noend = true
       }
+      this.DisplayEnd = new Date(end.getTime())
 
       var t1, t2
       t1 = new Date(end.getTime()); t2 = new Date(begin.getTime())
@@ -1171,27 +1177,87 @@ define([
       var txtdiv = this._setTextDesc()
       var compdiv = this._drawComplement()
 
-      window.requestAnimationFrame(() => {
-        if (this.domNode) {
-          this.domNode.innerHTML = ''
-          this.domNode.setAttribute('style', domstyle.join(';'))
-          for (let c in domclass) {
-            if (domclass[c]) {
-              this.domNode.classList.add(c)
-            } else {
-              this.domNode.classList.remove(c)
+      new Promise((resolve, reject) => {
+        window.requestAnimationFrame(() => {
+          if (this.domNode) {
+            this.domNode.innerHTML = ''
+            this.domNode.setAttribute('style', domstyle.join(';'))
+            for (let c in domclass) {
+              if (domclass[c]) {
+                this.domNode.classList.add(c)
+              } else {
+                this.domNode.classList.remove(c)
+              }
             }
+            this.domNode.appendChild(compdiv)
+            if (txtdiv == null) {
+              this.domNode.appendChild(this._currentTextDesc)
+            } else {
+              this.domNode.appendChild(txtdiv)
+              txtdiv.appendChild(tools)
+            }
+            this.domNode.dataset.uid = this.uid
           }
-          this.domNode.appendChild(compdiv)
-          if (txtdiv == null) {
-            this.domNode.appendChild(this._currentTextDesc)
-          } else {
-            this.domNode.appendChild(txtdiv)
-            txtdiv.appendChild(tools)
-          }
-          this.domNode.dataset.uid = this.uid
-        }
+          resolve()
+        })
+      }).then(() => {
+        this.showIntervention(this.domNode, moving)
       })
+    },
+
+    showIntervention: function (parentNode, moving) {
+      if (this.interventions.length <= 0) {
+        return
+      }
+      if (moving) {
+        if (!this.InterventionsSymbols) {
+          this.InterventionsSymbols = []
+        } else {
+          this.InterventionsSymbols.forEach((x) => {
+            delete x[0]
+            delete x[1]
+          })
+        }
+        let rect = this.domNode.getBoundingClientRect()
+        if (rect.width < this.get('blockSize')) { return } // under certain size don't show symbols to avoid overload
+        for (let i = 0; i < this.interventions.length; i++) {
+          let intervention = this.interventions[i]
+          let begin = new Date(this.DisplayBegin.getTime())
+          begin.setHours(12)
+          if (intervention.date.split('T')[0] < begin.toISOString().split('T')[0] ||
+              intervention.date.split('T')[0] > this.DisplayEnd.toISOString().split('T')[0]) {
+            continue
+          }
+          let d = new Date(intervention.date)
+          let left = Math.round(
+            (rect.width / (this.DisplayEnd.getTime() - this.DisplayBegin.getTime())) *
+              (d.getTime() - this.DisplayBegin.getTime())
+          )
+
+          let s = document.createElement('I')
+          s.classList.add(...GSymbol(intervention.symbol))
+          s.style.position = 'absolute'
+          s.style.top = rect.height - 24
+          s.style.left = left
+
+          let message = []
+          ;['name', 'comment', 'technician'].forEach((k) => {
+            if (intervention[k]) { message.push(intervention[k]) }
+          })
+
+          let x = new Tooltip(s, {placement: 'top', title: `${message.join(' / ')}`})
+          this.InterventionsSymbols.push([s, x])
+          window.requestAnimationFrame(() => {
+            parentNode.appendChild(s)
+          })
+        }
+      } else {
+        this.InterventionsSymbols.forEach((s) => {
+          window.requestAnimationFrame(() => {
+            if (s[0]) { parentNode.appendChild(s[0]) }
+          })
+        })
+      }
     },
 
     highlight: function () {

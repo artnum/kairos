@@ -5,6 +5,7 @@
 @import 'command.css';
 @import 'count.css';
 @import 'overlay.css';
+@import 'symbols.css';
 
 html {
 	overflow-x: hidden;

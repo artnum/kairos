@@ -5,7 +5,6 @@
 @import 'balloon.css/balloon.min.css';
 @import 'dtable.css';
 @import 'return.css';
-@import url('https://use.fontawesome.com/releases/v5.3.1/css/all.css');
 @import 'timeline.css';
 
 .clickable, [data-action], button {

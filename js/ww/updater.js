@@ -54,82 +54,90 @@ function getUrl (suffix) {
   return new URL(`${self.location.origin}/${first}/${suffix}`)
 }
 
-/*const MaxCacheCleanAge = 60
-var cacheLastAge = 0*/
-function cacheAndSend (data) {
-  let entries = {}
-  data.forEach((entry) => {
-    if (parseInt(entry.modification) > LastMod) {
-      LastMod = parseInt(entry.modification)
-    }
-    if (!entries[btoa(entry.target)]) {
-      entries[btoa(entry.target)] = []
-    }
-    let hash = objectHash.sha1(entry)
-    entry._hash = hash
-    if (Entries[entry.id]) {
-      if (hash !== Entries[entry.id][0]) {
-        if (Entries[entry.id][1] !== btoa(entry.target)) {
-          if (!entries[Entries[entry.id][1]]) {
-            entries[Entries[entry.id][1]] = []
+function getIntervention (entry) {
+  return new Promise((resolve, reject) => {
+    let url = getUrl('store/Intervention/.intervention')
+    url.searchParams.append('search.reservation', entry.id)
+    fetch(url, {credential: 'include'}).then((response) => {
+      if (!response.ok) {
+        resolve([])
+      } else {
+        response.json().then((results) => {
+          if (!results.success || results.length <= 0) {
+            resolve([])
+          } else {
+            resolve(results.data)
           }
-          entries[Entries[entry.id][1]].push(entry)
-          delete Entries[entry.id]
-        }
-        Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-        entries[btoa(entry.target)].push(entry)
+        }, () => resolve([]))
       }
-    } else {
-      Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-      entries[btoa(entry.target)].push(entry)
+    }, () => resolve([]))
+  })
+}
+
+function cacheAndSend (data) {
+  new Promise((resolve, reject) => {
+    let entries = {}
+    let promises = []
+    data.forEach((entry) => {
+      promises.push(new Promise((resolve, reject) => {
+        getIntervention(entry).then((interventions) => {
+          entry.interventions = interventions
+          if (parseInt(entry.modification) > LastMod) {
+            LastMod = parseInt(entry.modification)
+          }
+          if (!entries[btoa(entry.target)]) {
+            entries[btoa(entry.target)] = []
+          }
+          let hash = objectHash.sha1(entry)
+          entry._hash = hash
+          if (Entries[entry.id]) {
+            if (hash !== Entries[entry.id][0]) {
+              if (Entries[entry.id][1] !== btoa(entry.target)) {
+                if (!entries[Entries[entry.id][1]]) {
+                  entries[Entries[entry.id][1]] = []
+                }
+                entries[Entries[entry.id][1]].push(entry)
+                delete Entries[entry.id]
+              }
+              Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
+              entries[btoa(entry.target)].push(entry)
+            }
+          } else {
+            Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
+            entries[btoa(entry.target)].push(entry)
+          }
+          resolve()
+        })
+      }))
+    })
+    Promise.all(promises).then(() => resolve(entries))
+  }).then((entries) => {
+    let processed = []
+    for (let k in entries) {
+      if (Channels[k] && entries[k].length > 0) {
+        Channels[k].postMessage({op: 'entries', value: entries[k]})
+        processed.push(k)
+      } else if (entries[k].length > 0) {
+        if (!PostPoned[k]) {
+          PostPoned[k] = []
+        }
+        PostPoned[k] = [...PostPoned[k], ...entries[k]]
+      }
+    }
+    for (let k in Channels) {
+      if (processed.indexOf(k) === -1) {
+        Channels[k].postMessage({op: 'entries', value: []})
+      }
     }
   })
-  let processed = []
-  for (let k in entries) {
-    if (Channels[k] && entries[k].length > 0) {
-      Channels[k].postMessage({op: 'entries', value: entries[k]})
-      processed.push(k)
-    } else if (entries[k].length > 0) {
-      if (!PostPoned[k]) {
-        PostPoned[k] = []
-      }
-      PostPoned[k] = [...PostPoned[k], ...entries[k]]
-    }
-  }
-  for (let k in Channels) {
-    if (processed.indexOf(k) === -1) {
-      Channels[k].postMessage({op: 'entries', value: []})
-    }
-  }
-
-  /*
-  if (cacheLastAge === 0) {
-    cacheLastAge = new Date().getTime()
-  } else {
-    if (new Date().getTime() - cacheLastAge > MaxCacheCleanAge * 1000) {
-      cacheLastAge = new Date().getTime()
-      cleanCache()
-    }
-  } */
 }
-/*
-const MaxObjectAge = 600
-function cleanCache () {
-  console.log('Run cleanCache')
-  for (let k in Entries) {
-    if (new Date().getTime() - Entries[k][2] > MaxObjectAge * 1000) {
-      console.log(`Clean entries ${k} from cache`)
-      delete Entries[k]
-    }
-  }
-} */
 
 function runUpdater () {
   let url = getUrl('store/DeepReservation')
   url.searchParams.set('search.begin', '<' + Range.end.toISOString().split('T')[0])
   url.searchParams.set('search.end', '>' + Range.begin.toISOString().split('T')[0])
   url.searchParams.set('search.deleted', '-')
-  fetch(url).then((response) => {
+  fetch(url, {credential: 'include'}).then((response) => {
     if (response.ok) {
       response.json().then((json) => {
         if (json.length > 0 && json.success) {
@@ -145,7 +153,7 @@ function startUpdater () {
   if (LastMod > 0) {
     let url = getUrl('store/DeepReservation')
     url.searchParams.set('search.modification', '>' + LastMod)
-    fetch(url).then((response) => {
+    fetch(url, {credential: 'include'}).then((response) => {
       if (response.ok) {
         response.json().then((json) => {
           if (json.length > 0 && json.success) {

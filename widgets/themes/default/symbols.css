@@ -1,0 +1,11 @@
+.symbol.reverse {
+    transform: scaleX(-1);
+}
+
+.reservation .symbol {
+    color: hsla(var(--default-color-base), 0.2);
+}
+
+.reservation:hover .symbol {
+    color: hsal(var(--default-color-base), 1);
+}

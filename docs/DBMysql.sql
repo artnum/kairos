@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTO_INC
 						  "status_color" VARCHAR(8) DEFAULT NULL,
 						  "status_bgcolor" VARCHAR(8) DEFAULT NULL,
 						  "status_default" BOOL,
-						  "status_type" INTEGER DEFAULT 0 -- kind of object it apply
+						  "status_type" INTEGER DEFAULT 0, -- kind of object it apply
+						  "status_symbol" VARCHAR(16) DEFAULT NULL
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
