@@ -27,7 +27,7 @@ $pdo_db = new PDO($ini_conf['storage']['pdo-string'], $ini_conf['storage']['user
 $pdo_db->exec('SET sql_mode=\'ANSI\';');
 $ldap_db = new artnum\LDAPDB(
          array(
-               array('uri' => 'ldap://airserve01.local.airnace.ch', 
+               array('uri' => 'ldapi:///',
                   'ro' => true,
                   'dn' => NULL,
                   'password' => NULL
@@ -46,4 +46,6 @@ $store->add_db('sql', $pdo_db);
 $store->add_db('ldap', $ldap_db);
 
 $store->run();
+
+ldap_close($ldap_db);
 ?>

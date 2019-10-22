@@ -1206,7 +1206,7 @@ define([
     },
 
     showIntervention: function (parentNode, moving) {
-      if (this.interventions.length <= 0) {
+      if (!this.interventions || this.interventions.length <= 0) {
         return
       }
       if (moving) {
