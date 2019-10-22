@@ -10,7 +10,7 @@ class ArticleModel extends artnum\SQL {
       $this->conf('create', 'article_created');
       $this->conf('create.ts', true); 
 
-      $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "collection" ON "\\Table"."article_collection" = "collection"."collection_id" WHERE "\\IDName" = :id');
+      $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "collection" ON "\\Table"."article_collection" = "collection"."collection_id"');
    }
 }
 ?>
