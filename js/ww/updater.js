@@ -56,6 +56,7 @@ function getUrl (suffix) {
 
 function getIntervention (entry) {
   return new Promise((resolve, reject) => {
+    if (parseInt(entry.cntIntervention) === 0) { resolve([]) }
     let url = getUrl('store/Intervention/.intervention')
     url.searchParams.append('search.reservation', entry.id)
     fetch(url, {credential: 'include'}).then((response) => {

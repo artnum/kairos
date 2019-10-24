@@ -191,10 +191,10 @@ class DeepReservationModel extends ReservationModel {
   
   function get($id) {
     $pre_statement = '
-         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color FROM reservation
+         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color, (SELECT COUNT(intervention_id) FROM intervention WHERE intervention_reservation = reservation_id) AS reservation_cntIntervention FROM reservation
                LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
                LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
-               LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE(\'/\', REVERSE(reservation.reservation_creator))-1))
+               LEFT JOIN user AS creator ON creator.user_id = IDFromUrl(reservation.reservation_creator)
             WHERE reservation_id = :id';
     try {
       $st = $this->DB->prepare($pre_statement);
