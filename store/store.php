@@ -47,5 +47,5 @@ $store->add_db('ldap', $ldap_db);
 
 $store->run();
 
-ldap_close($ldap_db);
+$ldap_db->close();
 ?>
