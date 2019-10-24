@@ -1639,7 +1639,7 @@ define([
       return current
     },
 
-    doSearchLocation: function (loc, dontmove = false) {
+    doSearchLocation: function (loc, dontmove = true) {
       DoWait()
       return new Promise(function (resolve, reject) {
         Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
