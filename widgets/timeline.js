@@ -1010,14 +1010,15 @@ define([
         var domNode = document.getElementsByTagName('body')[0]
         if (event.type === 'mouseup') {
           domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
-          this.timelineMoving = false
-          this.refresh()
+          if (this.timelineMoving) {
+            this.timelineMoving = false
+            this.refresh()
+          }
         } else {
           domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
           for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
             node.dataset.refresh = 'outdated'
           }
-          this.timelineMoving = true
         }
       }.bind(this))
     },
@@ -1043,6 +1044,7 @@ define([
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
       /* Move, following mouse, timeline left/right and up/down when left button is held */
       if (event.buttons === 1 || event.type === 'touchmove') {
+        this.timelineMoving = true
         if (!this.originalTarget) {
           this.originalTarget = event.target
         }
