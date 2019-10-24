@@ -32,7 +32,7 @@ define([
         if (entry) {
           try {
             entry = JSON.parse(entry)
-            if (entry.lastFetch >= new Date().getTime() - 2592000 && entry.lastFetch > this.lastUpdate) {
+            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge && entry.lastFetch > this.lastUpdate) {
               resolve(entry)
               return
             }

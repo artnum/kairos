@@ -15,11 +15,25 @@ define([
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = null
+
+        entry = window.localStorage.getItem(`location/Machine/${id}`)
+        if (entry) {
+          try {
+            entry = JSON.parse(entry)
+            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge) {
+              resolve(entry)
+              return
+            }
+          } catch (error) { /* NOP */ }
+        }
         Query.exec(Path.url(`store/Machine/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data[0]
             entry.label = `${id} ${entry.cn}`
             entry.value = id
+
+            entry.lastFetch = new Date().getTime()
+            window.localStorage.setItem(`location/Machine/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
         })

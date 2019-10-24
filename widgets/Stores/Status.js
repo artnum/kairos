@@ -34,6 +34,16 @@ define([
           }
           id = s.join('/')
         }
+        entry = window.localStorage.getItem(`location/${id}`)
+        if (entry) {
+          try {
+            entry = JSON.parse(entry)
+            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge) {
+              resolve(entry)
+              return
+            }
+          } catch (error) { /* NOP */ }
+        }
         if (!id.includes('Status')) { id = `Status/${id}` }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
@@ -41,11 +51,15 @@ define([
             let name = `${entry.name}`
             entry.label = name
             entry.value = id
+
+            entry.lastFetch = new Date().getTime()
+            window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
         })
       })
     },
+
     query: function (txt) {
       return new Promise((resolve, reject) => {
         let entries = []

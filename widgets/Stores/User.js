@@ -18,7 +18,7 @@ define([
         this.params = {'search.function': options.type}
       }
     },
-    
+
     get: function (id) {
       return new Promise((resolve, reject) => {
         if (!id) {
@@ -34,12 +34,26 @@ define([
           }
           id = s.join('/')
         }
+
+        entry = window.localStorage.getItem(`location/${id}`)
+        if (entry) {
+          try {
+            entry = JSON.parse(entry)
+            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge) {
+              resolve(entry)
+              return
+            }
+          } catch (error) { /* NOP */ }
+        }
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
             let name = `${entry.name}`
             entry.label = name
             entry.value = id
+
+            entry.lastFetch = new Date().getTime()
+            window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
         })
