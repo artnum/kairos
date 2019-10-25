@@ -1599,29 +1599,32 @@ define([
         div.setAttribute('draggable', 'true')
         div.addEventListener('dragover', (event) => {
           if (event.dataTransfer.items.length < 0) { return }
-          if (event.dataTransfer.items[0].type !== 'text/x-location-image-hash') { return }
-          event.dataTransfer.items[0].getAsString((hash) => {
-            let n = event.target
-            for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
-            if (n.dataset.hash === hash) { return }
-            let p = n.parentNode
-            let spacer = p.firstElementChild
-            for (; spacer && !spacer.classList.contains('ddSpacer'); spacer = spacer.nextElementSibling);
+          for (let item of event.dataTransfer.items) {
+            if (item.type !== 'text/x-location-image-hash') { continue }
+            item.getAsString((hash) => {
+              let n = event.target
+              for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+              if (n.dataset.hash === hash) { return }
+              let p = n.parentNode
+              let spacer = p.firstElementChild
+              for (; spacer && !spacer.classList.contains('ddSpacer'); spacer = spacer.nextElementSibling);
 
-            let brect = n.getBoundingClientRect()
-            let m = brect.x + (brect.width / 2) + 1
-            if (event.clientX > m) {
-              window.requestAnimationFrame(() => {
-                p.removeChild(spacer)
-                p.insertBefore(spacer, n.nextElementSibling)
-              })
-            } else {
-              window.requestAnimationFrame(() => {
-                p.removeChild(spacer)
-                p.insertBefore(spacer, n)
-              })
-            }
-          })
+              let brect = n.getBoundingClientRect()
+              let m = brect.x + (brect.width / 2) + 1
+              if (event.clientX > m) {
+                window.requestAnimationFrame(() => {
+                  p.removeChild(spacer)
+                  p.insertBefore(spacer, n.nextElementSibling)
+                })
+              } else {
+                window.requestAnimationFrame(() => {
+                  p.removeChild(spacer)
+                  p.insertBefore(spacer, n)
+                })
+              }
+            })
+            break
+          }
         })
         div.addEventListener('dragstart', (event) => {
           this.dropToDeleteBegin()
@@ -1681,8 +1684,10 @@ define([
       event.stopPropagation()
       this.dropToDeleteEnd()
       if (event.dataTransfer && event.dataTransfer.items.length > 0) {
-        if (event.dataTransfer.items[0].type === 'text/x-location-image-hash') {
-          event.dataTransfer.items[0].getAsString(this.deleteImage.bind(this))
+        for (let item of event.dataTransfer.items) {
+          if (item.type !== 'text/x-location-image-hash') { continue }
+          item.getAsString(this.deleteImage.bind(this))
+          return
         }
       }
       if (!this.nMissionDisplay.dataset.uid) {
