@@ -567,6 +567,7 @@ foreach (array('full', 'quarter') as $dispo) {
 }
 if ($PDF !== null) {
   $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+  $PDFUniteList[] = sprintf('%s/%05d.pdf', $PDFDir, $count);
 }
 exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshellarg($PDFDir)));
 
