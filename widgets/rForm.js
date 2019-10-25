@@ -1663,6 +1663,9 @@ define([
             n.style.opacity = ''
           })
         })
+        div.addEventListener('click', (event) => {
+          window.open(`/${APPConf.base}/${APPConf.uploader}/${hash}`, hash)
+        })
         /* add div in place */
         window.requestAnimationFrame(() => {
           this.nMissionDisplay.appendChild(div)
