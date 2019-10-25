@@ -1252,6 +1252,7 @@ define([
           })
         }
       } else {
+        if (!this.InterventionsSymbols) { return }
         this.InterventionsSymbols.forEach((s) => {
           window.requestAnimationFrame(() => {
             if (s[0]) { parentNode.appendChild(s[0]) }
