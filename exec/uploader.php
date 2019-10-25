@@ -2,6 +2,15 @@
 require('artnum/autoload.php');
 require('../lib/url.php');
 
+function thumbs ($file, $mtype) {
+  switch ($mtype) {
+    default: return;
+    case 'application/pdf':
+      exec(sprintf('convert %s[0] %s.png', escapeshellarg($file), escapeshellarg($file)));
+      return;
+  }
+}
+
 $ini_conf = parse_ini_file('../conf/location.ini', true);
 if (!isset($ini_conf['pictures'])) {
   $ini_conf['pictures'];
@@ -59,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     rename($tmpFile, $dirname . '/' . $filename);
     $type = mime_content_type($dirname . '/' . $filename);
+    thumbs($dirname . '/' . $filename, $type);
     echo '{"success": true, "name": "' . $filename . '", "size": ' . filesize($dirname . '/' . $filename) . ', "mimetype": "' . $type . '"}';
   } else {
     unlink($tmpFile);
@@ -66,16 +76,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 } else {
   if (isset($_SERVER['PATH_INFO'])) {
+    $op = 'open';
     $id = substr($_SERVER['PATH_INFO'], 1);
+    $parts = explode(',', $id);
+    if (count($parts) === 2) {
+      if (ctype_alnum($parts[0]) && ctype_alnum($parts[1])) {
+        $id = $parts[0];
+        $op = $parts[1];
+      }
+    }
     if (ctype_alnum($id)) {
       $dir = substr($id, 0, 2);
       if (is_dir($uploadDir . '/' . $dir)) {
         $dir .= '/' . substr($id, 2, 2);
         if (is_dir($uploadDir . '/'  . $dir)) {
           if (is_readable($uploadDir . '/'. $dir . '/' . $id)) {
-            $type = mime_content_type($uploadDir . '/' . $dir . '/' . $id);
-            header('Content-Type: ' . $type);
-            readfile($uploadDir . '/' . $dir . '/' . $id);
+            if ($op === 'open' && is_readable($uploadDir . '/' . $dir . '/' . $id . '.png')) {
+              header('Content-Type: image/png');
+              readfile($uploadDir . '/' . $dir . '/' . $id . '.png');
+            } else {
+              $type = mime_content_type($uploadDir . '/' . $dir . '/' . $id);
+              header('Content-Type: ' . $type);
+              readfile($uploadDir . '/' . $dir . '/' . $id);
+            }
           }
         }
       }

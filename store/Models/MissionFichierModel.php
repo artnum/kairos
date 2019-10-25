@@ -45,6 +45,12 @@ class MissionFichierModel extends artnum\SQL {
   }
 
   function listing ($options) {
+    if ($options['search']['fichier']) {
+      $result = $this->get($options['search']['fichier']);
+      if ($result !== NULL) {
+        return array(array($result), 1);
+      }
+    }
     $where_clause = '';
     if (isset($options['search']) && !empty($options['search'])) {
       $where_clause .= $this->prepareSearch($options['search']);

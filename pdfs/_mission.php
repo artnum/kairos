@@ -63,6 +63,11 @@ foreach($addrs as $k => $v) {
    }
 }
 
+/* to create a tempdir we create a tempfile unlink it, create a temp dir with it name */
+$PDFDir = tempnam(sys_get_temp_dir(), 'pdf-dir-');
+unlink($PDFDir);
+mkdir($PDFDir);
+
 /* PDF Generation */
 $PDF = new LocationPDF();
 $PDF->addVTab(21);
@@ -445,6 +450,10 @@ if (count($files) > 0) {
   $PDF->AddPage();
 }
 
+$count = 0;
+$PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+$PDFUniteList = array(escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count)));
+
 $dispfile = array('full' => array(), 'quarter' => array());
 foreach ($files as $file) {
   switch (strtolower($file['disposition'])) {
@@ -465,6 +474,9 @@ $DispositionSizes = array(
                                                                           array(5, 146),
                                                                           array(101, 146)))
 );
+
+$PDF = null;
+$count = 1;
 foreach (array('full', 'quarter') as $dispo) {
   $posCount = -1;
   $addPage = false;
@@ -475,7 +487,14 @@ foreach (array('full', 'quarter') as $dispo) {
 
     if ($posCount === -1 || $posCount + 1 >= count($DispositionSizes[$dispo]['positions'])) {
       $posCount = 0;
+      if ($PDF !== null) {
+        $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+      }
+      $PDF = new LocationPDF();
+      $PDF->DisableHeaderFooter();
       $PDF->AddPage();
+      $count++;
     } else {
       $posCount++;
     }
@@ -499,6 +518,13 @@ foreach (array('full', 'quarter') as $dispo) {
         exec(sprintf('convert %s %s', escapeshellarg($img), escapeshellarg($jpegfile . '.jpeg')));
         $gd = imagecreatefromjpeg($jpegfile . '.jpeg');
         unlink($jpegfile . '.jpeg');
+        break;
+      case 'application/pdf':
+        $PDF = null;
+        $gd = null;
+        $posCount = -1;
+        symlink($img, sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
         break;
     }
     if (!is_null($gd)) {
@@ -539,12 +565,28 @@ foreach (array('full', 'quarter') as $dispo) {
     }
   }
 }
-if(is_null($addrs['client'])) {
-   $PDF->Output('Mission ' . $reservation['id'] .  '.pdf', 'I'); 
-} else {
-   $PDF->Output('Mission ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+if ($PDF !== null) {
+  $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
 }
+exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshellarg($PDFDir)));
 
+
+header('Content-Type: application/pdf');
+if(is_null($addrs['client'])) {
+  header('Content-Disposition: inline;filename=' . $reservation['id'] .  '.pdf');
+} else {
+  header('Content-Disposition: inline;filename=' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+}
+header(sprintf('Content-Length: %d', filesize(sprintf('%s/out.pdf', $PDFDir))));
+readfile(sprintf('%s/out.pdf', $PDFDir));
+
+if (($dh = opendir($PDFDir))) {
+  while (($f = readdir($dh)) !== FALSE) {
+    if ($f === '.' || $f === '..') { continue; }
+    unlink(sprintf('%s/%s', $PDFDir, $f));
+  }
+}
+rmdir($PDFDir);
 foreach($unlink_files as $f) {
   unlink($f);
 }

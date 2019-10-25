@@ -1667,7 +1667,7 @@ define([
           })
         })
         div.addEventListener('click', (event) => {
-          window.open(`/${APPConf.base}/${APPConf.uploader}/${hash}`, hash)
+          window.open(`/${APPConf.base}/${APPConf.uploader}/${hash},download`, hash)
         })
         /* add div in place */
         window.requestAnimationFrame(() => {
@@ -1732,7 +1732,7 @@ define([
       for (let i = 0; i < data.items.length; i++) {
         let form = null
         let item = data.items[i]
-        if (item.kind === 'file' && item.type.indexOf('image') === 0) {
+        if (item.kind === 'file' && (item.type.indexOf('image') === 0 || item.type.indexOf('application/pdf') === 0)) {
           form = new FormData()
           form.append('upload', item.getAsFile())
           upload(form)
