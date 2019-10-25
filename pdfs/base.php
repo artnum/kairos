@@ -2,7 +2,7 @@
 include('artnum/autoload.php');
 include('../lib/url.php');
 
-header('Cache-Control', 'no-cache, max-age=0');
+header('Cache-Control: no-cache, max-age=0');
 
 function e404($msg = 'aucun') {
    ob_end_clean();

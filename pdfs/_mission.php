@@ -574,9 +574,9 @@ exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshella
 
 header('Content-Type: application/pdf');
 if(is_null($addrs['client'])) {
-  header('Content-Disposition: inline;filename=' . $reservation['id'] .  '.pdf');
+  header('Content-Disposition: inline; filename="' . $reservation['id'] .  '.pdf"');
 } else {
-  header('Content-Disposition: inline;filename=' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+  header('Content-Disposition: inline; filename="' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf"', 'I'); 
 }
 header(sprintf('Content-Length: %d', filesize(sprintf('%s/out.pdf', $PDFDir))));
 readfile(sprintf('%s/out.pdf', $PDFDir));
