@@ -567,10 +567,14 @@ foreach (array('full', 'quarter') as $dispo) {
 }
 if ($PDF !== null) {
   $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
-  $PDFUniteList[] = sprintf('%s/%05d.pdf', $PDFDir, $count);
+  $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
 }
-exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshellarg($PDFDir)));
 
+if (count($PDFUniteList) > 1) {
+  exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshellarg($PDFDir)));
+} else {
+  rename(sprintf('%s/00000.pdf', $PDFDir), sprintf('%s/out.pdf', $PDFDir));
+}
 
 header('Content-Type: application/pdf');
 if(is_null($addrs['client'])) {
