@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, GEvent, Popper, Tooltip, GSymbol */
+/* global DateRange, pSBC, fastdom, GEvent, Popper, Tooltip, GSymbol, crc32 */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -85,6 +85,7 @@ define([
       this.complements = []
       this.events = {}
       this.overlap = {}
+      this.dataHash = {}
       this.duration = 0
       this.nodeGeneration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
@@ -121,22 +122,40 @@ define([
       }
 
       djLang.mixin(this, json)
-
+      this.dataOriginal = json
+      this.dataHash['target'] = crc32(this.get('target'))
       this.set('updated', true)
       ;[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
+          /* date and time are UTC on server but locale on the client, so store the client one */
+          this.dataHash[attr] = crc32(djDateStamp.toISOString(djDateStamp.fromISOString(json[attr])))
           this.set(attr, djDateStamp.fromISOString(json[attr]))
+        } else {
+          this.dataHash[attr] = crc32('')
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, (attr) => {
+      ;[
+        'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
+          this.dataHash[attr] = crc32(json[attr])
           this.set(attr, json[attr])
+        } else {
+          this.dataHash[attr] = crc32('')
         }
       }))
 
       if (json['other']) {
+        this.dataHash['other'] = crc32(json['other'])
         this.set('other', JSON.parse(json['other']))
+      } else {
+        this.dataHash['other'] = crc32('{\"critic\":\"\"}')
+      }
+
+      if (json['uuid']) {
+        this.dataHash['uuid'] = crc32(json['uuid'])
+      } else {
+        this.dataHash['uuid'] = crc32('')
       }
 
       if (this.contacts && this.contacts['_client']) {
@@ -153,7 +172,17 @@ define([
 
       if (json.arrival) {
         this.set('_arrival', Object.assign({}, json.arrival))
+      } else {
+        json.arrival = {}
       }
+      this.dataHash['_arrival'] = {}
+      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
+        if (json.arrival[attrArr]) {
+          this.dataHash['_arrival'][attrArr] = crc32(json.arrival[attrArr])
+        } else {
+          this.dataHash['_arrival'][attrArr] = crc32('')
+        }
+      })
 
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
       this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
@@ -163,27 +192,32 @@ define([
       }
     },
 
-    toObject: function () {
+    toObject: function (dataHash = {}) {
       var object = {}
 
       ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
         if (!this[attr]) {
           object[attr] = null
+          if (dataHash) { dataHash[attr] = crc32('') }
         } else {
           object[attr] = djDateStamp.toISOString(this[attr])
+          if (dataHash) { dataHash[attr] = crc32(object[attr]) }
         }
       }))
 
       ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
+          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
         } else {
           object[attr] = null
+          if (dataHash) { dataHash[attr] = crc32('') }
         }
       }))
 
       if (this.get('other')) {
         object['other'] = JSON.stringify(this.get('other'))
+        if (dataHash) { dataHash['other'] = crc32(object['other']) }
       }
 
       if (!object.creator) {
@@ -192,16 +226,28 @@ define([
           currentUser = JSON.parse(currentUser)
           object.creator = 'store/User/' + currentUser.id
           this.set('creator', object.creator)
+          if (dataHash) { dataHash['creator'] = crc32(object.creator) }
         }
       }
       if (this.sup) {
         object['target'] = this.sup.get('target')
+        if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
       }
 
       if (this.get('_arrival')) {
         object.arrival = Object.assign({}, this.get('_arrival'))
+      } else {
+        object.arrival = {}
       }
 
+      dataHash['_arrival'] = {}
+      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
+        if (object.arrival[attrArr]) {
+          dataHash['_arrival'][attrArr] = crc32(object.arrival[attrArr])
+        } else {
+          dataHash['_arrival'][attrArr] = crc32('')
+        }
+      })
       object.id = this.uid
       return object
     },
@@ -1289,7 +1335,28 @@ define([
     save: function (object = null) {
       this.modifiedState = true
       return new Promise(function (resolve, reject) {
-        let reservation = object === null ? this.toObject() : object
+        let creator = window.localStorage.getItem(Path.bcname('user'))
+        if (creator) {
+          creator = JSON.parse(creator)
+        }
+        let dataHash = {}
+        let reservation = object === null ? this.toObject(dataHash) : object
+        let modifiedLog = {type: 'Reservation', object: reservation.id, attribute: [], creator: parseInt(creator.id), date: new Date().toISOString(), original: this.dataOriginal}
+        if (dataHash && this.dataHash) {
+          for (let k in dataHash) {
+            if (k === '_arrival') {
+              for (let _k in dataHash[k]) {
+                if (this.dataHash[k] && dataHash[k] && this.dataHash[k][_k] !== dataHash[k][_k]) {
+                  modifiedLog.attribute.push(`${k}.${_k}`)
+                }
+              }
+            } else {
+              if (this.dataHash[k] !== dataHash[k]) {
+                modifiedLog.attribute.push(k)
+              }
+            }
+          }
+        }
         let arrival = reservation.arrival
         delete reservation.arrival
         Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
@@ -1299,6 +1366,11 @@ define([
             return
           }
           let id = result.data[0].id
+          if (modifiedLog.attribute.length > 0) {
+            /* POST to mod log */
+            modifiedLog.object = id
+            Query.exec(Path.url('/store/Histoire/'), {method: 'POST', body: modifiedLog})
+          }
           this.domNode.dataset.id = id
           if (!arrival || Object.keys(arrival).length === 0) {
             resolve(id)

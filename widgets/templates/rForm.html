@@ -3,9 +3,9 @@
     <div class="flex"> <!-- Flexbox base //-->
       <fieldset class="ui">
         <legend>Machine</legend>
-        <label><span>Machine :</span><input class="ui" type="text" name="machine" data-dojo-attach-point="nMachineChange" /></label>
-        <label><span>Commandée :</span><input class="ui" data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" /></label>
-        <label><span>Critique :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="o-critic" /></label>
+        <label name="H:target"><span>Machine :</span><input class="ui" type="text" name="machine" data-dojo-attach-point="nMachineChange" /></label>
+        <label name="H:title"><span>Commandée :</span><input class="ui" data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="nTitle" name="title" /></label>
+        <label name="H:other"><span>Critique :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="o-critic" /></label>
       </fieldset>
       <fieldset class="ui" data-dojo-attach-point="nEntryDetails">
         <legend>Caractéristiques</legend>
@@ -14,44 +14,44 @@
       <fieldset class="ui">
         <legend>Location</legend>
         <label><input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente</label>
-        <label class="small"><span data-href="beginDate" class="targetable">Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /></label>
-        <label class="small"><span data-href="endDate" class="targetable">Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="endDate" data-dojo-attach-point="endDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" /></label>
+        <label name="H:begin" class="small"><span data-href="beginDate" class="targetable">Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /></label>
+        <label name="H:end" class="small"><span data-href="endDate" class="targetable">Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="endDate" data-dojo-attach-point="endDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" /></label>
         <label><input data-dojo-type="dijit/form/CheckBox" name="confirmed" data-dojo-attach-point="nConfirmed" data-dojo-attach-event="click:toggleConfirmed"/> Fin confirmée</label>
         <button data-dojo-type="dijit/form/Button" name="confirmedAndReturned" data-dojo-attach-point="nConfirmedAndReturned" data-dojo-attach-event="click:toggleConfirmedAndReturned">Confirmée et ramenée</button>
       </fieldset>
 
       <fieldset class="ui" data-dojo-attach-point="nDeliveryFields">
         <legend>Livraison</legend>
-        <label class="small"><span>Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /></label>
-        <label class="small"><span>Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" /></label>
+        <label name="H:deliveryBegin" class="small"><span>Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="deliveryBeginDate" data-dojo-attach-point="nDeliveryBeginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="deliveryBeginTime" data-dojo-attach-point="nDeliveryBeginTime" /></label>
+        <label name="H:deliveryEnd" class="small"><span>Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="deliveryEndDate" data-dojo-attach-point="nDeliveryEndDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="deliveryEndTime" data-dojo-attach-point="nDeliveryEndTime" /></label>
       </fieldset>
         
       <fieldset data-dojo-attach-point="nBack" class="ui full" style="display: none">
         <legend class="title">Retour</legend>
-        <label><span>Annonce :</span><input class="ui" data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="arrivalDate" /> <input class="ui" data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" /></label>
-        <label><span>Responsable :</span><input class="ui" data-dojo-attach-point="nArrivalCreator" name="arrivalCreator" type="text" /></label>
-        <label><span>Adresse :</span><textarea class="ui" data-dojo-attach-point="nArrivalAddress" data-dojo-type="dijit/form/Textarea" name="arrivalAddress"></textarea></label>
-        <label><span>Localité :</span><input class="ui" data-dojo-attach-point="nArrivalLocality" type="text" name="arrivalLocality" /></label>
-        <label><span>Clefs :</span><input class="ui" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /></label>
-        <label><span>Remarque :</span><input class="ui" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /></label>
-        <label><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> En cours</label>
-        <label><input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> Ramenée</label>
+        <label name="H:_arrival.reported"><span>Annonce :</span><input class="ui" data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="arrivalDate" /> <input class="ui" data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" /></label>
+        <label name="H:_arrival.creator"><span>Responsable :</span><input class="ui" data-dojo-attach-point="nArrivalCreator" name="arrivalCreator" type="text" /></label>
+        <label name="H:_arrival.where><span>Adresse :</span><textarea class="ui" data-dojo-attach-point="nArrivalAddress" data-dojo-type="dijit/form/Textarea" name="arrivalAddress"></textarea></label>
+        <label name="H:_arrival.locality"><span>Localité :</span><input class="ui" data-dojo-attach-point="nArrivalLocality" type="text" name="arrivalLocality" /></label>
+        <label name="H:_arrival.other"><span>Clefs :</span><input class="ui" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /></label>
+        <label name="H:_arrival.comment"><span>Remarque :</span><input class="ui" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /></label>
+        <label name="H:_arrival.inprogress"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> En cours</label>
+        <label name="H:_arrival.done"><input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> Ramenée</label>
       </fieldset>
       
       <fieldset class="full ui">
         <legend>Chantier</legend>
-	<label><span>Référence :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" /></label>
-        <label><span>Status :</span><input class="ui" data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="nStatus" /></label>
-	<label><span>Adresse :</span><textarea class="ui" name="nAddress" data-dojo-attach-point="nAddress" style="min-height: 2ex;"></textarea></label>
-	<label><span>Localité :</span><input class="ui" type="text" name="nLocality" data-dojo-attach-point="nLocality" /></label>
-        <label><span>GPS :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /></label>
+	<label name="H:reference"><span>Référence :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="nReference" data-dojo-attach-point="nReference" /></label>
+        <label name="H:status"><span>Status :</span><input class="ui" data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="nStatus" /></label>
+	<label name="H:address"><span>Adresse :</span><textarea class="ui" name="nAddress" data-dojo-attach-point="nAddress" style="min-height: 2ex;"></textarea></label>
+	<label name="H:locality"><span>Localité :</span><input class="ui" type="text" name="nLocality" data-dojo-attach-point="nLocality" /></label>
+        <label name="H:gps"><span>GPS :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /></label>
       </fieldset> 
 
       <fieldset class="full ui">
         <legend>Dossier</legend>
-        <label><span>Responsable :</span><input class="ui" type="text" name="creator" data-dojo-attach-point="nCreator" /></label>
-        <label><span>Technicien :</span><input class="ui" type="text" name="technician" data-dojo-attach-point="nTechnician" /></label>
-        <label><span>Lien :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /></label>
+        <label name="H:creator"><span>Responsable :</span><input class="ui" type="text" name="creator" data-dojo-attach-point="nCreator" /></label>
+        <label name="H:technician"><span>Technicien :</span><input class="ui" type="text" name="technician" data-dojo-attach-point="nTechnician" /></label>
+        <label name="H:folder"><span>Lien :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /></label>
       </fieldset>
       
       <fieldset class="full ui"><legend>Contacts</legend>
@@ -60,13 +60,13 @@
         </div>
       </fieldset>
       
-      <fieldset class="ui">
+      <fieldset class="ui" name="H:equipment">
         <legend>Équipement</legend>
         <button style="display: inline-block; clear: right" type="button" name="noEquipement" data-dojo-attach-event="click:evtNoEquipment">Pas d'équipement</button>
         <textarea class="ui" data-dojo-type="dijit/form/Textarea" style="width:100%; min-width: 100%;" name="nEquipment" data-dojo-attach-point="nEquipment"></textarea>
       </fieldset>
 
-      <fieldset class="ui">
+      <fieldset class="ui" name="H:comment">
         <legend>Commentaire</legend>
         <textarea class="ui" data-dojo-type="dijit/form/Textarea" style="width: 100%; min-width: 100%;" name="nComments" data-dojo-attach-point="nComments"></textarea>
       </fieldset>
@@ -93,13 +93,18 @@
         </div>
       </fieldset>
       
-      <fieldset class="ui full"><legend>Note interne</legend>
+      <fieldset class="ui full" name="H:note"><legend>Note interne</legend>
         <textarea class="ui" style="width: 100%; min-width: 100%;" data-dojo-type="dijit/form/Textarea" name="nNote" data-dojo-attach-point="nNote"></textarea>
       </fieldset>
 
       <fieldset class="ui full"><legend>Mission</legend>
         <div class="imageZone" data-dojo-attach-point="nMissionDisplay"></div>
         <div tabindex="0" class="dropZone" data-dojo-attach-point="nMissionDrop">Glisser ou copier des images pour ajouter !</div>
+      </fieldset>
+
+      <fieldset class="ui full history"><legend>Historique</legend>
+        <div class="history" data-dojo-attach-point="nHistory">
+        </div>
       </fieldset>
       
       <fieldset class="ui full">

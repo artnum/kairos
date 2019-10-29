@@ -279,3 +279,12 @@ CREATE TABLE IF NOT EXISTS "intervention" (
        FOREIGN KEY ("intervention_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";
        
+CREATE TABLE IF NOT EXISTS "histoire" (
+       "histoire_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "histoire_object" INTEGER NOT NULL,
+       "histoire_type" ENUM('Reservation', 'Arrival', 'Association') NOT NULL,
+       "histoire_date" CHAR(25) NOT NULL, -- iso8061 without ms
+       "histoire_creator" INTEGER NOT NULL,
+       "histoire_attribute" TEXT(1024) NOT NULL, -- attribute list
+       "histoire_original" BLOB(4096) -- data (compressed)
+       );
