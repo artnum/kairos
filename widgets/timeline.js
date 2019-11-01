@@ -1061,6 +1061,7 @@ define([
       if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
       /* Move, following mouse, timeline left/right and up/down when left button is held */
       if (event.buttons === 1 || event.type === 'touchmove') {
+        this.toolTip_hide()
         this.timelineMoving = true
         if (!this.originalTarget) {
           this.originalTarget = event.target
