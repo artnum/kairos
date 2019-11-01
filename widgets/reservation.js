@@ -288,34 +288,11 @@ define([
       let node = event.target
       if (node.dataset.name) {
         if (this.htmlIdentity.dataset[node.dataset.name]) {
-          if (this.nTooltip && this.nTooltip.parentNode) {
-            this.nTooltip.parentNode.removeChild(this.nTooltip)
-            this.nTooltip = null
-          }
-          this.nTooltip = document.createElement('DIV')
-          this.nTooltip.classList.add('smallTooltip')
-          this.nTooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
-          this.domNode.parentNode.insertBefore(this.nTooltip, this.domNode)
-          if (window.TooltipPopper) {
-            window.TooltipPopper.destroy()
-            window.TooltipPopper = null
-          }
-          window.TooltipPopper = new Popper(this.domNode, this.nTooltip, {placement: 'top-start'})
+          let tooltip = document.createElement('DIV')
+          tooltip.classList.add('smallTooltip')
+          tooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
+          window.App.toolTip(tooltip, this.domNode, event.target)
         }
-      }
-    },
-
-    tooltipHide: function (event) {
-      /**/
-      if (this.nTooltip) {
-        if (this.nTooltip.parentNode) {
-          this.nTooltip.parentNode.removeChild(this.nTooltip)
-          this.nTooltip = null
-        }
-      }
-      if (window.TooltipPopper) {
-        window.TooltipPopper.destroy()
-        window.TooltipPopper = null
       }
     },
     evTouchStart: function (event) {
@@ -587,7 +564,6 @@ define([
       if (!this.htmlIdentity) {
         this.htmlIdentity = document.createElement('SPAN')
         this.htmlIdentity.addEventListener('mouseover', this.tooltipShow.bind(this))
-        this.htmlIdentity.addEventListener('mouseout', this.tooltipHide.bind(this))
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')

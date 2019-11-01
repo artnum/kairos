@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip */
+/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip, Popper */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -542,6 +542,23 @@ define([
 
       domDay.innerHTML = txtDate
       return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
+    },
+
+    toolTip: function (node, element, triggerElement) {
+      this.toolTip_hide()
+      document.body.appendChild(node)
+      window.TooltipPopper = [new Popper(element, node, {placement: 'top-start'}), node, triggerElement]
+      triggerElement.addEventListener('mouseout', this.toolTip_hide, {capture: true})
+      triggerElement.addEventListener('mouseleave', this.toolTip_hide, {capture: true})
+    },
+    toolTip_hide: function () {
+      if (window.TooltipPopper) {
+        window.TooltipPopper[0].destroy()
+        if (window.TooltipPopper[1] && window.TooltipPopper[1].parentNode) {
+          window.TooltipPopper[1].parentNode.removeChild(window.TooltipPopper[1])
+        }
+        window.TooltipPopper = null
+      }
     },
 
     resize: function () {
@@ -1110,6 +1127,7 @@ define([
     },
 
     eWheel: function (event) {
+      this.toolTip_hide()
       if (this._mask) { return }
       var move = 1
       if (event.deltaX < 0) {
