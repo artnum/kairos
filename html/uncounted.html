@@ -47,12 +47,14 @@
        let today = new Date()
        today.setHours(12, 0, 0, 0)
        let oldest = new Date(entry.end)
-       if (entry._count) {
-         oldest = new Date(entry._count.end)
+       if (entry.lastcount) {
+         oldest = new Date(entry.lastcount)
        }
        oldest.setHours(12, 0, 0, 0)
        let delta = Math.round((today.getTime() - oldest.getTime()) / 86400000)
-       if (delta < 0) { return ['location future', -1] }
+       if (delta < 0) {
+         return ['futur', -1]
+       }
        let open =  delta - (Math.floor(delta / 7) * 2)
        return [`${open}`, open]
      })

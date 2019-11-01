@@ -23,7 +23,7 @@ CREATE VIEW "uncounted" AS
          "creator"."user_phone" AS "creator_phone",
          "technician"."user_name" AS "technician_name",
          "technician"."user_phone" AS "technician_phone",
-         MAX("count_end")
+	 MAX("count"."count_end") AS "lastcount"
 	FROM "reservation"
 	     LEFT JOIN "countReservation" ON "countReservation_reservation" = "reservation_id"
 	     LEFT JOIN "count" on "countReservation_count" = "count_id"
