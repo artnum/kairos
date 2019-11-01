@@ -179,6 +179,7 @@ Arrival.prototype.done = function (event) {
   }
   Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then(function (result) {
     if (result.success && result.length === 1) {
+      Histoire('Reservation', reservationId, ['_arrival.done'], null)
       this.RChannel.postMessage({op: 'touch', id: reservationId})
     }
   }.bind(this))
@@ -200,6 +201,7 @@ Arrival.prototype.progress = function (event) {
   }
 
   fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+    Histoire('Reservation', reservationId, ['_arrival.inprogress'], null)
     this.RChannel.postMessage({op: 'touch', id: reservationId})
   }.bind(this))
 }
