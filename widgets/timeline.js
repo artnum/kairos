@@ -1561,8 +1561,8 @@ define([
 
         begin.setTime(this.get('dateRange').begin.getTime())
         end.setTime(this.get('dateRange').end.getTime())
-        begin.setTime(begin.getTime() - 604800000)
-        end.setTime(end.getTime() + 604800000)
+     /* begin.setTime(begin.getTime() - 604800000)
+        end.setTime(end.getTime() + 604800000) */
 
         this.Updater.postMessage({op: 'move', begin: begin, end: end})
       }
