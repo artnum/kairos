@@ -20,9 +20,10 @@ define([
 ) {
   return djDeclare('location/count', [ _dtWidgetBase, djEvented ], {
     constructor: function () {
+      this.inherited(arguments)
+      this.Arguments = arguments
       this.Days = {}
       this.Current = {begin: null, end: null, canton: 'vs'}
-      this.inherited(arguments)
       var args = arguments
       this.AddReservationToCount = null
       if (arguments[0] && arguments[0].reservation) {
@@ -486,7 +487,7 @@ define([
 
       div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
         ${(this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '')}
-        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')}</li>
+        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')} <span data-action="add-reservation"> <i class="fas fa-plus-circle"> </i> Ajouter une réservation</span></li>
         <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
         <fieldset><legend>Période</legend><label for="begin">Début</label>
@@ -606,6 +607,10 @@ define([
               while (node.tagName !== 'INPUT') { node = node.nextSibling }
               node.value = value
             }
+            break
+          case 'add-reservation':
+            this.manAddReservation(event)
+            break
         }
       }.bind(this))
 
@@ -836,6 +841,62 @@ define([
             showTooltip(event.target, tooltip.join('<br />'))
           }
         }, {capture: true})
+        let groupClick = (event) => {
+          if (event.target.nodeName === 'I' && event.target.classList.contains('fa-layer-group')) {
+            let tr = event.target
+            for (; tr && tr.nodeName !== 'TR'; tr = tr.parentNode) ;
+
+            event.preventDefault()
+            let incValue = 1
+            if (event.type === 'contextmenu') { incValue = -1 }
+            let node = event.target
+            if (!this.lastGroupId) {
+              this.lastGroupId = 1
+            }
+            let gidNode
+            if (!tr.dataset.groupId) {
+              gidNode = document.createElement('span')
+              gidNode.classList.add('groupid')
+              if (incValue < 0 && this.lastGroupId > 1) {
+                this.lastGroupId--
+              }
+              tr.dataset.groupId = this.lastGroupId
+              window.requestAnimationFrame(() => {
+                gidNode.innerHTML = this.lastGroupId
+                node.parentNode.insertBefore(gidNode, node.nextSibling)
+              })
+            } else {
+              gidNode = node.nextElementSibling
+              if (parseInt(tr.dataset.groupId) + incValue > 0) {
+                tr.dataset.groupId = parseInt(tr.dataset.groupId) + incValue
+              }
+              window.requestAnimationFrame(() => {
+                gidNode.innerHTML = tr.dataset.groupId
+              })
+              this.lastGroupId = tr.dataset.groupId
+            }
+
+            let tbody = tr
+            for (; tbody && tbody.nodeName !== 'TBODY'; tbody = tbody.parentNode) ;
+            let groupHead = tbody.firstElementChild
+            for (; groupHead; groupHead = groupHead.nextSiblingElement) {
+              if (groupHead.dataset.groupHead === tr.dataset.groupId) {
+                break
+              }
+            }
+            if (groupHead) {
+              tbody.removeChild(tr)
+              tbody.insertBefore(tr, groupHead.nextElementSibling)
+            } else {
+              let gH = document.createElement('TR')
+              gH.innerHTML = `<tr><td>${tr.dataset.nodeId}</td><td colspan="5"><textarea></textarea></td><td><input type="text" /></td><td><input type="text" /></td><td></td>`
+              gH.dataset.groupHead = tr.dataset.groupId
+              tbody.insertBefore(gH, tr)
+            }
+          }
+        }
+        tr.addEventListener('click', groupClick)
+        tr.addEventListener('contextmenu', groupClick)
         tr.addEventListener('blur', hideTooltip, {capture: true})
         tr.addEventListener('change', this.calculate.bind(this))
         tr.addEventListener('keyup', (event) => {
@@ -929,9 +990,13 @@ define([
       this.refresh()
     },
 
-    saveQuit: async function (event) {
-      await this.save(event)
-      this.doc.close()
+    saveQuit: function (event) {
+      return new Promise((resolve, reject) => {
+        this.save(event).then(() => {
+          this.doc.close()
+          resolve()
+        })
+      })
     },
 
     save: async function (event) {
@@ -1076,7 +1141,40 @@ define([
           break
       }
     },
-
+    manAddReservation: function (event) {
+      let input = document.createElement('input')
+      input.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          let rId = event.target.value
+          Query.exec(Path.url(`store/Reservation/${rId}`)).then((res) => {
+            let cId = this.get('data-id')
+            if (res.success && res.length > 0) {
+              Query.exec(Path.url(`store/CountReservation`), {
+                method: 'POST',
+                body: JSON.stringify({reservation: rId, count: cId})
+              }).then((result) => {
+                if (result.success && result.length > 0) {
+                  window.GEvent('count.reservation-add', {reservation: rId})
+                  let s = document.createElement('SPAN')
+                  s.dataset.action = 'open-reservation'
+                  s.dataset.reservationId = rId
+                  s.classList.add('button')
+                  s.innerHTML = `${rId} <span data-action="delete-reservation"><i class="fas fa-trash"> </i></span>`
+                  this.saveQuit().then(() => {
+                    delete this.id
+                    this.constructor({'data-id': cId})
+                  })
+                }
+              })
+            }
+          })
+        }
+      })
+      let p = event.target.parentNode
+      window.requestAnimationFrame(() => {
+        p.insertBefore(input, event.target)
+      })
+    },
     calculate: function (event) {
       var fix = function (value) {
         return Math.round(value * 100) / 100
