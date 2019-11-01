@@ -292,15 +292,15 @@ define([
             this.nTooltip.parentNode.removeChild(this.nTooltip)
             this.nTooltip = null
           }
-          if (this.TooltipPopper) {
-            this.TooltipPopper.destroy()
-            this.TooltipPopper = null
-          }
           this.nTooltip = document.createElement('DIV')
           this.nTooltip.classList.add('smallTooltip')
           this.nTooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
           this.domNode.parentNode.insertBefore(this.nTooltip, this.domNode)
-          this.TooltipPopper = new Popper(this.domNode, this.nTooltip, {placement: 'top-start'})
+          if (window.TooltipPopper) {
+            window.TooltipPopper.destroy()
+            window.TooltipPopper = null
+          }
+          window.TooltipPopper = new Popper(this.domNode, this.nTooltip, {placement: 'top-start'})
         }
       }
     },
@@ -313,9 +313,9 @@ define([
           this.nTooltip = null
         }
       }
-      if (this.TooltipPopper) {
-        this.TooltipPopper.destroy()
-        this.TooltipPopper = null
+      if (window.TooltipPopper) {
+        window.TooltipPopper.destroy()
+        window.TooltipPopper = null
       }
     },
     evTouchStart: function (event) {
