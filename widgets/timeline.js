@@ -823,7 +823,7 @@ define([
         that.searchMenu.addChild(new DtMenuSeparator())
 
         /* */
-        Query.exec(Path.url('store/User')).then(function (users) {
+        Query.exec(Path.url('store/User', {params: {'search.function': 'admin', 'search.disabled': 0}})).then(function (users) {
           var currentUser = null
           if (window.localStorage.getItem(Path.bcname('user'))) {
             try {
