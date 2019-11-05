@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREME
 						  "user_name" TEXT,
 						  "user_phone" VARCHAR(15) DEFAULT '',
 						  "user_color" VARCHAR(32) DEFAULT 'black',
-						  "user_function" VARCHAR(16) DEFAULT 'admin'
+						  "user_function" VARCHAR(16) DEFAULT 'admin',
+						  "user_temporary" INT DEFAULT 0
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
