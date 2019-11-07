@@ -1830,7 +1830,7 @@ define([
         return new Promise((resolve, reject) => {
           Histoire.List({search: {
             subtype: 'NOTE',
-            object: this.reservation.id,
+            object: this.reservation.uid,
             type: 'Reservation'
           }}).then((result) => {
             result.reverse()
