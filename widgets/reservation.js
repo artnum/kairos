@@ -1317,7 +1317,7 @@ define([
         }
         let dataHash = {}
         let reservation = object === null ? this.toObject(dataHash) : object
-        let modifiedLog = {type: 'Reservation', object: reservation.id, attribute: [], creator: parseInt(creator.id), date: new Date().toISOString(), original: this.dataOriginal}
+        let modifiedLog = {type: 'Reservation', object: reservation.id, attribute: [], original: this.dataOriginal}
         if (dataHash && this.dataHash) {
           for (let k in dataHash) {
             if (k === '_arrival') {
@@ -1345,7 +1345,7 @@ define([
           if (modifiedLog.attribute.length > 0) {
             /* POST to mod log */
             modifiedLog.object = id
-            Query.exec(Path.url('/store/Histoire/'), {method: 'POST', body: modifiedLog})
+            Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original)
           }
           this.domNode.dataset.id = id
           if (!arrival || Object.keys(arrival).length === 0) {

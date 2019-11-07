@@ -56,12 +56,30 @@
     border-bottom: none;
 }
 
-.mbutton {
-   width: 208px;
-   border: 1px solid hsla(var(--button-color), 1);
-   border-right: 2px solid hsla(var(--button-color), 0.8);
-   border-bottom: 2px solid hsla(var(--button-color), 0.8);
-   margin: 1px;
+.dijitButton {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-variant: small-caps;
+    background: linear-gradient(hsla(var(--button-color), 0.3), transparent) hsla(var(--button-color2), 1);
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+.dijitButton * {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.mbutton, .dijitButton {
+    font-size: 1em;
+    width: 208px;
+    border: 1px solid hsla(var(--button-color), 1);
+    border-right: 2px solid hsla(var(--button-color), 0.8);
+    border-bottom: 2px solid hsla(var(--button-color), 0.8);
+    margin: 1px;
 }
 
 .mbuttonMain {

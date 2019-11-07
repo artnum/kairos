@@ -264,17 +264,31 @@
     width: calc(100% - 120px);
 }
 
+.rForm input, .rForm textarea, .rFrom select, .rForm .dijitTextBox, .rForm .dijitDateTextBox, .rForm .dijitTimeTextBox, .rForm .note {
+    padding: 0.2ex 0.2ch 0.2ex 0.2ch;
+    margin: 0.2ex 0 0.2ex 0;
+    border: 1px solid hsla(var(--default-color-base), 0.4);
+    background-color: var(--default-bg-color);
+}
+
+.rForm .dijitDateTextBox, .rForm .dijitTimeTextBox {
+    padding: 0 !important;
+}
+
+.rForm .note:empty {
+    display: none;
+}
+
 .rForm .intervention label.one {
     clear: left;
     width: 100%;
     display: inline-block;
 }
 
-
-.rForm .intervention div.content {
-    max-height: 18ex;
-    overflow-x: hidden;
-    overflow-y: auto;
+.rForm .typezone > div {
+   max-height: 18ex;
+   overflow-x: hidden;
+   overflow-y: auto; 
 }
 
 .rForm .intervention .content span {
@@ -323,4 +337,33 @@
 
 .rForm label.modified *, .rFrom legend.modified * {
     background-color: transparent !important;
+}
+
+.rForm .note {
+    white-space: pre-line;
+}
+
+.rForm .backward {
+    background-color: lightgray;
+}
+
+.rForm .typezone textarea.short {
+    width: 100%;
+    max-height: 3.2em !important;
+    min-height: 3.2em !important;
+    font-size: 0.8em;
+    font-family: 'B612 Mono', monospace;
+}
+
+.rForm .note .metadata {
+    color: hsla(var(--default-color-base), 0.6);
+    font-size: 0.8em;
+    display: block;
+    text-align: right;
+    margin: 0 1ch 0 0;
+}
+
+.rForm .message {
+    margin: initial;
+    padding: initial;
 }

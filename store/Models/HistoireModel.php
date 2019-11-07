@@ -5,11 +5,15 @@ class HistoireModel extends artnum\SQL {
     $this->conf('auto-increment', true);
     $this->conf('datetime', array('date'));
     $this->conf('force-type', array('original' => 'str'));
-    $this->set_req('get', 'SELECT "histoire_id", "histoire_object", "histoire_type", "histoire_date", "histoire_creator", "histoire_attribute", "user".*  FROM "\\Table" LEFT JOIN "user" ON "histoire_creator" = "user_id"');
+    $this->set_req('get', 'SELECT "histoire_id", "histoire_object", "histoire_type", "histoire_date", "histoire_creator", "histoire_attribute", "histoire_details", "user".*  FROM "\\Table" LEFT JOIN "user" ON "histoire_creator" = "user_id"');
     $this->conf('postprocess', function ($key, $value) {
       switch ($key) {
         case 'attribute':
-          return explode(',', $value);
+          if (!empty($value)) {
+            return explode(',', $value);
+          } else {
+            return null;
+          }
       }
       return $value;
     });
@@ -25,6 +29,8 @@ class HistoireModel extends artnum\SQL {
     }
     if (isset($data['attribute']) && !empty($data['attribute'])) {
       $data['attribute'] = join(',', $data['attribute']);
+    } else {
+      $data['attribute'] = '';
     }
     return parent::_write($data, NULL);
   }

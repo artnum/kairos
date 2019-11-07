@@ -123,5 +123,16 @@ Object.assign(String.prototype, {
         return `${v[0]}.${v[1]}`
       }
     }
+  },
+
+  initials () {
+    let i = this.split(/\s+/)
+    let initial = ''
+    for (let v of i) {
+      if (v.length > 0) {
+        initial += v[0]
+      }
+    }
+    return initial.toUpperCase()
   }
 })

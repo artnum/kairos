@@ -258,7 +258,12 @@ define([
     },
     _setNoteAttr: function (value) {
       if (value) {
-        this.nNote.set('value', value)
+        let d = document.createElement('DIV')
+        d.classList.add('backward')
+        d.innerHTML = value
+        window.requestAnimationFrame(() => {
+          this.nNewNote.appendChild(d)
+        })
       }
     },
 
@@ -805,8 +810,15 @@ define([
       djOn(this.endTime, 'change', djLang.hitch(this, this.changeEnd))
 
       this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({target: this}) }))
-      djOn(this.nForm, 'mousemove', function (event) { event.stopPropagation() })
+      djOn(this.domNode, 'mousemove', function (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }, {capture: true})
 
+      this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), {capture: true})
+      this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), {capture: true})
+      this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), {capture: true})
+      
       this.nMBeginDate.set('value', this.beginDate.get('value'))
       this.nMBeginTime.set('value', this.beginTime.get('value'))
       this.nMEndDate.set('value', this.endDate.get('value'))
@@ -830,47 +842,9 @@ define([
         }
       })
       this.buttonCreate()
-      this.loadHistory()
-    },
-
-    loadHistory: function () {
-      Query.exec(Path.url('store/Histoire', {params: {'search.object': this.reservation.id, 'search.type': 'Reservation', 'sort.date': 'DESC'}})).then((result) => {
-        if (result.success && result.length) {
-          result.data.forEach((entry) => {
-            let div = document.createElement('DIV')
-            div.innerHTML = `<span class="date">${new Date(entry.date).fullDate()} ${new Date(entry.date).shortHour()}</span><span class="user">${entry._user && entry._user.name ? entry._user.name : ''}</span><span>${entry.attribute.indexOf('uuid') !== -1 ? 'Création': ''}</span>`
-            div.dataset.historyId = entry.id
-            this.historyList[entry.id] = entry
-            window.requestAnimationFrame(() => {
-              this.nHistory.appendChild(div)
-            })
-            div.addEventListener('click', (event) => {
-              let node = event.target
-              for (; node && node.nodeName !== 'DIV'; node = node.parentNode) ;
-              let unselect = false
-              if (node.classList.contains('modified')) { unselect = true }
-              for (let n of this.domNode.querySelectorAll('*.modified')) {
-                n.classList.remove('modified')
-              }
-              if (unselect) { return }
-              
-              if (this.historyList[node.dataset.historyId]) {
-                if (this.historyList[node.dataset.historyId].attribute.indexOf('uuid') !== -1) {
-                  return
-                }
-
-                if (!node.classList.contains('modified')) {
-                  node.classList.add('modified')
-                  for (let v of this.historyList[node.dataset.historyId].attribute) {
-                    let mod = this.domNode.querySelector(`*[name="H:${v}"]`)
-                    if (mod) { mod.classList.add('modified') }
-                  }
-                }
-              }
-            })
-          })
-        }
-      })
+      for (let i in this.Sections) {
+        this.Sections[i].bind(this)()
+      }
     },
 
     clickForm: function (event) {
@@ -1522,7 +1496,6 @@ define([
           this.reservation.set('equipment', f.nEquipment)
           this.reservation.set('locality', this.nLocality.value)
           this.reservation.set('comment', f.nComments)
-          this.reservation.set('note', f.nNote)
           this.reservation.set('folder', f.folder)
           this.reservation.set('gps', f.gps)
           this.reservation.set('title', f.title)
@@ -1842,6 +1815,113 @@ define([
           this.nCountList.appendChild(frag)
         }.bind(this))
       }.bind(this))
+    },
+
+    handleFormEvent: function (event) {
+      if (!event.target.dataset) { return }
+      if (!event.target.dataset.handler) { return }
+      if (!this.Actions[event.target.dataset.handler]) { return }
+
+      this.Actions[event.target.dataset.handler].bind(this)(event)
+    },
+
+    Sections: {
+      note: function () {
+        return new Promise((resolve, reject) => {
+          Histoire.List({search: {
+            subtype: 'NOTE',
+            object: this.reservation.id,
+            type: 'Reservation'
+          }}).then((result) => {
+            result.reverse()
+            for (let entry of result) {
+              if (entry) {
+                this.nNewNote.insertBefore(this.HTML.note(entry), this.nNewNote.firstChild)
+              }
+            }
+            resolve()
+          }, () => reject(new Error('Erreur serveur')))
+        })
+      },
+      history: function () {
+        return new Promise((resolve, reject) => {
+          Histoire.List({search: {
+            subtype: 'LOG',
+            object: this.reservation.id,
+            type: 'Reservation'
+          }}).then((result) => {
+            result.forEach((entry) => {
+              let div = document.createElement('DIV')
+              div.innerHTML = `<span class="date">${new Date(entry.date).fullDate()} ${new Date(entry.date).shortHour()}</span><span class="user">${entry._user && entry._user.name ? entry._user.name : ''}</span><span>${entry.attribute.indexOf('uuid') !== -1 ? 'Création': ''}</span>`
+              div.dataset.historyId = entry.id
+              this.historyList[entry.id] = entry
+              window.requestAnimationFrame(() => {
+                this.nHistory.appendChild(div)
+              })
+              div.addEventListener('click', (event) => {
+                let node = event.target
+                for (; node && node.nodeName !== 'DIV'; node = node.parentNode) ;
+                let unselect = false
+                if (node.classList.contains('modified')) { unselect = true }
+                for (let n of this.domNode.querySelectorAll('*.modified')) {
+                  n.classList.remove('modified')
+                }
+                if (unselect) { return }
+                if (this.historyList[node.dataset.historyId]) {
+                  if (this.historyList[node.dataset.historyId].attribute.indexOf('uuid') !== -1) {
+                    return
+                  }
+
+                  if (!node.classList.contains('modified')) {
+                    node.classList.add('modified')
+                    for (let v of this.historyList[node.dataset.historyId].attribute) {
+                      let mod = this.domNode.querySelector(`*[name="H:${v}"]`)
+                      if (mod) { mod.classList.add('modified') }
+                    }
+                  }
+                }
+              })
+            })
+            resolve()
+          }, () => reject(new Error('Erreur serveur')))
+        })
+      }
+    },
+
+    HTML: {
+      note: function (entry) {
+        let n = document.createElement('DIV')
+        n.classList.add('noteline')
+        n.innerHTML = `<span class="message">${entry.details.content}</span><span class="metadata"><span class="date">${new Date(entry.date).fullDate()}</span> <span class="hour">${new Date(entry.date).shortHour()}</span>/<span class="user initials" title="${entry._user.name}">${entry._user.name.initials()}</span><span>`
+        return n
+      }
+    },
+
+    Actions: {
+      note: function (event) {
+        let addNote = false
+        if (event.type === 'keyup') {
+          if (event.key === 'Enter' && !event.ctrlKey && !event.shiftKey) {
+            if (event.target.value !== '' && event.target.value.trim() !== '') {
+              addNote = true
+            }
+          }
+        }
+        if (addNote) {
+          let node = this.nNewNote
+          Histoire.NOTE('Reservation', this.reservation.id, event.target.value).then((id) => {
+            if (node) {
+              Histoire.Get(id).then((entry) => {
+                window.requestAnimationFrame(() => {
+                  node.insertBefore(this.HTML.note(entry), node.firstChild)
+                  event.target.value = ''
+                  node.scrollTo(0, 0)
+                })
+              })
+            }
+          })
+        }
+      }
     }
   })
 })

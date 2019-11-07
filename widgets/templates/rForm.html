@@ -85,16 +85,17 @@
 	<button data-dojo-type="dijit/form/Button" value="Reset" type="button" data-dojo-attach-event="click:doResetComplement" ><i class="fas fa-eraser" aria-hidden="true"></i> Annuler</button>
       </fieldset>
 
-      <fieldset class="ui full intervention"><legend>Intervention</legend>
+      <fieldset class="ui full intervention typezone"><legend>Intervention</legend>
         <label><span>Date :</span><input type="date" name="iDate" /></label><label><span>Type :</span><input name="iType" type="text" /></label>
         <label><span>Personne :</span><input type="text" name="iPerson" /></label><label class="one"><span>Remarque :</span><input name="iComment" type="text" /></label>
         <button type="button" name="iAdd">Ajout</button>
-        <div class="content" name="iContent">
+        <div class="content note" name="iContent">
         </div>
       </fieldset>
       
-      <fieldset class="ui full" name="H:note"><legend>Note interne</legend>
-        <textarea class="ui" style="width: 100%; min-width: 100%;" data-dojo-type="dijit/form/Textarea" name="nNote" data-dojo-attach-point="nNote"></textarea>
+      <fieldset class="ui full typezone" name="H:note"><legend>Note interne</legend>
+        <div class="note" data-dojo-attach-point="nNewNote"></div>
+        <textarea name="newNote" class="short" data-handler="note"  placeholder="Nouvelle note ..."></textarea>
       </fieldset>
 
       <fieldset class="ui full"><legend>Mission</legend>
@@ -102,9 +103,8 @@
         <div tabindex="0" class="dropZone" data-dojo-attach-point="nMissionDrop">Glisser ou copier des images pour ajouter !</div>
       </fieldset>
 
-      <fieldset class="ui full history"><legend>Historique</legend>
-        <div class="history" data-dojo-attach-point="nHistory">
-        </div>
+      <fieldset class="ui full history typezone"><legend>Historique</legend>
+        <div class="history note" data-dojo-attach-point="nHistory"></div>
       </fieldset>
       
       <fieldset class="ui full">
