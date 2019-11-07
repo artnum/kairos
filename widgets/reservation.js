@@ -1019,7 +1019,6 @@ define([
       if (!this.domNode) {
         this.domNode = document.createElement('DIV')
       }
-
       if (!this.TouchEvents) {
         this.TouchEvents = [djOn(this.domNode, 'touchstart', this.evTouchStart.bind(this)),
           djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
@@ -1028,14 +1027,10 @@ define([
         this.DblClick = djOn(this.domNode, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
       }
       if (!this.domNode.parentNode) {
-        fastdom.mutate(function () {
-          this.sup.data.appendChild(this.domNode)
-          if (!this.originalTop) {
-            fastdom.measure(function () {
-              this.originalTop = djDomStyle.get(this.domNode, 'top')
-            }.bind(this))
-          }
-        }.bind(this))
+        window.requestAnimationFrame(() => {
+          if (this.sup && this.sup.data) { this.sup.data.appendChild(this.domNode) }
+          if (!this.originalTop) { this.originalTop = djDomStyle.get(this.domNode, 'top') }
+        })
       }
     },
 
