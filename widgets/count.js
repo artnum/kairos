@@ -486,7 +486,7 @@ define([
       var domStatus = document.createRange().createContextualFragment(txtStatus)
 
       div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
-        <li>${(this.get('data').invoice && (this.get('data')._invoice.winbiz) ? 'Facture N°' + this.get('data')._invoice.winbiz : '<span data-action="add-invoice"> <i class="fas fa-plus-circle"> </i> Ajouter une facture</span>')}</li>
+        <li><span data-action="add-invoice">${(this.get('data').invoice && (this.get('data')._invoice.winbiz) ? 'Facture N°' + this.get('data')._invoice.winbiz : ' <i class="fas fa-plus-circle"> </i> Ajouter une facture')}</span></li>
         <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')} <span data-action="add-reservation"> <i class="fas fa-plus-circle"> </i> Ajouter une réservation</span></li>
         <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
