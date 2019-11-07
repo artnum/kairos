@@ -486,7 +486,7 @@ define([
       var domStatus = document.createRange().createContextualFragment(txtStatus)
 
       div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
-        ${(this.get('data').invoice ? (this.get('data')._invoice.winbiz ? '<li>Facture N°' + this.get('data')._invoice.winbiz + '</li>' : '') : '')}
+        <li>${(this.get('data').invoice && (this.get('data')._invoice.winbiz) ? 'Facture N°' + this.get('data')._invoice.winbiz : '<span data-action="add-invoice"> <i class="fas fa-plus-circle"> </i> Ajouter une facture</span>')}</li>
         <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')} <span data-action="add-reservation"> <i class="fas fa-plus-circle"> </i> Ajouter une réservation</span></li>
         <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
         ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
@@ -610,6 +610,9 @@ define([
             break
           case 'add-reservation':
             this.manAddReservation(event)
+            break
+          case 'add-invoice':
+            this.manAddInvoice(event)
             break
         }
       }.bind(this))
@@ -1140,6 +1143,32 @@ define([
           this.delete(event)
           break
       }
+    },
+    manAddInvoice: function (event) {
+      let input = document.createElement('input')
+      input.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          let body = {winbiz: event.target.value}
+          let iId = this.get('data').invoice
+          Query.exec(Path.url(`store/Invoice/${iId || ''}`), {method: iId ? 'PATCH' : 'POST', body: body}).then((res) => {
+            if (res.length > 0) {
+              let invoice = res.data[0].id
+              Query.exec(Path.url(`store/Count/${this.get('data-id')}`), {method: 'PATCH', body: {id: this.get('data-id'), invoice: invoice}}).then((res) => {
+                if (res.length > 0) {
+                  this.doc.close()
+                  delete this.id
+                  this.constructor({'data-id': res.data[0].id})
+                }
+              })
+            }
+          })
+        }
+      })
+      let p = event.target.parentNode
+      window.requestAnimationFrame(() => {
+        p.insertBefore(input, event.target)
+        p.removeChild(event.target)
+      })
     },
     manAddReservation: function (event) {
       let input = document.createElement('input')

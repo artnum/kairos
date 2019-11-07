@@ -165,3 +165,9 @@
     color: black !important;
     text-decoration: none !important;
 }
+
+
+.docCount ul li {
+    line-height: 20pt !important;
+    font-size: 12pt !important;
+}

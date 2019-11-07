@@ -441,10 +441,6 @@ input[type=number]::-webkit-outer-spin-button {
     border: none !important;
 }
 
-.docCount ul li{
-    line-height: 20px !important;
-}
-
 .button {
     font-weight: bold;
     border: 1px solid black;
