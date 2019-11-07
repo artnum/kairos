@@ -49,6 +49,7 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
+      this.commandLetters = [ 'a', 'j', 'm', 'r', 'd' ]
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
@@ -60,6 +61,15 @@ define([
         }
       }.bind(this))
       window.addEventListener('keydown', async function (event) {
+        if (this.commandLetters.indexOf(event.key) !== -1 && event.ctrlKey) {
+          event.preventDefault()
+          this.switchCommandMode().then(() => {
+            if (this.commandKeys(event)) {
+              this.switchCommandMode()
+            }
+          })
+          return
+        }
         if (event.key === APPConf.CommandWindow.escapeKey) {
           this.switchCommandMode()
         } else {
@@ -122,22 +132,24 @@ define([
     },
 
     switchCommandMode: function (mouse = false) {
-      this.Mouse = mouse
-      this.CommandMode = !this.CommandMode
-      if (!this.CommandMode) {
-        this.CommandOverlay = null
-        window.requestAnimationFrame(() => document.body.removeChild(document.getElementById('commandModeOverlay')))
-      } else {
-        var o = document.createElement('DIV')
-        o.setAttribute('id', 'commandModeOverlay')
-        if (mouse) {
-          o.classList.add('mouse')
+      return new Promise((resolve, reject) => {
+        this.Mouse = mouse
+        this.CommandMode = !this.CommandMode
+        if (!this.CommandMode) {
+          this.CommandOverlay = null
+          window.requestAnimationFrame(() => { document.body.removeChild(document.getElementById('commandModeOverlay')); resolve() })
+        } else {
+          var o = document.createElement('DIV')
+          o.setAttribute('id', 'commandModeOverlay')
+          if (mouse) {
+            o.classList.add('mouse')
+          }
+          o.innerHTML = innerHtmlOverlay
+          o.addEventListener('click', this.mouseInteraction.bind(this))
+          this.CommandOverlay = o
+          window.requestAnimationFrame(() => { document.body.appendChild(o); resolve() })
         }
-        o.innerHTML = innerHtmlOverlay
-        o.addEventListener('click', this.mouseInteraction.bind(this))
-        this.CommandOverlay = o
-        window.requestAnimationFrame(() => document.body.appendChild(o))
-      }
+      })
     },
 
     commandKeys: function (event) {
