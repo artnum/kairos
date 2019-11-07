@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, GEvent, Popper, Tooltip, GSymbol, crc32 */
+/* global DateRange, pSBC, fastdom, Histoire, Tooltip, GSymbol, crc32 */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -1319,11 +1319,13 @@ define([
               for (let _k in dataHash[k]) {
                 if (this.dataHash[k] && dataHash[k] && this.dataHash[k][_k] !== dataHash[k][_k]) {
                   modifiedLog.attribute.push(`${k}.${_k}`)
+                  this.dataHash[k][_k] = dataHash[k][_k]
                 }
               }
             } else {
               if (this.dataHash[k] !== dataHash[k]) {
                 modifiedLog.attribute.push(k)
+                this.dataHash[k] = dataHash[k]
               }
             }
           }
