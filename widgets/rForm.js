@@ -664,17 +664,17 @@ define([
       let data = {reservation: this.reservation.get('id'), technician: this.Intervention.person.value, type: this.Intervention.type.value}
       for (let k in inputs) {
         switch (inputs[k].name) {
-        case 'iDate':
-          let day
-          try {
-            day = new Date(inputs[k].value)
-            day.setHours(12, 0, 0)
-          } catch (e) {
-            day = new Date()
-          }
-          data.date = day.toISOString()
-          break
-        case 'iComment': data.comment = inputs[k].value; break
+          case 'iDate':
+            let day
+            try {
+              day = new Date(inputs[k].value)
+              day.setHours(12, 0, 0)
+            } catch (e) {
+              day = new Date()
+            }
+            data.date = day.toISOString()
+            break
+          case 'iComment': data.comment = inputs[k].value; break
         }
       }
       Query.exec(Path.url('store/Intervention'), {method: 'post', body: data}).then((result) => {
@@ -818,7 +818,7 @@ define([
       this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), {capture: true})
       this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), {capture: true})
       this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), {capture: true})
-      
+
       this.nMBeginDate.set('value', this.beginDate.get('value'))
       this.nMBeginTime.set('value', this.beginTime.get('value'))
       this.nMEndDate.set('value', this.endDate.get('value'))
