@@ -49,7 +49,7 @@ define([
   'location/Stores/User',
   'location/Stores/Machine',
   'location/Stores/Status',
-  
+
   'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
@@ -141,6 +141,13 @@ define([
           }
         }
       }.bind(this))
+      if (args.reservation && args.reservation.sup && args.reservation.isNew) {
+        this.Defaults = Query.exec(Path.url('store/Entry', {params: {'search.ref': args.reservation.sup.target, 'search.name': '~default.%'}}))
+        this.isNew = true
+      } else {
+        this.Defaults = null
+        this.isNew = false
+      }
     },
 
     _setDescriptionAttr: function (value) {
@@ -466,7 +473,7 @@ define([
     associationRefresh: function () {
       var def = new DjDeferred()
       var that = this
-      Req.get(String(Path.url('store/Association/')), { query: { 'search.reservation': this.reservation.get('id') } }).then(function (results) {
+      Req.get(String(Path.url('store/Association/')), { query: { 'search.reservation': this.reservation.get('uid') } }).then(function (results) {
         if (results && results.data && results.data.length > 0) {
           var types = []
           results.data.forEach(function (r) {
@@ -683,7 +690,7 @@ define([
     },
 
     interventionReload: function (fset) {
-      Query.exec(Path.url('store/Intervention', {params: {'search.reservation': this.reservation.get('id'), 'sort.date': 'DESC'}})).then(async function (results) {
+      Query.exec(Path.url('store/Intervention', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
           if (div[i].getAttribute('name') === 'iContent') {
@@ -844,6 +851,20 @@ define([
       this.buttonCreate()
       for (let i in this.Sections) {
         this.Sections[i].bind(this)()
+      }
+
+      if (this.isNew && this.Defaults) {
+        this.Defaults.then((results) => {
+          if (results.length > 0) {
+            results.data.forEach((def) => {
+              let name = def.name.split('.')[1]
+              if (!name) { return }
+              let node = this.domNode.querySelector(`[name=${name}]`)
+              if (!node) { return }
+              node.value = def.value
+            })
+          }
+        })
       }
     },
 
@@ -1492,10 +1513,10 @@ define([
           this.reservation.set('deliveryBegin', deliveryBegin)
           this.reservation.set('deliveryEnd', deliveryEnd)
           this.reservation.set('address', this.nAddress.value)
-          this.reservation.set('reference', f.nReference)
-          this.reservation.set('equipment', f.nEquipment)
+          this.reservation.set('reference', f.reference)
+          this.reservation.set('equipment', f.equipment)
           this.reservation.set('locality', this.nLocality.value)
-          this.reservation.set('comment', f.nComments)
+          this.reservation.set('comment', f.comments)
           this.reservation.set('folder', f.folder)
           this.reservation.set('gps', f.gps)
           this.reservation.set('title', f.title)
@@ -1524,13 +1545,13 @@ define([
     },
 
     evtNoEquipment: function () {
-      let val = this.nEquipment.get('value')
-      if (val.length > 1 && val !== '%') {
+      let node = this.domNode.querySelector('[name=equipment]')
+      if (node.value.length > 1 && node.value !== '%') {
         if (!confirm('Êtes-vous certain de vouloir supprimer tout le matériel ?')) {
           return
         }
       }
-      this.nEquipment.set('value', '%')
+      node.value = '%'
     },
 
     destroyReservation: function (reservation) {
@@ -1847,7 +1868,7 @@ define([
         return new Promise((resolve, reject) => {
           Histoire.List({search: {
             subtype: 'LOG',
-            object: this.reservation.id,
+            object: this.reservation.uid,
             type: 'Reservation'
           }}).then((result) => {
             result.forEach((entry) => {

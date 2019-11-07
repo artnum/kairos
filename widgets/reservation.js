@@ -97,6 +97,12 @@ define([
       this.Stores = {
         Locality: new Locality()
       }
+
+      if (arguments && arguments[0] && arguments[0].create) {
+        this.isNew = true
+      } else {
+        this.isNew = false
+      }
     },
 
     fromJson: function (json) {
@@ -1312,7 +1318,7 @@ define([
         }
         let dataHash = {}
         let reservation = object === null ? this.toObject(dataHash) : object
-        let modifiedLog = {type: 'Reservation', object: reservation.id, attribute: [], original: this.dataOriginal}
+        let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
         if (dataHash && this.dataHash) {
           for (let k in dataHash) {
             if (k === '_arrival') {

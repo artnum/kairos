@@ -493,7 +493,7 @@ define([
       var sup = this
       this.defaultStatus().then(function (s) {
         let user = JSON.parse(localStorage.getItem('/location/user'))
-        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s, creator: `User/${user.id}`})
+        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
         newReservation.save().then((id) => {
           newReservation.set('uid', id)
           newReservation.popMeUp()
