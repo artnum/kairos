@@ -56,6 +56,9 @@ function getUrl (suffix) {
 
 function getIntervention (entry) {
   return new Promise((resolve, reject) => {
+    resolve([])
+    return
+    /* disable display intervention */
     if (parseInt(entry.cntIntervention) === 0) {
       resolve([])
       return

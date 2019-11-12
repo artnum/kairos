@@ -1226,7 +1226,7 @@ define([
           resolve()
         })
       }).then(() => {
-        this.showIntervention(this.domNode, moving)
+        // this.showIntervention(this.domNode, moving)
       })
     },
 
