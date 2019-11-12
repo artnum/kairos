@@ -69,7 +69,7 @@ define([
         }
 
         queries.push(Query.exec(Path.url('store/Warehouse', {params: {'search.name': `~${searchName}%`}})))
-        queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': searchName, 'search.township': searchName, 'search.np': searchNp}})))
+        queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': `~${searchName}%`, 'search.township': `~${searchName}%`, 'search.np': `~${searchNp}%`, 'search._rules': 'name OR township OR np'}})))
         Promise.all(queries).then((results) => {
           let entriesA = []
           let entriesB = []

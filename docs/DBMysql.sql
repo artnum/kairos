@@ -289,3 +289,20 @@ CREATE TABLE IF NOT EXISTS "histoire" (
        "histoire_attribute" TEXT(1024) NOT NULL, -- attribute list
        "histoire_original" BLOB(4096) -- data (compressed)
        );
+
+CREATE TABLE IF NOT EXISTS "localite" (
+       "localite_uid" CHAR(32) PRIMARY KEY,
+       "localite_state" CHAR(2) NOT NULL DEFAULT '',
+       "localite_np" INT NOT NULL DEFAULT -1,
+       "localite_npext" INT NOT NULL DEFAULT -1,
+       "localite_part" BOOLEAN NOT NULL DEFAULT FALSE,
+       "localite_name" CHAR(40) NOT NULL DEFAULT '',
+       "localite_postname" CHAR(18) NOT NULL DEFAULT '',
+       "localite_township" CHAR(24) NOT NULL DEFAULT '',
+       "localite_tsid" INT NOT NULL DEFAULT -1,
+       "localite_trname" CHAR(140) NOT NULL DEFAULT '',
+       "localite_trtownship" CHAR(24) NOT NULL DEFAULT ''
+       );
+CREATE INDEX idxLocaliteName ON localite (localite_name);
+CREATE INDEX idxLocaliteTownship ON localite (localite_township);
+CREATE INDEX idxLocaliteNP ON localite (localite_np);
