@@ -829,7 +829,9 @@ define([
     remove: function () {
       return new Promise(function (resolve, reject) {
         if (confirm('Vraiment supprimer la réservation ' + this.uid)) {
-          this.domNode.parentNode.removeChild(this.domNode)
+          if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
           this.set('deleted', true)
           Query.exec(Path.url('/store/Arrival', {params: {'search.target': this.uid}})).then((result) => {
             if (result.success && result.length > 0) {
