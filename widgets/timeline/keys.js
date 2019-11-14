@@ -49,7 +49,7 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
-      this.commandLetters = [ 'a', 'j', 'm', 'r', 'd' ]
+      this.commandLetters = [ 'j', 'm', 'r', 'd' ]
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
