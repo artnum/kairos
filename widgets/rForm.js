@@ -49,7 +49,10 @@ define([
   'location/Stores/User',
   'location/Stores/Machine',
   'location/Stores/Status',
-
+  'location/Stores/Unit',
+  'location/rform/handler',
+  'location/rform/section',
+  
   'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
@@ -102,13 +105,16 @@ define([
   User,
   Machine,
   Status,
+  Unit,
+  RFormHandler,
+  RFormSection,
   
   Req,
   Path,
   Query
 ) {
-  return djDeclare('location.rForm', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
+  return djDeclare('location.rForm', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
+                                      RFormHandler, RFormSection], {
     baseClass: 'rForm',
     templateString: _template,
     contacts: {},
@@ -748,8 +754,6 @@ define([
     },
 
     postCreate: function () {
-      this.inherited(arguments)
-
       this.nMissionDrop.addEventListener('paste', this.evCopyDrop.bind(this), {capture: true})
       this.nMissionDrop.addEventListener('drop', this.evCopyDrop.bind(this), {capture: true})
       this.nMissionDrop.addEventListener('dragover', (event) => {
@@ -773,7 +777,16 @@ define([
       this.Stores = {
         Locality: L,
         User: U,
-        Machine: M
+        Machine: M,
+        Unit: new Unit()
+      }
+      let namedNode = this.domNode.querySelectorAll('*[name]')
+      for (let i of namedNode) {
+        switch (i.getAttribute('name')) {
+          case 'offerUnit':
+            new Select(i, this.Stores.Unit, {allowFreeText: false, realSelect: true})
+            break
+        }
       }
       this.nLocality = new Select(this.nLocality, L)
       this.nArrivalLocality = new Select(this.nArrivalLocality, L)
@@ -849,6 +862,7 @@ define([
         }
       })
       this.buttonCreate()
+      console.log(this.Sections, this)
       for (let i in this.Sections) {
         this.Sections[i].bind(this)()
       }
@@ -1839,108 +1853,12 @@ define([
     },
 
     handleFormEvent: function (event) {
-      if (!event.target.dataset) { return }
-      if (!event.target.dataset.handler) { return }
-      if (!this.Actions[event.target.dataset.handler]) { return }
+      let p = event.target
 
-      this.Actions[event.target.dataset.handler].bind(this)(event)
-    },
-
-    Sections: {
-      note: function () {
-        return new Promise((resolve, reject) => {
-          Histoire.List({search: {
-            subtype: 'NOTE',
-            object: this.reservation.uid,
-            type: 'Reservation'
-          }}).then((result) => {
-            result.reverse()
-            for (let entry of result) {
-              if (entry) {
-                this.nNewNote.insertBefore(this.HTML.note(entry), this.nNewNote.firstChild)
-              }
-            }
-            resolve()
-          }, () => reject(new Error('Erreur serveur')))
-        })
-      },
-      history: function () {
-        return new Promise((resolve, reject) => {
-          Histoire.List({search: {
-            subtype: 'LOG',
-            object: this.reservation.uid,
-            type: 'Reservation'
-          }}).then((result) => {
-            result.forEach((entry) => {
-              let div = document.createElement('DIV')
-              div.innerHTML = `<span class="date">${new Date(entry.date).fullDate()} ${new Date(entry.date).shortHour()}</span><span class="user">${entry._user && entry._user.name ? entry._user.name : ''}</span><span>${entry.attribute.indexOf('uuid') !== -1 ? 'Création': ''}</span>`
-              div.dataset.historyId = entry.id
-              this.historyList[entry.id] = entry
-              window.requestAnimationFrame(() => {
-                this.nHistory.appendChild(div)
-              })
-              div.addEventListener('click', (event) => {
-                let node = event.target
-                for (; node && node.nodeName !== 'DIV'; node = node.parentNode) ;
-                let unselect = false
-                if (node.classList.contains('modified')) { unselect = true }
-                for (let n of this.domNode.querySelectorAll('*.modified')) {
-                  n.classList.remove('modified')
-                }
-                if (unselect) { return }
-                if (this.historyList[node.dataset.historyId]) {
-                  if (this.historyList[node.dataset.historyId].attribute.indexOf('uuid') !== -1) {
-                    return
-                  }
-
-                  if (!node.classList.contains('modified')) {
-                    node.classList.add('modified')
-                    for (let v of this.historyList[node.dataset.historyId].attribute) {
-                      let mod = this.domNode.querySelector(`*[name="H:${v}"]`)
-                      if (mod) { mod.classList.add('modified') }
-                    }
-                  }
-                }
-              })
-            })
-            resolve()
-          }, () => reject(new Error('Erreur serveur')))
-        })
-      }
-    },
-
-    HTML: {
-      note: function (entry) {
-        let n = document.createElement('DIV')
-        n.classList.add('noteline')
-        n.innerHTML = `<span class="message">${entry.details.content}</span><span class="metadata"><span class="date">${new Date(entry.date).fullDate()}</span> <span class="hour">${new Date(entry.date).shortHour()}</span>/<span class="user initials" title="${entry._user.name}">${entry._user.name.initials()}</span><span>`
-        return n
-      }
-    },
-
-    Actions: {
-      note: function (event) {
-        let addNote = false
-        if (event.type === 'keyup') {
-          if (event.key === 'Enter' && !event.ctrlKey && !event.shiftKey) {
-            if (event.target.value !== '' && event.target.value.trim() !== '') {
-              addNote = true
-            }
-          }
-        }
-        if (addNote) {
-          let node = this.nNewNote
-          Histoire.NOTE('Reservation', this.reservation.id, event.target.value).then((id) => {
-            if (node) {
-              Histoire.Get(id).then((entry) => {
-                window.requestAnimationFrame(() => {
-                  node.insertBefore(this.HTML.note(entry), node.firstChild)
-                  event.target.value = ''
-                  node.scrollTo(0, 0)
-                })
-              })
-            }
-          })
+      for (p = event.target; p; p = p.parentNode) {
+        if (p.dataset && p.dataset.handler && this.Actions[p.dataset.handler]) {
+          this.Actions[p.dataset.handler].bind(this)(event)
+          return
         }
       }
     }
