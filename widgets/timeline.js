@@ -709,7 +709,7 @@ define([
         }
       }, true)
 
-      djOn(window, 'keypress', djLang.hitch(this, this.keys))
+      window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))

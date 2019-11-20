@@ -29,7 +29,16 @@ define(['dojo/_base/declare'], function (djDeclare) {
           }}).then((result) => {
             result.forEach((entry) => {
               let div = document.createElement('DIV')
-              div.innerHTML = `<span class="date">${new Date(entry.date).fullDate()} ${new Date(entry.date).shortHour()}</span><span class="user">${entry._user && entry._user.name ? entry._user.name : ''}</span><span>${entry.attribute.indexOf('uuid') !== -1 ? 'Création': ''}</span>`
+              let action = ''
+              if (entry.details && entry.details.action) {
+                switch (entry.details.action) {
+                  case 'duplicate':
+                    action = `Copié depuis ${entry.details.original}`; break
+                  case 'create':
+                    action = 'Création'; break
+                }
+              }
+              div.innerHTML = `<span class="date">${new Date(entry.date).fullDate()} ${new Date(entry.date).shortHour()}</span><span class="user">${entry._user && entry._user.name ? entry._user.name : ''}</span><span>${action !== '' ? action : (entry.attribute.indexOf('uuid') !== -1 ? 'Création' : '')}</span>`
               div.dataset.historyId = entry.id
               this.historyList[entry.id] = entry
               window.requestAnimationFrame(() => {
@@ -45,7 +54,8 @@ define(['dojo/_base/declare'], function (djDeclare) {
                 }
                 if (unselect) { return }
                 if (this.historyList[node.dataset.historyId]) {
-                  if (this.historyList[node.dataset.historyId].attribute.indexOf('uuid') !== -1) {
+                  if (!this.historyList[node.dataset.historyId].attribute ||
+                      this.historyList[node.dataset.historyId].attribute.indexOf('uuid') !== -1) {
                     return
                   }
 

@@ -767,6 +767,7 @@ define([
       this.syncForm()
       this.myContentPane = cp
       f.set('_pane', [cp, tContainer])
+      f.set('_closeId', 'ReservationTab_' + this.get('localid'))
     },
 
     close: function () {
@@ -1311,7 +1312,7 @@ define([
       return {uuid: uuidv4, timestamp: Date.now()}
     },
 
-    save: function (object = null) {
+    save: function (object = null, duplicate = false) {
       this.modifiedState = true
       return new Promise(function (resolve, reject) {
         let creator = window.localStorage.getItem(Path.bcname('user'))
@@ -1347,10 +1348,10 @@ define([
             return
           }
           let id = result.data[0].id
-          if (modifiedLog.attribute.length > 0) {
+          if (modifiedLog.attribute.length > 0 || duplicate) {
             /* POST to mod log */
             modifiedLog.object = id
-            Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original)
+            Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
           }
           this.domNode.dataset.id = id
           if (!arrival || Object.keys(arrival).length === 0) {
@@ -1382,12 +1383,13 @@ define([
       delete object['uuid']
       delete object['id']
       delete object['arrival']
+      delete object['note']
       let creator = window.localStorage.getItem(Path.bcname('user'))
       if (creator) {
         object['creator'] = `/store/User/${JSON.parse(creator).id}`
       }
       return new Promise((resolve, reject) => {
-        this.save(object).then((id) => {
+        this.save(object, originalId).then((id) => {
           let newId = id
           let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
           let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))

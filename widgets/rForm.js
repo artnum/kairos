@@ -862,7 +862,6 @@ define([
         }
       })
       this.buttonCreate()
-      console.log(this.Sections, this)
       for (let i in this.Sections) {
         this.Sections[i].bind(this)()
       }

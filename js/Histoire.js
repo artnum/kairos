@@ -4,6 +4,7 @@ class Histoire {
   static List (params) {
     let url = new URL(`${window.origin}/${APPConf.history}`)
     url.searchParams.append('sort.date', 'DESC')
+    url.searchParams.append('search.hide', 0)
     if (params) {
       if (params.search) {
         for (let i in params.search) {
@@ -45,7 +46,7 @@ class Histoire {
       }, () => reject(new Error('Erreur serveur')))
     })
   }
-  static LOG (type, object, attribute, original) {
+  static LOG (type, object, attribute, original, details = {}) {
     return new Promise((resolve, reject) => {
       let url = new URL(`${window.origin}/${APPConf.history}`)
       let creator = window.localStorage.getItem(`/${APPConf.base}/user`)
@@ -66,7 +67,7 @@ class Histoire {
         attribute: attribute,
         original: original,
         creator: creator,
-        details: ''
+        details: JSON.stringify(details)
       }
       fetch(url, {
         method: 'POST',

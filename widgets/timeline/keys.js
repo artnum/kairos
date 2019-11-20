@@ -259,6 +259,8 @@ define([
     keys: function (event) {
       if (!event.ctrlKey) {
         switch (event.key) {
+          case 'Escape':
+            break
         }
       } else {
         switch (event.key) {

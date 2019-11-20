@@ -1,30 +1,45 @@
 /* eslint-env amd, browser */
 /* global Histoire */
-define(['dojo/_base/declare'], function (djDeclare) {
+define([
+  'dojo/_base/declare', 'artnum/Path', 'artnum/Query'
+], function (
+  djDeclare, Path, Query
+) {
   return djDeclare('location.rform.handler', [], {
     HTML: {
       note: function (entry) {
         let n = document.createElement('DIV')
         n.classList.add('noteline')
         n.innerHTML = `<span class="message">${entry.details.content}</span><span class="metadata"><span class="date">${new Date(entry.date).fullDate()}</span> <span class="hour">${new Date(entry.date).shortHour()}</span>/<span class="user initials" title="${entry._user.name}">${entry._user.name.initials()}</span><span>`
-        console.log(this)
-        n.addEventListener('dblclick', (event) => {
+        n.addEventListener('click', (event) => {
           let node = event.target
           for (; node && node.nodeName !== 'DIV'; node = node.parentNode) ;
-          node.style.position = 'relative'
+          let actionLine = node.lastElementChild
+          for (; actionLine && !actionLine.classList.contains('actionLine'); actionLine = actionLine.previousElementSibling) ;
+          if (actionLine) {
+            node.removeChild(actionLine)
+            return
+          }
           let div = document.createElement('DIV')
-          div.style.position = 'absolute'
-          div.style.left = 0
-          div.style.top = 0
-          div.style.backgroundColor = 'hsla(var(--default-bg-color-base), 0.8)'
+          div.classList.add('actionLine')
+          div.style.width = '100%'
+          div.innerHTML = `<span class="action" data-id="${entry.id}"><i class="fas fa-trash-alt"> </i> Supprimer</span>`
+          div.addEventListener('click', (event) => {
+            let node = event.target
+            let p = node.parentNode
+            for (; p.nodeName !== 'DIV'; p = p.parentNode) ;
+            if (node.dataset.id) {
+              Query.exec(Path.url(`store/Histoire/${node.dataset.id}`), {method: 'PATCH', body: {'id': node.dataset.id, 'hide': 1}})
+                .then((result) => {
+                  if (result.success) {
+                    node = p
+                    for (; node && !node.classList.contains('noteline'); node = node.parentNode) ;
+                    node.parentNode.removeChild(node)
+                  }
+                })
+            }
+          }, {capture: true})
           node.appendChild(div)
-          window.addEventListener('keyup', function (event) {
-            console.log('note overlay', event, this)
-            let node = this
-            for (; node && node.nodeName !== 'DIV'; node = node.parentNode) ;
-            node.parentNode.style.position = ''
-            node.parentNode.removeChild(node)
-          }.bind(node))
         })
         return n
       },

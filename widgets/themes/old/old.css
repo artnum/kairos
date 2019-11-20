@@ -6,6 +6,8 @@
 @import '../default/count.css';
 @import '../default/overlay.css';
 @import '../default/symbols.css';
+@import '../default/rformActionLine.css';
+@import '../default/rformInputLine.css';
 
 html {
 	overflow-x: hidden;
