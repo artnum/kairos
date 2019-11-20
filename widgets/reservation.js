@@ -1353,7 +1353,7 @@ define([
             modifiedLog.object = id
             Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
           }
-          this.domNode.dataset.id = id
+          if (this.domNode) { this.domNode.dataset.id = id }
           if (!arrival || Object.keys(arrival).length === 0) {
             resolve(id)
           } else {
