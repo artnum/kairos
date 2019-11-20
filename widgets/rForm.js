@@ -950,7 +950,7 @@ define([
         this.nGps.set('value', this.reservation.get('gps'))
 
         let node = this.nGps.domNode.previousElementSibling
-        node.dataset.href = `https://www.google.com/maps/dir/Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz/${String(this.reservation.get('gps')).replace(/\s/g, '+')}`
+        node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
       } else {
         let node = this.nGps.domNode.previousElementSibling
         let addr = ''
@@ -971,10 +971,11 @@ define([
             addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
           }
           if (addr) {
-            node.dataset.href = `https://www.google.com/maps/dir/Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz/${addr}`
+            node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
           }
         })
       }
+
       if (!this.loaded.status) {
         let url = Path.url('store/Status')
         url.searchParams.set('search.type', 0)
