@@ -86,6 +86,7 @@
 
 .rForm .association .item .description {
     display: flex;
+    justify-content: space-between;
 }
 
 .rForm .association .item .value {
