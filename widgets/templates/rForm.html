@@ -85,14 +85,44 @@
 	<button data-dojo-type="dijit/form/Button" value="Reset" type="button" data-dojo-attach-event="click:doResetComplement" ><i class="fas fa-eraser" aria-hidden="true"></i> Annuler</button>
       </fieldset>
 
-      <fieldset class="ui full intervention typezone"><legend>Intervention</legend>
+      <fieldset class="ui full intervention typezone"><legend>Évènement</legend>
         <label><span>Date :</span><input type="date" name="iDate" /></label><label><span>Type :</span><input name="iType" type="text" /></label>
         <label><span>Personne :</span><input type="text" name="iPerson" /></label><label class="one"><span>Remarque :</span><input name="iComment" type="text" /></label>
         <button type="button" name="iAdd">Ajout</button>
         <div class="content note" name="iContent">
         </div>
       </fieldset>
-      
+
+<!--      <fieldset class="ui full">
+        <legend>Offre</legend>
+        <div class="inputLine" data-handler="offer">
+          <label for="offerDescription" style="width: 38%;">          
+            <span class="label th">Description</span>
+            <textarea name="offerDescription"></textarea>
+          </label>
+          <label for="offerPrice">
+            <span class="label th">Prix</span>
+            <input type="text" name="offerPrice" />
+          </label>
+          <label for="offerQuantity">
+            <span class="label th">Quantité</span>
+            <input type="text" name="offerQuantity" />
+          </label>
+          <label for="offerUnit">
+            <span class="label th">Unité</span>
+            <input type="text" name="offerUnit" />
+          </label>
+          <label for="offerDiscount">
+            <span class="label th">Rabais</span>
+            <input type="text" name="offerDiscount" />
+          </label>
+          <label>
+            <span class="label th">Total</span>
+            <span class="input" name="offerTotal"></span>
+          </label>
+        </div>
+      </fieldset>
+//-->      
       <fieldset class="ui full typezone" name="H:note"><legend>Note interne</legend>
         <div class="note" data-dojo-attach-point="nNewNote"></div>
         <textarea name="newNote" class="short" data-handler="note"  placeholder="Nouvelle note ..."></textarea>

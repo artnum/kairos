@@ -63,7 +63,7 @@ function getIntervention (entry) {
       resolve([])
       return
     }
-    let url = getUrl('store/Intervention/.intervention')
+    let url = getUrl('store/Evenement/.evenement')
     url.searchParams.append('search.reservation', entry.id)
     fetch(url, {credential: 'include'}).then((response) => {
       if (!response.ok) {

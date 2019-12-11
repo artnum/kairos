@@ -21,24 +21,6 @@ class DeepReservationModel extends ReservationModel {
     return array('sql', 'ldap');
   }
 
-  function listing($options) {
-    try {
-      $st = $this->DB->prepare($this->prepare_statement('SELECT reservation_id FROM reservation', $options));
-      $ret = array();
-      if($st->execute()) {
-        foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $v) {
-          $ret[] = $this->read($this->unprefix($v)['id'])[0];
-        }
-      }
-
-      return array($ret, count($ret));
-    } catch (\Exception $e) {
-      return array(NULL , 0);
-    }
-
-    return array(NULL, 0);
-  }
-
   function getUncounted ($options) {
     $req = 'SELECT * FROM uncounted ';
     if (isset($options['search'])) {
@@ -191,7 +173,7 @@ class DeepReservationModel extends ReservationModel {
   
   function get($id) {
     $pre_statement = '
-         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color, (SELECT COUNT(intervention_id) FROM intervention WHERE intervention_reservation = reservation_id) AS reservation_cntIntervention FROM reservation
+         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color, (SELECT COUNT(evenement_id) FROM evenement WHERE evenement_reservation = reservation_id) AS reservation_cntIntervention FROM reservation
                LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
                LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
                LEFT JOIN user AS creator ON creator.user_id = IDFromUrl(reservation.reservation_creator)
