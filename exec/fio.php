@@ -42,15 +42,30 @@ switch ($_SERVER['REQUEST_METHOD']) {
     }
     $pathname = $dirname . '/' . $filename;
     if (file_exists($pathname)) {
-      if (hash_file('sha512', $tmpFile, true) != hash_file('sha512', $tmpFile, true)) {
-        /* collision, reject that */
-        echo '{"sucess": false, "name": "", "size": 0, "type": "", "message": "Collision"}';
-        unlink($tmpFile);
-        exit(0);
-      } else {
+      if (!hash_file('sha512', $tmpFile, true) != hash_file('sha512', $tmpFile, true)) {
         /* file already uploaded */
         /* TODO return data already in db */
+        $st = $pdo->prepare('SELECT * FROM "fichier" WHERE "fichier_hash" = :hash');
+        if ($st) {
+          $st->bindParam(':hash', $filename, PDO::PARAM_STR);
+          if ($st->execute()) {
+            $results = $st->fetchAll();
+
+            if (count($results) === 1) {
+              $file = $results[0];
+              echo json_encode(array('id' => intval($file['fichier_id']),
+                                     'name' => $file['fichier_name'],
+                                     'hash' => $file['fichier_hash'],
+                                     'size' => intval($file['fichier_size']),
+                                     'mime' => $file['fichier_mime']));
+              exit(0);
+            }
+          }
+        }
       }
+      echo '{"sucess": false, "name": "", "size": 0, "type": "", "message": "Collision"}';
+      unlink($tmpFile);
+      exit(0);
     }
 
     if (!move_uploaded_file($tmpFile, $pathname)) {
@@ -138,6 +153,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
                   header('Content-Length: ' . $file['fichier_size']);
                   header('Content-Type: ' . $file['fichier_mime']);
                   header('Content-Disposition: attachement; filename="' . $file['fichier_name'] . '"');
+                  readfile($filepath);
                   break;
                 case 'metadata':
                   header('Content-Type: application/json');
