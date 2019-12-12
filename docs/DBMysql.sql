@@ -322,3 +322,13 @@ CREATE TABLE IF NOT EXISTS "localite" (
 CREATE INDEX idxLocaliteName ON localite (localite_name);
 CREATE INDEX idxLocaliteTownship ON localite (localite_township);
 CREATE INDEX idxLocaliteNP ON localite (localite_np);
+
+CREATE TABLE IF NOT EXISTS "fichier" (
+       "fichier_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "fichier_name" CHAR(64) NOT NULL DEFAULT '',
+       "fichier_hash" CHAR(50) NOT NULL UNIQUE INDEX,
+       "fichier_size" INT DEFAULT 0,
+       "fichier_mime" CHAR(127) NOT NULL DEFAULT 'application/octet-stream'
+       );
+CREATE INDEX "idxHash" ON "fichier" ("fichier_hash");
+

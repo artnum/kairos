@@ -17,7 +17,7 @@ function init_pdo($ini, $type = 'storage') {
       $options = array(PDO::ATTR_PERSISTENT => false);
     }
     $pdo = new PDO($dsn, $user, $password, $options);
-
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
     /* driver specific setup */
     switch ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME)) {
       case 'mysql':
