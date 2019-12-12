@@ -2,15 +2,9 @@
 require('artnum/autoload.php');
 require('../lib/url.php');
 require('../lib/dbs.php');
+require('../lib/ini.php');
 
-$ini_conf = parse_ini_file('../conf/location.ini', true);
-
-if (!isset($ini_conf['general'])) {
-   $ini_conf['general'];
-}
-if (!isset($ini_conf['general']['disable-locking'])) {
-   $ini_conf['general']['disable-locking'] = false;
-}
+$ini_conf = load_ini_configuration();
 
 $file = new \artnum\Files();
 $http_request = new \artnum\HTTP\JsonRequest();
