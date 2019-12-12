@@ -1,6 +1,7 @@
 <?PHP
 require('artnum/autoload.php');
 require('../lib/url.php');
+require('../lib/dbs.php');
 
 $ini_conf = parse_ini_file('../conf/location.ini', true);
 
@@ -20,11 +21,17 @@ if (!file_exists($sigfile) && $file->writable($sigfile)) {
    $rand = new \artnum\Random();
    $rand->str(512, $sigfile);
 } else if (!$file->readable($sigfile)) {
-   throw new Exception('No signature file');
+  throw new Exception('No signature file');
+  exit(0);
 }
 
-$pdo_db = new PDO($ini_conf['storage']['pdo-string'], $ini_conf['storage']['user'], $ini_conf['storage']['password'], array(PDO::ATTR_PERSISTENT => true));
-$pdo_db->exec('SET sql_mode=\'ANSI\';');
+$pdo = init_pdo($ini_conf);
+if (is_null($pdo)) {
+  throw new Exception('Storage database not reachable');
+  exit(0);
+}
+$store->add_db('sql', $pdo);
+
 $ldap_db = new artnum\LDAPDB(
          array(
                array('uri' => 'ldapi:///',
@@ -34,16 +41,18 @@ $ldap_db = new artnum\LDAPDB(
                   )
             )
       );
+$store->add_db('ldap', $ldap_db);
 
 if (!$ini_conf['general']['disable-locking']) {
-   $lock_pdo = new PDO($ini_conf['lock']['pdo-string'], $ini_conf['lock']['user'], $ini_conf['lock']['password'], array(PDO::ATTR_PERSISTENT => true));
-   $lock = new \artnum\Lock(array('dbtype'=>'pdo', 'db'=>$lock_pdo));
-   $store->set('lockmanager', $lock);
+  $pdo = init_pdo($ini_conf, 'lock');
+  if (is_null($pdo)) {
+    $store->set('lockmanager', 'void');
+  } else {
+    $store->set('lockmanager', new \artnum\Lock(array('dbtype'=>'pdo', 'db'=>$lock_pdo)));
+  }
 } else {
-   $store->set('lockmanager', 'void');
+  $store->set('lockmanager', 'void');
 }
-$store->add_db('sql', $pdo_db);
-$store->add_db('ldap', $ldap_db);
 
 $store->run();
 
