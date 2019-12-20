@@ -2,7 +2,7 @@
 
 ## Généralités
 
-Les évènements du planning sont accessibles via la collection `Evenement`. Ils sont liés, à minima, aux collections `Reservation`, `User`, `Machine` et `Status`. Chaque membre est caractérisé par les attributs suivant :
+Les évènements du planning sont accessibles via la collection `Evenement`. Ils sont liés, à minima, aux collections `Reservation`, `User`, `Machine` et `Status`. Chaque membre est caractérisé par les attributs suivants :
 
   - id (`int`) : numéro de membre dans la collection
   - reservation (`int`) : le numéro de la réservation
@@ -14,11 +14,11 @@ Les évènements du planning sont accessibles via la collection `Evenement`. Ils
   - target (`char[32]`) : l'identifiant de la machine tel que trouvé dans l'attribut `uid` des ressources de la collection `Machine`
   - previous (`int`) : le numéro d'évènement ayant déclenché cet évènement.
 
-Les attributs `reservation`, `target` et `previous` peuvent être NULL. Il est nécessaire de renseigner ou l'attribut `reservation` ou l'attribut `target` mais pas les deux à la fois (`XOR`).
+Les attributs `reservation`, `target` et `previous` peuvent être NULL. Il est nécessaire de renseigner soit l'attribut `reservation` soit l'attribut `target` mais pas les deux à la fois (`XOR`).
 
 ### Du cas de `target` et `reservation`
 
-Les attributs `target` et `reservation` servent à identifier la machine sur laquelle il se produit ; la priorité étant sur la réservation : si un évènement se produit sur une machine durant une réservation, le numéro de réservation doit être indiqué, sinon l'évènement le numéro de la machine est renseignée.
+Les attributs `target` et `reservation` servent à identifier la machine sur laquelle il se produit ; la priorité étant sur la réservation : si un évènement se produit sur une machine durant une réservation, le numéro de réservation doit être indiqué, sinon le numéro de la machine est renseignée.
 
 Pour déterminer la machine  ciblée par l'évènement, pour le cas où la réservation est renseignée, il faut interroger la collection `Reservation` et en récupérer l'attribut `target`. Le numéro de machine est donc accessible de deux manières :
 
@@ -35,11 +35,11 @@ L'attribut `previous` sert à *chaîner* les évènements. Certains évènements
  2  | 1           | Contrôle   | `NULL`  | 1
  3  | 1           | Réparation | `NULL`  | 2
  
-Il interdit de changer `reservation->target` par `target` dans les évènements successifs afin de garantir la cohérence des données.
+Il est interdit de changer `reservation->target` par `target` dans les évènements successifs afin de garantir la cohérence des données.
 
 ### De l'état d'une machine
 
-L'état d'une machine n'est pas explicite, il est déduit de l'ensemble des évènements. L'évènement est enregistrés lors de sa résolution ; une machine nécessitant une réparation reçoit l'évènement *réparation* lorsque la réparation a été effectuée.
+L'état d'une machine n'est pas explicite, il est déduit de l'ensemble des évènements. L'évènement est enregistré lors de sa résolution ; une machine nécessitant une réparation reçoit l'évènement *réparation* lorsque la réparation a été effectuée.
 
 Le nombre de type d'évènements est indéfini et la gestion des enchaînements est laissée à la libre interprétation des utilisateurs. Afin de rendre l'état lisible par un système informatique, chaque type se voit associé une valeur de sévérité (`severity`). Une machine est considérée sans problème avec une sévérité de 0.
 
@@ -52,7 +52,7 @@ Les sévérités actuelles sont les suivantes :
  2        | Un problème ou une panne a été signalée
  3        | La machine est inutilisable
 
-Les successions d'évènements suivent les degrés de sévérité par incrément ou décrement.
+Les successions d'évènements suivent les degrés de sévérité par incrément ou décrément.
 
 #### Exemple
 
@@ -70,7 +70,7 @@ Ici le degré de sévérité est **2** puisque la succession d'évènements `1->
 
 #### Optimisation
 
-Obtenir l'état final de la machine peut nécessiter une quantité de requêtes élevées. La sous-collection permet donc d'accéder à la chaîne résolue des évènements de manière optimisée. Cette sous-collection propose deux attributs supplémentaire :
+Obtenir l'état final de la machine peut nécessiter une quantité de requêtes élevées. La sous-collection permet donc d'accéder à la chaîne résolue des évènements de manière optimisée. Cette sous-collection propose deux attributs supplémentaires :
 
   - `severity` (`int`) : degré de sévérité
   - `resolvedTarget` (`char[32]`) : machine cible résolue
@@ -96,7 +96,7 @@ Les en-têtes HTTP des requêtes ne nécessitent rien de particulier. Il est rec
 
 ### Des sous-collections
 
-Les sous-collections sont une spécialisation des collections, accessible en lecture-seule. Les sous-collections sont accessibles par une requête sur une ressource dont le nom commence par un **.**. Pour la sous-collection `unified` de la collection `Evenement`, l'adresse est `Evenement/.unified`.
+Les sous-collections sont une spécialisation de collections, accessibles en lecture-seule. Les sous-collections sont accessibles par une requête sur une ressource dont le nom commence par un **.**. Pour la sous-collection `unified` de la collection `Evenement`, l'adresse est `Evenement/.unified`.
 
 ### Des adresses
 
@@ -140,7 +140,7 @@ L'attribut `success` est une valeur booléenne indiquant le résultat de le requ
 
 ### Données de réponse
 
-Les données disponibles à l'attribut `data` sont dépendantes de la collection. Généralement elles se présentent sous la forme d'un objet JSON d'un seul niveau. Certaines collections ou sous-collections peuvent retourner des objets plus complexes, dans ces cas il faut se référer à l'implémentation pour en comprendred la signification.
+Les données disponibles à l'attribut `data` sont dépendantes de la collection. Généralement, elles se présentent sous la forme d'un objet JSON d'un seul niveau. Certaines collections ou sous-collections peuvent retourner des objets plus complexes, dans ces cas, il faut se référer à l'implémentation pour en comprendre la signification.
 
 ### Requête `GET`
 
@@ -307,11 +307,11 @@ Cette requête retourne toujours :
 
 ## Les collections
 
-Les attributs disponibles mais non-décrits ici sont soit des reliques du passé soit des évolutions futures encore pas menées à terme. Il faut donc les ignorer.
+Les attributs disponibles mais non décrits ici sont soit des reliques du passé, soit des évolutions futures encore pas menées à terme. Il faut donc les ignorer.
 
 ### Reservation
 
-Contient les réservation. Une ressource est composées des attributs suivants :
+Contient les réservations. Une ressource est composée des attributs suivants :
 
   - `id` (`int`) : numéro de membre
   - `begin` (`char[32]`) : date de début de la réservation au format ISO 8601
@@ -319,14 +319,14 @@ Contient les réservation. Une ressource est composées des attributs suivants :
   - `deliveryBegin` (`char[32]`) : date de la livraison au format ISO 8601 ou `NULL` si inapplicable
   - `deliveryEnd` (`char[32]`) : date de la livraison au format ISO 8601 ou `NULL` si inapplicable
   - `target` (`char[32]`) : identifiant de la machine réservée
-  - `status` (`int`) : entier représentant le status de la réservation comme définit dans la collection `Status`
+  - `status` (`int`) : entier représentant le status de la réservation comme défini dans la collection `Status`
   - `creator` (`char[32]`) : Chemin relatif vers la collection `User` du responsable de la réservation
-  - `locality` (`text`) : Soit un chemin relative vers la collection `Locality` ou la collection `Warehouse` ou un texte libre pour la localité de la réservation
+  - `locality` (`text`) : Soit un chemin relative vers la collection `Locality` ou la collection `Warehouse` soit un texte libre pour la localité de la réservation
   - `address` (`text`) : Adresse de la réservation
   - `reference` (`text`) : Référence client de la réservation
   - `equipment` (`text`) : L'équipement nécessaire pour la réservation
   - `title` (`text`) : Machine demandée par le client
-  - `gps` (`text`) : Coordonnée GPS du lieu de la réservation
+  - `gps` (`text`) : Coordonnées GPS du lieu de la réservation
   - `folder` (`text`) : Dossier de la réservation
   - `other` (`text`) : Objet JSON contenant des indications supplémentaires éventuelles
   - `modification` (`int`) : Horodatage de la dernière modification (attribut modifé automatiquement)
@@ -371,7 +371,7 @@ Contient les réservation. Une ressource est composées des attributs suivants :
 
 ### User
 
-Contient les employés. Une ressource est composée des attributs suivant :
+Contient les employés. Une ressource est composée des attributs suivants :
 
   - `id` (`int`) : numéro de membre dans la collection
   - `name` (`text`) : Nom de l'utilisateur
@@ -396,7 +396,7 @@ Contient les employés. Une ressource est composée des attributs suivant :
 
 ### Status
 
-Contient les différents états possibles. Pour ces états, un type est associé correspondant à l'usage possible. Pour les évènements, le type à utiliser est **3**. Une ressource est composée des attributs suivant :
+Contient les différents états possibles. Pour ces états, un type est associé, correspondant à l'usage possible. Pour les évènements, le type à utiliser est **3**. Une ressource est composée des attributs suivants :
 
   - `id` (`int`) : numéro de membre dans la collection
   - `name` (`text`) : nom du status
@@ -420,11 +420,11 @@ Contient les différents états possibles. Pour ces états, un type est associé
 
 ### Machine
 
-Collection particulière, accessible uniquement en lecture-seul. Dans tous les cas un tableau de valeur est retourné. Les attributs sont les suivants :
+Collection particulière, accessible uniquement en lecture seule. Dans tous les cas, un tableau de valeur est retourné. Les attributs sont les suivants :
 
   - `uniqueidentifier` (`text`) : Un identifiant unique dans la collection
   - `description`, `uid`, `reference` (`text`) : L'identifiant de la machine
-  - `cn` (`text`) : le nom de la machine. Le support multi-lingue est fait par les déclinaisons `;lang-XX`, ..., de l'attribut `cn`
+  - `cn` (`text`) : le nom de la machine. Le support multilingue est fait par les déclinaisons `;lang-XX`, ..., de l'attribut `cn`
   - `brand` (`text`) : Marque
   - `height` (`int`) : Hauteur [cm]
   - `height` (`int`) : Hauteur [cm]
