@@ -41,35 +41,47 @@ class EvenementModel extends artnum\SQL {
 
   function getUnified ($options) {
     $req = 'SELECT
-              "evenement_id",
-              "evenement_technician",
-              "evenement_previous",
-              "evenement_reservation",
-              "evenement_date",
-              "evenement_type",
-              "evenement_comment",
-              "evenement_duration",
-              COALESCE(NULLIF("evenement_target", \'\'), "reservation_target") AS "evenement_target",
-              "evenement_reservation"
+              "evenement".*,
+              COALESCE(NULLIF("evenement_target", \'\'), "reservation_target") AS "evenement_resolvedTarget",
+              "status_severity" AS evenement_severity
             FROM "evenement"
+              LEFT JOIN "status" ON "status_id" = idFromURL("evenement_type")
               LEFT JOIN "reservation" ON "reservation_id" =  "evenement_reservation"';
 
-    if (isset($options['search']) && isset($options['search']['target'])) {
-      $options['search']['reservation_target'] = $options['search']['target'];
-      if (!isset($options['search']['_rules'])) {
-        $options['search']['_rules'] = '(target OR reservation_target)';
-        foreach ($options['search'] as $k => $v) {
-          if ($k != '_rules' && $k != 'target' && $k != 'reservation_target') {
-            $options['search']['_rules'] .= ' AND ' . $k;
+    if (isset($options['search'])) {
+      $with_severity = false;
+      if (isset($options['search']['severity'])) {
+        $options['search']['status_severity'] = $options['search']['severity'];
+        unset($options['search']['severity']);
+        $with_severity = true;
+      }
+
+      if(isset($options['search']['target'])) {
+        $options['search']['reservation_target'] = $options['search']['target'];
+        if (!isset($options['search']['_rules'])) {
+          $options['search']['_rules'] = '(target OR reservation_target)';
+          foreach ($options['search'] as $k => $v) {
+            if ($k != '_rules' && $k != 'target' && $k != 'reservation_target') {
+              $options['search']['_rules'] .= ' AND ' . $k;
+            }
+          }
+        } else {
+          if ($with_severity) {
+            $options['search']['_rules'] = str_replace('target', '(target OR reservation_target) AND status_severity', $options['search']['_rules']);
+          } else {
+            $options['search']['_rules'] = str_replace('target', '(target OR reservation_target)', $options['search']['_rules']);
           }
         }
-      } else {
-        $options['search']['_rules'] = str_replace('target', '(target OR reservation_target)', $options['search']['_rules']);
       }
     }
-    print_r($options);
     $req = $this->prepare_statement($req, $options);
-    var_dump($req);
+    $parts = explode(' WHERE ', $req);
+    if (empty($parts[1])) {
+      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL)';
+    } else {
+      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL) AND ' . $parts[1];
+    }
+    $req = join(' WHERE ', $parts);
     try {
       $st = $this->get_db(true)->prepare($req);
       if($st->execute()) {
