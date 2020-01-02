@@ -26,15 +26,34 @@ if (is_null($pdo)) {
 }
 $store->add_db('sql', $pdo);
 
-$ldap_db = new artnum\LDAPDB(
-         array(
-               array('uri' => 'ldapi:///',
-                  'ro' => true,
-                  'dn' => NULL,
-                  'password' => NULL
-                  )
-            )
-      );
+if (empty($ini_conf['addressbook']) || empty($ini_conf['addressbook']['servers'])) {
+  throw new Exception('Addressbook not configured');
+  exit(0);
+}
+
+$abServers = explode(',', $ini_conf['addressbook']['servers']);
+if (count($abServers) <= 0) {
+  throw new Exception('Addressbook not configured');
+  exit(0);
+}
+$ldapServers = array();
+foreach($abServers as $server) {
+  $s = sprintf('ab-%s', trim($server));
+  if (!empty($ini_conf[$s]) && !empty($ini_conf[$s]['uri'])) {
+    $ldapServers[] = array(
+      'uri' => $ini_conf[$s]['uri'],
+      'ro' => !empty($ini_conf[$s]['read-only']) ? boolval($ini_conf[$s]['read-only']) : true,
+      'dn' => !empty($ini_conf[$s]['username']) ? $ini_conf[$s]['username'] : NULL,
+      'password' => !empty($ini_conf[$s]['password']) ? $ini_conf[$s]['password'] : NULL
+    );
+  }
+}
+
+if (count($ldapServers) <= 0) {
+  throw new Exception('Addressbook not configured');
+  exit(0);
+}
+$ldap_db = new artnum\LDAPDB($ldapServers);
 $store->add_db('ldap', $ldap_db);
 
 if (!$ini_conf['general']['disable-locking']) {
@@ -49,6 +68,4 @@ if (!$ini_conf['general']['disable-locking']) {
 }
 
 $store->run();
-
-$ldap_db->close();
 ?>

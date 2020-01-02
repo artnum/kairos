@@ -1422,7 +1422,7 @@ define([
             var machine = response.data[i]
             let groupName = []
 
-            if (!machine.cn || !machine.uid) { continue }
+            if (!machine || !machine.cn || !machine.uid) { continue }
             if (machine.state && machine.state.indexOf('SOLD') !== -1) { continue }
 
             let name = `${machine.uid} <div class="name">${machine.cn}</div>`
