@@ -70,7 +70,7 @@ Ici le degré de sévérité est **2** puisque la succession d'évènements `1->
 
 #### Optimisation
 
-Obtenir l'état final de la machine peut nécessiter une quantité de requêtes élevées. La sous-collection permet donc d'accéder à la chaîne résolue des évènements de manière optimisée. Cette sous-collection propose deux attributs supplémentaires :
+Obtenir l'état final de la machine peut nécessiter une quantité de requêtes élevées. La sous-collection `unified` permet donc d'accéder à la chaîne résolue des évènements de manière optimisée. Cette sous-collection propose deux attributs supplémentaires :
 
   - `severity` (`int`) : degré de sévérité
   - `resolvedTarget` (`char[32]`) : machine cible résolue
@@ -89,6 +89,10 @@ Les méthodes `HTTP` supportées sont les suivantes :
   - `PATCH` : Modifier une ressource
   - `HEAD` : Vérifier l'existence d'une ressource ou obtenir le nombre d'éléments d'une recherche
   - `DELETE` : Supprimer une ressource
+
+### HTTP/2
+
+Le protocole HTTP/2 est préféré. Le protocole HTTP/1.1 est disponible mais son utilisation est considérée obsolète.
 
 ### En-têtes
 
