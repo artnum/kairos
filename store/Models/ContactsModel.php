@@ -4,21 +4,20 @@ class ContactsModel extends artnum\LDAP {
     parent::__construct($db, 'ou=Contacts,o=airnace', array('givenname', 'sn', 'displayname', 'mail', 'telephonenumber', 'o', 'mobile', 'l', 'postalcode', 'c', 'postaladdress', 'uid'), $config);
   }
 
-  function read($dn) {
-    $result = parent::read($dn);
-    if ($result[1] === 1) {
-      $dName = array();
-      if (!empty($result[0][0]['displayname'])) {
-        return $result;
-      }
+  function processEntry ($conn, $ldapEntry, &$result) {
+    $entry = parent::processEntry($conn, $ldapEntry, $result);
+
+    if (empty($entry['displayname'])) {
+      $displayname = '';
       foreach (array('o', 'givenname', 'sn', 'l', 'mobile', 'telephonenumber', 'mail') as $v) {
-        if (!empty($result[0][0][$v])) {
-          $dName[] = $result[0][0][$v];        
+        if (!empty($v)) {
+          if (!empty($displayname)) { $displayname = sprintf('%s %s', $displayname, $v); break; }
+          $displayname = $v;
         }
       }
-      $result[0][0]['displayname'] = implode(' ', array_slice($dName, 0, 2));
     }
-    return $result;
+
+    return $entry;
   }
 }
 ?>

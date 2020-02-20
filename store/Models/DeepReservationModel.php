@@ -5,6 +5,21 @@ class DeepReservationModel extends ReservationModel {
   function __construct($dbs, $config) {
     parent::__construct($dbs['sql'], $config);
     $this->dbs = $dbs;
+    $this->set_req('get', '
+         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name,
+                creator.user_phone AS creator_phone, creator.user_id AS creator_id,
+                creator.user_color AS creator_color, status_color AS reservation_color,
+                (
+                   SELECT COUNT(evenement_id) FROM evenement
+                   WHERE evenement_reservation = reservation_id
+                ) AS reservation_cntIntervention
+                FROM \\Table
+                LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
+                LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
+                LEFT JOIN user AS creator ON creator.user_id =
+                     IDFromUrl(reservation.reservation_creator)
+                LEFT JOIN status ON reservation_status = status_id
+               ');
     $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
   }
 
@@ -21,25 +36,9 @@ class DeepReservationModel extends ReservationModel {
     return array('sql', 'ldap');
   }
 
-  function listing($options) {
-    try {
-      $st = $this->DB->prepare($this->prepare_statement('SELECT reservation_id FROM reservation', $options));
-      $ret = array();
-      if($st->execute()) {
-        foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $v) {
-          $ret[] = $this->read($this->unprefix($v)['id'])[0];
-        }
-      }
-
-      return array($ret, count($ret));
-    } catch (\Exception $e) {
-      return array(NULL , 0);
-    }
-
-    return array(NULL, 0);
-  }
-
   function getUncounted ($options) {
+    $result = new \artnum\JStore\Result();
+
     $req = 'SELECT * FROM uncounted ';
     if (isset($options['search'])) {
       $where = array();
@@ -49,7 +48,7 @@ class DeepReservationModel extends ReservationModel {
           $day = $day->format('Y-m-d');
           $where[] = 'LEFT(reservation_begin, 10) < \' . $day . \'';
         } catch (\Exception $e) {
-          // nothing
+          $result->addError($e->getMessage(), $e);
         }
       }
       if (isset($options['search']['status'])) {
@@ -58,28 +57,27 @@ class DeepReservationModel extends ReservationModel {
         }
       }
     }
+
     if (count($where) > 0) {
       $req .= ' WHERE ' . implode(' AND ', $where) . ' ORDER BY reservation_id DESC';
     }
-   
-    $results = array();
+
     try {
       $st = $this->DB->prepare($req);
       if ($st->execute()) {
-        $count = 0;
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-          $results[] = $this->unprefix($row);
-          $count++;
+          $result->addItem($this->unprefix($row));
         }
       }
-      if ($count > 0) {
-        return array($results, $count);
-      }
-    } catch (\Exception $e) {}
-    return array(NULL, 0);    
+    } catch (\Exception $e) {
+      $result->addError($e, $e->getMessage());
+    }
+    
+    return $result;
   }
 
   function getToprepare ($options) {
+    $result = new \artnum\JStore\Result();
     $req = 'SELECT reservation_target FROM reservation
             LEFT JOIN association ON reservation_id = association_reservation
             WHERE (
@@ -97,6 +95,7 @@ class DeepReservationModel extends ReservationModel {
           $day = new DateTime($options['search']['day']);
         } catch (\Exception $e) {
           $day = new DateTime();
+          $result->addError(sprintf('search:day unparsable: +%s+', $e->getMessage()), $e);
         }
       }
       if (isset($options['search']['status']) && is_numeric($options['search']['status'])){
@@ -109,23 +108,20 @@ class DeepReservationModel extends ReservationModel {
       $st = $this->DB->prepare($req);
       $st->bindValue(':day', $day->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':status', $status, PDO::PARAM_INT);
-      $count = 0;
 
       if ($st->execute()) {
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-          $results[] = $this->unprefix($row);
-          $count++;
+          $result->addItem($this->unprefix($row));
         }
       }
-
-      if ($count > 0) {
-        return array($results, $count);
-      }
-    } catch (\Exception $e) { print_r($e); }
-    return array(NULL, 0);
+    } catch (\Exception $e) {
+      $result->addError($e->getMessage(), $e);
+    }
+    return $result;
   }
   
   function getTodo ($options) {
+    $result = new \artnum\JStore\Result();
     $req = 'SELECT *, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_color AS creator_color FROM reservation
            LEFT JOIN arrival ON arrival_target = reservation_id
            LEFT JOIN user AS creator ON creator.user_id = REVERSE(SUBSTR(REVERSE(reservation.reservation_creator), 1, LOCATE(\'/\', REVERSE(reservation.reservation_creator)) - 1))
@@ -162,7 +158,6 @@ class DeepReservationModel extends ReservationModel {
       $req .= $this->prepareLimit($req, $options);
     }
 
-    $results = array();
     try {
       $st = $this->DB->prepare($req);
       $day1 = clone $day;
@@ -175,72 +170,20 @@ class DeepReservationModel extends ReservationModel {
       $st->bindValue(':day2', $day->format('Y-m-d'), PDO::PARAM_STR);
       $st->bindValue(':status', $status, PDO::PARAM_INT);
       if ($st->execute()) {
-        $count = 0;
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-          $results[] = $this->unprefix($row);
-          $count++;
+          $result->addItem($this->unprefix($row));
         }
-      }
-     
-      if ($count > 0) {
-        return array($results, $count);
-      }
-    } catch (\Exception $e) {}
-    return array(NULL, 0);
-  }
-  
-  function get($id) {
-    $pre_statement = '
-         SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name, creator.user_phone AS creator_phone, creator.user_id AS creator_id, creator.user_color AS creator_color, (SELECT COUNT(intervention_id) FROM intervention WHERE intervention_reservation = reservation_id) AS reservation_cntIntervention FROM reservation
-               LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
-               LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
-               LEFT JOIN user AS creator ON creator.user_id = IDFromUrl(reservation.reservation_creator)
-            WHERE reservation_id = :id';
-    try {
-      $st = $this->DB->prepare($pre_statement);
-      $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
-      $st->bindParam(':id', $id, $bind_type);
-      if($st->execute()) {
-        $data = $st->fetch(\PDO::FETCH_ASSOC);
-        if($data != FALSE) {
-          if(!empty($data['reservation_status'])) {
-            $pre_statement = 'SELECT status_color FROM status WHERE status_id = :id';
-            try {
-              $st = $this->DB->prepare($pre_statement);
-              $bind_type = ctype_digit($data['reservation_status']) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
-              $st->bindParam(':id', $data['reservation_status'], $bind_type);
-              if($st->execute()) {
-                $status = $st->fetch();
-                if($status) {
-                  $data['reservation_color'] = $status[0];
-                } else {
-                  $data['reservation_color'] = 'FFFFFF';
-                }
-              } else {
-                $data['reservation_color'] = 'FFFFFF';
-              }
-            } catch(\Exception $e) {
-              $data['reservation_color'] = 'FFFFFF';
-            }
-          } else {
-            $data['reservation_color'] = 'FFFFFF';
-          }
-          return $data;
-        }
-      }
+      }     
     } catch (\Exception $e) {
-      return NULL;
+      $result->addError($e->getMessage(), $e);
     }
-
-    return NULL;
+    return $result;
   }
 
-  function read($id) {
-    $entry = $this->get($id);
+  function extendEntry($entry, &$result) {
     if($entry) {
-      $entry = $this->unprefix($entry);
-      $entry = $this->_postprocess($entry);
-      $entry['complements'] = array();            
+      $id = $entry['id'];
+      $entry['complements'] = array();
       try {
         $st = $this->DB->prepare('SELECT * FROM association WHERE association_reservation = :reservation');
         $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
@@ -262,6 +205,7 @@ class DeepReservationModel extends ReservationModel {
                 $ux['type'] = $_ux;
               }
             } catch (\Exception $e) {
+              $result->addError($e->getMessage(), $e);
             }
           }
           $entry['complements'][] = $ux;
@@ -280,13 +224,10 @@ class DeepReservationModel extends ReservationModel {
           /* Request contact */ 
           if($contact['target']) {
             $target = $this->unstorify($contact['target']);
-            if($target[0] == 'Contacts') {
+            if($target[0] === 'Contacts') {
               $c = $CModel->read($target[1]);
-              if (!isset($c[1])) {
-                error_log(var_export($c, true));
-              }
-              if($c[1] > 0) {
-                $contact['target'] = $c[0][0];
+              if ($c->getCount() > 0) {
+                $contact['target'] = $c->getItems()[0];
               } else {
                 continue;
               }
@@ -342,12 +283,11 @@ class DeepReservationModel extends ReservationModel {
         
         $entry['contacts'] = $contacts;
       } catch (\Exception $e) {
-        /* nothing */
+        $result->addError($e->getMessage(), $e);
       }
       $entry['id'] = (string)$entry['id'];
-      return array($entry, 1);
     }
-    return array();
+    return $entry;
   }
 
   private function unstorify ( $str ) {
