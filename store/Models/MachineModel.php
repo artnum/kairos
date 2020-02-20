@@ -32,6 +32,37 @@ class MachineModel extends artnum\LDAP {
     return array_merge($entry, $details);
   }
 
+  function _read ($id) {
+    $result = new \artnum\JStore\Result();
+    try {
+      $conn = $this->DB->readable();
+      $eId = ldap_escape($id);
+      $filter = sprintf('(|(description=%s)(airaltref=%s))', $eId, $eId);
+      $res = ldap_list($conn, $this->_dn(), $filter, $this->Attribute);
+      if ($res && ldap_count_entries($conn, $res) === 1) {
+        $entry = ldap_first_entry($conn, $res);
+        $entry = $this->processEntry($conn, $entry, $result);
+        if (!is_null($entry)) {
+          $entry['uid'] = $id;
+          $entry['reference'] = $id;
+          if (!empty($entry['airaltref']) &&
+              ((is_array($entry['airlatref']) && in_array($id, $entry['airaltref']) ||
+               (strval($entry['airaltref']) === strval($id))))) {
+            $entry['parent'] = $entry['description'];
+          }
+          $result->setItems($entry);
+          $result->setCount(1);
+        }
+      } else {
+        $result->addError('Multiple entry returned');
+      }
+    } catch (Exception $e) {
+      $result->addError($e->getMessage(), $e);
+    }
+
+    return $result;
+  }
+  
   function listing ($options) {
     $result = new \artnum\JStore\Result();
     try {
