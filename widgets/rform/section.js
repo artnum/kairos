@@ -1,7 +1,7 @@
 /* eslint-env amd, browser */
 /* global Histoire */
 define(['dojo/_base/declare'], function (djDeclare) {
-  return djDeclare('location.rform.section', [], {
+  return djDeclare('kairos.rform.section', [], {
     Sections: {
       note: function () {
         return new Promise((resolve, reject) => {
@@ -10,6 +10,7 @@ define(['dojo/_base/declare'], function (djDeclare) {
             object: this.reservation.uid,
             type: 'Reservation'
           }}).then((result) => {
+            if (result === null) { return }
             result.reverse()
             for (let entry of result) {
               if (entry) {
