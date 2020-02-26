@@ -1,4 +1,5 @@
 /* eslint-env browser, amd */
+/* global APPConf */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -10,13 +11,13 @@ define([
   Path,
   Query
 ) {
-  return djDeclare('location.Stores.Machine', [], {
+  return djDeclare('kairos.Stores.Machine', [], {
     entries: [],
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = null
 
-        entry = window.localStorage.getItem(`location/Machine/${id}`)
+        entry = window.localStorage.getItem(`kairos/Machine/${id}`)
         if (entry) {
           try {
             entry = JSON.parse(entry)
@@ -28,12 +29,12 @@ define([
         }
         Query.exec(Path.url(`store/Machine/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
-            entry = results.data[0]
+            entry = Array.isArray(results.data) ? results.data[0] : results.data
             entry.label = `${id} ${entry.cn}`
             entry.value = id
 
             entry.lastFetch = new Date().getTime()
-            window.localStorage.setItem(`location/Machine/${id}`, JSON.stringify(entry))
+            window.localStorage.setItem(`kairos/Machine/${id}`, JSON.stringify(entry))
           }
           resolve(entry)
         })
