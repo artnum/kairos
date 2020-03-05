@@ -28,7 +28,7 @@ define([
         }
         Query.exec(Path.url(`store/Machine/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
-            entry = results.data[0]
+            entry = Array.isArray(results.data) ? results.data[0] : results.data
             entry.label = `${id} ${entry.cn}`
             entry.value = id
 

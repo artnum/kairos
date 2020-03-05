@@ -32,6 +32,21 @@ class MachineModel extends artnum\LDAP {
     return array_merge($entry, $details);
   }
 
+  function _read($id) {
+    $result = new \artnum\JStore\Result();
+    $conn = $this->DB->readable();
+    $id = ldap_escape(rawurldecode($id), '', LDAP_ESCAPE_FILTER);
+    $filter = sprintf('(|(description=%s)(airaltref=%s))', $id, $id);
+    $res = @ldap_search($conn, $this->_dn($dn), $filter, $this->Attribute);
+    if ($res && ldap_count_entries($conn, $res) === 1) {
+      $entry = $this->processEntry($conn, ldap_first_entry($conn, $res), $result);
+      if ($entry) {
+        $result->addItem($entry);
+      }
+    }
+    return $result;
+  }
+  
   function listing ($options) {
     $result = new \artnum\JStore\Result();
     try {
