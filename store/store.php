@@ -67,5 +67,13 @@ if (!$ini_conf['general']['disable-locking']) {
   $store->set('lockmanager', 'void');
 }
 
+if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
+  $menshen = new artnum\Auth\Menshen(new artnum\Auth\Menshen\PDOStore($pdo, 'menshen'));
+  if (!$menshen->check()) {
+    artnum\HTTP\Response::code(403);
+    exit(0);
+  }
+}
+
 $store->run();
 ?>
