@@ -92,8 +92,16 @@ define([
       }
       return null
     },
+    _getTypeAttr: function () {
+      if (!this.Type) { return null }
+      return this.Type
+    },
+    _setTypeAttr: function (value) {
+      this.Type = value
+    },
     entry: function (entry) {
       if (!entry) { return }
+      this.Entry = entry
       if (!entry.freeform) {
         for (var k in this.mapping) {
           if (entry[this.mapping[k][0]]) {

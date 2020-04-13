@@ -122,12 +122,14 @@ define([
               if (data.data[j].freeform) {
                 if (!contacts[data.data[j].id]) {
                   contacts[data.data[j].id] = new Card()
+                  contacts[data.data[j].id].set('type', data.data[j].comment)
                   contacts[data.data[j].id].entry(data.data[j])
                 }
               } else {
                 var contact = await Query.exec(Path.url('store/' + data.data[j].target))
                 if (contact.success && contact.length === 1) {
                   contacts[data.data[j].id] = new Card()
+                  contacts[data.data[j].id].set('type', data.data[j].comment)
                   contacts[data.data[j].id].entry(contact.data[0])
                 }
               }
@@ -153,16 +155,27 @@ define([
       var frag = document.createDocumentFragment()
       frag.appendChild(document.createElement('LEGEND'))
       frag.firstChild.appendChild(document.createTextNode('Addresse de facturation'))
+      let defaultAddr = null
+      let addrSelected = false
       for (i in contacts) {
+        if (defaultAddr === null && contacts[i].get('type') === '_client') {
+          defaultAddr = contacts[i]
+        }
+        if (defaultAddr === null && contacts[i].get('type') === '_facturation') {
+          defaultAddr = contacts[i]
+        }
+        if (
+          defaultAddr !== null &&
+            defaultAddr.get('type') !== '_facturation' &&
+            contacts[i].get('type') === '_facturation'
+        ) {
+          defaultAddr = contacts[i]
+        }
         frag.appendChild(contacts[i].domNode)
         contacts[i].domNode.setAttribute('data-address-id', i)
         if (i === this.get('address-id')) {
           contacts[i].domNode.setAttribute('data-selected', '1')
-        } else {
-          if (Object.keys(contacts).length === 1) {
-            this.set('address-id', i)
-            contacts[i].domNode.dataset.selected = 1
-          }
+          addrSelected = true
         }
         if (Object.keys(contacts).length > 1) {
           contacts[i].domNode.addEventListener('click', function (event) {
@@ -180,6 +193,10 @@ define([
             div.setAttribute('data-selected', '1')
           }.bind(this))
         }
+      }
+      if (!addrSelected && defaultAddr !== null) {
+        this.set('address-id', i)
+        defaultAddr.domNode.dataset.selected = 1
       }
 
       window.requestAnimationFrame(function () {
