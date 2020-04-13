@@ -56,6 +56,13 @@ class DeepReservationModel extends ReservationModel {
           $where[] = 'reservation_status = ' . trim($options['search']['status']);
         }
       }
+      if (isset($options['search']['confirmed'])) {
+        if (intval($options['search']['confirmed'])) {
+          $where[] = 'arrival_reported IS NOT NULL';
+        } else {
+          $where[] = 'arrival_reported IS NULL';
+        }
+      }
     }
 
     if (count($where) > 0) {
