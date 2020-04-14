@@ -98,6 +98,10 @@ class MachineModel extends artnum\LDAP {
                   $x['airaltref'] = $entry['uid'];
                 }
               }
+              $details = $this->getEntryDetails($x['uid']);
+              if ($details) {
+                $x = array_merge($x, $details);
+              }
               $result->addItem($x);
             }
           }
