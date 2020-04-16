@@ -5,16 +5,16 @@
   <link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
-  <table data-source="store/Count" data-options="{parameters: {'search.deleted': '-'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modified', parameter: 'search.modified', integer: true}}">
+  <table data-source="store/Count" data-options="{parameters: {'search.deleted': '-', 'search.status': '!18'}}" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modified', parameter: 'search.modified', integer: true}}">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
-      <th data-attribute="@store/Invoice/$invoice winbiz:integer">Facture</th>
-      <th data-attribute="@store/CountReservation?search.count=$id reservation:integer">Réservation</th>
-      <th data-attribute="@store/Status/$status name">Status</th>
+      <th data-attribute="@../store/CountReservation?search.count=$id reservation:integer">Réservation</th>
+      <th data-attribute="@../store/Status/$status name">Status</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>
       <th data-attribute="reference">Référence</th>
       <th data-attribute="comment">Remarque</th>
+      <th data-attribute="@../store/$creator @../store/Reservation/$reservation @../store/CountReservation?search.count=$id name">Utilisateur</th>
       <th data-attribute="total:money">Montant</th>
       <th data-attribute="printed:date">Impression</th>
     </tr></thead>
@@ -26,7 +26,7 @@
 <script src="https://artnum.ch/code/js/Query.js"></script>
 <script src="https://artnum.ch/code/js/Path.js"></script>
 <script src="https://artnum.ch/code/js/Date.js"></script>
-<script src="https://artnum.ch/code/js/DTable.js"></script>
+<script src="/js/DTable.js"></script>
 <script>
  window.onload = function () {
    var tables = document.getElementsByTagName('TABLE') 

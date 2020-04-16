@@ -13,7 +13,7 @@
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>
-      <th data-attribute="@store/$_contacts.target displayname|_contacts.freeform">Client</th>
+      <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
       <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
 <!--      <th data-attribute="_arrival.reported:bool">Fin confirmée</th>
@@ -46,7 +46,7 @@
      dtable.addPfunc('countDays', async function (value, entry) {
        let today = new Date()
        today.setHours(12, 0, 0, 0)
-       let oldest = new Date(entry.end)
+       let oldest = new Date(entry.begin)
        if (entry.lastcount) {
          oldest = new Date(entry.lastcount)
        }
