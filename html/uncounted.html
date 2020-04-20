@@ -52,6 +52,7 @@
        }
      })
      dtable.addPfunc('countDays', async function (value, entry) {
+       entry = entry[0]
        let today = new Date()
        today.setHours(12, 0, 0, 0)
        let oldest = new Date(entry.begin)
