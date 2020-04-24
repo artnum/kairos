@@ -32,18 +32,6 @@ class MachineModel extends artnum\LDAP {
     return array_merge($entry, $details);
   }
 
-<<<<<<< HEAD
-  function _read($id) {
-    $result = new \artnum\JStore\Result();
-    $conn = $this->DB->readable();
-    $id = ldap_escape(rawurldecode($id), '', LDAP_ESCAPE_FILTER);
-    $filter = sprintf('(|(description=%s)(airaltref=%s))', $id, $id);
-    $res = @ldap_search($conn, $this->_dn($dn), $filter, $this->Attribute);
-    if ($res && ldap_count_entries($conn, $res) === 1) {
-      $entry = $this->processEntry($conn, ldap_first_entry($conn, $res), $result);
-      if ($entry) {
-        $result->addItem($entry);
-=======
   function _read ($id) {
     $result = new \artnum\JStore\Result();
     try {
@@ -67,7 +55,6 @@ class MachineModel extends artnum\LDAP {
         }
       } else {
         $result->addError('Multiple entry returned');
->>>>>>> airnace-stable
       }
     } catch (Exception $e) {
       $result->addError($e->getMessage(), $e);
@@ -111,13 +98,10 @@ class MachineModel extends artnum\LDAP {
                   $x['airaltref'] = $entry['uid'];
                 }
               }
-<<<<<<< HEAD
-=======
               $details = $this->getEntryDetails($x['uid']);
               if ($details) {
                 $x = array_merge($x, $details);
               }
->>>>>>> airnace-stable
               $result->addItem($x);
             }
           }
