@@ -16,8 +16,8 @@
       <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
       <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
-      <th data-attribute="_arrival.reported:bool?ne>1">Fin confirmée</th>
-      <th data-attribute="_arrival.done:bool">Retournée</th>
+      <th data-attribute="_arrival.reported:date{eq:bool>1">Fin confirmée</th>
+      <th data-attribute="_arrival.done:date">Retournée</th>
     </tr></thead>
   </table>
 </body>
