@@ -29,7 +29,6 @@ $store->add_db('sql', $pdo);
 if (empty($ini_conf['addressbook']) || empty($ini_conf['addressbook']['servers'])) {
   throw new Exception('Addressbook not configured');
   exit(0);
-
 }
 
 $abServers = explode(',', $ini_conf['addressbook']['servers']);
