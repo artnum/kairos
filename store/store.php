@@ -29,6 +29,7 @@ $store->add_db('sql', $pdo);
 if (empty($ini_conf['addressbook']) || empty($ini_conf['addressbook']['servers'])) {
   throw new Exception('Addressbook not configured');
   exit(0);
+<<<<<<< HEAD
 }
 
 $abServers = explode(',', $ini_conf['addressbook']['servers']);
@@ -49,6 +50,28 @@ foreach($abServers as $server) {
   }
 }
 
+=======
+}
+
+$abServers = explode(',', $ini_conf['addressbook']['servers']);
+if (count($abServers) <= 0) {
+  throw new Exception('Addressbook not configured');
+  exit(0);
+}
+$ldapServers = array();
+foreach($abServers as $server) {
+  $s = sprintf('ab-%s', trim($server));
+  if (!empty($ini_conf[$s]) && !empty($ini_conf[$s]['uri'])) {
+    $ldapServers[] = array(
+      'uri' => $ini_conf[$s]['uri'],
+      'ro' => !empty($ini_conf[$s]['read-only']) ? boolval($ini_conf[$s]['read-only']) : true,
+      'dn' => !empty($ini_conf[$s]['username']) ? $ini_conf[$s]['username'] : NULL,
+      'password' => !empty($ini_conf[$s]['password']) ? $ini_conf[$s]['password'] : NULL
+    );
+  }
+}
+
+>>>>>>> airnace-stable
 if (count($ldapServers) <= 0) {
   throw new Exception('Addressbook not configured');
   exit(0);
@@ -67,6 +90,7 @@ if (!$ini_conf['general']['disable-locking']) {
   $store->set('lockmanager', 'void');
 }
 
+<<<<<<< HEAD
 if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
   $menshen = new artnum\Auth\Menshen(new artnum\Auth\Menshen\PDOStore($pdo, 'menshen'));
   if (!$menshen->check()) {
@@ -75,5 +99,7 @@ if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
   }
 }
 
+=======
+>>>>>>> airnace-stable
 $store->run();
 ?>

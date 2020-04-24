@@ -1,23 +1,23 @@
 <!DOCTYPE>
 <html>
 <head>
-<title>Non décompté, en cours</title>
+<title>Non décompté, fin confirmée</title>
 <link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
   <table
-    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1', 'search.confirmed': '0'}}" data-entry-id="id">
+    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1'}}" data-entry-id="id">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date">Début</th>
       <th data-attribute="end:date">Fin</th>
-      <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform" data-class="clickable">Client</th>
+      <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
       <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
-<!--      <th data-attribute="_arrival.reported:bool">Fin confirmée</th>
-      <th data-attribute="_arrival.done:bool">Retournée</th>//-->
+      <th data-attribute="_arrival.reported:bool?ne>1">Fin confirmée</th>
+      <th data-attribute="_arrival.done:bool">Retournée</th>
     </tr></thead>
   </table>
 </body>

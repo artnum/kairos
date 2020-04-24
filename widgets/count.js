@@ -122,12 +122,14 @@ define([
               if (data.data[j].freeform) {
                 if (!contacts[data.data[j].id]) {
                   contacts[data.data[j].id] = new Card()
+                  contacts[data.data[j].id].set('type', data.data[j].comment)
                   contacts[data.data[j].id].entry(data.data[j])
                 }
               } else {
                 var contact = await Query.exec(Path.url('store/' + data.data[j].target))
                 if (contact.success && contact.length === 1) {
                   contacts[data.data[j].id] = new Card()
+                  contacts[data.data[j].id].set('type', data.data[j].comment)
                   contacts[data.data[j].id].entry(contact.data[0])
                 }
               }
@@ -153,16 +155,27 @@ define([
       var frag = document.createDocumentFragment()
       frag.appendChild(document.createElement('LEGEND'))
       frag.firstChild.appendChild(document.createTextNode('Addresse de facturation'))
+      let defaultAddr = null
+      let addrSelected = false
       for (i in contacts) {
+        if (defaultAddr === null && contacts[i].get('type') === '_client') {
+          defaultAddr = contacts[i]
+        }
+        if (defaultAddr === null && contacts[i].get('type') === '_facturation') {
+          defaultAddr = contacts[i]
+        }
+        if (
+          defaultAddr !== null &&
+            defaultAddr.get('type') !== '_facturation' &&
+            contacts[i].get('type') === '_facturation'
+        ) {
+          defaultAddr = contacts[i]
+        }
         frag.appendChild(contacts[i].domNode)
         contacts[i].domNode.setAttribute('data-address-id', i)
         if (i === this.get('address-id')) {
           contacts[i].domNode.setAttribute('data-selected', '1')
-        } else {
-          if (Object.keys(contacts).length === 1) {
-            this.set('address-id', i)
-            contacts[i].domNode.dataset.selected = 1
-          }
+          addrSelected = true
         }
         if (Object.keys(contacts).length > 1) {
           contacts[i].domNode.addEventListener('click', function (event) {
@@ -180,6 +193,10 @@ define([
             div.setAttribute('data-selected', '1')
           }.bind(this))
         }
+      }
+      if (!addrSelected && defaultAddr !== null) {
+        this.set('address-id', i)
+        defaultAddr.domNode.dataset.selected = 1
       }
 
       window.requestAnimationFrame(function () {
@@ -810,7 +827,7 @@ define([
           units += optgroups[opts].outerHTML
         }
         units += '</select>'
-        txt = `<td>${rselect}</td><td><input class="number" name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><textarea rows="1" name="description">${String(value.description ? value.description : '').html()}</textarea></td><td><input step="any" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
+        txt = `<td>${rselect}</td><td><input class="number" name="reference" type="text" value="${String(value.reference ? value.reference : '').html()}" /><td><textarea rows="1" name="description">${String(value.description ? value.description : '').html()}</textarea></td><td><input step="any" onwheel="this.blur()" name="quantity" type="number" lang="en" value="${String(value.quantity ? value.quantity : '').html()}" /></td><td>${units}</td><td><input name="price" lang="en" onwheel="this.blur()" step="any" type="number" value="${String(value.price ? value.price : '').html()}" /></td><td><input name="discount" lang="en" step="any" type="number" onwheel="this.blur()" value="${String(value.discount ? value.discount : '').html()}" /></td><td><input onwheel="this.blur()" lang="en" name="total" type="number" step="any" value="${String(value.total ? value.total : '').html()}" /></td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>`
         tr.addEventListener('keypress', function (event) {
           if (event.key === 'Enter' && event.target.nodeName !== 'TEXTAREA') {
             this.save(event)

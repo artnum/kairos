@@ -16,15 +16,19 @@ class Histoire {
       fetch(url).then((response) => {
         if (!response.ok) { reject(new Error('Erreur serveur')); return }
         response.json().then((result) => {
-          let data = result.data
-          for (let i = 0; i < data.length; i++) {
-            try {
-              if (data[i].details) { data[i].details = JSON.parse(data[i].details) }
-            } catch (e) {
-              data[i] = null
+          if (result.data === null) {
+            resolve(null)
+          } else {
+            let data = result.data
+            for (let i = 0; i < data.length; i++) {
+              try {
+                if (data[i].details) { data[i].details = JSON.parse(data[i].details) }
+              } catch (e) {
+                data[i] = null
+              }
             }
+            resolve(result.data)
           }
-          resolve(result.data)
         }, () => reject(new Error('Erreur serveur')))
       }, () => reject(new Error('Erreur serveur')))
     })
