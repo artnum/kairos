@@ -45,10 +45,12 @@ class MissionFichierModel extends artnum\SQL {
   }
 
   function listing ($options) {
+    $result = new \artnum\JStore\Result();
     if (isset($options['search']) && isset($options['search']['fichier'])) {
-      $result = $this->get($options['search']['fichier']);
-      if ($result !== NULL) {
-        return array(array($result), 1);
+      $r = $this->get($options['search']['fichier']);
+      if ($r !== NULL) {
+        $result->addItem($r);
+        return $result;
       }
     }
     $where_clause = '';
@@ -69,27 +71,39 @@ class MissionFichierModel extends artnum\SQL {
         $outVal = $this->unprefix($row);
         $outVal = $this->_postprocess($outVal);
         $outVal['uid'] = "$outVal[fichier],$outVal[mission]";
-        $retVal[] = $outVal;
+        $result->addItem($outVal);
       }
-      return array($retVal, count($retVal));
     }
 
-    return array(NULL, 0);
+    return $result;
   }
   
   function _delete ($id) {
+    $result = new \artnum\JStore\Result();
     $id = explode(',', $id);
-    if (count($id) !== 2) { return FALSE; }
+    if (count($id) !== 2) { 
+      $result->addItem([false]);
+      return $result; 
+    }
     $fichier = strtolower(trim($id[0]));
     $mission = trim($id[1]);
-    if (!ctype_alnum($fichier) && !ctype_digit($mission)) { return FALSE; }
+    if (!ctype_alnum($fichier) && !ctype_digit($mission)) { 
+      $result->addItem([$mission => false]);
+      return $result;
+    }
 
     $st = $this->get_db(false)->prepare('DELETE FROM "missionFichier" WHERE "missionFichier_mission" = :mission AND "missionFichier_fichier" = :fichier');
-    if (!$st) { return FALSE; }
-    
-    $st->bindParam(':mission', $mission, \PDO::PARAM_INT);
-    $st->bindParam(':fichier', $fichier, \PDO::PARAM_STR); 
-    return $st->execute();
+    if ($st) {
+      $st->bindParam(':mission', $mission, \PDO::PARAM_INT);
+      $st->bindParam(':fichier', $fichier, \PDO::PARAM_STR); 
+      try {
+        $result->addItem([$mission => $st->execute()]);
+
+      } catch (\Exception $e) {
+        $result->addItem([$mission => false]);
+      }
+    }
+    return $result;
   }
 
   function _overwrite ($data, $id = NULL) {
@@ -98,38 +112,40 @@ class MissionFichierModel extends artnum\SQL {
   }
   
   function _write ($data, $id = NULL) {
-    $falseRet = array(array(array('id' => NULL)), 1);
+    $result = new \artnum\JStore\Result();
     try {
       if (is_null($id)) {
         $st = $this->get_db(false)->prepare('INSERT IGNORE INTO "missionFichier" ("missionFichier_fichier", "missionFichier_mission", "missionFichier_ordre") VALUES (:fichier, :mission, :ordre)');
-        if (!$st) { return $falseRet; }
-        $st->bindParam(':mission', $data['mission'], \PDO::PARAM_INT);
-        $st->bindParam(':fichier', $data['fichier'], \PDO::PARAM_STR);
-        $st->bindParam(':ordre', $data['ordre'], \PDO::PARAM_INT);
-        if ($st->execute()) {
-          return array(array(array('id' => "$data[fichier],$data[mission]")), 1);
+        if ($st) {
+          $st->bindParam(':mission', $data['mission'], \PDO::PARAM_INT);
+          $st->bindParam(':fichier', $data['fichier'], \PDO::PARAM_STR);
+          $st->bindParam(':ordre', $data['ordre'], \PDO::PARAM_INT);
+          if ($st->execute()) {
+            $result->addItem(['id' => "$data[fichier],$data[mission]"]);
+          }
         }
       } else {
         $id = explode(',', $id);
-        if (count($id) !== 2) { return $falseRet; }
-        $fichier = strtolower(trim($id[0]));
-        $mission = trim($id[1]);
-        if (!ctype_alnum($fichier) && !ctype_digit($mission)) { return $falseRet; }
+        if (count($id) === 2) {
+          $fichier = strtolower(trim($id[0]));
+          $mission = trim($id[1]);
+          if (ctype_alnum($fichier) && ctype_digit($mission)) {
 
-        $st = $this->get_db(false)->prepare('UPDATE "missionFichier" SET "missionFichier_ordre" = :ordre WHERE "missionFichier_mission" = :mission AND "missionFichier_fichier" = :fichier');
-        if (!$st) { return $falseRet; }
-        $st->bindParam(':mission', $mission, \PDO::PARAM_INT);
-        $st->bindParam(':fichier', $fichier, \PDO::PARAM_STR);
-        $st->bindParam(':ordre', $data['ordre'], \PDO::PARAM_STR);
-        if ($st->execute()) {
-          return array(array(array('id' => "$fichier,$mission")), 1);
+            $st = $this->get_db(false)->prepare('UPDATE "missionFichier" SET "missionFichier_ordre" = :ordre WHERE "missionFichier_mission" = :mission AND "missionFichier_fichier" = :fichier');
+            if (!$st) { return $falseRet; }
+              $st->bindParam(':mission', $mission, \PDO::PARAM_INT);
+              $st->bindParam(':fichier', $fichier, \PDO::PARAM_STR);
+              $st->bindParam(':ordre', $data['ordre'], \PDO::PARAM_STR);
+              if ($st->execute()) {
+                $result->addItem(['id' => "$fichier,$mission"]);
+              }
+          }
         }
       }
     } catch (Exception $e) {
       error_log($e->getMessage());
-      return $falseRet;
     }
-    return $falseRet;
+    return $result;
   }
 }
 ?>
