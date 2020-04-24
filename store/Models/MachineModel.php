@@ -46,7 +46,7 @@ class MachineModel extends artnum\LDAP {
           $entry['uid'] = $id;
           $entry['reference'] = $id;
           if (!empty($entry['airaltref']) &&
-              ((is_array($entry['airlatref']) && in_array($id, $entry['airaltref']) ||
+              ((is_array($entry['airaltref']) && in_array($id, $entry['airaltref']) ||
                (strval($entry['airaltref']) === strval($id))))) {
             $entry['parent'] = $entry['description'];
           }
