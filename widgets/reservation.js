@@ -1399,6 +1399,7 @@ define([
             let url = Path.url('/store/ReservationContact')
             results.forEach((result) => {
               if (!result.success) { return }
+              if (result.length <= 0) { return }
               result.data.forEach((e) => {
                 delete e['id']
                 e['reservation'] = newId
