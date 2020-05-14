@@ -248,7 +248,7 @@ define([
         }
 
         if (event.detail.attribute === 'id') {
-          window.location.hash = `#DEC${event.detail.value}`
+          new Count({'data-id': event.detail.value}) // eslint-disable-line
         }
       })
       window.GEvent.listen('count.open', function (event) {
