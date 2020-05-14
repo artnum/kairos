@@ -855,137 +855,52 @@ define([
     },
 
     _drawComplement: function () {
-      var that = this
-      var x = this.complements
-      var byType = {}
-      var compdiv = document.createElement('DIV')
-      compdiv.setAttribute('style', 'position: relative; height: 100%')
+      if (!this.complements) { return null }
+      let compdiv = document.createElement('DIV')
+      compdiv.classList.add('complementDiv')
+      const begin = Math.round(this.get('trueBegin').getTime() / 1000)
+      const end = Math.round(this.get('trueEnd').getTime() / 1000)
+      let lines = {}
 
-      for (var i = 0; i < x.length; i++) {
-        /* Follow set end and begin at the value of the reservation */
-        if (Number(x[i].follow)) {
-          x[i].begin = this.get('trueBegin'); x[i].end = this.get('trueEnd')
-        }
-        x[i].range = new DateRange(x[i].begin, x[i].end)
-        if (!byType[x[i].type.color]) {
-          byType[x[i].type.color] = []
-        }
-        byType[x[i].type.color].push(x[i])
-
-        var overlap = true
-        while (overlap) {
-          overlap = false
-          var z = byType[x[i].type.color].pop()
-          for (var j = 0; j < byType[x[i].type.color].length; j++) {
-            var o = byType[x[i].type.color][j].range.merge(z.range)
-            if (o != null) {
-              byType[x[i].type.color][j].range = o
-              if (z.number > byType[x[i].type.color][j].number) {
-                byType[x[i].type.color][j].number = z.number
-              }
-              overlap = true
-              break
-            }
+      for (let i = 0; i < this.complements.length; i++) {
+        let c = this.complements[i]
+        if (!c.type || !c.type.color) { continue }
+        let color = c.type.color
+        if (!lines[color]) {
+          lines[color] = {
+            percent: 0,
+            percentStart: 0,
+            start: 0,
+            end: 0,
+            count: 1
           }
-          if (!overlap) {
-            byType[x[i].type.color].push(z)
-          }
+        } else {
+          lines[color].count++
+        }
+        /* line is full add an element on it */
+        if (lines[color].percent >= 100) {
+          continue
+        }
+        /* follow the whole reservation */
+        if (parseInt(c.follow)) {
+          lines[color].percent = 100
+        } else {
+          let b = Math.round((new Date(c.begin)).getTime() / 1000)
+          let e = Math.round((new Date(c.end)).getTime() / 1000)
+          if (isNaN(b) || isNaN(e)) { continue }
+          if (lines[color].start === 0 || lines[color].start > b) { lines[color].start = b }
+          if (lines[color].end === 0 || lines[color].end < e) { lines[color].end = e }
+          lines[color].percent = Math.round((lines[color].end - lines[color].start) / (end - begin) * 10000) / 100
+          lines[color].percentStart = Math.round((lines[color].start - begin) / (end - begin) * 10000) / 100
         }
       }
-
-      var cent = 100
-      var height = Math.round(cent / Object.keys(byType).length)
-      var lineCount = 0
-
-      for (i in byType) {
-        var color = '#FFF'
-        byType[i].forEach(function (entry) {
-          var display = true
-          if (entry.number > 0) {
-            var begin = entry.range.begin
-            var end = entry.range.end
-            if (entry.type && entry.type.color) {
-              color = '#' + entry.type.color
-            }
-
-            for (var x = begin; djDate.compare(x, end, 'date') <= 0; x = djDate.add(x, 'day', 1)) {
-              var date = djDateStamp.toISOString(x, {selector: 'date'})
-              if (typeof window.Rent.Days[date] === 'undefined') {
-                window.Rent.Days[date] = {}
-              }
-              if (typeof window.Rent.Days[date][entry.type.color] === 'undefined') {
-                window.Rent.Days[date][entry.type.color] = {}
-              }
-              window.Rent.Days[date][entry.type.color][that.uid] = parseInt(entry.number)
-            }
-
-            /* Not in view as the end of this entry is after the beginning of the timeline */
-            if (djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
-              display = false
-            }
-            /* Not in view as the entry begins after the timeline end */
-            if (djDate.compare(begin, that.get('dateRange').end, 'date') > 0) {
-              display = false
-            }
-
-            /* If for some reason the entry is bigger than its container, size it to the container size */
-            if (djDate.compare(begin, that.get('trueBegin'), 'datetime') < 0) { begin = that.get('trueBegin') }
-            if (djDate.compare(end, that.get('trueEnd'), 'datetime') > 0) { end = that.get('trueEnd') }
-
-            if (display) {
-              var width = 0
-              var left = 0
-              var entryBegin = that.get('trueBegin')
-              var entryEnd = that.get('trueEnd')
-
-              if (djDate.compare(entryBegin, that.get('dateRange').begin, 'datetime') < 0) {
-                entryBegin = that.get('dateRange').begin
-              }
-              if (djDate.compare(entryEnd, that.get('dateRange').end, 'datetime') > 0) {
-                entryEnd = that.get('dateRange').end
-              }
-
-              /* base width when fully displayed */
-              width = (Math.abs(djDate.difference(begin, end, 'day')) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(end)
-              /* base left when fully displayed */
-              left = (Math.abs(djDate.difference(entryBegin, begin)) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(begin)
-
-              /* if it begin before the current timeline's begin */
-              if (djDate.compare(begin, that.get('dateRange').begin, 'date') < 0) {
-                width = width - (Math.abs(djDate.difference(begin, that.get('dateRange').begin)) * that.get('blockSize')) + that.computeIntervalOffset(entryBegin)
-                left = 0
-              } else {
-                if (djDate.compare(begin, entryBegin, 'datetime') > 0) {
-                  width -= that.computeIntervalOffset(begin) - that.computeIntervalOffset(entryBegin)
-                }
-              }
-
-              /* if it end after the current timeline's end */
-              if (djDate.compare(end, that.get('dateRange').end, 'date') >= 0) {
-                if (djDate.compare(end, that.get('dateRange').end, 'date') === 0) {
-                  width = width - that.computeIntervalOffset(end)
-                } else {
-                  width = width - (Math.abs(djDate.difference(end, that.get('dateRange').end) + 1) * that.get('blockSize')) - that.computeIntervalOffset(end)
-                }
-              }
-
-              var div = document.createElement('DIV')
-              div.setAttribute('style', 'position: absolute; background-color: ' + color + '; left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;')
-              div.setAttribute('class', 'stabiloLine')
-
-              var numDiv = document.createElement('DIV')
-              numDiv.setAttribute('class', 'number'); numDiv.setAttribute('style', 'color: ' + pSBC(0.1, color))
-              for (var i = 0; i < entry.number; i++) {
-                var sym = document.createElement('I')
-                sym.setAttribute('class', 'fas fa-circle')
-                numDiv.appendChild(sym)
-              }
-              div.appendChild(numDiv)
-
-              compdiv.appendChild(div)
-            }
-          }
-        })
+      let height = Math.round(1000 / Object.keys(lines).length) / 10
+      let lineCount = 0;
+      for (let color in lines) {
+        let div = document.createElement('DIV')
+        div.classList.add('stabiloLine')
+        div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color].percentStart}%; width: ${lines[color].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
+        compdiv.appendChild(div)
         lineCount++
       }
 
@@ -1215,7 +1130,9 @@ define([
                 this.domNode.classList.remove(c)
               }
             }
-            this.domNode.appendChild(compdiv)
+            if (compdiv) {
+              this.domNode.appendChild(compdiv)
+            }
             if (txtdiv == null) {
               this.domNode.appendChild(this._currentTextDesc)
             } else {
