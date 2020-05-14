@@ -858,10 +858,6 @@ define([
       if (!this.complements) { return null }
       let compdiv = document.createElement('DIV')
       compdiv.classList.add('complementDiv')
-<<<<<<< HEAD
-      const begin = Math.round(this.get('trueBegin').getTime() / 1000)
-      const end = Math.round(this.get('trueEnd').getTime() / 1000)
-=======
       let begin = Math.round(this.get('trueBegin').getTime() / 1000)
       let end = Math.round(this.get('trueEnd').getTime() / 1000)
 
@@ -871,7 +867,6 @@ define([
       if (begin < rBegin) { begin = rBegin }
       if (end > rEnd) { end = rEnd }
 
->>>>>>> airnace-stable
       let lines = {}
 
       for (let i = 0; i < this.complements.length; i++) {
@@ -879,41 +874,16 @@ define([
         if (!c.type || !c.type.color) { continue }
         let color = c.type.color
         if (!lines[color]) {
-<<<<<<< HEAD
-          lines[color] = {
-            percent: 0,
-            percentStart: 0,
-            start: 0,
-            end: 0,
-            count: 1
-          }
-=======
           lines[color] = [0]
->>>>>>> airnace-stable
         } else {
           lines[color].count++
         }
         /* line is full add an element on it */
-<<<<<<< HEAD
-        if (lines[color].percent >= 100) {
-=======
         if (lines[color][0] >= 100) {
->>>>>>> airnace-stable
           continue
         }
         /* follow the whole reservation */
         if (parseInt(c.follow)) {
-<<<<<<< HEAD
-          lines[color].percent = 100
-        } else {
-          let b = Math.round((new Date(c.begin)).getTime() / 1000)
-          let e = Math.round((new Date(c.end)).getTime() / 1000)
-          if (isNaN(b) || isNaN(e)) { continue }
-          if (lines[color].start === 0 || lines[color].start > b) { lines[color].start = b }
-          if (lines[color].end === 0 || lines[color].end < e) { lines[color].end = e }
-          lines[color].percent = Math.round((lines[color].end - lines[color].start) / (end - begin) * 10000) / 100
-          lines[color].percentStart = Math.round((lines[color].start - begin) / (end - begin) * 10000) / 100
-=======
           lines[color][0] = 100
         } else {
           let b = Math.round((new Date(c.begin)).getTime() / 1000)
@@ -956,18 +926,11 @@ define([
             matchingSegment.count++
             lines[color][0] += matchingSegment.percent
           }
->>>>>>> airnace-stable
         }
       }
       let height = Math.round(1000 / Object.keys(lines).length) / 10
       let lineCount = 0;
       for (let color in lines) {
-<<<<<<< HEAD
-        let div = document.createElement('DIV')
-        div.classList.add('stabiloLine')
-        div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color].percentStart}%; width: ${lines[color].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
-        compdiv.appendChild(div)
-=======
         if (lines[color][0] >= 100) {
           let div = document.createElement('DIV')
           div.classList.add('stabiloLine')
@@ -981,7 +944,6 @@ define([
             compdiv.appendChild(div)
           }
         }
->>>>>>> airnace-stable
         lineCount++
       }
 
