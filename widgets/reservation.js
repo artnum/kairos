@@ -858,8 +858,20 @@ define([
       if (!this.complements) { return null }
       let compdiv = document.createElement('DIV')
       compdiv.classList.add('complementDiv')
+<<<<<<< HEAD
       const begin = Math.round(this.get('trueBegin').getTime() / 1000)
       const end = Math.round(this.get('trueEnd').getTime() / 1000)
+=======
+      let begin = Math.round(this.get('trueBegin').getTime() / 1000)
+      let end = Math.round(this.get('trueEnd').getTime() / 1000)
+
+      /* if reservation is bigger than range, calculate on range */ 
+      let rBegin = Math.round(this.get('dateRange').begin.getTime() / 1000)
+      let rEnd = Math.round(this.get('dateRange').end.getTime() / 1000)
+      if (begin < rBegin) { begin = rBegin }
+      if (end > rEnd) { end = rEnd }
+
+>>>>>>> airnace-stable
       let lines = {}
 
       for (let i = 0; i < this.complements.length; i++) {
@@ -867,6 +879,7 @@ define([
         if (!c.type || !c.type.color) { continue }
         let color = c.type.color
         if (!lines[color]) {
+<<<<<<< HEAD
           lines[color] = {
             percent: 0,
             percentStart: 0,
@@ -874,15 +887,23 @@ define([
             end: 0,
             count: 1
           }
+=======
+          lines[color] = [0]
+>>>>>>> airnace-stable
         } else {
           lines[color].count++
         }
         /* line is full add an element on it */
+<<<<<<< HEAD
         if (lines[color].percent >= 100) {
+=======
+        if (lines[color][0] >= 100) {
+>>>>>>> airnace-stable
           continue
         }
         /* follow the whole reservation */
         if (parseInt(c.follow)) {
+<<<<<<< HEAD
           lines[color].percent = 100
         } else {
           let b = Math.round((new Date(c.begin)).getTime() / 1000)
@@ -892,15 +913,75 @@ define([
           if (lines[color].end === 0 || lines[color].end < e) { lines[color].end = e }
           lines[color].percent = Math.round((lines[color].end - lines[color].start) / (end - begin) * 10000) / 100
           lines[color].percentStart = Math.round((lines[color].start - begin) / (end - begin) * 10000) / 100
+=======
+          lines[color][0] = 100
+        } else {
+          let b = Math.round((new Date(c.begin)).getTime() / 1000)
+          let e = Math.round((new Date(c.end)).getTime() / 1000)
+          if (e <= begin || b >= end) {
+            continue
+          }
+          if (isNaN(b) || isNaN(e)) { continue }
+
+          matchingSegment = null
+          for (let i = 1; i < lines[color].length; i++) {
+            let seg = lines[color][i]
+            if ((b < seg.end && b > seg.start) || (e > seg.begin && e < seg.end)) {
+              matchingSegment = seg
+              break
+            }
+          }
+
+          if (!matchingSegment) {
+            let percentStart = Math.round((b - begin) / (end - begin) * 10000) / 100
+            let percent = Math.round((e - b) / (end - begin) * 10000) / 100
+            lines[color][0] += percent
+            if (lines[color][0] >= 100) { continue }
+            lines[color].push({
+              start: b,
+              end: e,
+              percent: percent,
+              percentStart: percentStart,
+              count: 1
+            })
+          } else {
+            if (matchingSegment.start > b) {
+              matchingSegment.start = b
+            }
+            if (matchingSegment.end < e) {
+              matchingSegment.end = e
+            }
+            matchingSegment.percentStart = Math.round((matchingSegment.start - begin) / (end - begin) * 10000) / 100
+            matchingSegment.percent = Math.round((matchingSegment.end - matchingSegment.start) / (end - begin) * 10000) / 100
+            matchingSegment.count++
+            lines[color][0] += matchingSegment.percent
+          }
+>>>>>>> airnace-stable
         }
       }
       let height = Math.round(1000 / Object.keys(lines).length) / 10
       let lineCount = 0;
       for (let color in lines) {
+<<<<<<< HEAD
         let div = document.createElement('DIV')
         div.classList.add('stabiloLine')
         div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color].percentStart}%; width: ${lines[color].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
         compdiv.appendChild(div)
+=======
+        if (lines[color][0] >= 100) {
+          let div = document.createElement('DIV')
+          div.classList.add('stabiloLine')
+          div.setAttribute('style', `position: absolute; background-color: ${color}; left: 0; width: 100%; top: ${lineCount * height}%; height: ${height}%;`)
+          compdiv.appendChild(div)
+        } else {
+          for (let i = 1; i < lines[color].length; i++) {
+            let div = document.createElement('DIV')
+            div.classList.add('stabiloLine')
+            div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color][i].percentStart}%; width: ${lines[color][i].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
+            compdiv.appendChild(div)
+          }
+        }
+>>>>>>> airnace-stable
         lineCount++
       }
 
