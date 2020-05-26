@@ -29,3 +29,7 @@
     --message-warn-bg-color: hsla(var(--warn-color-base), 0.2);
     --message-info-bg-color: hsla(var(--info-color-base), 0.2);
 }
+
+span.error {
+    color: hsla(var(--error-color-base)) !important;
+}

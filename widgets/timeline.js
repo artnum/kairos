@@ -175,23 +175,30 @@ define([
 
       this.zoomCss = document.createElement('style')
       this.Updater = new Worker(Path.url('/js/ww/updater.js'))
-      this.Updater.onmessage = djLang.hitch(this, function (e) {
-        if (!e || !e.data || !e.data.type) { return }
-        switch (e.data.type) {
-          case 'entry':
-            if (this.Entries[e.data.content]) {
-              this.Entries[e.data.content].update()
-            }
-            break
-          case 'entries':
-            for (var i = 0; i < e.data.content.length; i++) {
-              if (this.Entries[e.data.content[i]]) {
-                this.Entries[e.data.content[i]].update()
+      this.Updater.onmessage = function (e) {
+        if (!e || !e.data || !e.data.op) { return }
+        switch (e.data.op) {
+          case 'complements':
+            let node = document.getElementById(`sub-${e.data.date}`)
+            if (node) {
+              let html = ''
+              for (let c in e.data.value) {
+                let val = e.data.value[c]
+                if (val.count > 0) {
+                  let spanClass = 'info'
+                  if (val.type === '4' && e.data.options && e.data.options.machinist) {
+                      if (e.data.options.machinist.length < val.count) {
+                        spanClass = 'error'
+                      }
+                  }
+                  html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
+                }
               }
+              window.requestAnimationFrame(() => { node.innerHTML = html })
             }
             break
         }
-      })
+      }.bind(this)
 
       this.Filter = new Worker(Path.url('/js/ww/filter.js'))
       this.Filter.onmessage = djLang.hitch(this, function (event) {
@@ -382,6 +389,11 @@ define([
       }))
     },
 
+    _setBlockSizeAttr: function (value) {
+      this._set('blockSize', value)
+      document.documentElement.style.setProperty('--blocksize', `${value}px`)
+    },
+
     _setCenterAttr: function (date) {
       this.center = date
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
@@ -503,7 +515,7 @@ define([
     makeDay: function (newDay) {
       var txtDate = ''
       newDay.setHours(12, 0, 0)
-      var dayStamp = djDateStamp.toISOString(newDay, {selector: 'date'})
+      var dayStamp = newDay.toISOString().split('T')[0]
 
       switch (newDay.getDay()) {
         case 0: txtDate = 'Dim ' + newDay.getDate(); break
@@ -587,8 +599,6 @@ define([
           this.entries[i].resize()
         }
       }
-
-      this.drawSubline()
     },
 
     createMonthName: function (month, year, days, frag) {
@@ -1290,14 +1300,16 @@ define([
       var docFrag = document.createDocumentFragment()
       var hFrag = document.createDocumentFragment()
       var shFrag = document.createDocumentFragment()
+      let subLineFrag = document.createDocumentFragment()
 
       if (!this.Holidays) {
         this.Holidays = new Holiday(this.center.getFullYear())
       } else {
         this.Holidays.addYear(this.center.getFullYear())
       }
-
-      this.firstDay = djDate.add(this.center, 'day', -Math.floor(avWidth / this.get('blockSize') / 2))
+    
+      this.firstDay = new Date()
+      this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {
           this.todayOffset = i
@@ -1326,6 +1338,13 @@ define([
             currentYear = day.getFullYear()
           }
         }
+
+        day.setHours(12, 0, 0)
+        let subLineCell = document.createElement('SPAN')
+        subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
+        subLineCell.style.minWidth = `var(--blocksize)`
+        subLineFrag.appendChild(subLineCell)
+
         var d = this.makeDay(day)
         if (typeof window.Rent.Days[d.stamp] === 'undefined') {
           window.Rent.Days[d.stamp] = {}
@@ -1340,39 +1359,20 @@ define([
         this.lastDay = day
         dayCount++; dayMonthCount++
       }
+
       if (dayCount > 0) {
         this.createWeekNumber(currentWeek, dayCount, hFrag)
       }
       if (dayMonthCount > 0) {
         this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
       }
-      fastdom.mutate(djLang.hitch(this, function () {
+      window.requestAnimationFrame(() => {
+        this.subline.innerHTML = ''
+        this.subline.appendChild(subLineFrag)
         this.line.appendChild(docFrag)
         this.header.appendChild(hFrag)
         this.supHeader.appendChild(shFrag)
-      }))
-    },
-
-    drawSubline: function () {
-      var sublineFrag = document.createDocumentFragment()
-      for (var i = this.get('dateRange').begin; djDate.compare(i, this.get('dateRange').end, 'date') < 0; i = djDate.add(i, 'day', 1)) {
-        var span = document.createElement('SPAN')
-        var stamp = djDateStamp.toISOString(i, {selector: 'date'})
-        var val = window.Rent.Days[stamp]
-        for (var k in val) {
-          var total = 0
-          for (var j in val[k]) {
-            total += val[k][j]
-          }
-          span.innerHTML += total + ' <i class="fas fa-square-full" style="color: #' + k + '"></i>'
-        }
-        sublineFrag.appendChild(span)
-      }
-
-      fastdom.mutate(function () {
-        this.subline.innerHTML = ''
-        this.subline.appendChild(sublineFrag)
-      }.bind(this))
+      })
     },
 
     drawVerticalLine: function () {
@@ -1480,6 +1480,7 @@ define([
           this.buildMenu()
           this.update()
           window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
+          window.setInterval(function () { this.refresh() }.bind(this), 10000)
         }.bind(this))
       }.bind(this))
     },
