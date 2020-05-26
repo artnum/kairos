@@ -200,6 +200,7 @@ function cacheAndSend (data, vTimeLine) {
     }
     let url = getUrl('store/User')
     url.searchParams.set('search.function', 'machiniste')
+    url.searchParams.set('search.disabled', '0')
     fetch(url, {credentials: 'include'}).then((response) => {
       /* in any case we process each days */
       if (response.ok) {
