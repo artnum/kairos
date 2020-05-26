@@ -376,3 +376,8 @@ table.count .reference {
 span.spanReset {
 	display: inline !important;
 }
+
+div.subline {
+	background-color: white;
+	border-top: 2px solid black;
+}
