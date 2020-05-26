@@ -187,7 +187,7 @@ define([
                 if (val.count > 0) {
                   let spanClass = 'info'
                   if (val.type === '4' && e.data.options && e.data.options.machinist) {
-                      if (e.data.options.machinist.length < val.count) {
+                      if (Math.round(e.data.options.machinist.length / 2) <= val.count) {
                         spanClass = 'error'
                       }
                   }
