@@ -372,3 +372,7 @@ table.count .reference {
 	position: relative;
 	height: 100%;
 }
+
+span.spanReset {
+	display: inline !important;
+}
