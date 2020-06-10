@@ -225,7 +225,9 @@ $PDF->printTaggedLn(array( '%c',
          $reservation['begin']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
       array('break' => true));
-
+if (!empty($reservation['padlock'])) {
+  $PDF->printTaggedLn(array('%c', 'Code du cadenas : ', '%cb', $reservation['padlock']));
+}
 $PDF->br();
 $PDF->hr();
 $PDF->br();

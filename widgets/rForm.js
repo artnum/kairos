@@ -195,7 +195,20 @@ define([
     _setArrivalCreatorAttr: function (value) {
       this.nArrivalCreator.value = value
     },
-
+    _setVreportAttr: function (value) {
+      this.nAddReport.value = value
+    },
+    _setPadlockAttr: function (value) {
+      this.nPadlock.set('value', value)
+    },
+    _setVisitAttr: function (value) {
+      this.nAddVisit.value = value
+      if (this.nAddVisit.value) {
+        this.nAddReport.disabled = false
+      } else {
+        this.nAddReport.disabled = true
+      }
+    },
     eChangeUser: async function (event) {
       if (window.localStorage.getItem(Path.bcname('user'))) {
         var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
@@ -614,7 +627,13 @@ define([
         addCount: new MButton(this.nAddCount, [
           {label: 'Ajouter à un décompte', events: {click: () => this.openAddCount()}}
         ]),
-        del: new MButton(this.nDelete)
+        del: new MButton(this.nDelete),
+        addVisit: new MButton(this.nAddVisit, { set: () => (new Date()).toISOString(), unset: '' }),
+        addVReport: new MButton(this.nAddReport, { set: () => (new Date()).toISOString(), unset: '' }),
+        addArrivalInProgress: new MButton(this.nArrivalInprogress, { set: () => (new Date()).toISOString(), unset: '' }),
+        addArrivalDone: new MButton(this.nArrivalDone, { set: () => (new Date()).toISOString(), unset: '' }),
+        addEnd: new MButton(this.nConfirmed, { set: () => (new Date()).toISOString(), unset: '' }),
+        addEndAndDone: new MButton(this.nConfirmedAndReturned)
       }
 
       this.Buttons.del.addEventListener('click', () => {
@@ -635,6 +654,32 @@ define([
       })
       this.Buttons.copy.addEventListener('click', this.doCopy.bind(this))
       this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
+      this.nConfirmed.addEventListener('change', (event) => {
+        if (event.target.value) {
+          this.nConfirmedAndReturned.disabled = false
+        } else {
+          this.nConfirmedAndReturned.disabled = true
+        }
+        this.toggleConfirmed()
+      })
+      this.nConfirmedAndReturned.addEventListener('click', (event) => {
+        event.preventDefault()
+        this.toggleConfirmedAndReturned()
+      })
+      this.nArrivalInprogress.addEventListener('change', (event) => {
+        if (event.target.value) {
+          this.nArrivalDone.disabled = false
+        } else {
+          this.nArrivalDone.disabled = true
+        }
+      })
+      this.nAddVisit.addEventListener('change', (event) => {
+        if (event.target.value) {
+          this.nAddReport.disabled = false
+        } else {
+          this.nAddReport.disabled = true
+        }
+      })
     },
 
     interventionCreate: function () {
@@ -754,131 +799,134 @@ define([
     },
 
     postCreate: function () {
-      this.nMissionDrop.addEventListener('paste', this.evCopyDrop.bind(this), {capture: true})
-      this.nMissionDrop.addEventListener('drop', this.evCopyDrop.bind(this), {capture: true})
-      this.nMissionDrop.addEventListener('dragover', (event) => {
-        event.stopPropagation()
-        event.preventDefault()
-        let n = event.target
-        for (;n && n.nodeName !== 'DIV'; n = n.parentNode) ;
-        n.classList.add('dragOver')
-      }, {capture: true})
-      this.nMissionDrop.addEventListener('dragleave', (event) => {
-        event.stopPropagation()
-        event.preventDefault()
-        let n = event.target
-        for (;n && n.nodeName !== 'DIV'; n = n.parentNode) ;
-        n.classList.remove('dragOver')
-      }, {capture: true})
+      this.PostCreatePromise = new Promise((resolve, reject) => {
+        this.nMissionDrop.addEventListener('paste', this.evCopyDrop.bind(this), { capture: true })
+        this.nMissionDrop.addEventListener('drop', this.evCopyDrop.bind(this), { capture: true })
+        this.nMissionDrop.addEventListener('dragover', (event) => {
+          event.stopPropagation()
+          event.preventDefault()
+          let n = event.target
+          for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+          n.classList.add('dragOver')
+        }, { capture: true })
+        this.nMissionDrop.addEventListener('dragleave', (event) => {
+          event.stopPropagation()
+          event.preventDefault()
+          let n = event.target
+          for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
+          n.classList.remove('dragOver')
+        }, { capture: true })
 
-      let L = new Locality()
-      let U = new User()
-      let M = new Machine()
-      this.Stores = {
-        Locality: L,
-        User: U,
-        Machine: M,
-        Unit: new Unit()
-      }
-      let namedNode = this.domNode.querySelectorAll('*[name]')
-      for (let i of namedNode) {
-        switch (i.getAttribute('name')) {
-          case 'offerUnit':
-            new Select(i, this.Stores.Unit, {allowFreeText: false, realSelect: true})
-            break
+        let L = new Locality()
+        let U = new User()
+        let M = new Machine()
+        this.Stores = {
+          Locality: L,
+          User: U,
+          Machine: M,
+          Unit: new Unit()
         }
-      }
-      this.nLocality = new Select(this.nLocality, L)
-      this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-      this.nArrivalCreator = new Select(this.nArrivalCreator, U, {allowFreeText: false, realSelect: true})
-      this.nCreator = new Select(this.nCreator, U, {allowFreeText: false, realSelect: true})
-      this.nTechnician = new Select(this.nTechnician, U, {allowFreeText: true, realSelect: false})
-      this.nMachineChange = new Select(this.nMachineChange, M, {allowFreeText: false, realSelect: true})
-
-      this.interventionCreate()
-
-      this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
-      djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
-        let n = this.nMFollow.domNode
-        while (n && n.nodeName !== 'LABEL') {
-          n = n.parentNode
+        let namedNode = this.domNode.querySelectorAll('*[name]')
+        for (let i of namedNode) {
+          switch (i.getAttribute('name')) {
+            case 'offerUnit':
+              new Select(i, this.Stores.Unit, { allowFreeText: false, realSelect: true })
+              break
+          }
         }
-        if (this.nMFollow.get('value')) {
-          n = n.nextElementSibling
-          if (n) {
-            n.style.display = 'none'
+        this.nLocality = new Select(this.nLocality, L)
+        this.nArrivalLocality = new Select(this.nArrivalLocality, L)
+        this.nArrivalCreator = new Select(this.nArrivalCreator, U, { allowFreeText: false, realSelect: true })
+        this.nCreator = new Select(this.nCreator, U, { allowFreeText: false, realSelect: true })
+        this.nTechnician = new Select(this.nTechnician, U, { allowFreeText: true, realSelect: false })
+        this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
+
+        this.interventionCreate()
+
+        this.nEntryDetails.appendChild(document.createRange().createContextualFragment(this.htmlDetails))
+        djOn(this.nMFollow, 'change', djLang.hitch(this, (e) => {
+          let n = this.nMFollow.domNode
+          while (n && n.nodeName !== 'LABEL') {
+            n = n.parentNode
+          }
+          if (this.nMFollow.get('value')) {
             n = n.nextElementSibling
             if (n) {
               n.style.display = 'none'
+              n = n.nextElementSibling
+              if (n) {
+                n.style.display = 'none'
+              }
             }
-          }
-        } else {
-          n = n.nextElementSibling
-          if (n) {
-            n.style.display = ''
+          } else {
             n = n.nextElementSibling
             if (n) {
               n.style.display = ''
+              n = n.nextElementSibling
+              if (n) {
+                n.style.display = ''
+              }
             }
           }
-        }
-      }))
+        }))
 
-      djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
-      djOn(this.beginTime, 'change', djLang.hitch(this, this.changeBegin))
-      djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
-      djOn(this.endTime, 'change', djLang.hitch(this, this.changeEnd))
+        djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
+        djOn(this.beginTime, 'change', djLang.hitch(this, this.changeBegin))
+        djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
+        djOn(this.endTime, 'change', djLang.hitch(this, this.changeEnd))
 
-      this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({target: this}) }))
-      djOn(this.domNode, 'mousemove', function (event) {
-        event.preventDefault()
-        event.stopPropagation()
-      }, {capture: true})
+        this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
+        djOn(this.domNode, 'mousemove', function (event) {
+          event.preventDefault()
+          event.stopPropagation()
+        }, { capture: true })
 
-      this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), {capture: true})
-      this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), {capture: true})
-      this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), {capture: true})
+        this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), { capture: true })
+        this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), { capture: true })
+        this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), { capture: true })
 
-      this.nMBeginDate.set('value', this.beginDate.get('value'))
-      this.nMBeginTime.set('value', this.beginTime.get('value'))
-      this.nMEndDate.set('value', this.endDate.get('value'))
-      this.nMEndTime.set('value', this.endTime.get('value'))
-      this.dtable = new Artnum.DTable({table: this.nCountTable, sortOnly: true})
-      djOn(this.nForm, 'click', this.clickForm.bind(this))
+        this.nMBeginDate.set('value', this.beginDate.get('value'))
+        this.nMBeginTime.set('value', this.beginTime.get('value'))
+        this.nMEndDate.set('value', this.endDate.get('value'))
+        this.nMEndTime.set('value', this.endTime.get('value'))
+        this.dtable = new Artnum.DTable({ table: this.nCountTable, sortOnly: true })
+        djOn(this.nForm, 'click', this.clickForm.bind(this))
 
-      Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}})).then((result) => {
-        if (result.success && result.length > 0) {
-          this.nMissionDisplay.dataset.uid = result.data[0].uid
-          Query.exec(Path.url('store/MissionFichier', {params: {'search.mission': result.data[0].uid}})).then(async (result) => {
-            if (result.length <= 0) { return }
-            let images = result.data
-            images = images.sort((a, b) => {
-              return parseInt(a.ordre) - parseInt(b.ordre)
-            })
-            for (let i = 0; i < images.length; i++) {
-              await this.addMissionImage(images[i], true)
-            }
-          })
-        }
-      })
-      this.buttonCreate()
-      for (let i in this.Sections) {
-        this.Sections[i].bind(this)()
-      }
-
-      if (this.isNew && this.Defaults) {
-        this.Defaults.then((results) => {
-          if (results.length > 0) {
-            results.data.forEach((def) => {
-              let name = def.name.split('.')[1]
-              if (!name) { return }
-              let node = this.domNode.querySelector(`[name=${name}]`)
-              if (!node) { return }
-              node.value = def.value
+        Query.exec(Path.url('store/Mission', { params: { 'search.reservation': this.reservation.uid } })).then((result) => {
+          if (result.success && result.length > 0) {
+            this.nMissionDisplay.dataset.uid = result.data[0].uid
+            Query.exec(Path.url('store/MissionFichier', { params: { 'search.mission': result.data[0].uid } })).then(async (result) => {
+              if (result.length <= 0) { return }
+              let images = result.data
+              images = images.sort((a, b) => {
+                return parseInt(a.ordre) - parseInt(b.ordre)
+              })
+              for (let i = 0; i < images.length; i++) {
+                await this.addMissionImage(images[i], true)
+              }
             })
           }
         })
-      }
+        this.buttonCreate()
+        for (let i in this.Sections) {
+          this.Sections[i].bind(this)()
+        }
+
+        if (this.isNew && this.Defaults) {
+          this.Defaults.then((results) => {
+            if (results.length > 0) {
+              results.data.forEach((def) => {
+                let name = def.name.split('.')[1]
+                if (!name) { return }
+                let node = this.domNode.querySelector(`[name=${name}]`)
+                if (!node) { return }
+                node.value = def.value
+              })
+            }
+          })
+        }
+        resolve()
+      })
     },
 
     clickForm: function (event) {
@@ -953,26 +1001,30 @@ define([
       } else {
         let node = this.nGps.domNode.previousElementSibling
         let addr = ''
-        this.Stores.Locality.get(this.reservation.get('locality')).then((locality) => {
-          if (this.reservation.get('address')) {
-            addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
-          }
-          if (locality) {
-            if (!locality.np) { return } // in warehouse
-            if (addr !== '') {
-              addr += ','
+        let l = this.reservation.get('locality')
+        if (l && l !== undefined && l !== null) {
+          this.Stores.Locality.get(l).then((locality) => {
+            if (!locality || locality === undefined || locality !== null) { return }
+            if (this.reservation.get('address')) {
+              addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
             }
-            addr += `${locality.np.trim()}+${locality.name.trim()}`
-          } else if (this.reservation.get('locality')) {
-            if (addr !== '') {
-              addr += ','
+            if (locality) {
+              if (!locality.np) { return } // in warehouse
+              if (addr !== '') {
+                addr += ','
+              }
+              addr += `${locality.np.trim()}+${locality.name.trim()}`
+            } else if (this.reservation.get('locality')) {
+              if (addr !== '') {
+                addr += ','
+              }
+              addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
             }
-            addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
-          }
-          if (addr) {
-            node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
-          }
-        })
+            if (addr) {
+              node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
+            }
+          })
+        }
       }
 
       if (!this.loaded.status) {
@@ -1038,9 +1090,10 @@ define([
       }
 
       if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
-        this.nConfirmed.set('checked', true)
+        this.nConfirmed.value = true
+      } else {
+        this.nConfirmed.value = false
       }
-      this.toggleConfirmed()
 
       if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
         this.nDelivery.set('checked', true)
@@ -1103,15 +1156,23 @@ define([
       /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
       if ((retval = this.reservation.get('_arrival'))) {
         if (retval.id && !retval.deleted) {
-          this.nConfirmed.set('checked', true)
+          this.nConfirmed.value = true
         }
 
-        this.nArrivalDone.set('checked', Boolean(retval.done))
-        this.nArrivalInprogress.set('checked', Boolean(retval.inprogress))
-        if (retval.reported) {
-          var reported = djDateStamp.fromISOString(retval.reported)
-          this.nArrivalDate.set('value', djDateStamp.toISOString(reported, {selector: 'date'}))
-          this.nArrivalTime.set('value', djDateStamp.toISOString(reported, {selector: 'time'}))
+        this.nArrivalInprogress.value = retval.inprogress
+        if (this.nArrivalInprogress.value) {
+          this.nArrivalDone.disabled = false
+          this.nArrivalDone.value = retval.done
+        } else {
+          this.nArrivalDone.disabled = true
+        }
+
+        if (retval && retval.reported) {
+          var reported = new Date(retval.reported)
+          if (!isNaN(reported.getTime())) {
+            this.nArrivalDate.set('value', reported.toISOString())
+            this.nArrivalTime.set('value', reported.toISOString())
+          }
         }
 
         if (retval.contact) {
@@ -1154,17 +1215,21 @@ define([
     },
 
     toggleConfirmedAndReturned: function () {
-      if (!this.nConfirmed.get('checked')) {
-        this.nConfirmed.set('checked', true)
+      if (!this.nConfirmed.value) {
+        this.nConfirmed.value = true
         this.toggleConfirmed()
       }
-      this.nArrivalDone.set('checked', true)
-      this.nArrivalInprogress.set('checked', true)
+      this.nArrivalInprogress.value = true
+      this.nArrivalDone.disabled = false
+      this.nArrivalDone.value = true
     },
 
     toggleConfirmed: function (dontset = false) {
       let user = JSON.parse(localStorage.getItem('/location/user'))
-      if (this.nConfirmed.get('checked')) {
+      if (this.nConfirmed.value) {
+        this.nConfirmedAndReturned.disabled = false
+        this.nArrivalDone.value = false
+        this.nArrivalInprogress.value = false
         var retVal = this.reservation.get('_arrival')
         if (retVal && retVal.id && retVal.reported) {
           this.nArrivalDate.set('value', retVal.reported)
@@ -1181,6 +1246,9 @@ define([
         this.nDeliveryEndTime.set('readOnly', true)
         this.nDeliveryEndDate.set('readOnly', true)
       } else {
+        if (!this.nArrivalInprogress.value) {
+          this.nArrivalDone.disabled = true
+        }
         this.nBack.setAttribute('style', 'display: none')
         this.endTime.set('readOnly', false)
         this.endDate.set('readOnly', false)
@@ -1480,7 +1548,7 @@ define([
             arrival = Object.assign(arrival, res.data[0])
           }
 
-          if (this.nConfirmed.get('checked')) {
+          if (this.nConfirmed.value) {
             arrival.deleted = null
             arrival.target = this.reservation.uid
             if (f.arrivalDate) {
@@ -1495,22 +1563,8 @@ define([
             arrival.contact = f.arrivalAddress
             arrival.locality = this.nArrivalLocality.value
             arrival.other = f.arrivalKeys
-
-            if (f.arrivalDone.length > 0) {
-              if (!arrival.done) {
-                arrival.done = (new Date()).toISOString()
-              }
-            } else {
-              arrival.done = null
-            }
-
-            if (f.arrivalInprogress.length > 0) {
-              if (!arrival.inprogress) {
-                arrival.inprogress = (new Date()).toISOString()
-              }
-            } else {
-              arrival.inprogress = null
-            }
+            arrival.done = this.nArrivalDone.value
+            arrival.inprogress = this.nArrivalInprogress.value
 
             this.reservation.set('_arrival', arrival)
           } else {
@@ -1536,6 +1590,9 @@ define([
           this.reservation.set('title', f.title)
           this.reservation.set('creator', this.nCreator.value)
           this.reservation.set('technician', this.nTechnician.value)
+          this.reservation.set('visit', this.nAddVisit.value)
+          this.reservation.set('vreport', this.nAddReport.value)
+          this.reservation.set('padlock', this.nPadlock.value)
 
           this.reservation.save().then((id) => {
             this.resize()
