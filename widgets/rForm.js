@@ -1002,18 +1002,28 @@ define([
           let addr = ''
           let l = this.reservation.get('locality')
           if (l && l !== undefined && l !== null) {
-            this.Stores.Locality.get(l).then((locality) => {
-              if (!locality || locality === undefined || locality === null) { return }
+            if (l.indexOf('PC/') === 0) {
+              this.Stores.Locality.get(l).then((locality) => {
+                if (!locality || locality === undefined || locality === null) { return }
+                if (this.reservation.get('address')) {
+                  addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
+                }
+                if (locality) {
+                  if (!locality.np) { return } // in warehouse
+                  if (addr !== '') {
+                    addr += ','
+                  }
+                  addr += `${locality.np.trim()}+${locality.name.trim()}`
+                }
+                if (addr) {
+                  node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
+                }
+              })
+            } else {
               if (this.reservation.get('address')) {
                 addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
               }
-              if (locality) {
-                if (!locality.np) { return } // in warehouse
-                if (addr !== '') {
-                  addr += ','
-                }
-                addr += `${locality.np.trim()}+${locality.name.trim()}`
-              } else if (this.reservation.get('locality')) {
+              if (this.reservation.get('locality')) {
                 if (addr !== '') {
                   addr += ','
                 }
@@ -1022,7 +1032,7 @@ define([
               if (addr) {
                 node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
               }
-            })
+            }
           }
         }
 
