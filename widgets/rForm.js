@@ -198,6 +198,9 @@ define([
     _setVreportAttr: function (value) {
       this.nAddReport.value = value
     },
+    _setStatusAttr: function (value) {
+      this.nStatus.value = value
+    },
     _setPadlockAttr: function (value) {
       this.nPadlock.set('value', value)
     },
@@ -700,10 +703,10 @@ define([
             inputs[k].value = new Date().toISOString().split('T')[0]
             break
           case 'iType':
-            this.Intervention.type = new Select(inputs[k], this.Stores.Status1)
+            this.Intervention.type = new Select(inputs[k], this.Stores.Status1, {allowFreeText: false, realSelect: true})
             break
           case 'iPerson':
-            this.Intervention.person = new Select(inputs[k], this.Stores.User)
+            this.Intervention.person = new Select(inputs[k], this.Stores.User, {allowFreeText: true, realSelect: true})
             break
           }
         }
@@ -732,7 +735,7 @@ define([
             }
             data.date = day.toISOString()
             break
-          case 'iComment': data.comment = inputs[k].value; break
+          case 'iComment': data.comment = inputs[k].value === undefined ? '' : inputs[k].value; break
         }
       }
       Query.exec(Path.url('store/Intervention'), {method: 'post', body: data}).then((result) => {
@@ -820,6 +823,7 @@ define([
         let L = new Locality()
         let U = new User()
         let M = new Machine()
+        let S = new Status({type: '0'})
         this.Stores = {
           Locality: L,
           User: U,
@@ -834,7 +838,8 @@ define([
               break
           }
         }
-        this.nLocality = new Select(this.nLocality, L)
+        this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
+        this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
         this.nArrivalCreator = new Select(this.nArrivalCreator, U, { allowFreeText: false, realSelect: true })
         this.nCreator = new Select(this.nCreator, U, { allowFreeText: false, realSelect: true })
@@ -926,6 +931,7 @@ define([
           })
         }
         resolve()
+        this.load()
       })
     },
 
@@ -967,188 +973,159 @@ define([
       }.bind(this))
     },
 
-    startup: function () {
-      this.inherited(arguments)
-      this.load()
-    },
-
     load: async function () {
-      this.initCancel()
-
-      var that = this
-      this.nMachineChange.value = this.reservation.get('target')
-      this.nLocality.value = this.reservation.get('locality')
-      if (this.reservation.get('title') != null) {
-        this.nTitle.set('value', this.reservation.get('title'))
-      }
-
-      if (this.reservation.get('folder')) {
-        var folder = this.reservation.get('folder')
-        this.nFolder.set('value', this.reservation.get('folder'))
-        let url = folder
-        if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
-          url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
+        this.initCancel()
+        this.nMachineChange.value = this.reservation.get('target')
+        this.nLocality.value = this.reservation.get('locality')
+        if (this.reservation.get('title') != null) {
+          this.nTitle.set('value', this.reservation.get('title'))
         }
-        let node = this.nFolder.domNode.previousElementSibling
-        node.dataset.href = url
-      }
 
-      if (this.reservation.get('gps')) {
-        this.nGps.set('value', this.reservation.get('gps'))
-
-        let node = this.nGps.domNode.previousElementSibling
-        node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
-      } else {
-        let node = this.nGps.domNode.previousElementSibling
-        let addr = ''
-        let l = this.reservation.get('locality')
-        if (l && l !== undefined && l !== null) {
-          this.Stores.Locality.get(l).then((locality) => {
-            if (!locality || locality === undefined || locality !== null) { return }
-            if (this.reservation.get('address')) {
-              addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
-            }
-            if (locality) {
-              if (!locality.np) { return } // in warehouse
-              if (addr !== '') {
-                addr += ','
-              }
-              addr += `${locality.np.trim()}+${locality.name.trim()}`
-            } else if (this.reservation.get('locality')) {
-              if (addr !== '') {
-                addr += ','
-              }
-              addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
-            }
-            if (addr) {
-              node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
-            }
-          })
-        }
-      }
-
-      if (!this.loaded.status) {
-        let url = Path.url('store/Status')
-        url.searchParams.set('search.type', 0)
-        var results = await Query.exec(url)
-        if (results.type === 'results') {
-          var def
-          for (var i = 0; i < results.data.length; i++) {
-            var d = results.data[i]
-            if (d.default === '1') { def = d.id }
-            this.nStatus.addOption({ label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name, value: d.id })
+        if (this.reservation.get('folder')) {
+          var folder = this.reservation.get('folder')
+          this.nFolder.set('value', this.reservation.get('folder'))
+          let url = folder
+          if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
+            url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
           }
+          let node = this.nFolder.domNode.previousElementSibling
+          node.dataset.href = url
         }
-        if (def) {
-          this.nStatus.set('value', def)
-        }
-        this.loaded.status = true
-      }
 
-      if (!this.loaded.association) {
-        let url = Path.url('store/Status')
-        url.searchParams.set('search.type', 1)
-        results = await Query.exec(url)
-        if (results.type === 'results') {
-          results.data.forEach(function (d) {
-            that.nAssociationType.addOption({
-              label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-              value: String(Path.url('store/Status/' + d.id))
+        if (this.reservation.get('gps')) {
+          this.nGps.set('value', this.reservation.get('gps'))
+
+          let node = this.nGps.domNode.previousElementSibling
+          node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
+        } else {
+          let node = this.nGps.domNode.previousElementSibling
+          let addr = ''
+          let l = this.reservation.get('locality')
+          if (l && l !== undefined && l !== null) {
+            this.Stores.Locality.get(l).then((locality) => {
+              if (!locality || locality === undefined || locality === null) { return }
+              if (this.reservation.get('address')) {
+                addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
+              }
+              if (locality) {
+                if (!locality.np) { return } // in warehouse
+                if (addr !== '') {
+                  addr += ','
+                }
+                addr += `${locality.np.trim()}+${locality.name.trim()}`
+              } else if (this.reservation.get('locality')) {
+                if (addr !== '') {
+                  addr += ','
+                }
+                addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+              }
+              if (addr) {
+                node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
+              }
             })
-          })
-        }
-        that.loaded.association = true
-      }
-      this.set('warehouse', this.reservation.get('warehouse'))
-
-      if (!this.loaded.user) {
-        fetch(Path.url('store/User'), {credentials: 'same-origin'}).then(function (response) { return response.json() }).then(function (json) {
-          if (json.type === 'results' && json.data && json.data.length > 0) {
-            that.loaded.user = true
-            var store = that.get('userStore')
-            var storeBis = that.get('userStore_bis')
-            for (var i = 0; i < json.data.length; i++) {
-              if (!store.get('/store/User/' + json.data[i].id)) {
-                store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-              }
-              if (!storeBis.get('/store/User/' + json.data[i].id)) {
-                storeBis.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-              }
-            }
           }
-          if (that.reservation.get('creator')) {
-            that.set('creator', that.reservation.get('creator'))
-          } else {
-            if (window.localStorage.getItem(Path.bcname('user'))) {
-              var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-              that.set('creator', 'store/User/' + _c.id)
-            }
-          }
-        })
-      } else {
-        this.set('creator', this.reservation.get('creator'))
-      }
-
-      if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
-        this.nConfirmed.value = true
-      } else {
-        this.nConfirmed.value = false
-      }
-
-      if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
-        this.nDelivery.set('checked', true)
-      } else {
-        this.nDelivery.set('checked', false)
-      }
-      this.toggleDelivery()
-
-      let url = Path.url('store/ReservationContact')
-      url.searchParams.set('search.reservation', this.reservation.uid)
-      var res = await Query.exec(url)
-      if (res.length > 0) {
-        res.data.forEach(djLang.hitch(this, async function (contact) {
-          if (contact.freeform) {
-            contact.linkId = contact.id
-            this.createContact(contact, contact.comment)
-          } else {
-            var linkId = contact.id
-            var comment = contact.comment
-            let url = Path.url('store/' + contact.target)
-            results = await Query.exec(url)
-            if (results.length > 0) {
-              var e = results.data[0]
-              e.linkId = linkId
-              this.createContact(e, comment)
-            }
-          }
-        }))
-      }
-
-      djAll(this.initRequests).then(djLang.hitch(this, () => {
-        if (this.reservation.get('status')) {
-          this.nStatus.set('value', this.reservation.get('status'))
         }
 
-        this.doResetComplement()
-        this.refresh()
-        this.initRequests = []
-      }))
+        if (!this.loaded.association) {
+          let url = Path.url('store/Status')
+          url.searchParams.set('search.type', 1)
+          results = await Query.exec(url)
+          if (results.type === 'results') {
+            results.data.forEach((d) => {
+              this.nAssociationType.addOption({
+                label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
+                value: String(Path.url('store/Status/' + d.id))
+              })
+            })
+          }
+          this.loaded.association = true
+        }
+        this.set('warehouse', this.reservation.get('warehouse'))
 
-      var inputs = this.domNode.getElementsByTagName('input')
-      for (var j = 0; j < inputs.length; j++) {
-        var name = inputs[j].getAttribute('name')
-        if (name && name.substr(0, 2) === 'o-') {
-          var other = this.get('other')
-          if (other && other[name.substr(2)]) {
-            var w = dtRegistry.byNode(inputs[i])
-            if (w) {
-              w.set('value', other[name.substr(2)])
+        if (!this.loaded.user) {
+          fetch(Path.url('store/User'), {credentials: 'same-origin'}).then((response) => { return response.json() }).then((json) => {
+            if (json.type === 'results' && json.data && json.data.length > 0) {
+              this.loaded.user = true
+              var store = this.get('userStore')
+              var storeBis = this.get('userStore_bis')
+              for (var i = 0; i < json.data.length; i++) {
+                if (!store.get('/store/User/' + json.data[i].id)) {
+                  store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+                }
+                if (!storeBis.get('/store/User/' + json.data[i].id)) {
+                  storeBis.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
+                }
+              }
+            }
+            if (this.reservation.get('creator')) {
+              this.set('creator', this.reservation.get('creator'))
             } else {
-              inputs[j].value = other[name.substr(2)]
+              if (window.localStorage.getItem(Path.bcname('user'))) {
+                var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
+                this.set('creator', 'store/User/' + _c.id)
+              }
+            }
+          })
+        } else {
+          this.set('creator', this.reservation.get('creator'))
+        }
+
+        if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
+          this.nConfirmed.value = true
+        } else {
+          this.nConfirmed.value = false
+        }
+
+        if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
+          this.nDelivery.set('checked', true)
+        } else {
+          this.nDelivery.set('checked', false)
+        }
+        this.toggleDelivery()
+
+        let url = Path.url('store/ReservationContact')
+        url.searchParams.set('search.reservation', this.reservation.uid)
+        var res = await Query.exec(url)
+        if (res.length > 0) {
+          res.data.forEach(djLang.hitch(this, async function (contact) {
+            if (contact.freeform) {
+              contact.linkId = contact.id
+              this.createContact(contact, contact.comment)
+            } else {
+              var linkId = contact.id
+              var comment = contact.comment
+              let url = Path.url('store/' + contact.target)
+              results = await Query.exec(url)
+              if (results.length > 0) {
+                var e = results.data[0]
+                e.linkId = linkId
+                this.createContact(e, comment)
+              }
+            }
+          }))
+        }
+
+        djAll(this.initRequests).then(djLang.hitch(this, () => {
+          this.doResetComplement()
+          this.refresh()
+          this.initRequests = []
+        }))
+
+        var inputs = this.domNode.getElementsByTagName('input')
+        for (var j = 0; j < inputs.length; j++) {
+          var name = inputs[j].getAttribute('name')
+          if (name && name.substr(0, 2) === 'o-') {
+            var other = this.get('other')
+            if (other && other[name.substr(2)]) {
+              var w = dtRegistry.byNode(inputs[i])
+              if (w) {
+                w.set('value', other[name.substr(2)])
+              } else {
+                inputs[j].value = other[name.substr(2)]
+              }
             }
           }
         }
-      }
     },
 
     refresh: function () {
@@ -1575,7 +1552,11 @@ define([
             }
           }
 
-          this.reservation.set('status', f.status)
+          let status = this.nStatus.value
+          if (isNaN(parseInt(status))) {
+            status = status.split('/').pop()
+          }
+          this.reservation.set('status', `${status}`)
           this.reservation.set('begin', begin)
           this.reservation.set('end', end)
           this.reservation.set('deliveryBegin', deliveryBegin)

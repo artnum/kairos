@@ -5,7 +5,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
-  input.classList.add('select')
+  input.setAttribute('autocomplete', 'off')
   let originalValue = input.value
   let obj = new Proxy(this, {
     get: function (obj, prop) {
@@ -32,6 +32,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
               this.lastEntry = entry
               input.value = entry.label
               this.value = input.value
+              colorize(entry.color)
               input.dataset.value = entry.value
             } else {
               if (options.allowFreeText) {
@@ -59,10 +60,23 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   list.classList.add('dropdown')
   var popper = null
 
+  var colorize = (color) => {
+    window.requestAnimationFrame(() => {
+      if (color === undefined || color === null || color === false) {
+        input.classList.remove('colored')
+        input.style.removeProperty('--colored-color')
+      } else {
+        input.classList.add('colored')
+        input.style.setProperty('--colored-color', color)
+      }
+    })
+  }
+
   var select = (target, dontMessValue = false) => {
     if (!dontMessValue) {
-      input.value = target.textContent
+      input.value = target.dataset.label
     }
+    colorize(target.dataset.color)
     input.dataset.value = target.dataset.value
   }
 
@@ -201,7 +215,9 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         return
       case 'Backspace':
       case 'Delete':
-        if (input.value.length === 0 && !options.realSelect) { return degenerate() }
+        if (input.value.length === 0 && !options.realSelect) { 
+          return degenerate() 
+        }
     }
     window.requestAnimationFrame((event) => {
       if (!list.parentNode) {
@@ -209,16 +225,41 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         popper = new Popper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
       }
     })
-
-    store.query(input.value).then((data) => {
+    let value = input.value
+    let currentValue = undefined
+    if (event.type === 'focus' && options.realSelect) {
+      currentValue = input.dataset.value
+      value = ''
+    }
+    store.query(value, currentValue).then((data) => {
       let frag = document.createDocumentFragment()
       if (data.length < 1) {
         degenerate()
       } else {
+        let selected = null
         data.forEach((entry) => {
           let s = document.createElement('DIV')
           s.dataset.value = entry.value
-          s.innerHTML = entry.label
+          if (entry.color || entry.symbol) {
+            let symbol = document.createElement('SPAN')
+            symbol.innerHTML = ' ■ '
+            if (entry.symbol) {
+              symbol.innerHTML = entry.symbol
+              s.dataset.symbol = entry.symbol
+            }
+            if (entry.color) {
+              symbol.style.color = entry.color
+              s.dataset.color = entry.color
+            }
+            s.appendChild(symbol)
+            s.innerHTML += entry.label
+          } else {
+            s.innerHTML = entry.label
+          }
+          s.dataset.label = entry.printableLabel ? entry.printableLabel : s.textContent
+          if (entry.selected) {
+            selected = s
+          }
           s.addEventListener('mouseover', (event) => {
             for (let i = list.firstElementChild; i; i = i.nextElementSibling) {
               if (i !== event.target) {
@@ -233,8 +274,14 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         window.requestAnimationFrame(() => {
           list.innerHTML = ''
           list.appendChild(frag)
-          if (!options.allowFreeText) {
-            select(list.firstElementChild, true)
+          if (selected) {
+            select(selected)
+            selected.dataset.hover = '1'
+            selected.scrollIntoView()
+          } else {
+            if (!options.allowFreeText) {
+              select(list.firstElementChild, true)
+            }
           }
         })
       }

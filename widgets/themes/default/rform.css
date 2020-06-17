@@ -255,6 +255,12 @@
     max-width: 100%;
 }
 
+.rForm .colored {
+    --colored-color: black;
+    border-bottom-color: var(--colored-color);
+    border-bottom-width: thick;
+}
+
 .rForm .imageZone .ddSpacer {
     border: 1px dotted hsla(var(--default-color-base), 1);
     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQImWNgYGD4z4AE/gMADwMB/414xEUAAAAASUVORK5CYII=) repeat;
