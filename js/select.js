@@ -301,6 +301,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   input.addEventListener('blur', degenerate)
   input.addEventListener('keyup', generate)
   input.addEventListener('keydown', handleTab)
+  input.addEventListener('keypress', (event) => { event.stopPropagation(); event.preventDefault()}, {capture: true})
   input.addEventListener('focus', generate)
 
   obj.value = originalValue
