@@ -197,6 +197,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
           if (n.dataset.hover === '1') {
             select(n)
             degenerate()
+            input.blur()
             return
           }
         }
@@ -301,7 +302,13 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   input.addEventListener('blur', degenerate)
   input.addEventListener('keyup', generate)
   input.addEventListener('keydown', handleTab)
-  input.addEventListener('keypress', (event) => { event.stopPropagation(); event.preventDefault()}, {capture: true})
+  input.addEventListener('keypress',
+  (event) => { 
+    if (event.key === 'Enter') {
+      event.stopPropagation(); 
+      event.preventDefault() 
+    }
+  }, {capture: true})
   input.addEventListener('focus', generate)
 
   obj.value = originalValue

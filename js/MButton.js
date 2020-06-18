@@ -2,6 +2,7 @@ function MButton(button, choice = []) {
   let single = true
   this.Button = document.createElement('DIV')
   this.MButton = button
+  button.setAttribute('type', 'button')
 
   Object.defineProperty(this.MButton, 'disabled', {
     get: this.getDisabled.bind(this),
