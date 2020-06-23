@@ -99,6 +99,7 @@ define([
       this.tags = []
       this.entries = {}
       this.currentLocation = ''
+      this.creating = {}
       this.CommChannel = args.channel
 
       this.CommChannel.port1.onmessage = this.channelMsg.bind(this)
@@ -133,8 +134,15 @@ define([
                 this.destroyReservation(this.entries[entry.id])
               }
             } else {
+              for (let lid in this.creating) {
+                if (this.creating[lid].uid == entry.id) {                 
+                  this.entries[entry.id] = this.creating[lid]
+                  delete this.creating[lid]
+                }
+              }
               if (!this.entries[entry.id]) {
                 this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+                this.entries[entry.id].addEventListener('change', this.handleReservationEvent.bind(this))
               } else {
                 this.entries[entry.id].fromJson(entry)
               }
@@ -201,7 +209,15 @@ define([
       
       this.genDetails()
     },
-
+    handleReservationEvent: function (event) {
+      switch (event.type) {
+        case 'change':
+          if (event.detail) {
+            this.CommChannel.port1.postMessage({op: 'reload', reservation: event.detail})
+          }
+          break
+      }
+    },
     genDetails: function () {
       const texts = ['reference']
       const weights = ['maxcapacity', 'weight']
@@ -490,15 +506,16 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      var sup = this
       this.defaultStatus().then(function (s) {
         let user = JSON.parse(localStorage.getItem('/location/user'))
-        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
+        var newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
+        this.creating[newReservation.localid] = newReservation
+        newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
         newReservation.save().then((id) => {
           newReservation.set('uid', id)
           newReservation.popMeUp()
         })
-      })
+      }.bind(this))
     },
 
     copy: function (original) {
@@ -556,6 +573,7 @@ define([
               dEnd.setHours(17, 0, 0, 0)
               this.newReservation = {start: dBegin}
               this.newReservation.o = new Reservation({ sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX })
+              this.newReservation.o.addEventListener('change', this.handleReservationEvent.bind(this))
 
               djOn.once(this.newReservation.o.domNode, 'click', djLang.hitch(this, this.eClick))
               djOn.once(this.newReservation.o.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
@@ -651,6 +669,7 @@ define([
       for (var i = 0; i < reservations.length; i++) {
         if (!this.entries[reservations[i].id]) {
           this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this, _json: reservations[i]})
+          this.entries[reservations[i].id].addEventListener('change', this.handleReservationEvent.bind(this))
         } else {
           this.entries[reservations[i].id].fromJson(reservations[i])
         }

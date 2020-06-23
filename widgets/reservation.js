@@ -103,8 +103,14 @@ define([
       } else {
         this.isNew = false
       }
+
+      this.EventTarget = new EventTarget()
     },
 
+    addEventListener: function (type, listener, options = undefined) {
+      this.EventTarget.addEventListener(type, listener, options)
+    },
+    
     fromJson: function (json) {
       if (!json) { return }
       this.modifiedState = true
@@ -1400,10 +1406,12 @@ define([
           }
           if (this.domNode) { this.domNode.dataset.id = id }
           if (!arrival || Object.keys(arrival).length === 0) {
+            this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
             resolve(id)
           } else {
             let query
             if (arrival.deleted) {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
               return
             }
@@ -1415,6 +1423,7 @@ define([
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
             }
             query.then((result) => {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
             })
           }
