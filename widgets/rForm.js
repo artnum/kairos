@@ -802,6 +802,14 @@ define([
     },
 
     postCreate: function () {
+      if (!window.OpenedForm) {
+        window.OpenedForm = {}
+      }
+      window.OpenedForm[this.reservation.uid] = this
+      window.onbeforeunload = (event) => {
+        event.preventDefault()
+        event.returnValue = ''
+      }
       this.PostCreatePromise = new Promise((resolve, reject) => {
         this.nMissionDrop.addEventListener('paste', this.evCopyDrop.bind(this), { capture: true })
         this.nMissionDrop.addEventListener('drop', this.evCopyDrop.bind(this), { capture: true })
@@ -1359,6 +1367,10 @@ define([
 
     destroy: function (noevent = false) {
       this.CloseInProgress = true
+      delete window.OpenedForm[this.reservation.uid]
+      if (Object.keys(window.OpenedForm).length <= 0) {
+        window.onbeforeunload = null
+      }
       if (!noevent) {
         window.GEvent('reservation.close', {id: this.reservation.uid})
       }
