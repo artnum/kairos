@@ -6,7 +6,7 @@
 </head>
 <body>
   <table
-    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1'}}" data-entry-id="id">
+    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1', 'search.confirmed': '1'}}" data-entry-id="id">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
@@ -16,7 +16,7 @@
       <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
       <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
-      <th data-attribute="_arrival.reported:date{eq:bool>1">Fin confirmée</th>
+      <th data-attribute="_arrival.reported:date">Fin confirmée</th>
       <th data-attribute="_arrival.done:date" data-sort-type="date">Retournée</th>
     </tr></thead>
   </table>
