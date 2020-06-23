@@ -10,7 +10,7 @@ define([
   Path,
   Query
 ) {
-  return djDeclare('location.Stores.User', [], {
+  return djDeclare('location.Stores.Status', [], {
     entries: [],
     constructor: function (options = {}) {
       this.params = {}
@@ -24,6 +24,9 @@ define([
         if (!id) {
           resolve({label: '', value: ''})
           return
+        }
+        if(!isNaN(parseInt(id))) {
+          id = `Status/${id}`
         }
         let entry = null
         let s = id.split('/')
@@ -51,6 +54,9 @@ define([
             let name = `${entry.name}`
             entry.label = name
             entry.value = id
+            if (entry.symbol) {
+              entry.symbol = ` <i class="${GSymbol(entry.symbol).join(' ')}" aria-hidden="true"> </i> `
+            }
 
             entry.lastFetch = new Date().getTime()
             window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
@@ -60,7 +66,7 @@ define([
       })
     },
 
-    query: function (txt) {
+    query: function (txt, currentValue = undefined) {
       return new Promise((resolve, reject) => {
         let entries = []
         let searchName = txt.toAscii()
@@ -68,16 +74,31 @@ define([
           if (results.success && results.length > 0) {
             results.data.forEach((entry) => {
               if (entry.disabled && entry.disabled !== '0') { return }
-              let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
               let name = entry.name
-              if (s !== -1) {
-                name = entry.name.substring(0, s) + '<span class="match">' +
-                  entry.name.substring(s, s + searchName.length) + '</span>' +
-                  entry.name.substring(s + searchName.length)
+              if (currentValue !== undefined) {
+                let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
+                if (s !== -1) {
+                  name = `${entry.name.substring(0, s)}<span class="match">${entry.name.substring(s, s + searchName.length)}</span>${entry.name.substring(s + searchName.length)}`
+                }
               }
-
+              entry.printableLabel = entry.name
               entry.label = `${name}`
               entry.value = `Status/${entry.id}`
+              if (entry.symbol) {
+                entry.symbol = ` <i class="${GSymbol(entry.symbol).join(' ')}" aria-hidden="true"> </i> `
+              }
+              
+              if (currentValue) {
+                if (isNaN(parseInt(currentValue))) {
+                  if (parseInt(currentValue.split('/').pop()) === parseInt(entry.id)) {
+                    entry.selected = true
+                  }
+                } else {
+                  if (parseInt(currentValue) === parseInt(entry.id)) {
+                    entry.selected = true
+                  }
+                }
+              }
 
               entries.push(entry)
             })

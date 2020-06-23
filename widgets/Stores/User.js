@@ -51,6 +51,7 @@ define([
             let name = `${entry.name}`
             entry.label = name
             entry.value = id
+            delete entry.color
 
             entry.lastFetch = new Date().getTime()
             window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
@@ -59,7 +60,7 @@ define([
         })
       })
     },
-    query: function (txt) {
+    query: function (txt, currentValue = undefined) {
       return new Promise((resolve, reject) => {
         let entries = []
         let searchName = txt.toAscii()
@@ -77,6 +78,7 @@ define([
 
               entry.label = `${name}`
               entry.value = `User/${entry.id}`
+              delete entry.color
 
               entries.push(entry)
             })

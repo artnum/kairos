@@ -16,8 +16,8 @@
         <label><input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente</label>
         <label name="H:begin" class="small"><span data-href="beginDate" class="targetable">Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /></label>
         <label name="H:end" class="small"><span data-href="endDate" class="targetable">Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="endDate" data-dojo-attach-point="endDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" /></label>
-        <label><input data-dojo-type="dijit/form/CheckBox" name="confirmed" data-dojo-attach-point="nConfirmed" data-dojo-attach-event="click:toggleConfirmed"/> Fin confirmée</label>
-        <button data-dojo-type="dijit/form/Button" name="confirmedAndReturned" data-dojo-attach-point="nConfirmedAndReturned" data-dojo-attach-event="click:toggleConfirmedAndReturned">Confirmée et ramenée</button>
+        <button name="H:confirmed" data-dojo-attach-point="nConfirmed"><i class="far fa-calendar-check" aria-hidden="true"></i> Fin confirmée</button>
+        <button data-dojo-attach-point="nConfirmedAndReturned"><i class="fab fa-fort-awesome" aria-hidden="true"></i> Ramenée</button>
       </fieldset>
 
       <fieldset class="ui" data-dojo-attach-point="nDeliveryFields">
@@ -30,21 +30,22 @@
         <legend class="title">Retour</legend>
         <label name="H:_arrival.reported"><span>Annonce :</span><input class="ui" data-dojo-attach-point="nArrivalDate" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="arrivalDate" /> <input class="ui" data-dojo-attach-point="nArrivalTime" data-dojo-type="dijit/form/TimeTextBox" name="arrivalTime" /></label>
         <label name="H:_arrival.creator"><span>Responsable :</span><input class="ui" data-dojo-attach-point="nArrivalCreator" name="arrivalCreator" type="text" /></label>
-        <label name="H:_arrival.where><span>Adresse :</span><textarea class="ui" data-dojo-attach-point="nArrivalAddress" data-dojo-type="dijit/form/Textarea" name="arrivalAddress"></textarea></label>
+        <label name="H:_arrival.where"><span>Adresse :</span><textarea class="ui" data-dojo-attach-point="nArrivalAddress" data-dojo-type="dijit/form/Textarea" name="arrivalAddress"></textarea></label>
         <label name="H:_arrival.locality"><span>Localité :</span><input class="ui" data-dojo-attach-point="nArrivalLocality" type="text" name="arrivalLocality" /></label>
         <label name="H:_arrival.other"><span>Clefs :</span><input class="ui" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /></label>
         <label name="H:_arrival.comment"><span>Remarque :</span><input class="ui" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /></label>
-        <label name="H:_arrival.inprogress"><input data-dojo-attach-point="nArrivalInprogress" data-dojo-type="dijit/form/CheckBox" name="arrivalInprogress" /> En cours</label>
-        <label name="H:_arrival.done"><input data-dojo-attach-point="nArrivalDone" data-dojo-type="dijit/form/CheckBox" name="arrivalDone" /> Ramenée</label>
+        <button name="H:_arrival.inprogress" data-dojo-attach-point="nArrivalInprogress"><i class="fas fa-shipping-fast" aria-hidden="true"></i> En cours</button>
+        <button name="H:_arrival.done" data-dojo-attach-point="nArrivalDone" disabled="1"><i class="fab fa-fort-awesome" aria-hidden="true"></i> Retournée</button>
       </fieldset>
       
       <fieldset class="full ui">
         <legend>Chantier</legend>
 	<label name="H:reference"><span>Référence :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="reference" data-dojo-attach-point="nReference" /></label>
-        <label name="H:status"><span>Status :</span><input class="ui" data-dojo-type="dijit/form/Select" name="status" data-dojo-attach-point="nStatus" /></label>
+        <label name="H:status"><span>Status :</span><input class="ui" type="text" name="status" data-dojo-attach-point="nStatus" /></label>
 	<label name="H:address"><span>Adresse :</span><textarea class="ui" name="nAddress" data-dojo-attach-point="nAddress" style="min-height: 2ex;"></textarea></label>
 	<label name="H:locality"><span>Localité :</span><input class="ui" type="text" name="nLocality" data-dojo-attach-point="nLocality" /></label>
         <label name="H:gps"><span>GPS :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="gps" data-dojo-attach-point="nGps" /></label>
+        <label name="H:padlock"><span>Cadenas :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="padlock" data-dojo-attach-point="nPadlock" /></label>
       </fieldset> 
 
       <fieldset class="full ui">
@@ -52,6 +53,8 @@
         <label name="H:creator"><span>Responsable :</span><input class="ui" type="text" name="creator" data-dojo-attach-point="nCreator" /></label>
         <label name="H:technician"><span>Technicien :</span><input class="ui" type="text" name="technician" data-dojo-attach-point="nTechnician" /></label>
         <label name="H:folder"><span>Lien :</span><input class="ui" data-dojo-type="dijit/form/TextBox" name="folder" data-dojo-attach-point="nFolder" /></label>
+        <button name="H:visit" data-dojo-attach-point="nAddVisit" value="Visite"><i class="far fa-calendar-alt" aria-hidden="true"></i> Avec visite</button>
+        <button name="H:vreport" data-dojo-attach-point="nAddReport" disabled="1" value="Report"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Rapport retourné</button>
       </fieldset>
       
       <fieldset class="full ui"><legend>Contacts</legend>
@@ -149,13 +152,11 @@
   
   <div class="command">
     <button data-dojo-attach-point="nSaveButton" value="Sauvegarder"><i class="far fa-save" aria-hidden="true"></i> Sauvegarder quitter</button>
-    <button data-dojo-attach-point="nCopyButton" value="Dupliquer" ype="button"><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
+    <button data-dojo-attach-point="nCopyButton" value="Dupliquer" type="button"><i class="far fa-copy" aria-hidden="true"></i> Dupliquer</button>
     <button data-dojo-attach-point="nPrintMission" value="Mission" type="button"><i class="fa fa-print" aria-hidden="true"></i> Mission</button>
     <button data-dojo-attach-point="nPrintRecu" value="Décompte" type="button"><i class="fa fa-print" aria-hidden="true"></i> Reçus</button>
     <button data-dojo-attach-point="nAddCount" value="Décompte" type="button"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Nouveau décompte</button>
-    
-    
-    <br/ >
+    <br/>
     <button data-dojo-attach-point="nDelete" value="Supprimer" style="float: right;" type="button"><i class="fa fa-trash-o" aria-hidden="true"></i> Supprimer</button>
   </div>
 </div>    

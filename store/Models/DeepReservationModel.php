@@ -59,8 +59,10 @@ class DeepReservationModel extends ReservationModel {
       if (isset($options['search']['confirmed'])) {
         if (intval($options['search']['confirmed'])) {
           $where[] = 'arrival_reported IS NOT NULL';
+          $where[] = 'arrival_deleted IS NULL';
         } else {
           $where[] = 'arrival_reported IS NULL';
+          $where[] = 'arrival_deleted IS NOT NULL';
         }
       }
     }

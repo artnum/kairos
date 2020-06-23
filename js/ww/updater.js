@@ -13,11 +13,14 @@ self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
-        Channels[btoa(msg.data.target)] = msg.ports[0]
-        Channels[btoa(msg.data.target)].onmessage = targetMessages
-        if (PostPoned[btoa(msg.data.target)]) {
-          Channels[btoa(msg.data.target)].postMessage({op: 'entries', value: PostPoned[btoa(msg.data.target)]})
-          delete PostPoned[btoa(msg.data.target)]
+        let targetId = btoa(msg.data.target)
+        Channels[targetId] = msg.ports[0]
+        Channels[targetId].onmessage = (m) => {
+          targetMessages(m, targetId)
+        }
+        if (PostPoned[targetId]) {
+          Channels[targetId].postMessage({op: 'entries', value: PostPoned[targetId]})
+          delete PostPoned[targetId]
         }
       }
       break
@@ -43,7 +46,7 @@ function  dstamp (date) {
   return date
 }
 
-function targetMessages (msg) {
+function targetMessages (msg, targetId = null) {
   if (!msg.data.op) { return }
   switch (msg.data.op) {
     case 'uncache':
@@ -53,7 +56,24 @@ function targetMessages (msg) {
         })
       }
       break
+    case 'reload':
+      if (msg.data.reservation) {
+        doFetch(getUrl(`store/DeepReservation/${msg.data.reservation}`)).then((response) => {
+          if (response.ok) {
+            response.json().then((json) => {
+              if (json.length > 0 && json.success) {
+                cacheAndSend([json.data], newVTimeLine())
+              }
+            })
+          }
+        })
+      }
+      break
   }
+}
+
+function doFetch(url) {
+  return fetch(url, {credential: 'include'})
 }
 
 function getUrl (suffix) {
@@ -67,26 +87,6 @@ function getIntervention (entry) {
   return new Promise((resolve, reject) => {
     resolve([])
     return
-    /* disable display intervention */
-    if (parseInt(entry.cntIntervention) === 0) {
-      resolve([])
-      return
-    }
-    let url = getUrl('store/Evenement/.evenement')
-    url.searchParams.append('search.reservation', entry.id)
-    fetch(url, {credential: 'include'}).then((response) => {
-      if (!response.ok) {
-        resolve([])
-      } else {
-        response.json().then((results) => {
-          if (!results.success || results.length <= 0) {
-            resolve([])
-          } else {
-            resolve(results.data)
-          }
-        }, () => resolve([]))
-      }
-    }, () => resolve([]))
   })
 }
 
@@ -202,7 +202,7 @@ function cacheAndSend (data, vTimeLine) {
     url.searchParams.set('search.function', 'machiniste')
     url.searchParams.set('search.disabled', '0')
     url.searchParams.set('search.temporary', '0')
-    fetch(url, {credentials: 'include'}).then((response) => {
+    doFetch(url).then((response) => {
       /* in any case we process each days */
       if (response.ok) {
         response.json().then((json) => {
@@ -239,7 +239,7 @@ function runUpdater () {
   url.searchParams.set('search.begin', '<' + Range.end.toISOString().split('T')[0])
   url.searchParams.set('search.end', '>' + Range.begin.toISOString().split('T')[0])
   url.searchParams.set('search.deleted', '-')
-  fetch(url, {credential: 'include'}).then((response) => {
+  doFetch(url).then((response) => {
     if (response.ok) {
       response.json().then((json) => {
         if (json.length > 0 && json.success) {
@@ -255,7 +255,7 @@ function startUpdater () {
   if (LastMod > 0) {
     let url = getUrl('store/DeepReservation')
     url.searchParams.set('search.modification', '>' + LastMod)
-    fetch(url, {credential: 'include'}).then((response) => {
+    doFetch(url).then((response) => {
       if (response.ok) {
         response.json().then((json) => {
           if (json.length > 0 && json.success) {

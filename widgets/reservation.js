@@ -103,8 +103,14 @@ define([
       } else {
         this.isNew = false
       }
+
+      this.EventTarget = new EventTarget()
     },
 
+    addEventListener: function (type, listener, options = undefined) {
+      this.EventTarget.addEventListener(type, listener, options)
+    },
+    
     fromJson: function (json) {
       if (!json) { return }
       this.modifiedState = true
@@ -141,8 +147,38 @@ define([
         }
       }))
 
+      /* string value */
       ;[
-        'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, (attr) => {
+        'visit',
+        'vreport',
+        'padlock'
+      ].forEach(djLang.hitch(this, (attr) => {
+        if (json[attr]) {
+          this.dataHash[attr] = crc32(json[attr])
+          this.set(attr, json[attr])
+        } else {
+          this.set(attr, '')
+          this.dataHash[attr] = crc32('')
+        }
+      }))
+
+      /* nullifiable value */
+      ;[
+        'status',
+        'address',
+        'locality',
+        'comment',
+        'equipment',
+        'reference',
+        'gps',
+        'folder',
+        'title',
+        'previous',
+        'creator',
+        'technician',
+        'warehouse',
+        'note'
+      ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.dataHash[attr] = crc32(json[attr])
           this.set(attr, json[attr])
@@ -211,7 +247,39 @@ define([
         }
       }))
 
-      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'technician', 'warehouse', 'note', 'padlock'].forEach(djLang.hitch(this, function (attr) {
+      /* string value */
+      ;[
+        'visit',
+        'vreport',
+        'padlock'
+      ].forEach(djLang.hitch(this, function (attr) {
+        if (this[attr]) {
+          object[attr] = this[attr]
+          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
+        } else {
+          object[attr] = ''
+          if (dataHash) { dataHash[attr] = crc32('') }
+        }
+      }))
+
+      /* nullifiable value */
+      ;[
+        'uuid',
+        'status',
+        'address',
+        'locality',
+        'comment',
+        'equipment',
+        'reference',
+        'gps',
+        'folder',
+        'title',
+        'previous',
+        'creator',
+        'technician',
+        'warehouse',
+        'note'
+      ].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
           if (dataHash) { dataHash[attr] = crc32(this[attr]) }
@@ -764,10 +832,12 @@ define([
       tContainer.selectChild(cp.id)
 
       this.myForm = f
-      this.syncForm()
-      this.myContentPane = cp
-      f.set('_pane', [cp, tContainer])
-      f.set('_closeId', 'ReservationTab_' + this.get('localid'))
+      this.myForm.PostCreatePromise.then(() => {
+        this.syncForm()
+        this.myContentPane = cp
+        f.set('_pane', [cp, tContainer])
+        f.set('_closeId', 'ReservationTab_' + this.get('localid'))
+      })
     },
 
     close: function () {
@@ -783,7 +853,28 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'technician', 'gps', 'folder', 'warehouse', 'note', 'padlock' ].forEach(djLang.hitch(this, function (e) {
+        [
+          'other',
+          'begin',
+          'end',
+          'deliveryBegin',
+          'deliveryEnd',
+          'status',
+          'address',
+          'locality',
+          'comment',
+          'equipment',
+          'reference',
+          'creator',
+          'technician',
+          'gps',
+          'folder',
+          'warehouse',
+          'note',
+          'padlock',
+          'visit',
+          'vreport'
+         ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()
@@ -1315,10 +1406,12 @@ define([
           }
           if (this.domNode) { this.domNode.dataset.id = id }
           if (!arrival || Object.keys(arrival).length === 0) {
+            this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
             resolve(id)
           } else {
             let query
             if (arrival.deleted) {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
               return
             }
@@ -1330,6 +1423,7 @@ define([
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
             }
             query.then((result) => {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
             })
           }

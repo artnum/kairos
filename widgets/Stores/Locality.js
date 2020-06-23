@@ -43,6 +43,7 @@ define([
           if (results.success && results.length === 1) {
             entry = results.data
             entry.label = this.getLabel(entry)
+            entry.printableLabel = entry.label
             entry.value = id
 
             entry.lastFetch = new Date().getTime()
@@ -69,7 +70,9 @@ define([
         }
 
         queries.push(Query.exec(Path.url('store/Warehouse', {params: {'search.name': `~${searchName}%`}})))
-        queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': `~${searchName}%`, 'search.township': `~${searchName}%`, 'search.np': `~${searchNp}%`, 'search._rules': 'name OR township OR np'}})))
+        if (txt.length > 0) {
+          queries.push(Query.exec(Path.url('store/PC', {params: {'search.name': `~${searchName}%`, 'search.township': `~${searchName}%`, 'search.np': `~${searchNp}%`, 'search._rules': 'name OR township OR np'}})))
+        }
         Promise.all(queries).then((results) => {
           let entriesA = []
           let entriesB = []
@@ -104,9 +107,11 @@ define([
                     township = ''
                   }
                   entry.label = this.getLabel(Object.assign(entry, {np: np, township: township, name: name}))
+                  entry.printableLabel = entry.label
                   entry.value = `PC/${entry.uid}`
                 } else {
                   entry.label = this.getLabel(entry)
+                  entry.printableLabel = entry.label
                   entry.value = `Warehouse/${entry.id}`
                 }
                 if (entry.np) {
