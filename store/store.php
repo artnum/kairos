@@ -10,15 +10,6 @@ $file = new \artnum\Files();
 $http_request = new \artnum\HTTP\JsonRequest();
 $store = new \artnum\JStore\Generic($http_request, true);
 
-$sigfile = getcwd() . '/../private/sig.txt';
-if (!file_exists($sigfile) && $file->writable($sigfile)) {
-   $rand = new \artnum\Random();
-   $rand->str(512, $sigfile);
-} else if (!$file->readable($sigfile)) {
-  throw new Exception('No signature file');
-  exit(0);
-}
-
 $pdo = init_pdo($ini_conf);
 if (is_null($pdo)) {
   throw new Exception('Storage database not reachable');
