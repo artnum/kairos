@@ -269,17 +269,33 @@ CREATE TABLE IF NOT EXISTS "missionFichier" (
        PRIMARY KEY("missionFichier_fichier", "missionFichier_mission")
 ) CHARACTER SET "utf8mb4";
 
-CREATE TABLE IF NOT EXISTS "intervention" (
-       "intervention_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-       "intervention_reservation" INTEGER,
-       "intervention_type" TEXT DEFAULT NULL,
-       "intervention_comment" TEXT,
-       "intervention_date" VARCHAR(32) NOT NULL, -- ISO8601
-       "intervention_duration" INTEGER DEFAULT 0, -- in seconds
-       "intervention_technician" TEXT DEFAULT NULL,
-       FOREIGN KEY ("intervention_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+--CREATE TABLE IF NOT EXISTS "intervention" (
+--       "intervention_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+--       "intervention_reservation" INTEGER,
+--       "intervention_type" TEXT DEFAULT NULL,
+--       "intervention_comment" TEXT,
+--       "intervention_date" VARCHAR(32) NOT NULL, -- ISO8601
+--       "intervention_duration" INTEGER DEFAULT 0, -- in seconds
+--       "intervention_technician" TEXT DEFAULT NULL,
+--       FOREIGN KEY ("intervention_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+--) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "evenement" (
+       "evenement_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "evenement_reservation" INTEGER DEFAULT NULL,
+       "evenement_type" CHAR(32) DEFAULT NULL,
+       "evenement_comment" TEXT,
+       "evenement_date" CHAR(32) NOT NULL, -- ISO8601
+       "evenement_duration" INTEGER DEFAULT 0, -- in seconds
+       "evenement_technician" CHAR(32) DEFAULT NULL,
+       "evenement_target" CHAR(32) DEFAULT NULL,
+       "evenement_previous" INTEGER DEFAULT NULL,
+       FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+       FOREIGN KEY ("evenement_previous") REFERENCES "evenement"("evenement_id") ON UPDATE CASCADE ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";
-       
+CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_previous");
+CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_reservation");
+
 CREATE TABLE IF NOT EXISTS "histoire" (
        "histoire_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
        "histoire_object" INTEGER NOT NULL,
@@ -306,3 +322,13 @@ CREATE TABLE IF NOT EXISTS "localite" (
 CREATE INDEX idxLocaliteName ON localite (localite_name);
 CREATE INDEX idxLocaliteTownship ON localite (localite_township);
 CREATE INDEX idxLocaliteNP ON localite (localite_np);
+
+CREATE TABLE IF NOT EXISTS "fichier" (
+       "fichier_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "fichier_name" CHAR(64) NOT NULL DEFAULT '',
+       "fichier_hash" CHAR(50) NOT NULL UNIQUE INDEX,
+       "fichier_size" INT DEFAULT 0,
+       "fichier_mime" CHAR(127) NOT NULL DEFAULT 'application/octet-stream'
+       );
+CREATE INDEX "idxHash" ON "fichier" ("fichier_hash");
+

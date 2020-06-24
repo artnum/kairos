@@ -1,0 +1,54 @@
+\documentclass[a4paper,twoside]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{tabularx}
+\usepackage{endnotes}
+\usepackage[toc,page]{appendix}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,snakes,positioning}
+\usepackage{minted}
+
+\emergencystretch 3em
+
+\begin{document}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Générer la clé privée}
+  \begin{minted}[linenos=true]{bash}
+$ openssl genpkey -algorithm rsa-pss \
+> -pkeyopt rsa_keygen_bits:2048 \
+> -out rsa_private_key.key
+  \end{minted}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Générer la clé publique}
+  \begin{minted}[linenos=true]{bash}
+$ openssl pkey -in rsa_private_key.key \
+-pubout > rsa_pubkey.pem
+  \end{minted}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Signer}
+  \begin{minted}[linenos=true]{bash}
+$ openssl dgst -sha256 \
+-sign rsa_private_key.key \
+-out rsa.sign \
+file_to_sign
+  \end{minted}
+\end{minipage}
+
+
+\end{document}

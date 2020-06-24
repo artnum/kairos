@@ -1,0 +1,764 @@
+\documentclass[a4paper,twoside]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{tabularx}
+\usepackage{endnotes}
+\usepackage[toc,page]{appendix}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,snakes,positioning}
+\usepackage{minted}
+
+\emergencystretch 3em
+
+\let\footnote=\endnote
+
+\tikzstyle{etat} = [circle, fill, minimum width = 8pt]
+\tikzstyle{action} = [rectangle,draw]
+\tikzstyle{evenement} = [circle,draw, minimum width = 8pt]
+\tikzstyle{chain} = [->,>=latex,thick]
+\tikzstyle{relation} = [-*,dotted,shorten >=-2pt]
+  
+\definecolor{light-gray}{gray}{0.90}
+\newcommand{\verbe}[1]{\texttt{\textbf{#1}}}
+\newcommand{\adresse}[1]{\texttt{#1}}
+\newcommand{\requete}[2]{\verbe{#1}~\adresse{#2}}
+\newcommand{\collection}[1]{\colorbox{light-gray}{\texttt{#1}}}
+\newcommand{\attribut}[1]{\textcolor{BlueViolet}{\texttt{#1}}}
+\newcommand{\type}[1]{\textcolor{OrangeRed}{\textsuperscript{\texttt{#1}}}}
+\newcommand{\valeur}[1]{\texttt{{\bf #1}}}
+\newcommand{\vs}[0]{{\vskip 2ex}}
+\begin{document}
+
+\title{Évènements Planning}
+\author{Etienne Bagnoud\\
+        \texttt{etienne@artnum.ch}}
+
+\maketitle
+
+\newpage
+
+\section{État d'une machine}
+
+L'état d'une machine est défini par une succession d'évènements associé à la-dite machine. Un évènement est associé à un type d'évènement qui est choisi par l'utilisateur selon le cas de figure (un accident ou une panne est un type d'évènement possible). Le nombre de type d'évènement n'est pas limité et n'est pas connu à l'avance. Ils sont accessibles via la collection \collection{Status} et ont l'attribut \attribut{type}\type{int} de valeur \valeur{3}.
+
+Chacun de ces types d'évènements (collection \collection{Status}) ont un attribut \attribut{severity}\type{int} qui détermine l'état final de la machine ; la table~\ref{tab:severite} référence les interprétations possible de cette valur. Quand aucun évènement n'est associé à une machine, celle-ci est considérée comme en bon état.
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \mbox{}
+  \center
+  \captionof{table}{Sévérités}
+  \label{tab:severite}
+  \begin{tabularx}{\linewidth}{c | l}
+    \toprule
+    Sévérité & Signification \\
+    \midrule
+    \texttt{0} & La machine est en bon état \\
+    \texttt{1} & L'état de la machine est inconnu \\
+    \texttt{2} & Un problème ou une panne a été signalée \\
+    \texttt{3} & La machine est inutilisable \\
+    \bottomrule
+  \end{tabularx}
+\end{minipage}
+\vs{}
+
+\section{Association d'un évènement à une machine}
+
+Une machine est associée à un évènement par l'intermédiaire de l'attribut \attribut{target}\type{char[32]} ou par l'attribut \attribut{reservation}\type{int}. Tous les évènements sont obligatoiremenet liés à une machine par un de ces attributs mais pas par les deux en même temps.
+
+Lors de l'utilisation de l'attribut \attribut{target}\type{char[32]}, nous sommes dans cas d'adressage direct : l'évènement est directement associé à la machine et il n'est nul besoin de faire appel à une autre collection (voir figure~\ref{fig:adresseDirect}).
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Adressage direct}
+  \label{fig:adresseDirect}
+  \begin{tikzpicture}
+    \node[action] (E) at (0,0) {EV};
+    \node[action] (T) at (6,0) {\attribut{target}};
+    \draw[chain] (E) -- (T);
+  \end{tikzpicture}
+\end{minipage}
+\vs{}
+
+Lors de l'utilisation de l'attribut \attribut{reservation}\type{char[32]}, nous sommes dans un cas d'adressage indirect : l'évènement est associé à la machine par l'intermédiaire de l'attribut \attribut{target}\type{char[32]} de la collection \collection{Reservation} (voir figure~\ref{fig:adresseIndirect}).
+
+\vs{}
+\begin{minipage}{\linewidth}
+  {\vskip 2ex}
+  \center
+  \captionof{figure}{Adressage indirect}
+  \label{fig:adresseIndirect}
+  \begin{tikzpicture}
+    \node[action] (E) at (0,0) {EV};
+    \node[action] (R) at (3,0) {\attribut{reservation}};
+    \node[action] (T) at (6,0) {\attribut{target}};
+    \draw[chain] (E) -- (R);
+    \draw[chain] (R) -- (T);
+  \end{tikzpicture}
+  {\vskip 1ex}
+\end{minipage}
+\vs{}
+
+\section{Changement d'état}
+
+Les évènements se succèdent selon la vie de la machine. Pour se faire, à chaque évènement un attribut \attribut{previous}\type{int} est associé référence l'évènement précédent quand cela s'avère nécessaire. Un évènement peut ne pas avoir de prédécesseur mais un évènement d'un type ayant une sévérité de \valeur{0} a obligatoirement un prédécesseur. Un évènement d'un type ayant une sévérité \valeur{0} est toujours une remise en état fonctionnel de la machine.
+
+Les évènements ne peuvent se succéder que dans une escalade de sévérité. Cette escalade impose que qu'un son \attribut{type}\type{int} référence un objet de la collection \collection{Status} ayant un attribut \attribut{severity}\type{int} supérieur à son prédécesseur. Le seul cas de figure d'une déscalade possible est en revenant vers un type d'évènement de sévérité \valeur{0} : une remise en état de la machine.
+
+La figure~\ref{fig:etatTransition} définit tous les changements d'état possibles d'une machine.
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Transition d'état}
+  \label{fig:etatTransition}
+  \begin{tikzpicture}[auto]
+    \node[etat, label=left:{En ordre}] (Ok) at (0, 0) {};
+    \node[etat, label=above:{Inconnu}] (Inconnu) at (4, 2) {};
+    \node[etat, label=below:{Endommagée}] (Dommage) at (4, -2) {};
+    \node[etat, label=right:{Inutilisable}] (Inutilisable) at (8, 0) {};
+    \path[->,>=latex]
+    (Ok) edge node[pos=0.2,above] {$S1$} (Inconnu)
+    (Inconnu) edge[bend right=45] node[above] {$S0$} (Ok)
+    (Inconnu) edge node[pos=0.2] {$S3$} (Inutilisable)
+    (Inconnu) edge node[pos=0.2] {$S2$} (Dommage)
+    (Ok) edge node[pos=0.2,below] {$S2$} (Dommage)
+    (Dommage) edge[bend left=45] node {$S0$} (Ok)
+    (Dommage) edge node[pos=0.2] {$S3$} (Inutilisable)
+    (Ok) edge[bend left=10] node[pos=0.4] {$S3$} (Inutilisable)
+    (Inutilisable) edge[bend left=10] node[pos=0.4] {$S0$} (Ok);
+  \end{tikzpicture}
+\end{minipage}
+\vs{}
+
+
+\subsection{Évitement des branches}
+
+Les évènements se succèdent d'une manière linéaire et si un évènvement peut succéder à un autre, un évènement ne peut être succédé que par un seul évènement (voir figure~\ref{fig:brancheEvenement}). Dès lors, lorsqu'une intervention liée à un évènement (le mécanicien effectuant une réparation) nécessite un nouvel évènement (le mécanicien détecte une fuite inconnue), un nouvel évènement sans prédécesseur doit être créé reprenant éventuellement les paramètres de l'actuel évènement.
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Embranchement d'évènements}
+  \label{fig:brancheEvenement}
+  \begin{tikzpicture}
+    \node[action] (Ev1) at (0,0) {Évènement 1};
+    \node[action] (Ev2) at (4,0) {Évènement 2};
+    \node[action] (Ev3) at (8,0) {Évènement 3};
+    \node[action,red] (Ev2bis) at (4,-2) {Évènement 2'};
+    \path[->,>=latex]
+    (Ev1) edge (Ev2)
+    (Ev2) edge (Ev3)
+    (Ev1) edge[red,dashed] node[left] {\textcolor{red}{Impossible}} (Ev2bis);
+  \end{tikzpicture}
+\end{minipage}
+\vs{}
+
+\subsection{Reprise de valeur}
+
+Lorsqu'un évènement succède à un autre, il doit reprendre certains attributs à l'identique de son prédécesseur. Les attributs \attribut{reservation}\type{int} et \attribut{target}\type{char[32]} doivent être repris à l'identique.
+Dans le cas exceptionnel où ces informations venaient à manquer, l'application remontra la chaîne des évènements, à l'aide de l'attribut \attribut{previous}\type{int}, jusqu'à trouver un évènement correctement renseigné. Un évènement incorrectement renseigné est un évènement où les deux attribute \attribut{reservation}\type{int} et \attribut{target}\type{char[32]} sont soit les deux absents ou soit les deux renseignés (voir exemple à la table~\ref{tab:enchainement}).
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{table}{Exemple d'enchaînement d'évènements}
+  \label{tab:enchainement}
+  \begin{tabularx}{\linewidth}{c | c | l | l | l}
+    \toprule
+    id & reservation & type & target  & previous \\
+    \midrule
+    \texttt{1}  & \texttt{1} & Panne & \texttt{NULL} & \texttt{NULL} \\
+    \texttt{2}  & \texttt{1} & Contrôle & \texttt{NULL} & \texttt{1} \\
+    \texttt{3}  & \texttt{1} & Réparation & \texttt{NULL} & \texttt{2} \\
+    \bottomrule
+  \end{tabularx}
+\end{minipage}
+\vs{}
+
+
+\subsection{État final d'une machine}
+
+L'état final d'une machine est toujours lié à l'évènement associé à la sévérité la plus élevée peu importe le nombre de séries d'évènements différentes pour une même machine. Pour l'exemple de la table~\ref{tab:exempleSeverite}, l'état d'une machine serait de sévérité de valeur \valeur{2}.
+
+\vs{}
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{table}{Trouver la sévérité}
+  \label{tab:exempleSeverite}
+  \begin{tabularx}{\linewidth}{c | c | c | c}
+    \toprule
+    Machine & Évènement & Précédent & Sévérité \\
+    \midrule 
+    PT1 & 1 & \texttt{NULL} & 1 \\
+    PT1 & 2 & 1 & 2 \\
+    PT1 & 3 & \texttt{NULL} & 2 \\
+    PT1 & 4 & 2 & 3 \\
+    PT1 & 5 & 4 & 0 \\
+    \bottomrule
+  \end{tabularx}
+\end{minipage}
+\vs{}
+
+\section{Format des données}
+
+Les objets des collections sont transmis sous forme d'objet \href{https://www.json.org/json-en.html}{JSON}. La forme générique 
+
+
+Le format d'échange de données est des objets JSON. Lorsqu'un attribut n'a pas de valeur, la valeur \valeur{null} est utilisée. Lorsqu'un attribut ne doit pas être renseigné, la pair clé-valeur doit être absente de l'objet.
+
+\section{Les collections}
+
+\subsection{Les sous-collections}
+
+Les collections peuvent avoir une sous-collection, soit une fonctionnalité spécialisée pour ladite collection. Elles ne sont pas normalisées, leur fonctionnement doit donc être décrit. Une sous-collection est accessible comme pseudo-objet ayant un nom commençant par un point.
+
+\subsection{La collection \collection{Evenement}}
+Les évènements du planning sont accessibles via la collection \collection{Evenement}. Ils sont liés, à minima, aux collections \collection{Reservation}, \collection{User}, \collection{Machine} et \collection{Status}. Chaque membre est caractérisé par les attributs suivants :
+
+\begin{itemize}
+  \item \attribut{id}\type{int}: numéro de membre dans la collection. Ne doit pas être renseigné.
+  \item \attribut{reservation}\type{int}: le numéro de la réservation ou \valeur{null} si cela s'applique.
+  \item \attribut{type}\type{char[32]}: le type de l'évènement sous forme d'un chemin (path) relatif pour une ressource. Actuellement la seule collection fournissant des ressources pour cet attribut est la collection \collection{Status}. C'est attribut est {\bf obligatoire}.
+  \item \attribut{comment}\type{text}: un texte libre
+  \item \attribut{date}\type{char[32]}: la date et l'heure UTC de l'évènement au format \href{https://en.wikipedia.org/wiki/ISO_8601}{ISO 8601}. Le fuseau horaire doit être représenté avec la forme `Z`.
+  \item \attribut{duration}\type{int}: une durée, en seconde, de l'évènement. La durée ne sert pas à indiquer la fin, concrète de l'évènement, mais la durée totale d'un travail fait durant l'évènement.
+  \item \attribut{technician}\type{char[32]}: le technicien en charge de l'évènement sous form d'un chemin relatif pour une ressource. Actuellement la seule collection fournissant des ressources pour cet attribut est la collection \collection{User}.
+  \item \attribut{target}\type{char[32]}: l'identifiant de la machine tel que trouvé dans l'attribut \attribut{uid} des ressources de la collection \collection{Machine} ou \valeur{null}.
+  \item \attribut{previous}\type{int}: le numéro de l'évènement précédent ou \valeur{null}
+\end{itemize}
+
+\paragraph{Sous-collection \collection{unified}} Obtenir l'état final de la machine peut nécessiter une quantité de requêtes élevées. La sous-collection \collection{unified} permet donc d'accéder à la chaîne résolue des évènements de manière optimisée. Cette sous-collection propose deux attributs supplémentaires :
+
+\begin{itemize}
+  \item \attribut{severity}\type{int}: degré de sévérité
+  \item \attribut{resolvedTarget}\type{char[32]}: machine cible résolue
+\end{itemize}
+
+En filtrant sur la valeur de sévérité, il devient aisé d'obtenir la liste des machines nécessitant une intervention.
+
+\section{Procédures liées aux évènement}
+
+\section{Des requêtes}
+
+L'accès aux collections s'inspire de l'architecture REST.
+
+Les méthodes `HTTP` supportées sont les suivantes :
+
+\begin{itemize}
+  \item \verbe{GET}: Accéder à une ressource ou rechercher une collection
+  \item \verbe{POST}: Ajouter une ressource à une collection ou modifier une ressource
+  \item \verbe{PUT}: Remplacer une ressource
+  \item \verbe{PATCH}: Modifier une ressource
+  \item \verbe{HEAD}: Vérifier l'existence d'une ressource ou obtenir le nombre d'éléments d'une recherche
+  \item \verbe{DELETE}: Supprimer une ressource
+\end{itemize}
+    
+\subsection{HTTP/2}
+
+Le protocole HTTP/2 est préféré. Le protocole HTTP/1.1 est disponible mais son utilisation est considérée obsolète.
+
+\subsection{En-têtes}
+
+Les en-têtes HTTP des requêtes ne nécessitent rien de particulier. Il est recommandé, par contre, de prévoir de mettre l'en-tête \texttt{X-Request-Id} avec un numéro unique dans la même session (bien que l'API soit sans état (`stateless`), une session représente un ensemble de communications se passant durant une quinzaine de minutes).
+
+\subsection{Des sous-collections}
+
+Les sous-collections sont une spécialisation de collections, accessibles en lecture-seule. Les sous-collections sont accessibles par une requête sur une ressource dont le nom commence par un **.**. Pour la sous-collection \collection{unified} de la collection \collection{Evenement}, l'adresse est \adresse{Evenement/.unified}.
+
+\subsection{Des adresses}
+
+Les adresses des collections sont relatives à l'installation sur le serveur. Pour le serveur de développement, les collections sont accessibles avec une adresse de base \adresse{https://dev0.local.airnace.ch/location/store/}.
+
+\subsubsection{Recherches}
+
+Rechercher sur une collection se fait par la partie recherche (query) de l'adresse. Les attributs recherchés sont spécifiés avec le préfixe `search.`. Les recherches sont disponibles, parfois partiellement, sur les sous-collections. Dans le cas de la sous-collection \adresse{Evenement/.unified}, il n'y a aucune restriction de la recherche. Ainsi pour isoler les événement de sévérité {\em 1}sur la machine {\em PT1}, la requête est : \requete{GET}{Evenement/.unified?search.severity=1\&search.target=PT1}
+
+\subsubsection{Opérateurs}
+
+Les opérateurs sont spécifiés avant la valeur de recherche. Si aucun n'est spécifié, c'est l'opérateur d'égalité qui est utilisé lors de la comparaison. Les opérateurs suivant sont disponibles :
+
+\begin{itemize}
+  \item \texttt{>} / \texttt{<} : Plus grand/petit, exemple \texttt{?search.id=>1}
+  \item \texttt{>=} / \texttt{<=} : Plus grand/petit ou égal, exemple \texttt{?search.id=<=10}
+  \item \texttt{~}: Recherche texte à l'aide du symbole \texttt{\%}, exemple \texttt{?search.date=~2019-12-10\%}
+  \item \texttt{!}: Différent, exemple \texttt{?search.duration=!0}
+\end{itemize}
+  
+Afin de tester les attributs \texttt{NULL} ou non-\texttt{NULL}, les opérateurs \texttt{-} et \texttt{*} existent. Récupérer les resources dont \attribut{previous} est à \texttt{NULL} se fait \collection{Evenement?search.previous=-} et le contraire \collection{Evenement?search.previous=*}
+  
+\section{Du corps des réponses}
+
+Le corps d'une réponses utilise la notation \href{https://www.json.org/json-en.html}{JSON}. 
+Hormis le cas des requêtes \texttt{HEAD} dont le corps de réponse est prohibé par la norme \texttt{HTTP}, les réponses sont, à minima, toujours de la forme présentée à la figure~\ref{fig:generiqueReponseForme}.
+\begin{figure*}
+  \caption{Forme générique d'une réponse}
+  \label{fig:generiqueReponseForme}
+  \begin{minted}[linenos=true]{js}
+{
+	"success": ...,
+	"type": ...,
+	"message": ...,
+	"data": ...,
+	"length": ...
+}
+  \end{minted}
+\end{figure*}
+
+L'attribut \texttt{success} est une valeur booléenne indiquant le résultat de le requête. Si une erreur survient, un message d'erreur est renseigné par l'attribut message, sinon cette attribut est une chaîne vide. L'attribut \texttt{type} peut avoir la valeur \texttt{results} si l'attribut \texttt{success} est vrai ou \texttt{error} si l'attribut \texttt{success} est faux, cet attribut peut être ignoré. Les attributs \texttt{data} et \texttt{length} dépendent de la requête.
+
+\subsection{Données de réponse}
+
+Les données disponibles à l'attribut \texttt{data} sont dépendantes de la collection. Généralement, elles se présentent sous la forme d'un objet JSON d'un seul niveau. Certaines collections ou sous-collections peuvent retourner des objets plus complexes, dans ces cas, il faut se référer à l'implémentation pour en comprendre la signification.
+
+\subsection{Requête \verbe{GET}}
+
+\subsubsection{\verbe{GET} sur une collection, sous-collection}
+
+La requête \verbe{GET} a deux formes différentes suivant qu'elle porte sur une collection, une sous-collection ou une ressource. La forme première est celle pour les collections et sous-collections, \attribut{data} est une tableau dont \attribut{length} est sa longeur (figure~\ref{fig:reponseResultat}.
+
+Dans le cas d'une réponse sans ressource (figure~\ref{fig:reponseVide}), \texttt{data} est un tableau vide et \texttt{length} est à 0.
+
+\subsubsection{Exemples}
+
+\begin{figure*}
+  \caption{Réponse sans résultat}
+  \label{fig:reponseVide}
+  \requete{GET}{Evenement/?search.duration=1000}
+  \begin{minted}[linenos=true]{js}
+{
+	"success": true,
+	"type": "results",
+	"message": "",
+	"data": [],
+	"length": 0
+}
+  \end{minted}
+\end{figure*}
+
+\begin{figure*}
+  \caption{Réponse avec résultat}
+  \label{fig:reponseResultat}
+    \requete{GET}{Evenement/?search.reservation=15585}
+    \begin{minted}[linenos=true]{js}
+{
+	"success": true,
+	"type": "results",
+	"message": "",
+	"data": [ 
+		{
+			"id": "10",
+			"reservation": "15585",
+			"type": "Status\/22",
+			"comment": "",
+			"date":"2019-10-12T10:00:00+00:00",
+			"duration": "0",
+			"technician": "User\/19",
+			"target": null,
+			"previous": null
+			}
+	],
+	"length": 1
+}
+    \end{minted}
+\end{figure*}
+
+\subsection{\verbe{GET} sur une ressource}
+
+Dans le cas d'une requête \texttt{GET} sur une ressource, \texttt{data} contient directement l'objet (figure~\ref{fig:reponseRessource}) ou \texttt{NULL} si la ressource n'existe pas (figure~\ref{fig:reponseRessourceInexistante}. \texttt{length} est soit 1, soit 0.
+
+\subsubsection{Exemples}
+
+\begin{figure*}
+  \caption{Réponse pour une ressource inexistante}
+  \label{fig:reponseRessourceInexistante}
+  \requete{GET}{Evenement/10000}
+  \begin{minted}[linenos=true]{js}
+{
+	"success": true,
+	"type": "results",
+	"message": "",
+	"data": null,
+	"length": 0
+}
+  \end{minted}
+\end{figure*}
+
+
+\begin{figure*}
+  \caption{Réponse pour une ressource}
+  \label{fig:reponseRessource}
+  \requete{GET}{Evenement/10}
+  \begin{minted}[linenos=true]{js}
+{
+	"success": true,
+	"type": "results",
+	"message": "",
+	"data": {
+		"id": "10",
+		"reservation": "15585",
+		"type": "Status\/22",
+		"comment": "",
+		"date": "2019-10-12T10:00:00+00:00",
+		"duration": "0",
+		"technician": "User\/19",
+		"target": null,
+		"previous": null
+		},
+	"length": 1
+}
+  \end{minted}
+\end{figure*}
+
+\subsection{\verbe{POST},~\verbe{PUT},~\verbe{PATCH}}
+
+Ces trois requêtes utilisent la même structure. Si \verbe{POST} s'exécute sur une collection pour créer une nouvelle ressource, \verbe{PATCH} et \verbe{PUT} s'opère sur une ressource pour la modifier où la remplacer.
+
+Chaque requête est accompagné d'un corps qui est l'objet, en notation JSON, qui doit être créé ou modifié. La forme est identique à celle que l'on retrouve dans \attribut{data} des réponses. Dans certains cas, un traitement est appliqué pour s'assurer que les données soient conformes à ce qu'attendu.
+
+Les réponses contiennent toujours, pour \attribut{data}, un tableau de 1 élément contenant un objet avec 1 seul attribut : le numéro de membre de la collection.
+
+\subsubsection{Exemple de corps de requête}
+
+
+\begin{minted}[linenos=true]{js}
+{
+	"begin":"2019-12-14T08:00:00+01:00",
+	"end":"2019-12-14T17:00:00+01:00",
+	"deliveryBegin":null,
+	"deliveryEnd":null,
+	"uuid":null,
+	"status":"1",
+	"address":null,
+	"locality":null,
+	"comment":null,
+	"equipment":null,
+	"reference":null,
+	"gps":null,
+	"folder":null,
+	"title":null,
+	"previous":null,
+	"creator":"User/10",
+	"technician":null,
+	"warehouse":null,
+	"note":null,
+	"padlock":null,
+	"target":"131"
+}
+\end{minted}
+
+
+\subsubsection{Exemple de réponse}
+
+
+\begin{minted}[linenos=true]{js}
+{
+	"success":true,
+	"type":"results",
+	"message":"",
+	"data":[
+		{
+			"id":"17835"
+		}
+	],
+	"length":1
+}
+\end{minted}
+
+
+\subsection{\verbe{DELETE}}
+
+La requête ne se fait que sur une ressource et la supprime. Certaines resources ne sont pas supprimées mais voient leur attribut \attribut{deleted} changé de \texttt{NULL} à un entier représentant l'horodatage \texttt{Unix} de la suppression. C'est le cas pour les ressources de la collection \collection{Reservation}.
+
+Cette requête retourne toujours :
+
+\begin{minted}[linenos=true]{js}
+{
+	"success": true,
+	"type": "results",
+	"message": "Element deleted",
+	"data": null,
+	"length": null
+}
+\end{minted}
+
+\section{Les collections}
+
+Les attributs disponibles mais non décrits ici sont soit des reliques du passé, soit des évolutions futures encore pas menées à terme. Il faut donc les ignorer.
+
+\subsection{\collection{Reservation}}
+
+Contient les réservations. Une ressource est composée des attributs suivants :
+
+\begin{itemize}
+  \item \attribut{id}\type{int}: numéro de membre
+  \item \attribut{begin}\type{char[32]}: date de début de la réservation au format ISO 8601
+  \item \attribut{end}\type{char[32]}: date de fin de la résevation au format ISO 8601
+  \item \attribut{deliveryBegin}\type{char[32]} : date de la livraison au format ISO 8601 ou \texttt{NULL} si inapplicable
+  \item \attribut{deliveryEnd}\type{char[32]} : date de la livraison au format ISO 8601 ou `NULL` si inapplicable
+  \item \attribut{target}\type{char[32]} : identifiant de la machine réservée
+  \item \attribut{status}\type{int} : entier représentant le status de la réservation comme défini dans la collection \collection{Status}
+  \item \attribut{creator}\type{char[32]} : Chemin relatif vers la collection \collection{User} du responsable de la réservation
+  \item \attribut{locality}\type{text} : Soit un chemin relative vers la collection \collection{Locality} ou la collection \collection{Warehouse} soit un texte libre pour la localité de la réservation
+  \item \attribut{address}\type{text}: Adresse de la réservation
+  \item \attribut{reference}\type{text}: Référence client de la réservation
+  \item \attribut{equipment}\type{text}: L'équipement nécessaire pour la réservation
+  \item \attribut{title}\type{text}: Machine demandée par le client
+  \item \attribut{gps}\type{text}: Coordonnées GPS du lieu de la réservation
+  \item \attribut{folder}\type{text}: Dossier de la réservation
+  \item \attribut{other}\type{text}: Objet JSON contenant des indications supplémentaires éventuelles
+  \item \attribut{modification}\type{int}: Horodatage de la dernière modification (attribut modifé automatiquement)
+  \item \attribut{created}\type{int}: Horodatage de la création (attribut modifié automatiquement)
+  \item \attribut{deleted}\type{int}: Horodatage de la suppression (attribut modifié automatiquement)
+\end{itemize}
+
+\subsubsection{Exemple}
+
+\begin{minted}[linenos=true]{js}
+{
+	"id":"8586",
+	"uuid":"95188dee-5554-11e9-8b4d-c86000771629",
+	"begin":"2019-01-23T07:00:00+00:00",
+	"end":"2019-01-23T16:00:00+00:00",
+	"target":"154",
+	"status":"1",
+	"address":null,
+	"locality":null,
+	"contact":null,
+	"comment":null,
+	"deliveryBegin":null,
+	"deliveryEnd":null,
+	"special":null,
+	"closed":null,
+	"reference":null,
+	"equipment":null,
+	"title":null,
+	"folder":null,
+	"gps":null,
+	"creator":"store\/User\/4",
+	"previous":null,
+	"warehouse":null,
+	"note":null,
+	"other":"{\"critic\":\"\"}",
+	"created":"1548232123",
+	"deleted":"1548232131",
+	"modification":"1548232131",
+	"technician":null,
+	"padlock":null
+}
+\end{minted}
+
+\subsection{User}
+
+Contient les employés. Une ressource est composée des attributs suivants :
+
+\begin{itemize}
+  \item \attribut{id}\type{int}: numéro de membre dans la collection
+  \item \attribut{name}\type{text}: Nom de l'utilisateur
+  \item \attribut{phone}\type{char[15]}: Numéro de téléphone
+  \item \attribut{function}\type{char[16]}: Rôle principal dans l'entrprise ("admin", "machiniste", "mécanicien", "commercial")
+  \item \attribut{temporary}\type{int}: 1 pour les ouvriers temporaires
+\end{itemize}
+
+\subsubsection{Exemple}
+
+\begin{minted}[linenos=true]{js}
+{
+	"id":"7",
+	"name":"Stagiaire",
+	"phone":"+41277664097",
+	"disabled":"1",
+	"color":"black",
+	"function":"admin",
+	"temporary":"0"
+}
+\end{minted}
+
+\subsection{\collection{Status}}
+
+Contient les différents états possibles. Pour ces états, un type est associé, correspondant à l'usage possible. Pour les évènements, le type à utiliser est **3**. Une ressource est composée des attributs suivants :
+
+\begin{itemize}
+  \item \attribut{id}\type{int}: numéro de membre dans la collection
+  \item \attribut{name}\type{text}: nom du status
+  \item \attribut{description}\type{text}: une description si applicable
+  \item \attribut{type}\type{int}: usage pour ce status
+\end{itemize}
+
+\subsubsection{Exemple}
+
+\begin{minted}[linenos=true]{js}
+{
+	"id":"23",
+	"name":"Autre",
+	"color":null,
+	"default":null,
+	"type":"3",
+	"description":null,
+	"bgcolor":null,
+	"symbol":"bolt"
+}
+\end{minted}
+
+\subsection{Machine}
+
+Collection particulière, accessible uniquement en lecture seule. Dans tous les cas, un tableau de valeur est retourné. Les attributs sont les suivants :
+
+\begin{itemize}
+  \item \attribut{uniqueidentifier}\type{text}: Un identifiant unique dans la collection
+  \item \attribut{description}\type{text}, \attribut{uid}\type{text}, \attribut{reference}\type{text}: L'identifiant de la machine
+  \item \attribut{cn}\type{text}: le nom de la machine. Le support multilingue est fait par les déclinaisons \attribut{;lang-XX}, ..., de l'attribut \attribut{cn}
+  \item \attribut{brand}\type{text}: Marque
+  \item \attribut{height}\type{int}: Hauteur [cm]
+  \item \attribut{height}\type{int}: Hauteur [cm]
+  \item \attribut{length}\type{int}: Longueur [cm]
+  \item \attribut{width}\type{int}: Largeur [cm]
+  \item \attribut{floorheight}\type{int}: Hauteur plancher [cm]
+  \item \attribut{workheight}\type{int}: Hauteur de travail [cm]
+  \item \attribut{sideoffset}\type{int}: Déport [cm]
+  \item \attribut{maxcapacity}\type{int}: Capacité maximale [kg]
+  \item \attribut{weight}\type{int}: Poids de la machine [kg]
+\end{itemize}
+    
+\subsubsection{Exemple}
+
+\begin{figure}
+    \begin{minted}[linenos=true]{js}
+[
+	{
+		"uniqueidentifier":"100-49",
+		"description":"100",
+		"IDent":"uniqueIdentifier%3D100-49",
+		"uid":"100",
+		"reference":"100",
+		"cn":"Camion-nacelle 40m",
+		"cn;lang-de":"LKW-B\u00fchne 40m",
+		"cn;lang-en":"Truck mounted lift 40m",
+		"brand":"Multitel",
+		"family":"Nacelle-52",
+		"height":"396",
+		"length":"1098",
+		"width":"251",
+		"floorheight":"3800",
+		"workheight":"4000",
+		"sideoffset":"2700",
+		"maxcapacity":"365",
+		"weight":"26000",
+		"motorization":"Diesel-79",
+		"special":"Travail en pente-74",
+		"subtype":"Articul\u00e9-61",
+		"type":[
+			"Camion nacelle-21",
+			"Nacelle n\u00e9gative-74"
+		],
+	   	"o":"airnace",
+	   	"objectclass":"machine",
+		"currentLocation":{"value":"","id":"645"},
+		"placeAfter":{"value":"140","id":"37"},
+		"order":{"value":"30","id":"269"}
+	}
+]
+    \end{minted}
+\end{figure}
+\section{Des erreurs}
+
+L'usage des valeurs des codes d'état HTTP est, généralement, cohérent. Dans tous les cas, toutes requêtes retournant un code d'état différent de `200` représentent une erreur.
+
+\newpage
+
+\begin{appendices}
+  \section{Exemples d'évènement}
+  \label{annex:exempleEvenement}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Retour sans panne}
+  \label{fig:retourEnOrdre}
+  \begin{tikzpicture}
+    \node[action]  (LocRetour) {Retour de location};
+    \node[evenement]    (Ev0)     [right=of LocRetour]  {$S1$};
+    \node[action]  (Control) [below=of LocRetour]   {Contrôle, aucune panne};
+    \node[evenement]    (Ev1)     [right=of Control]  {$S0$};
+
+    \draw[chain] (LocRetour) -- (Control);
+    \draw[relation] (LocRetour) -- (Ev0);
+    \draw[relation] (Control) -- (Ev1);
+  \end{tikzpicture}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Retour avec panne}
+  \label{fig:retourPanne}
+  \begin{tikzpicture}
+    \node[action] (LocRetour) {Retour de location};
+    \node[evenement] (Ev0) [right=of LocRetour] {$S1$};
+    \node[action] (Control) [below=of LocRetour] {Contrôle, panne mineure};
+    \node[evenement] (Ev1) [right=of Control] {$S2$};
+    \node[action] (Intervention) [below=of Control] {Réparation};
+    \node[evenement] (Ev2) [right=of Intervention] {$S0$};
+
+    \draw[chain] (LocRetour) -- (Control);
+    \draw[chain] (Control) -- (Intervention);
+    \draw[relation] (LocRetour) -- (Ev0);
+    \draw[relation] (Control) -- (Ev1);
+    \draw[relation] (Intervention) -- (Ev2);
+  \end{tikzpicture}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Escalade de panne}
+  \label{fig:escaladePanne}
+  \begin{tikzpicture}
+    \node[action] (LocRetour) {Retour de location};
+    \node[action] (Control) [below=of LocRetour] {Contrôle, panne mineure};
+    \node[action] (Intervention1) [below=of Control] {Réparation, découverte problème grave};
+    \node[action] (Intervention2) [below=of Intervention1] {Réparation totale};
+    \node[evenement] (Ev0) [right=of LocRetour] {$S1$};
+    \node[evenement] (Ev1) [right=of Control] {$S2$};
+    \node[evenement] (Ev2) [right=of Intervention1] {$S3$};
+    \node[evenement] (Ev3) [right=of Intervention2] {$S0$};
+    
+    \draw[chain] (LocRetour) -- (Control);
+    \draw[chain] (Control) -- (Intervention1);
+    \draw[chain] (Intervention1) -- (Intervention2);
+    \draw[relation] (LocRetour) -- (Ev0);
+    \draw[relation] (Control) -- (Ev1);
+    \draw[relation] (Intervention1) -- (Ev2);
+    \draw[relation] (Intervention2) -- (Ev3);
+  \end{tikzpicture}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+  \center
+  \captionof{figure}{Panne par hasard}
+  \label{fig:panneHasard}
+  \begin{tikzpicture}
+    \node[action] (Hasard) {Découverte panne par hasard};
+    \node[action] (Intervention) [below=of Hasard] {Réparation totale};
+    \node[evenement] (Ev0) [right=of Hasard] {$S3$};
+    \node[evenement] (Ev1) [right=of Control] {$S0$};
+    
+    \draw[chain] (Hasard) -- (Intervention);
+    \draw[relation] (Hasard) -- (Ev0);
+    \draw[relation] (Intervention) -- (Ev1);
+  \end{tikzpicture}
+\end{minipage}
+
+  
+\end{appendices}
+
+\newpage
+\theendnotes
+
+\end{document}
