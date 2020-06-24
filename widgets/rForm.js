@@ -738,13 +738,13 @@ define([
           case 'iComment': data.comment = inputs[k].value === undefined ? '' : inputs[k].value; break
         }
       }
-      Query.exec(Path.url('store/Intervention'), {method: 'post', body: data}).then((result) => {
+      Query.exec(Path.url('store/Evenement'), {method: 'post', body: data}).then((result) => {
         this.interventionReload(fset)
       })
     },
 
     interventionReload: function (fset) {
-      Query.exec(Path.url('store/Intervention', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
+      Query.exec(Path.url('store/Evenement', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
           if (div[i].getAttribute('name') === 'iContent') {
@@ -790,7 +790,7 @@ define([
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      Query.exec(Path.url(`store/Intervention/${id}`), {method: 'delete'}).then((result) => {
+      Query.exec(Path.url(`store/Evenement/${id}`), {method: 'delete'}).then((result) => {
         if (result.success) {
           window.requestAnimationFrame(() => {
             if (line.parentNode) {
