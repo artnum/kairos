@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS "evenement" (
        "evenement_comment" TEXT,
        "evenement_date" CHAR(32) NOT NULL, -- ISO8601
        "evenement_duration" INTEGER DEFAULT 0, -- in seconds
-       "evenement_technician" CHAR(32) DEFAULT NULL,
+       "evenement_technician" CHAR(64) DEFAULT NULL,
        "evenement_target" CHAR(32) DEFAULT NULL,
        "evenement_previous" INTEGER DEFAULT NULL,
        FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE,
