@@ -1,0 +1,16 @@
+
+
+> select user_name from reservation left join user on user_id = IdFromUrl(reservation_creator);
+17745 rows in set (0.310 sec)
+
+> update reservation set reservation_creator = IdFromUrl(reservation_creator);
+Query OK, 13864 rows affected (0.441 sec)
+Rows matched: 17745  Changed: 13864  Warnings: 0
+
+> select user_name from reservation left join user on user_id = reservation_creator;
+17745 rows in set, 873 warnings (0.087 sec)
+
+> update  reservation set reservation_creator = CONCAT("User/", reservation_creator);
+Query OK, 13864 rows affected (0.358 sec)
+Rows matched: 17745  Changed: 13864  Warnings: 0
+
