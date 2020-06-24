@@ -51,15 +51,17 @@ define([
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
-            let severity = parseInt(entry.severity)
-            if (severity < 1000) {
-              entry.color = 'black'
-            } else if (severity < 2000) {
-              entry.color = 'blue'
-            } else if (severity < 3000) {
-              entry.color = 'darkorange'
-            } else {
-              entry.color = 'darkred'
+            if (parseInt(entry.type) === 3) {
+              let severity = parseInt(entry.severity)
+              if (severity < 1000) {
+                entry.color = 'black'
+              } else if (severity < 2000) {
+                entry.color = 'blue'
+              } else if (severity < 3000) {
+                entry.color = 'darkorange'
+              } else {
+                entry.color = 'red'
+              }
             }
             let name = `${entry.name}`
             entry.label = name
@@ -80,20 +82,22 @@ define([
       return new Promise((resolve, reject) => {
         let entries = []
         let searchName = txt.toAscii()
-        Query.exec(Path.url('store/Status', {params: Object.assign({'search.name': `~${searchName}%`}, this.params)})).then((results) => {
+        Query.exec(Path.url('store/Status', {params: Object.assign({'search.name': `~${searchName}%`, 'sort.severity': 'ASC'}, this.params)})).then((results) => {
           if (results.success && results.length > 0) {
             results.data.forEach((entry) => {
               if (entry.disabled && entry.disabled !== '0') { return }
               let name = entry.name
-              let severity = parseInt(entry.severity)
-              if (severity < 1000) {
-                entry.color = 'black'
-              } else if (severity < 2000) {
-                entry.color = 'blue'
-              } else if (severity < 3000) {
-                entry.color = 'darkorange'
-              } else {
-                entry.color = 'darkred'
+              if (parseInt(entry.type) === 3) {
+                let severity = parseInt(entry.severity)
+                if (severity < 1000) {
+                  entry.color = 'black'
+                } else if (severity < 2000) {
+                  entry.color = 'blue'
+                } else if (severity < 3000) {
+                  entry.color = 'darkorange'
+                } else {
+                  entry.color = 'red'
+                }
               }
               if (currentValue !== undefined) {
                 let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
@@ -123,9 +127,6 @@ define([
               entries.push(entry)
             })
           }
-          entries.sort((a, b) => {
-            return a.name.localeCompare(b.name)
-          })
 
           this.entries = entries
           resolve(entries)
