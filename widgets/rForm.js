@@ -1777,12 +1777,12 @@ define([
           })
         })
         div.addEventListener('click', (event) => {
-          window.open(`/${APPConf.base}/${APPConf.uploader}/${hash},download`, hash)
+          window.open(`${window.location.origin}/${APPConf.base}/${APPConf.uploader}/${hash},download`, hash)
         })
         /* add div in place */
         window.requestAnimationFrame(() => {
           this.nMissionDisplay.appendChild(div)
-          div.style.backgroundImage = `url('/${APPConf.base}/${APPConf.uploader}/${hash}')`
+          div.style.backgroundImage = `url('${window.location.origin}/${APPConf.base}/${APPConf.uploader}/${hash}')`
           if (!skipNumbering) { this.doNumbering(this.nMissionDisplay) }
           resolve()
         })
@@ -1820,7 +1820,7 @@ define([
       }
 
       let upload = (formData) => {
-        fetch(`/${APPConf.base}/${APPConf.uploader}`, {
+        fetch(new URL(`${window.location.origin}/${KAIROS.base}/${KAIROS.uploader}`), {
           method: 'POST',
           body: formData
         }).then((response) => {
@@ -1851,6 +1851,18 @@ define([
             case 'text/uri-list':
               form = new FormData()
               item.getAsString((url) => {
+                let uObject
+                try {
+                  uObject = new URL(url)
+                } catch (e) {
+                  // nope
+                  return
+                }
+                console.log(uObject)
+                if (uObject.protocol !== 'http:' && uObject.protocol !== 'https:') {
+                  alert('Accès à ce service non-supporté')
+                  return
+                }
                 form = new FormData()
                 form.append('upload', new File([url], 'url-file', {type: 'text/plain'}))
                 upload(form)
