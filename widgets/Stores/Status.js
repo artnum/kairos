@@ -51,6 +51,16 @@ define([
         Query.exec(Path.url(`store/${id}`)).then((results) => {
           if (results.success && results.length === 1) {
             entry = results.data
+            let severity = parseInt(entry.severity)
+            if (severity < 1000) {
+              entry.color = 'black'
+            } else if (severity < 2000) {
+              entry.color = 'blue'
+            } else if (severity < 3000) {
+              entry.color = 'darkorange'
+            } else {
+              entry.color = 'darkred'
+            }
             let name = `${entry.name}`
             entry.label = name
             entry.value = id
@@ -75,6 +85,16 @@ define([
             results.data.forEach((entry) => {
               if (entry.disabled && entry.disabled !== '0') { return }
               let name = entry.name
+              let severity = parseInt(entry.severity)
+              if (severity < 1000) {
+                entry.color = 'black'
+              } else if (severity < 2000) {
+                entry.color = 'blue'
+              } else if (severity < 3000) {
+                entry.color = 'darkorange'
+              } else {
+                entry.color = 'darkred'
+              }
               if (currentValue !== undefined) {
                 let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
                 if (s !== -1) {
