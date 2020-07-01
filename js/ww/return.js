@@ -7,7 +7,7 @@ importScripts('https://artnum.ch/code/js/Query.js')
 
 var lastMod = 0
 function run () {
-  var p = {'search.done': '-'}
+  var p = {'search.done': '--'}
   if (lastMod > 0) {
     p = {'search.modification': `>${lastMod}`, 'long': '1'}
   }
