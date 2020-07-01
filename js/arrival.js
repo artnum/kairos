@@ -270,7 +270,7 @@ Arrival.prototype.add = async function (retval) {
     }
   }
 
-  if (retval.done || retval.deleted || retval._target.deleted) {
+  if ((retval.done !== null && retval.done !== '') || retval.deleted || retval._target.deleted) {
     return
   }
 
