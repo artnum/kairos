@@ -3,17 +3,31 @@
   <head>
   <title>Location</title>
   <link rel="stylesheet" href="../css/color.css" />
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
-  <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
-  <link rel="stylesheet" href="../widgets/themes/default.css" />
-  <link rel="stylesheet" href="../css/timeline.css" />
-  <link href="../css/dtable.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
-  <link rel="stylesheet" href="../css/balloon.css/balloon.min.css" />
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
+<link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
+<link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
+
+<link rel="stylesheet" href="../css/timeline.css" />
+<link rel="stylesheet" href="../css/mbutton.css" />
+<link href="../css/dtable.css" rel="stylesheet" />
+<link rel="stylesheet" href="../css/fontawesome-all.min.css" />
+<link rel="stylesheet" href="../css/balloon.css/balloon.min.css" />
 </head>
 <body class="claro">
-<script>
+  <script>
+   var Images = new Array()
+   function preload() {
+     for (let i = 0; i < preload.arguments.length; i++) {
+       Images[i] = new Image()
+       Images[i].src = preload.arguments[i]
+     }
+   }
+   
+   /* Preload image */
+   preload(
+     '../resources/images/ripple-loader-32px.gif'
+   )
+   
 Notification.requestPermission();
 function storageAvailable(type) {
   try {
@@ -37,6 +51,17 @@ function storageAvailable(type) {
       storage.length !== 0;
   }
 }
+
+ let themeCss = document.createElement('LINK')
+ themeCss.type="text/css"
+ themeCss.rel="stylesheet"
+ themeCss.href="../widgets/themes/default/default.css"
+ if (localStorage.getItem('location/theme')) {
+   let theme = localStorage.getItem('location/theme')
+   themeCss.href=`../widgets/themes/${theme}/${theme}.css`
+ }
+ document.head.appendChild(themeCss)
+ 
 if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
   document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
 }
@@ -51,20 +76,28 @@ dojoConfig = {
 		{ name: "artnum", location: 'https://artnum.ch/code/js/' },
 		{ name: "artnumd", location: '/js/' }
 	]
-}
+   }
 </script>
+<script src="../resources/symbols.js"></script>
 <script src="../conf/app.js"></script>
 <script src="../js/gevent.js"></script>
+<script src="../js/crc32.js"></script>
+<script src="../js/Histoire.js"></script>
 <script src="../js/wait.js"></script>
 <script src="../js/days.js"></script>
+<script src="../js/date.js"></script>
+<script src="../js/tooltip.js"></script>
+<script src="../js/dLoop.js"></script>
+<script src="../js/MButton.js"></script>
 <script src="../js/third-party/popper.min.js"></script>
 <script src="../js/third-party/tooltip.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
 <script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
 <script src="../js/object-hash/dist/object_hash.js"></script>
 <script src="../js/localdb.js"></script>
+<script src="../js/select.js"></script>
 <script src="https://artnum.ch/code/js/DTable.js"></script>
-<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="/js/Date.js"></script>
 <script src="https://artnum.ch/code/js/String.js"></script>
 <script src="../js/third-party/fastdom.js"></script>
 <script src="../js/view.js"></script>

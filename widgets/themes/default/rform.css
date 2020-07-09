@@ -1,0 +1,379 @@
+@import url('https://fonts.googleapis.com/css?family=B612+Mono&display=swap');
+
+.rForm {
+    max-height: calc(100% - 140px);
+    height: calc(100% - 140px);
+    padding: 0 4px 0 4px;
+    overflow: auto;
+}
+
+.rForm .targetable, .rForm *[data-href] {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+.rForm .dijitTabPaneWrapper {
+    max-width: 100% !important;
+}
+
+.rForm .group {
+    width: 100%;
+    font-size: 16px;
+}
+
+.rForm div.flex {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.rForm button {
+    color: var(--default-color);
+    text-decoration: none;
+}
+
+.rForm .fullWidth {
+    width: 500px !important;
+}
+.rForm .group.twocol {
+    display: flex;
+}
+
+.rForm legend {
+    font-weight: bold;
+    padding: 0 2ch 0 2ch;
+    color: hsla(var(--default-bg-color-base), 1);
+    background-color: hsla(var(--default-color-base), 1);
+}
+
+.rForm textarea {
+    font-family: "Roboto", sans-serif;
+    min-height: 10ex;
+}
+
+.rForm .dijitTimeTextBox {
+    width: 4em;
+}
+
+.rForm .dualEntry .dijitTextBox {
+    width: 180px;
+}
+
+.rForm .dualEntry .dijitTimeTextBox {
+    width: 4em;
+}
+
+.rForm .dualEntry label {
+    margin-left: 1em;
+}
+
+.rForm .group textarea {
+    display: inline-block;
+    width: 15em;
+}
+
+.rForm .twocol textarea {
+    display: block;
+    width: 100%;
+}
+
+.rForm .dualEntry label:first-child {
+    margin-left: 0;
+}
+
+.rForm .association .name {
+    font-weight: bold;
+    padding: 2px 0 2px 0;
+}
+
+.rForm .association .item {
+    margin: 2px 0 2px 0;
+}
+
+.rForm .association .item .description {
+    display: flex;
+    justify-content: space-between;
+}
+
+.rForm .association .item .value {
+    display: inline-block;
+}
+
+.rForm .association .item .number {
+    width: 2em;
+}
+
+.rForm .association .item .date {
+    width: 6em;
+}
+
+.rForm .association .item .hour {
+    width: 4em;
+}
+
+.rForm .association .item .follow {
+    width: 20em;
+}
+
+.rForm .association .item .toolbox {
+    float: right;
+}
+.rForm .association .item i {
+    width: 2em;
+}
+
+.rForm .association .item .comment {
+    margin-left: 2em;
+    font-style: italic;
+}
+
+.rForm .association {
+    margin: 0.6em 1.2em 0.6em 1.2em;
+}
+
+.rForm .command {
+    position: fixed;
+    bottom: 0;
+    background-color: hsla(var(--default-color-base), 0.4);
+    border-top: 2px solid var(--default-color);
+    height: 116px;
+    padding: 4px 2px 0px 2px;
+    margin: 0;
+}
+
+.rForm fieldset.ui {
+    border: 1px solid hsla(var(--default-color-base), 0.4);
+    padding: 1ex 1ch 1ex 1ch;
+    width: calc(50% - 2ch - 6px); /* border + margin + padding */
+    max-width: calc(50% - 2ch - 6px);
+    min-width: calc(50% - 2ch - 6px);
+    margin: 1ex 2px 0 2px;
+    overflow: hidden;
+}
+
+.rForm fieldset.full {
+    width: calc(100% - 2ch - 6px);
+    max-width: calc(100% - 2ch - 6px);
+    min-width: calc(100% - 2ch - 6px);
+}
+
+.rForm .ui > label {
+    display: block;
+}
+
+.rForm p {
+    padding: 0;
+    margin: 0;
+}
+
+.rForm label.small > span {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+}
+
+.rForm label > span, .rForm span.label {
+    display: inline-block;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+}
+
+.rForm p.detail span.label {
+    width: 200px !important;
+    max-width: 200px !important;
+    min-width: 200px !important;
+}
+
+.rForm input.ui, .rForm .dijitTextBox, .rForm .dijitSelect, .rForm textarea.ui, .rForm span.value {
+    font-family: 'B612 Mono', monospace;
+    min-width: calc(100% - 130px);
+    max-width: calc(100% - 130px);
+}
+
+.rForm .description span.value {
+    max-width: initial;
+    min-width: initial;
+}
+
+.rForm p.detail span.value {
+    max-width: calc(100% - 210px) !important;
+}
+
+.rForm .dijitDateTextBox {
+    width: 18ch !important;
+    max-width: 18ch !important;
+    min-width: 18ch !important;
+}
+.rForm .dijitTimeTextBox {
+    width: 8ch !important;
+    max-width: 8ch !important;
+    min-width: 8ch !important;
+}
+
+.rForm .dropZone {
+    text-align: center;
+    border: 3px dashed hsla(var(--default-color-base), 0.3);
+    color: hsla(var(--default-color-base), 0.3);
+    min-height: 6ex;
+}
+
+.rForm .dropZone:focus, .rForm .dropZone.dragOver {
+    border: 3px dashed hsla(var(--default-color-base), 0.8);
+    color: hsla(var(--default-color-base), 0.8);
+}
+
+.rForm .dropZone.dragToDelete {
+    color: hsla(var(--delete-color-base), 0.3) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.3) !important;
+}
+
+.rForm .dropZone.dragToDelete.dragOver {
+    color: hsla(var(--delete-color-base), 0.8) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.8) !important;
+}
+
+.rForm .imageZone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.rForm .imageZone div {
+    display: inline-block;
+    max-width: 180px;
+    max-height: 100px;
+    width: 180px;
+    height: 120px;    
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    margin: 3px;
+}
+
+.rForm .imageZone img {
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.rForm .colored {
+    --colored-color: black;
+    border-bottom-color: var(--colored-color);
+    border-bottom-width: thick;
+}
+
+.rForm .imageZone .ddSpacer {
+    border: 1px dotted hsla(var(--default-color-base), 1);
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQImWNgYGD4z4AE/gMADwMB/414xEUAAAAASUVORK5CYII=) repeat;
+    height: 120px;
+    min-height: 120px;
+    width: 4px;
+}
+
+.rForm .intervention label {
+    display: inline;
+}
+
+.rForm .intervention label.one input {
+    width: calc(100% - 120px);
+}
+
+.rForm input, .rForm textarea, .rFrom select, .rForm .dijitTextBox, .rForm .dijitDateTextBox, .rForm .dijitTimeTextBox, .rForm .note {
+    padding: 0.2ex 0.2ch 0.2ex 0.2ch;
+    margin: 0.2ex 0 0.2ex 0;
+    font-size: 10pt;
+    font-family: 'B612 Mono', monospace;
+    border: 1px solid hsla(var(--default-color-base), 0.4);
+    background-color: var(--default-bg-color);
+}
+
+.rForm .dijitDateTextBox, .rForm .dijitTimeTextBox {
+    padding: 0 !important;
+}
+
+.rForm .note:empty {
+    display: none;
+}
+
+.rForm .intervention label.one {
+    clear: left;
+    width: 100%;
+    display: inline-block;
+}
+
+.rForm .typezone > div {
+   max-height: 18ex;
+   overflow-x: hidden;
+   overflow-y: auto; 
+}
+
+.rForm .intervention .content span {
+    display: inline-block;
+    margin-left: 1ch;
+    max-width: 200px;
+    max-height: 2ex;
+    height: 2ex;
+    text-overflow: ellipsis;
+}
+
+.rForm .intervention .content span.date {
+    width: 100px;
+}
+
+.rForm .intervention .content span.comment {
+    display: block;
+    max-height: unset;
+    height: unset;
+    max-width: calc(100% - 24px);
+    margin-left: 24px;
+}
+
+.rForm .intervention .content span.delete {
+    float: right;
+    width: 32px;
+    cursor: pointer;
+}
+
+.rForm div.history {
+    cursor: pointer;
+}
+
+.rForm fieldset.history div span {
+    margin: 0 1ch 0 1ch;
+}
+
+.rForm .modified {
+    background-color: hsla(var(--info-color-base), 0.4) !important;
+}
+
+.rForm label.modified *, .rFrom legend.modified * {
+    background-color: transparent !important;
+}
+
+.rForm .note {
+    white-space: pre-line;
+}
+
+.rForm .backward {
+    background-color: lightgray;
+}
+
+.rForm .typezone textarea.short {
+    width: 100%;
+    max-height: 3.2em !important;
+    min-height: 3.2em !important;
+    font-size: 0.8em;
+    font-family: 'B612 Mono', monospace;
+}
+
+.rForm .note .metadata {
+    color: hsla(var(--default-color-base), 0.6);
+    font-size: 0.8em;
+    display: block;
+    text-align: right;
+    margin: 0 1ch 0 0;
+}
+
+.rForm .message {
+    margin: initial;
+    padding: initial;
+}

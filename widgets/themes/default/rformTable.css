@@ -1,0 +1,5 @@
+.rFrom th, rForm .th {
+    color: hsla(var(--default-color-base), 1);
+    background-color: hsla(var(--default-bg-color-base), 1);
+    border-bottom: 1px solid hsla(var(--default-color-base), 1);
+}

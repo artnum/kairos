@@ -83,6 +83,7 @@ define([
     entries: {},
     locked: false,
     currentLocation: '',
+    modified: true,
 
     constructor: function (args) {
       this.lastTouchEndEv = 0
@@ -98,6 +99,7 @@ define([
       this.tags = []
       this.entries = {}
       this.currentLocation = ''
+      this.creating = {}
       this.CommChannel = args.channel
 
       this.CommChannel.port1.onmessage = this.channelMsg.bind(this)
@@ -127,13 +129,26 @@ define([
       switch (msgData.op) {
         case 'entries':
           msgData.value.forEach((entry) => {
-            if (!this.entries[entry.id]) {
-              this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+            if (entry.target !== this.get('target')) {
+              if (this.entries[entry.id]) {
+                this.destroyReservation(this.entries[entry.id])
+              }
             } else {
-              this.entries[entry.id].fromJson(entry)
+              for (let lid in this.creating) {
+                if (this.creating[lid].uid == entry.id) {                 
+                  this.entries[entry.id] = this.creating[lid]
+                  delete this.creating[lid]
+                }
+              }
+              if (!this.entries[entry.id]) {
+                this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
+                this.entries[entry.id].addEventListener('change', this.handleReservationEvent.bind(this))
+              } else {
+                this.entries[entry.id].fromJson(entry)
+              }
             }
           })
-          setTimeout(function () { this.resize(); this.domNode.dataset.refresh = 'fresh'; }.bind(this), 1)
+          this.modified = true
           break
       }
     },
@@ -183,29 +198,34 @@ define([
 
       var a = document.createElement('A')
       a.setAttribute('name', 'entry_' + this.get('target'))
-
-      var s = document.createElement('SPAN')
-      s.setAttribute('class', 'reference')
-      s.appendChild(document.createTextNode('(' + this.get('target') + ')'))
-      a.appendChild(s)
-
-      s = document.createElement('SPAN')
-      s.setAttribute('class', 'commonName label')
-      s.appendChild(document.createTextNode(this.get('label')))
-      a.appendChild(s)
+      a.innerHTML = `<span class="reference">(${this.get('target')})</span><span class="commonName label">${this.get('label')}</span>${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
 
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target
       this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
       this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
+      this.domNode.dataset.details = JSON.stringify(this.details)
+      
       this.genDetails()
     },
-
+    handleReservationEvent: function (event) {
+      switch (event.type) {
+        case 'change':
+          if (event.detail) {
+            this.CommChannel.port1.postMessage({op: 'reload', reservation: event.detail})
+          }
+          break
+      }
+    },
     genDetails: function () {
+      const texts = ['reference']
       const weights = ['maxcapacity', 'weight']
       const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
       let x = {}
+      for (let i = 0; i < texts.length; i++) {
+        x[texts[i]] = { raw: this.details[texts[i]], html: this.details[texts[i]] }
+      }
       for (let i = 0; i < weights.length; i++) {
         if (this.details[weights[i]] !== undefined) {
           let v = parseInt(this.details[weights[i]])
@@ -229,6 +249,7 @@ define([
         }
       }
       const labels = {
+        reference: 'Originale',
         weight: 'Poids',
         maxcapacity: 'Charge max',
         workheight: 'Hauteur travail',
@@ -244,27 +265,45 @@ define([
           txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      fetch(`https://www.local.airnace.ch/${this.details.description}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
-        if (response.ok) {
-          txt.push(`<p><a href="https://www.local.airnace.ch/${this.details.description}/pdf" target="_blank">Fiche technique</a></p>`)
+      this.getDatasheet().then((url) => {
+        if (url) {
+          txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
         }
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
       })
     },
 
+    getDatasheet: function () {
+      return new Promise((resolve, reject) => {
+        let datasheet = window.localStorage.getItem(`location/datasheet/${this.details.reference}`)
+        if (datasheet) {
+          try { datasheet = JSON.parse(datasheet) } catch (error) { datasheet = null }
+        } else {
+          datasheet = null
+        }
+        if (datasheet && datasheet.lastFetch < new Date().getTime() - 2592000) {
+          datasheet = null
+        }
+        if (datasheet) { resolve(datasheet.url) } else {
+          fetch(`https://www.local.airnace.ch/${this.details.reference}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
+            if (response.ok) {
+              let datasheet = {lastFetch: new Date().getTime(), url: `https://www.local.airnace.ch/${this.details.reference}/pdf`}
+              window.localStorage.setItem(`location/datasheet/${this.details.reference}`, JSON.stringify(datasheet))
+              resolve(datasheet.url)
+            } else {
+              resolve(null)
+            }
+          })
+        }
+      })
+    },
+
+    /* this function can be deleted and replaced by just a call to displayLocation */
     loadExtension: function () {
       return new Promise(function (resolve, reject) {
-        Query.exec(Path.url('store/Entry', {params: {'search.ref': this.get('target')}})).then(function (result) {
-          if (result.success && result.length > 0) {
-            for (var i = 0; i < result.length; i++) {
-              this.set(result.data[i].name, result.data[i].value)
-              this.set('_' + result.data[i].name, result.data[i])
-            }
-          }
-          this.displayLocation()
-          resolve(this)
-        }.bind(this))
+        this.displayLocation()
+        resolve(this)
       }.bind(this))
     },
 
@@ -347,7 +386,7 @@ define([
     },
 
     displayLocation: function () {
-      var location = this.get('_currentLocation')
+      var location = this.get('currentLocation')
       if (location && location.value) {
         window.requestAnimationFrame(function () {
           this.nControl.setAttribute('class', 'control ' + location.value.tagify())
@@ -363,7 +402,7 @@ define([
     },
 
     eEditLocation: function (event) {
-      var location = this.get('_currentLocation')
+      var location = this.get('currentLocation')
       var frag = document.createDocumentFragment()
       var saveLocFn = function (event) {
         var node = null
@@ -384,7 +423,7 @@ define([
           if (result.success && result.length === 1) {
             Query.exec(Path.url('store/Entry/' + result.data[0].id)).then(function (result) {
               if (result.success && result.length === 1) {
-                this.set('_currentLocation', result.data)
+                this.set('currentLocation', result.data)
                 this.displayLocation()
               }
             }.bind(this))
@@ -467,14 +506,16 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      var sup = this
       this.defaultStatus().then(function (s) {
-        var newReservation = new Reservation({sup: sup, begin: day, end: end, status: s})
+        let user = JSON.parse(localStorage.getItem('/location/user'))
+        var newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
+        this.creating[newReservation.localid] = newReservation
+        newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
         newReservation.save().then((id) => {
           newReservation.set('uid', id)
           newReservation.popMeUp()
         })
-      })
+      }.bind(this))
     },
 
     copy: function (original) {
@@ -532,6 +573,7 @@ define([
               dEnd.setHours(17, 0, 0, 0)
               this.newReservation = {start: dBegin}
               this.newReservation.o = new Reservation({ sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX })
+              this.newReservation.o.addEventListener('change', this.handleReservationEvent.bind(this))
 
               djOn.once(this.newReservation.o.domNode, 'click', djLang.hitch(this, this.eClick))
               djOn.once(this.newReservation.o.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
@@ -595,14 +637,21 @@ define([
     },
 
     resizeChild: function () {
+    },
+    resize: function () {
+      this.modified = true
+      this.domNode.dataset.refresh = 'outdated'
+    },
+    _resizeChild: function () {
       for (let e in this.entries) {
-        setTimeout(() => {
-          this.entries[e].resize()
-        }, 0)
+        this.entries[e].resize()
       }
     },
 
-    resize: function () {
+    _resize: function () {
+      if (!this.modified) {
+        return
+      }
       for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
         let widget = dtRegistry.getEnclosingWidget(entry)
         if (widget && widget.resize) {
@@ -610,10 +659,23 @@ define([
         }
       }
       this.overlap()
-      fastdom.measure(function () {
-        this.view.rectangle = getElementRect(this.domNode)
-      }.bind(this))
-      this.resizeChild()
+      this.view.rectangle = getElementRect(this.domNode)
+      this._resizeChild()
+      this.modified = false
+      this.domNode.dataset.refresh = 'fresh'
+    },
+
+    addOrUpdateReservation: function (reservations) {
+      for (var i = 0; i < reservations.length; i++) {
+        if (!this.entries[reservations[i].id]) {
+          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this, _json: reservations[i]})
+          this.entries[reservations[i].id].addEventListener('change', this.handleReservationEvent.bind(this))
+        } else {
+          this.entries[reservations[i].id].fromJson(reservations[i])
+        }
+      }
+
+      this.show()
     },
 
     _setSupAttr: function (sup) {
@@ -654,35 +716,33 @@ define([
         }
         if (slot0 + length >= days) { length = days - slot0 }
 
-        this.entries[k].set('hdivider', 1)
-        this.entries[k].set('maxdivider', 1)
-        this.entries[k].set('hposition', -1)
-        for (let i = slot0; i < slot0 + length; i++) {
-          boxes[i].push(this.entries[k])
+    overlap: function () {
+      var entries
+      if (arguments[0]) { entries = arguments[0] } else {
+        entries = []
+        for (var k in this.entries) {
+          if (!this.entries[k]) { delete this.entries[k]; continue }
+          if (this.entries[k].deleted) {
+            this.entries[k].hide()
+            delete this.entries[k]
+            continue
+          }
+          Object.assign(this.entries[k].overlap, { elements: [], level: 0, order: 0, do: false })
+          entries.push(this.entries[k])
         }
       }
 
-      boxes.sort((a, b) => b.length - a.length)
-      for (let i = 0; i < days; i++) {
-        let divider = boxes[i].length
-        let position = 0
-        boxes[i].forEach((e) => {
-          if (e.get('hdivider') && e.get('hdivider') > divider) { divider = e.get('hdivider') }
-          if (e.get('hposition') < 0) {
-            boxes[i].forEach((_e) => {
-              if (position === _e.get('hposition')) {
-                position++
-              }
-            })
-            e.set('hposition', position)
-          }
-          position++
-        })
-        boxes[i].forEach((e) => {
-          e.set('maxdivider', divider)
-          if (e.get('hdivider') < divider) {
-            if (boxes[i].length < divider) {
-              e.set('hdivider', boxes[i].length)
+      /* Overlap entries, good enough for now */
+      var overlapRoot = []
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].deleted) { continue }
+        var root = true
+        entries[i].overlap.order = i
+        for (var j = 0; j < overlapRoot.length; j++) {
+          if (!overlapRoot[j].range) { continue }
+          if (overlapRoot[j].range.overlap(entries[i].range)) {
+            if (overlapRoot[j].duration > entries[i].duration) {
+              overlapRoot[j].overlap.elements.push(entries[i])
             } else {
               e.set('hdivider', divider)
             }
@@ -703,7 +763,6 @@ define([
       if (reservation) {
         reservation.destroy()
         delete this.entries[reservation.id]
-        window.App.Reservation.remove(reservation.id)
       }
     },
 
@@ -737,6 +796,15 @@ define([
       }
       return ''
     },
+    _setCurrentLocationAttr: function (value) {
+      this.details.currentLocation = value
+    },
+    _getCurrentLocationAttr: function () {
+      if (this.details.currentLocation) {
+        return this.details.currentLocation
+      }
+      return ''
+    },
     getNumTechData: function (name) {
       if (this.details === undefined) {
         return 0
@@ -760,18 +828,6 @@ define([
     },
     _getMaxcapacityAttr: function () {
       return this.getNumTechData('maxcapacity')
-    },
-    _setActiveAttr: function (active) {
-      this._set('active', active)
-      if (this.get('active')) {
-        djDomStyle.set(this.domNode, 'display', '')
-        this.update()
-      } else {
-        djDomStyle.set(this.domNode, 'display', 'none')
-        for (var k in this.entries) {
-          this.entries[k].set('active', false)
-        }
-      }
     }
   })
 })

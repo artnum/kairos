@@ -122,7 +122,11 @@ define([
           }
         }
         if (node) {
-          window.requestAnimationFrame(() => node.parentNode.removeChild(node))
+          window.requestAnimationFrame(() => {
+            if (node.parentNode) {
+              node.parentNode.removeChild(node)
+            }
+          })
         }
       }.bind(this))
 

@@ -1,0 +1,468 @@
+@import 'rform.css';
+@import 'rformInputLine.css';
+@import 'rformTable.css';
+@import 'rformActionLine.css';
+@import 'entry.css';
+@import 'reservation.css';
+@import 'tooltip.css';
+@import 'command.css';
+@import 'count.css';
+@import 'overlay.css';
+@import 'symbols.css';
+
+
+html {
+	overflow-x: hidden;
+}
+
+body.waiting * {
+    cursor: progress;
+}
+
+.header:active div.even {
+	background-color: red;
+	color: yellow;
+}
+.header:active div.odd {
+	background-color: yellow;
+	color: red;
+}
+
+#leftMenuPop {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 40px;
+    padding-left: 6px;
+    font-size: 18px;
+    float: left;
+}
+
+.leftpane {
+  position: fixed;
+  width: 680px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 600;
+  background-color: var(--default-bg-color);
+}
+
+.leftpane[data-artnum-maximize="no"] #tContainer {
+    display: none;
+}
+.leftpane[data-artnum-maximize="no"] {
+    height: 0;
+}
+
+.titleBar {
+  width: 100%;
+  height: 31px;
+  color: gray;
+  border-bottom: 1px solid black;
+}
+
+.titleBar .button {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  float: right;
+  cursor: pointer;
+  border: none;
+}
+
+.titleBar .button i {
+  font-size: 24px;
+}
+
+.nohandle {
+  cursor: initial; 
+}
+
+#Sight {
+    position: absolute;
+    z-index: 400;
+    background-color: var(--highlight-color);
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+.reservationContainer .entry:hover {
+    background-color: hsla(var(--default-highlight-color-base), 0.2) !important;
+}
+
+/* Menu */
+#AppHeader {
+	z-index: 460;
+	max-height: 89px;
+	height: 89px;
+	background-color: var(--default-bg-color);
+	width: 100%;
+	max-width: 100%;
+	border-bottom: 2px solid var(--default-color);
+}
+
+#scrollshow {
+	background-color: grey;
+	color: var(--default-reverse-color);
+	z-index: 1100;
+	position: fixed;
+	top: 0px;
+	right: 0px;
+	font-size: 64px;
+	font-weight: bold;
+	padding: 1ex;
+	width: 6ex;
+	max-width: 6ex;
+	overflow: hidden;
+	display: none;
+	text-align: center;
+}
+
+.logline {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	z-index: 599;
+	background-color: var(--default-bg-color);
+}
+
+.message {
+	margin: 0 5px 0  5px;
+	padding: 2px;
+}
+
+.message.error {
+    background-color: var(--message-err-bg-color);
+}
+
+.message.warning {
+    background-color: var(--message-warn-bg-color);
+}
+
+.message.info {
+    background-color: var(--message-info-bg-color);
+}
+
+/* windows */
+.topWin {
+  background-color: var(--default-bg-color);
+  width: 96%;
+  height: 96%;
+  position: fixed;
+  top: 2%;
+  left: 2%;
+  z-index: 9999;
+  border: 2px solid gray;
+}
+
+.topWin iframe {
+  border: none;
+  position: absolute;
+  width: 100%;
+  height: calc(100% - 38px);
+  top: 38px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.topWin div {
+  position: absolute;
+  top: 0;
+  left:0;
+  width: 100%;
+  height: 36px;
+  text-align: right;
+  background-color: black;
+}
+
+.topWin div span {
+    color: var(--default-reverse-color);
+    float: left;
+    font-size: 26px;
+    padding: 2px;
+    margin-right: 4px;
+}
+
+.topWin div li {
+  font-size: 22px;
+  margin-right: 4px;
+  padding: 4px;
+  cursor: pointer;
+  color: gray;
+}
+
+.topWin div li:hover {
+  color: var(--default-reverse-color);
+}
+
+/* dateentry */
+.dateentry > div {
+	width: 100% !important;
+	min-height: 1.2rem;
+}
+
+.dateentry .error {
+    text-align: center;
+    padding: 2px;
+    background-color: hsal(var(--error-color-base), 1);
+    color: var(--default-reverse-color);
+    display: inline-block;
+}
+
+/* tContainer */
+#tContainer .dijitContentPane {
+    overflow-y: auto !important;
+}
+
+/* Tags */
+.entry.focus {
+    background-color: gray !important;
+}
+
+.entry .edit button, .entry .edit input {
+    font-size: 1em;
+    padding: 2px;
+    border: 1px solid var(--default-color);
+    margin: 1px;
+}
+
+/* reservation */
+.reservation {
+    background-color: var(--default-bg-color);
+    box-shadow: 1px 1px 2px 1px hsla(var(--default-color-base), 0.6);
+    cursor: pointer;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+.noextender .reservation .extender {
+	display: none;
+}
+
+.reservation .extender >  div {
+	display: none;
+}
+
+.reservation .extender:hover > div {
+	display: block;
+}
+
+.reservation .extender {
+	background: repeating-linear-gradient( -45deg,
+		hsla(var(--default-bg-color-base), 0.5), hsla(var(--default-color-base),0.1) 2px,
+		transparent 2px, transparent 4px);
+	float: right;
+	height: 100%;
+	color: hsla(var(--default-color-base), 0.8);
+	font-size: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.semester .reservation .extender, .quarter .reservation .extender {
+	display: none;
+}
+
+.reservation .extender {
+	width: 20px;
+}
+
+.day .reservation .extender {
+	width: 60px;
+}
+
+.reservation.noend .extender {
+    display: none;
+}
+
+.reservation > div {
+    overflow: hidden;
+}
+
+.reservation.nobegin > div{
+    border-left: 2px dotted hsla(var(--default-color-base), 0.8);
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+
+.reservation.noend > div {
+    border-right: 2px dotted hsla(var(--default-color-base), 0.8);
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+.reservation.done {
+  filter: grayscale(1) opacity(0.5)
+}
+
+.reservation .id {
+    padding: 0 0.2em 0 0.2em;
+}
+
+.reservation .id a {
+    color: var(--default-color);
+    text-decoration: none;
+}
+
+.reservation address {
+    color: var(--default-color);
+    display: inline;
+    font-weight: bold;	
+}
+
+.reservation address.location , .reservation address.location a { 
+    font-weight: normal;
+    color: var(--default-color);
+}
+
+.reservation address:before {
+    content: ' - ';
+}
+
+.reservation .names:before {
+    content: ', ';
+}
+
+.reservation .names:first-child:before {
+    content: '';
+}
+
+.reservation .date {
+    color: hsla(var(--default-color-base), 0.8);
+}
+
+.reservation .date:after {
+    content: ' ';
+}
+
+.reservation .date.end:before {
+    content: '- ';
+}
+
+.reservation .address:after {
+    content: ', ';
+}
+.reservation .address:last-child:after {
+    content: '';
+}
+
+.reservation .hour {
+    display: none;
+}
+
+.day .reservation .hour:before {
+    content: ' ';
+}
+
+.day .reservation .hour {
+    display: initial;
+}
+
+.compact .reservation .names:first-child:before {
+    content: '';
+}
+
+.reservation .stabiloLine .number {
+    float: right;
+    height: 100%;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.reservation .stabiloLine .number i {
+    padding: 2px 5px 2px 5px;
+}
+
+.reservation .stabiloLine .number i:only-child {
+    display: none;
+}
+
+.compact .reservation .stabiloLine .number {
+    padding: 0px 5px 0px 5px;
+    font-size: 6px;
+}
+
+
+/* entry */
+.reservationContainer .entry {
+    border-top: 1px dashed hsla(var(--default-color-base), 0.2);
+    padding-left: 5px;
+    height: 76px;
+    min-height: 76px;
+}
+
+.x1 .reservationContainer .entry {
+	padding-left: 3px;
+  height: 52px;
+  min-height: 52px;
+}
+
+.x3 .reservationContainer .entry {
+	padding-left: 7px;
+}
+
+.dijitMenuItemAccelKey {
+    color: hsla(var(--default-color-base), 0.5) !important;
+}
+
+/* rForm */
+
+/* Contact form */
+.contacts .dijitTextBox {
+    width: 180px;
+}
+
+/* Remove spinner for input type number element */
+/* For Firefox */
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+/* Webkit browsers like Safari and Chrome */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.timeline [data-selected] {
+    box-shadow: 0px 0px 26px 10px hsla(130, 63%, 41%, 1);
+}
+
+.docOverlay {
+    background-color: white !important;
+    border: none !important;
+}
+
+.button {
+    font-weight: bold;
+    border: 1px solid black;
+    padding: 2px 0 2px 4px;
+    background-color: white;
+    color: black;
+    font-size: 12px;
+}
+
+.button.deleted {
+    border: 1px solid darkgray;
+    background-color: lightgray;
+    color: darkgray;
+}
+
+.button [data-action="delete-reservation"] {
+    padding: 2px 4px 2px 4px;
+    margin-left: 6px;
+    background-color: gray;
+    color: white;
+    font-weight: bold;
+}

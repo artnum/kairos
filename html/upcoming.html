@@ -6,20 +6,20 @@
 </head>
 <body>
   <table
-    data-source="store/DeepReservation" data-entry-id="id" data-refresh="{parameters: {'long': 1}, indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
+    data-source="store/DeepReservation" data-entry-id="id" data-refresh="{indicator: {name: 'modification', parameter: 'search.modification', integer: true}}">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
       <th data-attribute="target:integer">Machine</th>
-      <th data-attribute="@store/Status/$status name">Status</th>
-      <th data-attribute="begin:date">Début</th>
+      <th data-attribute="@../store/Status/$status name">Status</th>
+      <th data-attribute="begin:date" data-sort-type="date">Début</th>
       <th data-attribute="reference">Référence</th>
-      <th data-attribute="@$creator name">Responsable Airnace</th>
+      <th data-attribute="_creator.name">Responsable Airnace</th>
       <th data-attribute="client_">Client</th>
       <th data-attribute="responsable_">Responsable client</th>      
       <th data-attribute="place_">Contact sur place</th>
       <th data-attribute="equipment">Équipement</th>
       <th data-attribute="address">Adresse</th>
-      <th data-attribute="locality">Localité</th>
+      <th data-attribute="@../store/$locality label|%%">Localité</th>
       <th data-attribute="comment">Commentaire</th>
     </tr></thead>
   </table>
@@ -45,21 +45,14 @@
      if (transliterate) {
        dtable.transliterate = transliterate
      }
-     tables[i].addEventListener('click', function (event) {
-       if (event.target.nodeName === 'TR') {
-       } else {
-         var node = event.target
-         for (; node && node.nodeName !== 'TD'; node = node.parentNode) ;
-         if (!node) { return }
-         var tr = node
-         for (; tr && tr.nodeName !== 'TR'; tr = tr.parentNode) ;
-         var i = 0
-         for (var x = tr.firstElementChild; x !== node; x = x.nextElementSibling) { i++ };
-         if (this.Column[i]) {
-           window.GEvent('reservation.attribute-click', {attribute: this.Column[i].attr, value: node.getAttribute('data-sort-value') ? node.getAttribute('data-sort-value') : node.contentText})
-         }
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+           break;
        }
-     }.bind(dtable))
+     })
    }
  }
 </script>

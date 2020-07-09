@@ -3,7 +3,6 @@ include('base.php');
 include('../lib/format.php');
 
 $JClient = new artnum\JRestClient(base_url('/store'));
-$Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
 $res = $JClient->get($_GET['id'], 'DeepReservation');
 if($res['type'] != 'results') {
@@ -15,7 +14,31 @@ if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
 }
 $reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['data']);
 
-$res = $Machine->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
+$creator = null;
+if (isset($reservation['creator']) && !empty($reservation['creator'])) {
+  if (strpos($reservation['creator'], '/') !== FALSE) {
+    $url = explode('/', $reservation['creator'], 2);
+    $res = $JClient->get($url[1], $url[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $creator = $res['data'];
+      $creator['phone'] = phoneHumanize($creator['phone']);
+    }
+  }
+}
+$technician = null;
+if (isset($reservation['technician']) && !empty($reservation['technician'])) {
+  if (strpos($reservation['technician'], '/') !== FALSE) {
+    $url = explode('/', $reservation['technician'], 2);
+    $res = $JClient->get($url[1], $url[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $technician = $res['data'];
+      $technician['phone'] = phoneHumanize($technician['phone']);
+    }
+  }
+}
+
+
+$res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;
 if($res['type'] == 'results') {
    $machine = $res['data'][0];
@@ -39,6 +62,11 @@ foreach($addrs as $k => $v) {
       }
    }
 }
+
+/* to create a tempdir we create a tempfile unlink it, create a temp dir with it name */
+$PDFDir = tempnam(sys_get_temp_dir(), 'pdf-dir-');
+unlink($PDFDir);
+mkdir($PDFDir);
 
 /* PDF Generation */
 $PDF = new LocationPDF();
@@ -143,29 +171,43 @@ if(!empty($reservation['reference'])) {
    $PDF->printTaggedLn(array('%c', 'Référence : ', '%cb', $reservation['reference']));
 }
 
-if(!empty($reservation['address']) || !empty($reservation['locality']) || !empty($reservation['_warehouse'])) {
-   if (!empty($reservation['_warehouse'])) {
-      $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' ,$reservation['_warehouse']['name']));
-   } else {
-      $line = '';
-      if(!empty($reservation['address'])) {
-         $l = explode("\n", $reservation['address']);
-         foreach($l as $_l)  {
-            if($line != '') { $line .= ', '; }
-            $line .= trim($_l);
-         }
-      }
-      if(!empty($reservation['locality'])) {
-         if($line != '') { $line .= ', '; }
-         $line .= $reservation['locality'];
-      }
-
-      if($line != '') {
-         $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb' ,$line));
-      }
-   }
+/* Locality handling */
+if (isset($reservation['warehouse']) && (!isset($reservation['locality']) && !empty($reservation['locality']))) {
+  $reservation['locality'] = $reservation['warehouse'];
 }
-$PDF->br();
+
+if(!empty($reservation['address']) || !empty($reservation['locality'])) {
+  $line = '';
+  if(!empty($reservation['address'])) {
+    $l = explode("\n", $reservation['address']);
+    $lout = [];
+    foreach($l as $_l)  {
+      $_l = trim($_l);
+      if (!empty($_l)) {
+        $lout[] = $_l;
+      }
+    }
+    $line = implode(', ', $lout);
+  }
+
+  $locality = getLocality($JClient, $reservation['locality']);
+  if ($locality === NULL) {
+    /* NOP */
+  } else if ($locality[0] === 'raw' || $locality[0] === 'locality') {
+    if ($line === '') {
+      $line = $locality[1];
+    } else {
+      $line = implode(', ', [$line, $locality[1]]);
+    }
+  } else {
+    $line = '';
+    $PDF->printTaggedLn(array('%c', 'Viens chercher au dépôt de : ' , '%cb' , $locality[1]));
+  }
+
+  if($line != '') {
+    $PDF->printTaggedLn(array('%c', 'Chantier : ' , '%cb', $line));
+  }
+}
 
 $txt = 'Début location : date ';
 if(is_null($reservation['deliveryBegin'])) {
@@ -183,9 +225,19 @@ $PDF->printTaggedLn(array( '%c',
          $reservation['begin']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
       array('break' => true));
-
+if (!empty($reservation['padlock'])) {
+  $PDF->printTaggedLn(array('%c', 'Code du cadenas : ', '%cb', $reservation['padlock']));
+}
 $PDF->br();
 $PDF->hr();
+$PDF->br();
+if (!is_null($creator)) {
+  $PDF->printTaggedLn(array('%c', 'Responsable Airnace : ', '%cb', $creator['name'], ' / ' . $creator['phone']));
+}
+if (!is_null($technician)) {
+  $PDF->printTaggedLn(array('%c', 'Technicien Airnace : ', '%cb', $technician['name'], ' / ' . $technician['phone']));
+}
+
 $PDF->br();
 $PDF->printTaggedLn(array('%cb', 'Machine'), array('underline' => true));
 $PDF->printTaggedLn(array('%c', $reservation['target'], ' - ' . $machine['cn']));
@@ -216,7 +268,7 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
    }
 
    $origin = $PDF->GetX();
-   foreach($association as $k => $v) {
+  foreach($association as $k => $v) {
       $startY = $PDF->GetY();
       $stopY = $startY;
       $first = true;
@@ -231,8 +283,12 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
                $startY = $stopY;
             }
          }
-         $PDF->printTaggedLn(array('%c', $k ), array('break' => false)); $PDF->SetX($col['c']);
+         $font = '%c';
+         if (isset($data['type']) && isset($data['type']['id']) && $data['type']['id'] == 4) {
+           $font ='%cb';
+         }
 
+         $PDF->printTaggedLn(array($font, $k ), array('break' => false)); $PDF->SetX($col['c']);
          $comment = trim($data['comment']);
          if($remSize < $PDF->GetStringWidth($data['comment'])) {
             $c = ''; $_c = '';
@@ -252,25 +308,25 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
          }
          foreach(explode("\n", $comment) as $c) {
             if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); }
-            $PDF->printTaggedLn(array('%c', $c)); $PDF->SetX($col['c']);
+            $PDF->printTaggedLn(array($font, $c)); $PDF->SetX($col['c']);
          }
          $PDF->SetY($startY);
 
          $PDF->SetX($col['r']);      
-         $PDF->printTaggedLn(array('%c', $data['number']), array('break' => false)); $PDF->SetX($col['q']);
+         $PDF->printTaggedLn(array($font, $data['number']), array('break' => false)); $PDF->SetX($col['q']);
 
          if( ! (int)$data['follow']) {
             $begin = new DateTime($data['begin']) ;
             $begin->setTimezone(new DateTimeZone(date_default_timezone_get()));
             $end = new DateTime($data['end']);
             $end->setTimezone(new DateTimeZone(date_default_timezone_get()));
-            $PDF->printTaggedLn(array( '%c', 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col['q']);
-            $PDF->printTaggedLn(array('au ',  $end->format('d.m.Y H:i')), array('break' => false));$PDF->SetX($col['d']);
+            $PDF->printTaggedLn(array( $font, 'du ', $begin->format('d.m.Y H:i'))); $PDF->SetX($col['q']);
+            $PDF->printTaggedLn(array($font, 'au ',  $end->format('d.m.Y H:i')), array('break' => false));$PDF->SetX($col['d']);
             if($stopY < $PDF->GetY()) { $stopY = $PDF->GetY(); } $PDF->SetY($startY);
          } else {
-            $PDF->printTaggedLn(array('%c', 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
+            $PDF->printTaggedLn(array($font, 'toute la location'), array('break' => false)); $PDF->SetX($col['d']);
          }
-         $PDF->SetX($origin + 174);
+         $PDF->SetX(194);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
 
          $first = false;
@@ -279,7 +335,6 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
       $PDF->br();
    }
 }
-$PDF->resetFontSize();
 
 if(isset($reservation['equipment'])) {
    $equipment = array();
@@ -301,7 +356,7 @@ if(isset($reservation['equipment'])) {
 
          $PDF->drawLine($PDF->GetX() + 3, $PDF->GetY() + $PDF->GetFontSize(), 180 - $PDF->GetX()  , 0, 'dotted', array('color' => 'gray') );
 
-         $PDF->SetX($origin + 174);
+         $PDF->SetX(194);
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
          $PDF->br();
       }
@@ -310,6 +365,7 @@ if(isset($reservation['equipment'])) {
    $PDF->br();
    $PDF->hr();
 }
+$PDF->resetFontSize();
 
 $PDF->br();
 $PDF->printTaggedLn(array('%cb', 'Tarifs'), array('underline'=>true));
@@ -345,16 +401,200 @@ if($reservation['comment']) {
    $PDF->SetY($YPos + 1);
 
    foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
-      $y = $PDF->GetY();
-      $PDF->printTaggedLn(array('%c', $line));
-      $PDF->SetY($y + 4);
+      $PDF->printTaggedLn(array('%c', $line), array('multiline' => true));
    }
 }
 
-if(is_null($addrs['client'])) {
-   $PDF->Output($reservation['id'] .  '.pdf', 'I'); 
-} else {
-   $PDF->Output($reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+$ini_conf = parse_ini_file('../conf/location.ini', true);
+if (!isset($ini_conf['pictures'])) {
+  $ini_conf['pictures'];
+}
+if (!isset($ini_conf['pictures']['storage'])) {
+  $ini_conf['pictures']['storage'] = '../private/pictures';
+}
+$uploadDir = $ini_conf['pictures']['storage'];
 
+/* Load images */
+$files = array();
+$res = $JClient->search(array('search.reservation' => $reservation['id']), 'Mission');
+if ($res['success'] && $res['length'] > 0) {
+  $mission = $res['data'][0]['uid'];
+  $images = $JClient->search(array('search.mission' => $mission), 'MissionFichier');
+  if ($images['success'] && $images['length'] > 0) {
+    $array = $images['data'];
+    usort($array, function ($a, $b) { return intval($a['ordre']) - intval($b['ordre']); });
+    foreach($array as $image) {
+      $image['disposition'] = 'full';
+      $dir = substr($image['fichier'], 0, 2);
+      if (is_dir($uploadDir . '/' . $dir)) {
+        $dir .= '/' . substr($image['fichier'], 2, 2);
+        if (is_dir($uploadDir . '/' . $dir)) {
+          $file = $uploadDir . '/' . $dir . '/' . $image['fichier'];
+          if (is_readable($file)) {
+            $image['fichier'] = $file;
+            $files[] = $image;
+          }
+        }
+      }
+    }
+  }
+}
+
+$dpi = 300;
+/* mm */
+$cmWidth = 200;
+$cmHeight = 287;
+define('INCH', 25.4);
+
+$unlink_files = array();
+$PDF->DisableHeaderFooter();
+if (count($files) > 0) {
+  $PDF->AddPage();
+}
+
+$count = 0;
+$PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+$PDFUniteList = array(escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count)));
+
+$dispfile = array('full' => array(), 'quarter' => array());
+foreach ($files as $file) {
+  switch (strtolower($file['disposition'])) {
+    default: case 'fullpage':
+      $dispfile['full'][] = $file;
+      break;
+    case 'quarter':
+      $dispfile['quarter'][] = $file;
+      break;
+  }
+}
+
+$DispositionSizes = array(
+                                                                            /* x, y */
+  'full' => array('width' => 200, 'height' => 287, 'positions' => array(array(5, 5))),
+  'quarter' => array('width' => 99, 'height' => 140, 'positions' => array(array(5, 5),
+                                                                          array(101, 5),
+                                                                          array(5, 146),
+                                                                          array(101, 146)))
+);
+
+$PDF = null;
+$count = 1;
+foreach (array('full', 'quarter') as $dispo) {
+  $posCount = -1;
+  $addPage = false;
+  foreach ($dispfile[$dispo] as $file) {
+    $img = $file['fichier'];
+    $cmWidth = $DispositionSizes[$dispo]['width'];
+    $cmHeight = $DispositionSizes[$dispo]['height'];
+
+    if ($posCount === -1 || $posCount + 1 >= count($DispositionSizes[$dispo]['positions'])) {
+      $posCount = 0;
+      if ($PDF !== null) {
+        $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+      }
+      $PDF = new LocationPDF();
+      $PDF->DisableHeaderFooter();
+      $PDF->AddPage();
+      $count++;
+    } else {
+      $posCount++;
+    }
+    
+    $position = $DispositionSizes[$dispo]['positions'][$posCount];
+    $type = mime_content_type($img);
+    $gd = null;
+    switch ($type) {
+      case 'image/png':
+        $gd = imagecreatefrompng($img);
+        break;
+      case 'image/jpeg':
+        $gd = imagecreatefromjpeg($img);
+        break;
+      case 'image/gif':
+        $gd = imagecreatefromgif($img);
+        break;
+      case 'image/bmp':
+      case 'image/x-ms-bmp':
+        $jpegfile = tempnam(sys_get_temp_dir(), 'image');
+        exec(sprintf('convert %s %s', escapeshellarg($img), escapeshellarg($jpegfile . '.jpeg')));
+        $gd = imagecreatefromjpeg($jpegfile . '.jpeg');
+        unlink($jpegfile . '.jpeg');
+        break;
+      case 'application/pdf':
+        $PDF = null;
+        $gd = null;
+        $posCount = -1;
+        symlink($img, sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        break;
+    }
+    if (!is_null($gd)) {
+      $endWidth = round(($cmWidth / INCH) * $dpi);
+      $endHeight = round(($cmHeight / INCH) * $dpi); 
+      $outfile = tempnam(sys_get_temp_dir(), 'image');
+
+      if (imagesx($gd) > imagesy($gd)) {
+        $gdx = imagerotate($gd, 90, 0);
+        imagedestroy($gd);
+        $gd = $gdx;
+      }
+
+      $ra = imagesx($gd) / imagesy($gd);
+      if ($endHeight * $ra > $endWidth) {
+        $endWidth = round(($cmWidth / INCH) * $dpi);
+        $endHeight = $endWidth / $ra;
+      } else if ($endWidth / $ra > $endHeight) {
+        $endHeight = round(($cmHeight / INCH) * $dpi);
+        $endWidth = $endHeight * $ra;
+      } else {
+        $endHeight = round((($cmHeight / INCH) * $dpi) / $ra);
+        $endWidth = round((($cmWidth / INCH) * $dpi) * $ra);
+      }
+      
+      $gd2 = imagecreatetruecolor($endWidth, $endHeight);
+      imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
+      imagedestroy($gd);
+
+      imagejpeg($gd2, $outfile);
+      imagedestroy($gd2);
+      $endMmWidth = round($endWidth / $dpi * INCH);
+      $endMmHeight = round($endHeight / $dpi * INCH);
+      $left = abs(round(($cmWidth - $endMmWidth)) / 2) + $position[0];
+      $top = abs(round(($cmHeight - $endMmHeight) / 2)) + $position[1];
+      $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
+      $unlink_files[] = $outfile;
+    }
+  }
+}
+if ($PDF !== null) {
+  $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+  $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+}
+
+if (count($PDFUniteList) > 1) {
+  exec(sprintf('pdfunite %s %s/out.pdf', implode(' ', $PDFUniteList), escapeshellarg($PDFDir)));
+} else {
+  rename(sprintf('%s/00000.pdf', $PDFDir), sprintf('%s/out.pdf', $PDFDir));
+}
+
+header('Content-Type: application/pdf');
+if(is_null($addrs['client'])) {
+  header('Content-Disposition: inline; filename="' . $reservation['id'] .  '.pdf"');
+} else {
+  header('Content-Disposition: inline; filename="' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf"', 'I'); 
+}
+header(sprintf('Content-Length: %d', filesize(sprintf('%s/out.pdf', $PDFDir))));
+readfile(sprintf('%s/out.pdf', $PDFDir));
+
+if (($dh = opendir($PDFDir))) {
+  while (($f = readdir($dh)) !== FALSE) {
+    if ($f === '.' || $f === '..') { continue; }
+    unlink(sprintf('%s/%s', $PDFDir, $f));
+  }
+}
+rmdir($PDFDir);
+foreach($unlink_files as $f) {
+  unlink($f);
 }
 ?>

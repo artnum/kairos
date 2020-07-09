@@ -1,9 +1,13 @@
 @import 'rform.css';
-@import 'entry.css';
+@import '../default/entry.css';
 @import 'reservation.css';
-@import 'tooltip.css';
-@import 'command.css';
-
+@import '../default/tooltip.css';
+@import '../default/command.css';
+@import '../default/count.css';
+@import '../default/overlay.css';
+@import '../default/symbols.css';
+@import '../default/rformActionLine.css';
+@import '../default/rformInputLine.css';
 
 html {
 	overflow-x: hidden;
@@ -20,6 +24,17 @@ body.waiting * {
 .header:active div.odd {
 	background-color: yellow;
 	color: red;
+}
+
+#leftMenuPop {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 40px;
+    padding-left: 6px;
+    font-size: 18px;
+    float: left;
 }
 
 .leftpane {
@@ -209,7 +224,6 @@ body.waiting * {
 }
 
 .entry .edit button, .entry .edit input {
-    font-size: 1em;
     padding: 2px;
     border: 1px solid var(--default-color);
     margin: 1px;
@@ -406,129 +420,6 @@ body.waiting * {
     width: 180px;
 }
 
-.DocCount {
-    margin: 24px 24px 24px 24px;
-}
-
-.DocCount textarea {
-  width: 100%;
-  height: 8em;
-}
-
-.DocCount table {
-    width: 100%;
-    font-size: auto;
-}
-
-.DocCount thead {
-    font-weight: bold;
-}
-
-.DocCount tbody, .DocCount thead, .DocCount tfoot {
-    font-size: 1.4em;
-}
-
-.DocCount tbody {
-    background-color: var(--default-bg-color);
-}
-
-.DocCount thead th {
-    background-color: var(--default-reverse-bg-color);
-    color: var(--default-reverse-color);
-    font-weight: bold;
-}
-
-.DocCount tbody td {
-    boder-collapse: collapse;
-    border-bottom: solid 2px hsla(130, 100%, 44%, 0.1);
-}
-
-.DocCount tr td, .DocCount tr th {
-	padding: 8px;
-}
-
-.DocCount tr[data-edit] td {
-	padding: 0;
-}
-
-.DocCount label:after{
-  content: ' : ';
-}
-.DocCount tfoot {
-  font-style: italic;
-}
-
-.DocCount td input {
-  font-size: 1em;
-  width: 100%;
-}
-
-.DocCount .short {
-  width: 12ch;
-}
-
-.DocCount fieldset legend {
-  font-size: 1.2em;
-  font-weight: bold;
-}
-
-.DocCount input, .DocCount textarea {
-	padding: 5px;
-	border: 1px solid black;
-	border-bottom: 2px gray solid;
-}
-
-.DocCount input:focus, .DocCount textarea:focus {
-	border: 2px #F88D00 solid;
-}
-
-.DocCount input[data-changed] {
-  border-bottom: 2px #9045A0 solid;
-}
-
-.DocCount input:invalid, .DocCount input:out-of-range {
-  border-bottom: 2px #FF0000 solid;
-	box-shadow: none;
-}
-
-.DocCount fieldset {
-  display: flex;
-}
-
-.DocCount fieldset[name=contacts] {
-	flex-wrap: wrap;
-}
-
-.DocCount fieldset[name=reference] {
-	display: block;
-	overflow: auto;
-}
-
-.DocCount fieldset[name=contacts] > div {
-	display: inline-block;
-}
-
-.DocCount div[data-reference-value] {
-  padding: 4px;
-  cursor: pointer;
-}
-
-.DocCount div[data-address-id] {
-  border: 2px solid transparent;
-  padding: 4px;
-  margin: 4px;
-}
-
-.DocCount div[data-selected] {
-  border: 2px solid black;
-  background-color: var(--default-bg-color);
-}
-
-.DocCount form[name=details] {
-    display: block;
-    width: 50%;
-}
-
 /* Remove spinner for input type number element */
 /* For Firefox */
 input[type='number'] {
@@ -548,10 +439,6 @@ input[type=number]::-webkit-outer-spin-button {
 .docOverlay {
     background-color: white !important;
     border: none !important;
-}
-
-.docCount ul li{
-    line-height: 20px !important;
 }
 
 .button {
@@ -576,3 +463,58 @@ input[type=number]::-webkit-outer-spin-button {
     color: white;
     font-weight: bold;
 }
+
+
+.rForm .dropZone {
+    text-align: center;
+    border: 3px dashed hsla(var(--default-color-base), 0.3);
+    color: hsla(var(--default-color-base), 0.3);
+    min-height: 6ex;
+}
+
+.rForm .dropZone:focus, .rForm .dropZone.dragOver {
+    border: 3px dashed hsla(var(--default-color-base), 0.5);
+    color: hsla(var(--default-color-base), 0.5);
+}
+
+.rForm .dropZone.dragToDelete {
+    color: hsla(var(--delete-color-base), 0.3) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.3) !important;
+}
+
+.rForm .dropZone.dragToDelete.dragOver {
+    color: hsla(var(--delete-color-base), 0.5) !important;
+    border-color: 3px dashed hsla(var(--delete-color-base), 0.5) !important;
+}
+
+.rForm .imageZone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.rForm .imageZone div {
+    display: inline-block;
+    max-width: 180px;
+    max-height: 100px;
+    width: 180px;
+    height: 120px;    
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    margin: 3px;
+}
+
+.rForm .imageZone img {
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.rForm .imageZone .ddSpacer {
+    border: 1px dotted hsla(var(--default-color-base), 1);
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQImWNgYGD4z4AE/gMADwMB/414xEUAAAAASUVORK5CYII=) repeat;
+    height: 120px;
+    min-height: 120px;
+    width: 4px;
+}
+

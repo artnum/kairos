@@ -1,0 +1,131 @@
+:root {
+    --button-color: 60, 0%, 30%;
+    --button-color2: 0, 100%, 100%;
+    --button-height: 26px;
+}
+
+.mbutton {
+    background: none;
+}
+.mbutton button {
+    border: none;
+    font-variant: small-caps;
+    background: none;
+    text-align: center;
+    height: 100%;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.mbutton.modified {
+    padding: 10px;
+    border: none !important;
+}
+
+.mbutton[disabled], .mbutton[disabled]:active, .mbutton[disabled]:hover {
+    border: 1px solid hsla(0, 0%, 40%, 1) !important;
+    border-right: 2px solid hsla(0, 0%, 50%, 1) !important;
+    border-bottom: 2px solid hsla(0, 0%, 50%, 1) !important;
+    background: white !important;
+}
+
+.mbutton[disabled] button, .mbutton[disabled]:active button, .mbutton[disabled]:hover button {
+    color: hsla(0, 0%, 50%, 1) !important;
+    background: none !important;
+}
+
+.mbutton.set {
+    border: 1px solid hsla(230, 70%, 40%, 1);
+    border-right: 2px solid hsla(230, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(230, 70%, 50%, 1);
+}
+
+.mbutton.set button {
+    background: linear-gradient(hsla(230, 70%, 90%, 1), hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 80%, 1) 50%, hsla(230, 70%, 80%, 1) 100%);
+
+}
+
+.mbutton.set:active button {
+    background: linear-gradient(hsla(230, 70%, 100%, 1), hsla(230, 70%, 100%, 1) 50%, hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 90%, 1) 100%) !important;
+}
+
+.mbutton.set:hover button {
+    background: linear-gradient(hsla(230, 70%, 70%, 1), hsla(230, 70%, 70%, 1) 50%, hsla(230, 70%, 60%, 1) 50%, hsla(230, 70%   , 60%, 1) 100%);
+
+}
+.mbutton button, .dijitButton {
+    background: linear-gradient(hsla(0, 0%, 90%, 1), hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 80%, 1) 50%, hsla(0, 0%, 80%, 1) 100%);
+}
+
+.mbutton button:active, .dijitButton:active {
+    background: linear-gradient(hsla(0, 0%, 100%, 1), hsla(0, 0%, 100%, 1) 50%, hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 90%, 1) 100%) !important;
+}
+
+.mbutton button:hover, .dijitButton:hover {
+    background: linear-gradient(hsla(0, 0%, 70%, 1), hsla(0, 0%, 70%, 1) 50%, hsla(0, 0%, 60%, 1) 50%, hsla(0, 0%, 60%, 1) 100%);
+}
+
+.mbutton button.mbuttonRight {
+    border-left: 1px dotted gray;
+    float: right;
+    width: 28px;
+}
+
+.mbutton button.mbuttonLeft {
+    width: 180px;
+    font-weight: bold;
+    border-right: 1px solid transparent;
+}
+
+.mbuttonSingle button {
+    width: 100% !important;
+}
+
+.mbuttonSubmenu {
+    display: block;
+    width: 32ch;
+    border: 1px solid hsla(var(--button-color), 1);
+    background-color: hsla(var(--button-color2), 1);
+}
+
+.mbuttonSubmenu button {
+    width: 100%;
+    height: var(--button-height) !important;
+    border-bottom: 1px solid hsla(var(--button-color), 0.8);
+}
+
+.mbuttonSubmenu button:last-child {
+    border-bottom: none;
+}
+
+.dijitButton {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-variant: small-caps;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+.dijitButton * {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.mbutton, .dijitButton {
+    font-size: 1em;
+    width: 208px;
+    border: 1px solid hsla(var(--button-color), 1);
+    border-right: 2px solid hsla(var(--button-color), 0.8);
+    border-bottom: 2px solid hsla(var(--button-color), 0.8);
+    margin: 1px;
+}
+
+.mbuttonMain {
+    height: var(--button-height);
+    display: inline-block;
+}

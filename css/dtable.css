@@ -3,6 +3,7 @@
     font-family: sans-serif;
     border-collapse: collapse;
     font-size: 0.8em;
+    table-layout: fixed;
 }
 
 .dtable th, .dtable td {
@@ -24,6 +25,40 @@
 
 .dtable td {
     padding: 2px 4px 2px 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dtable th.size1 {
+    width: 6ch !important;
+}
+
+.dtable th.size2 {
+    width: 8ch !important;
+}
+
+.dtable th.size3 {
+    width: 10ch !important;
+}
+
+.dtable th.size4 {
+    width: 12ch;
+}
+
+.dtable th.size5 {
+    width: 14ch;
+}
+
+.dtable th.size6 {
+    width: 16ch;
+}
+
+.dtable th.size7 {
+    width: 18ch;
+}
+
+.dtable th.size8 {
+    width: 20ch;
 }
 
 .dtable th:before {

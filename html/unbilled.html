@@ -1,0 +1,58 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Décompte non-facturé</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table data-source="store/Count" data-options="{parameters: {'search.invoice': '-', 'search.deleted': '-'}}" data-entry-id="id">
+    <thead><tr>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
+      <th data-attribute="@../store/CountReservation?search.count=$id reservation" data-class="clickable">Reservation</th>
+      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id end:date" data-sort-type="date">Fin</th>
+      <th data-attribute="@../store/$creator @../store/Reservation/$reservation @../store/CountReservation?search.count=$id name" data-sort-name="creator">Responsable</th>
+      <th data-attribute="@../store/Arrival?search.target=$reservation @../store/CountReservation?search.count=$id reported:date">Fin confirmée</th>
+      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id reference|#">Référence</th>
+      <th data-attribute="@../store/$target @../store/ReservationContact?search.reservation=$reservation @../store/CountReservation?search.count=$id displayname|@../store/ReservationContact?search.reservation=$reservation @../store/CountReservation?search.count=$id freeform">Client</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="https://artnum.ch/code/js/Query.js"></script>
+<script src="https://artnum.ch/code/js/Path.js"></script>
+<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="/js/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE') 
+
+   let params = new URLSearchParams(window.location.search.substring(1))
+   let currentUser = window.localStorage.getItem(Artnum.Path.bcname('user'))
+   if (currentUser) {
+     params.append('creator', JSON.parse(currentUser).name)
+   }
+
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i], search: params}, true)
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('count.attribute-click', {attribute: 'id', value: details.value})
+           break;
+          case 'reservation':
+            window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+            break
+       }
+     })
+     dtable.run()
+   }
+ }
+</script>
+</html>

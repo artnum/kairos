@@ -2,7 +2,7 @@
 include('artnum/autoload.php');
 include('../lib/url.php');
 
-header('Cache-Control', 'no-cache, max-age=0');
+header('Cache-Control: no-cache, max-age=0');
 
 function e404($msg = 'aucun') {
    ob_end_clean();
@@ -12,9 +12,9 @@ function e404($msg = 'aucun') {
    exit(0);
 }
 
-class LocationPDF extends artnum\PDF {
+class BlankLocationPDF extends artnum\PDF {
    function __construct($options = array()) {
-      parent::__construct();
+      parent::__construct($options);
 
       if (!isset($options['margins'])) {
          $this->SetMargins(20, 10, 10);
@@ -26,8 +26,32 @@ class LocationPDF extends artnum\PDF {
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);
       $this->SetFont('century-gothic');
    }
+}
 
-   function Header() {
+class LocationPDF extends BlankLocationPDF {
+    protected $NoHeaderFooter = false;
+    protected $EvenOnly = true;
+  
+    function __construct($options = array()) {
+      parent::__construct($options);
+      $this->NoHeaderFooter = false;
+    }
+
+    function DisableHeaderFooter() {
+      $this->NoHeaderFooter = true;
+    }
+ 
+    function EnableHeaderFooter() {
+      $this->NoHeaderFooter = true;
+    }
+
+    function SetHeaderFooterEvenOnly() {
+      $this->EvenOnly = true;
+    }
+  
+    function Header() {
+      if ($this->NoHeaderFooter) { return; }
+      if ($this->EvenOnly && $this->PageNo() % 2 === 0) { return; }
       $w = ($this->w / 2.4) - $this->lMargin;
       $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
       if(!empty($this->title)) {
@@ -36,17 +60,41 @@ class LocationPDF extends artnum\PDF {
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
+      $this->SetY(30);
    }
 
    function Footer() {
+      if ($this->NoHeaderFooter) { return; }
+      if ($this->EvenOnly && $this->PageNo() % 2 === 0) { return; }
       $this->SetY(280);
       $this->setFontSize(2.4);
       $this->hr();
-      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route du Rhône 20, 1902 Evionnaz'), array('break' => false));
+      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route des Îles Vieilles 8-10, 1902 Evionnaz'), array('break' => false));
       $this->printTaggedLn(array('%c', ' | Téléphone: +41 27 767 30 38, Fax: +41 27 767 30 28'), array('break' => false));
       $this->printTaggedLn(array('%c', ' | info@airnace.ch | https://www.airnace.ch'));
       $this->resetFontSize();
    }
+}
+
+function getLocality ($JClient, $locality) {
+  if (empty($locality)) { return NULL; }
+
+  if (preg_match('/PC\/[0-9a-f]{32,32}$/', $locality) || preg_match('/^Warehouse\/[a-zA-Z0-9]*$/', $locality)) {
+    $l = explode('/', $locality);
+    $res = $JClient->get($l[1], $l[0]);
+    if ($res['success'] && $res['length'] === 1) {
+      $entry = $res['data'];
+      if (isset($entry['np'])) {
+        return array('locality', "$entry[np] $entry[name] (" . strtoupper($entry['state']) . ")");
+      } else {
+        return array('warehouse', $entry['name']);
+      }
+    } else {
+      return NULL;
+    }
+  } else {
+    return array('raw', $locality);
+  }
 }
 
 function format_address($addr, $options = array()) {
@@ -132,6 +180,33 @@ function format_address($addr, $options = array()) {
    }
 
    return $lines;
+}
+
+function strFromArrayLimit($array, $thingy, $max) {
+  $result = '';
+  foreach ($array as $line) {
+    if (strlen($result) + strlen($line) + strlen($thingy) > $max) {
+      $line = preg_replace('/[\n\r\t\f]/', ' / ', $line);
+      if ($result == '') {
+        return substr($line, 0, $max - 4) . ' ...';
+      } else {
+        if (strlen($result) + strlen($thingy) < $max) {
+          $result .= $thingy . substr($line, 0, $max - (strlen($result) + strlen($thingy)));
+        }
+        return $result;
+      }
+    } else {
+      if ($result != '') {
+        $result .= $thingy;
+      }
+      $result .= $line;
+    }
+  }
+  return $result;
+}
+
+function phoneHumanize ($str) {
+  return substr($str, 0, 3) . ' ' . substr($str, 3, 2) . ' ' . substr($str, 5, 3) . ' '  . substr($str, 8, 2) . ' ' . substr($str, 10);
 }
 
 ?>

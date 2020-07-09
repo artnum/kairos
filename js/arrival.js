@@ -1,5 +1,5 @@
 /* eslint-env browser */
-/* global IdxDB, Address, Artnum */
+/* global IdxDB, Address, Artnum, Histoire */
 'use strict'
 
 var Arrival = function () {
@@ -62,7 +62,7 @@ Arrival.prototype.query = function (retval) {
       if (response.ok) {
         response.json().then(function (reservation) {
           if (reservation.type === 'results' && reservation.data !== null) {
-            fetch('https://aircluster.local.airnace.ch/store/Machine/?search.description=' + reservation.data.target + '&search.airaltref=' + reservation.data.target).then(function (response) {
+            fetch(Artnum.Path.url('/store/Machine/', {params: {'search.description': reservation.data.target,'search.airaltref': reservation.data.target}})).then(function (response) {
               if (response.ok) {
                 response.json().then(function (machine) {
                   retval._target = reservation.data
@@ -179,9 +179,7 @@ Arrival.prototype.done = function (event) {
   }
   Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then(function (result) {
     if (result.success && result.length === 1) {
-      if (window.localStorage.getItem(Artnum.Path.bcname('autoprint'))) {
-        fetch(Artnum.Path.url('exec/auto-print.php', {params: {type: 'decompte', file: 'pdfs/decompte/' + reservationId}}))
-      }
+      Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
       this.RChannel.postMessage({op: 'touch', id: reservationId})
     }
   }.bind(this))
@@ -203,6 +201,7 @@ Arrival.prototype.progress = function (event) {
   }
 
   fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+    Histoire.LOG('Reservation', reservationId, ['_arrival.inprogress'], null)
     this.RChannel.postMessage({op: 'touch', id: reservationId})
   }.bind(this))
 }
@@ -255,7 +254,7 @@ Arrival.prototype.sort = function (idx, direction = 'asc') {
   }
 }
 
-Arrival.prototype.add = function (retval) {
+Arrival.prototype.add = async function (retval) {
   var now = new Date()
   if (this.entry[retval.id] && this.entry[retval.id].domNode) {
     this.parent.removeChild(this.entry[retval.id].domNode)
@@ -271,7 +270,7 @@ Arrival.prototype.add = function (retval) {
     }
   }
 
-  if (retval.done || retval.deleted || retval._target.deleted) {
+  if ((retval.done !== null && retval.done !== '') || retval.deleted || retval._target.deleted) {
     return
   }
 
@@ -297,7 +296,24 @@ Arrival.prototype.add = function (retval) {
   if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }
   dom.appendChild(this.html.label(retval._target._target.cn + rep))
   dom.appendChild(this.html.label(retval._target.target))
-  dom.appendChild(this.html.label(retval.locality ? retval.locality : retval._target.locality))
+
+  let locality = retval.locality ? retval.locality : retval._target.locality
+  if (locality) {
+    if (/^PC\/[0-9a-f]{32,32}$/.test(locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(locality)) {
+      let locQuery = await Artnum.Query.exec(Artnum.Path.url(`store/${locality}`))
+      if (locQuery.success && locQuery.length === 1) {
+        if (locQuery.data.np) {
+          locality = `${locQuery.data.np} ${locQuery.data.name} (${locQuery.data.state.toUpperCase()})`
+        } else {
+          locality = `Dépôt ${locQuery.data.name}`
+        }
+      }
+    }
+  } else {
+    locality = ''
+  }
+  dom.appendChild(this.html.label(locality))
+
   dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
   dom.appendChild(this.html.label(new Date(retval._target.end)))
   if (retval._target.contacts && retval._target.contacts._client && retval._target.contacts._client[0]) {

@@ -7,12 +7,11 @@ importScripts('https://artnum.ch/code/js/Query.js')
 
 var lastMod = 0
 function run () {
-  var p = {'search.done': '-'}
+  var p = {'search.done': '--'}
   if (lastMod > 0) {
     p = {'search.modification': `>${lastMod}`, 'long': '1'}
   }
   Artnum.Query.exec(Artnum.Path.url('store/Arrival', {params: p})).then(function (results) {
-    console.log(results)
     if (results.success && results.length > 0) {
       for (var i = 0; i < results.length; i++) {
         postMessage(results.data[i])

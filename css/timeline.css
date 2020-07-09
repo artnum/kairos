@@ -1,42 +1,22 @@
 @import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
 @import 'dtable.css';
 @import 'tel.css';
+@import 'select.css';
+@import 'tooltip.css';
+@import '../exec/css.php';
 
 body, html { margin: 0; padding: 0; }
-
-.montreux .location {
-	color: green !important;
-}
-
-.nyon .location {
-	color: blue !important;
-}
-
-.sion .location {
-	color: orange !important;
-}
-
-.chatelstdenis .location, .chatelsaintdenis .location {
-	color: fuchsia !important;
-}
-
-.compact .sion.control {
-	background-color: orange !important;
-}
-
-.compact .montreux.control {
-	background-color: green !important;
-}
-
-.compact .nyon.control {
-	background-color: blue !important;
-}
 
 .timeline {
 	font-family: 'Roboto', sans-serif;
 	font-size: 16px !important;
 	cursor: grab;
 	margin-bottom: 60px;
+}
+
+span.day.anniversary {
+    background-color: #e3001b;
+    color: white;
 }
 
 .timeline .header div {
@@ -319,8 +299,7 @@ fieldset {
 }
 
 .dijitDateTextBox {
-	width: 15ch;
-	max-width: 15ch;
+    width: 15ch;
 }
 
 .dijitDialog {
@@ -386,4 +365,19 @@ table.count .reference {
     cursor: pointer;
     color: hsla(30, 100%, 30%, 1);
     text-decoration: underline;
+}
+
+
+.complementDiv {
+	position: relative;
+	height: 100%;
+}
+
+span.spanReset {
+	display: inline !important;
+}
+
+div.subline {
+	background-color: white;
+	border-top: 2px solid black;
 }

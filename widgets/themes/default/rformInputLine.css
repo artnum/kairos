@@ -1,0 +1,26 @@
+.inputLine label {
+    display: inline-block;
+    width: 12%;
+}
+
+.inputLine label .label {
+    display: block;
+}
+
+.inputLine textarea, .inputLine input, .inputLine .input {
+    height: 2.5ex;
+    min-height: 2.5ex;
+    width: 100%;
+    max-width: 100%;
+}
+
+.inputLine textarea {
+    height: 5ex;
+    min-height: 5ex;
+}
+
+.inputLine {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}

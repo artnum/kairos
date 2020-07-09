@@ -94,6 +94,10 @@
     height: 16px;
 }
 
+.entry[data-active="0"] {
+    display: none;
+}
+
 .reservation .tools {
     margin: 0;
     opacity: 1;
@@ -137,6 +141,14 @@
     line-height: 1.3em;    
 }
 
-.entry .tooltip .tooltip-inner p:nth-child(odd)  {
-    background-color: white !important;
+.entry .parentMachine:before {
+    content: ' (';
+}
+
+.entry .parentMachine:after {
+    content: ')';
+}
+
+.entry .parentMachine {
+    color: hsla(var(--default-color-base), 0.5);
 }

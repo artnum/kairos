@@ -80,7 +80,7 @@ class TagsModel extends artnum\SQL {
       return array(array($res), 1);
    }
 
-   function write($data) {
+   function write($data, $id = NULL) {
       $insert = array();
       $delete = array();
       foreach($data as $k => $v) {

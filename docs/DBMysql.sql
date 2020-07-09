@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTO_INC
 						  "status_color" VARCHAR(8) DEFAULT NULL,
 						  "status_bgcolor" VARCHAR(8) DEFAULT NULL,
 						  "status_default" BOOL,
-						  "status_type" INTEGER DEFAULT 0 -- kind of object it apply
+						  "status_type" INTEGER DEFAULT 0, -- kind of object it apply
+						  "status_symbol" VARCHAR(16) DEFAULT NULL
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -39,9 +40,11 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_folder" TEXT DEFAULT NULL,
 	"reservation_gps" TEXT DEFAULT NULL,
 	"reservation_creator" TEXT DEFAULT NULL,
+	"reservation_technician" TEXT DEFAULT NULL,
 	"reservation_previous" TEXT DEFAULT NULL,
 	"reservation_warehouse" TEXT DEFAULT NULL,
 	"reservation_note" TEXT DEFAULT NULL,
+	"reservation_padlock" TEXT DEFAULT NULL,
 	"reservation_other" TEXT DEFAULT NULL, -- json data
 	"reservation_created" INTEGER DEFAULT NULL, -- unix ts
 	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
@@ -52,7 +55,11 @@ CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 
 CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "user_name" TEXT
+						  "user_name" TEXT,
+						  "user_phone" VARCHAR(15) DEFAULT '',
+						  "user_color" VARCHAR(32) DEFAULT 'black',
+						  "user_function" VARCHAR(16) DEFAULT 'admin',
+						  "user_temporary" INT DEFAULT 0
 						) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -239,3 +246,89 @@ CREATE TABLE IF NOT EXISTS "centry" (
 	FOREIGN KEY ("centry_article") REFERENCES "article"("article_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL ) CHARACTER SET "utf8mb4";
+
+-- Files linked to reservation
+CREATE TABLE IF NOT EXISTS "mission" (
+       "mission_uid" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "mission_reservation" INTEGER NOT NULL,
+       FOREIGN KEY ("mission_reservation") REFERENCES "reservation"("reservation_id")
+       	       ON UPDATE CASCADE ON DELETE CASCADE
+) CHARACTER SET "utf8mb4";
+
+-- CREATE TABLE IF NOT EXISTS "missionFichier" (
+--        "missionFichier_uid" INTEGER PRIMARY KEY AUTO_INCREMENT,
+--        "missionFichier_fichier" CHAR(40) NOT NULL,
+--        "missionFichier_mission" INTEGER NOT NULL,
+--        "missionFichier_order" INTEGER DEFAULT 0
+-- ) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "missionFichier" (
+       "missionFichier_fichier" CHAR(40),
+       "missionFichier_mission" INTEGER,
+       "missionFichier_ordre" INTEGER DEFAULT 0,
+       PRIMARY KEY("missionFichier_fichier", "missionFichier_mission")
+) CHARACTER SET "utf8mb4";
+
+--CREATE TABLE IF NOT EXISTS "intervention" (
+--       "intervention_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+--       "intervention_reservation" INTEGER,
+--       "intervention_type" TEXT DEFAULT NULL,
+--       "intervention_comment" TEXT,
+--       "intervention_date" VARCHAR(32) NOT NULL, -- ISO8601
+--       "intervention_duration" INTEGER DEFAULT 0, -- in seconds
+--       "intervention_technician" TEXT DEFAULT NULL,
+--       FOREIGN KEY ("intervention_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+--) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "evenement" (
+       "evenement_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "evenement_reservation" INTEGER DEFAULT NULL,
+       "evenement_type" CHAR(32) DEFAULT NULL,
+       "evenement_comment" TEXT,
+       "evenement_date" CHAR(32) NOT NULL, -- ISO8601
+       "evenement_duration" INTEGER DEFAULT 0, -- in seconds
+       "evenement_technician" CHAR(64) DEFAULT NULL,
+       "evenement_target" CHAR(32) DEFAULT NULL,
+       "evenement_previous" INTEGER DEFAULT NULL,
+       FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+       FOREIGN KEY ("evenement_previous") REFERENCES "evenement"("evenement_id") ON UPDATE CASCADE ON DELETE CASCADE
+) CHARACTER SET "utf8mb4";
+CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_previous");
+CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_reservation");
+
+CREATE TABLE IF NOT EXISTS "histoire" (
+       "histoire_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "histoire_object" INTEGER NOT NULL,
+       "histoire_type" ENUM('Reservation', 'Arrival', 'Association') NOT NULL,
+       "histoire_date" CHAR(25) NOT NULL, -- iso8061 without ms
+       "histoire_creator" INTEGER NOT NULL,
+       "histoire_attribute" TEXT(1024) NOT NULL, -- attribute list
+       "histoire_original" BLOB(4096) -- data (compressed)
+       );
+
+CREATE TABLE IF NOT EXISTS "localite" (
+       "localite_uid" CHAR(32) PRIMARY KEY,
+       "localite_state" CHAR(2) NOT NULL DEFAULT '',
+       "localite_np" INT NOT NULL DEFAULT -1,
+       "localite_npext" INT NOT NULL DEFAULT -1,
+       "localite_part" BOOLEAN NOT NULL DEFAULT FALSE,
+       "localite_name" CHAR(40) NOT NULL DEFAULT '',
+       "localite_postname" CHAR(18) NOT NULL DEFAULT '',
+       "localite_township" CHAR(24) NOT NULL DEFAULT '',
+       "localite_tsid" INT NOT NULL DEFAULT -1,
+       "localite_trname" CHAR(140) NOT NULL DEFAULT '',
+       "localite_trtownship" CHAR(24) NOT NULL DEFAULT ''
+       );
+CREATE INDEX idxLocaliteName ON localite (localite_name);
+CREATE INDEX idxLocaliteTownship ON localite (localite_township);
+CREATE INDEX idxLocaliteNP ON localite (localite_np);
+
+CREATE TABLE IF NOT EXISTS "fichier" (
+       "fichier_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "fichier_name" CHAR(64) NOT NULL DEFAULT '',
+       "fichier_hash" CHAR(50) NOT NULL UNIQUE INDEX,
+       "fichier_size" INT DEFAULT 0,
+       "fichier_mime" CHAR(127) NOT NULL DEFAULT 'application/octet-stream'
+       );
+CREATE INDEX "idxHash" ON "fichier" ("fichier_hash");
+

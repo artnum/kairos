@@ -1,0 +1,58 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Réservation incomplètes</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table data-source="store/DeepReservation/.todo" data-options="{}" data-entry-id="id" data-refresh="{absent: true}">
+    <thead><tr>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
+      <th data-attribute="target:integer">Machine</th>
+      <th data-attribute="@../store/Status/$status name">Status</th>
+      <th data-attribute="begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="end:date" data-sort-type="date">Fin</th>
+      <th data-attribute="reference">Référence</th>
+      <th data-attribute="_creator.name">Responsable Airnace</th>
+      <th data-attribute="client_">Client</th>
+      <th data-attribute="responsable_">Responsable client</th>      
+      <th data-attribute="place_">Contact sur place</th>
+      <th data-attribute="equipment">Équipement</th>
+      <th data-attribute="address">Adresse</th>
+      <th data-attribute="@../store/$locality label|%%">Localité</th>
+      <th data-attribute="comment">Commentaire</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="../js/tel.js"></script>
+<script src="https://artnum.ch/code/js/Query.js"></script>
+<script src="https://artnum.ch/code/js/Path.js"></script>
+<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="/js/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE')
+   let yesterday = new Date();
+   yesterday.setHours(12, 00, 00)
+   yesterday.setDate((new Date()).getDate() - 1)
+    
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i], postprocess: createLinkFromPhone})
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+           break;
+       }
+     })
+   }
+ }
+</script>
+</html>

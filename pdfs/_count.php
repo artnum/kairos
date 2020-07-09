@@ -324,7 +324,15 @@ foreach($reservations as $reservation) {
 
             $PDF->printTaggedLn(array('%c', $entry['reference']), array('max-width' => 20, 'multiline' => true, 'break' => false));
             $PDF->SetX(30);
-            $PDF->printTaggedLn(array('%c', $entry['description']), array('max-width' => 61, 'multiline' => true, 'break' => false));
+            $desc = '';
+            if (!empty($entry['description'])) {
+               $desc = explode("\n", $entry['description']);
+               if (empty($desc[count($desc) - 1])) {
+                  array_pop($desc);
+               }
+               $desc = implode(", ", $desc);
+            }
+            $PDF->printTaggedLn(array('%c', $desc), array('max-width' => 61, 'multiline' => true, 'break' => false));
             $unitname = 'name';
             if (isset($entry['quantity']) && $entry['quantity'] != 0) {
                if ($entry['quantity'] > 1) { $unitname = 'names'; }
@@ -414,7 +422,7 @@ $PDF->hr();
 $PDF->SetFontSize(6);
 $PDF->printTaggedLn(array('%cb', 'Total HT'), array('break' => false));
 $PDF->printTaggedLn(array('%cb', fprice($count['total'])), array('align' => 'right'));
-$PDF->Output($count['id'] .  '.pdf', 'I'); 
+$PDF->Output('Décompte ' . $count['id'] .  '.pdf', 'I'); 
 
 $JClient->patch(array('id' => $count['id'], 'printed' => (new DateTime())->format('c')), $count['id'], 'Count');
 ?>

@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, GEvent */
+/* global DateRange, pSBC, fastdom, Histoire, Tooltip, GSymbol, crc32 */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -25,6 +25,7 @@ define([
   'location/rForm',
   'location/_Mouse',
   'location/lock',
+  'location/Stores/Locality',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -55,6 +56,7 @@ define([
   RForm,
   Mouse,
   Lock,
+  Locality,
 
   Req,
   Path,
@@ -72,10 +74,10 @@ define([
     complements: [],
     hdivider: 1,
     hposition: 0,
+    modifiedState: true,
 
     constructor: function () {
       this.destroyed = false
-      this.attrs = ['special']
       this.detailsHtml = ''
       this.special = 0
       this.form = null
@@ -83,20 +85,35 @@ define([
       this.complements = []
       this.events = {}
       this.overlap = {}
+      this.dataHash = {}
       this.duration = 0
       this.nodeGeneration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this._gui = {
         hidden: false
       }
-
       this.Lock = new Lock(null)
       this.own(this.Lock)
+      this.Stores = {
+        Locality: new Locality()
+      }
+
+      if (arguments && arguments[0] && arguments[0].create) {
+        this.isNew = true
+      } else {
+        this.isNew = false
+      }
+
+      this.EventTarget = new EventTarget()
     },
 
+    addEventListener: function (type, listener, options = undefined) {
+      this.EventTarget.addEventListener(type, listener, options)
+    },
+    
     fromJson: function (json) {
       if (!json) { return }
-
+      this.modifiedState = true
       if (this.get('_hash')) {
         if (json._hash === this.get('_hash')) {
           this.set('updated', false)
@@ -112,27 +129,75 @@ define([
           delete oldEntry.entries[this.uid]
           newEntry.entries[this.uid] = this
           oldEntry.overlap()
-          oldEntry.resize()
+          // oldEntry.resize()
         }
       }
 
       djLang.mixin(this, json)
-
+      this.dataOriginal = json
+      this.dataHash['target'] = crc32(this.get('target'))
       this.set('updated', true)
       ;[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
+          /* date and time are UTC on server but locale on the client, so store the client one */
+          this.dataHash[attr] = crc32(djDateStamp.toISOString(djDateStamp.fromISOString(json[attr])))
           this.set(attr, djDateStamp.fromISOString(json[attr]))
+        } else {
+          this.dataHash[attr] = crc32('')
         }
       }))
 
-      ;['status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, (attr) => {
+      /* string value */
+      ;[
+        'visit',
+        'vreport',
+        'padlock'
+      ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
+          this.dataHash[attr] = crc32(json[attr])
           this.set(attr, json[attr])
+        } else {
+          this.set(attr, '')
+          this.dataHash[attr] = crc32('')
+        }
+      }))
+
+      /* nullifiable value */
+      ;[
+        'status',
+        'address',
+        'locality',
+        'comment',
+        'equipment',
+        'reference',
+        'gps',
+        'folder',
+        'title',
+        'previous',
+        'creator',
+        'technician',
+        'warehouse',
+        'note'
+      ].forEach(djLang.hitch(this, (attr) => {
+        if (json[attr]) {
+          this.dataHash[attr] = crc32(json[attr])
+          this.set(attr, json[attr])
+        } else {
+          this.dataHash[attr] = crc32('')
         }
       }))
 
       if (json['other']) {
+        this.dataHash['other'] = crc32(json['other'])
         this.set('other', JSON.parse(json['other']))
+      } else {
+        this.dataHash['other'] = crc32('{\"critic\":\"\"}')
+      }
+
+      if (json['uuid']) {
+        this.dataHash['uuid'] = crc32(json['uuid'])
+      } else {
+        this.dataHash['uuid'] = crc32('')
       }
 
       if (this.contacts && this.contacts['_client']) {
@@ -149,7 +214,17 @@ define([
 
       if (json.arrival) {
         this.set('_arrival', Object.assign({}, json.arrival))
+      } else {
+        json.arrival = {}
       }
+      this.dataHash['_arrival'] = {}
+      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
+        if (json.arrival[attrArr]) {
+          this.dataHash['_arrival'][attrArr] = crc32(json.arrival[attrArr])
+        } else {
+          this.dataHash['_arrival'][attrArr] = crc32('')
+        }
+      })
 
       this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
       this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
@@ -159,27 +234,64 @@ define([
       }
     },
 
-    toObject: function () {
+    toObject: function (dataHash = {}) {
       var object = {}
 
       ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
         if (!this[attr]) {
           object[attr] = null
+          if (dataHash) { dataHash[attr] = crc32('') }
         } else {
           object[attr] = djDateStamp.toISOString(this[attr])
+          if (dataHash) { dataHash[attr] = crc32(object[attr]) }
         }
       }))
 
-      ;['uuid', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'gps', 'folder', 'title', 'previous', 'creator', 'warehouse', 'note'].forEach(djLang.hitch(this, function (attr) {
+      /* string value */
+      ;[
+        'visit',
+        'vreport',
+        'padlock'
+      ].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
+          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
+        } else {
+          object[attr] = ''
+          if (dataHash) { dataHash[attr] = crc32('') }
+        }
+      }))
+
+      /* nullifiable value */
+      ;[
+        'uuid',
+        'status',
+        'address',
+        'locality',
+        'comment',
+        'equipment',
+        'reference',
+        'gps',
+        'folder',
+        'title',
+        'previous',
+        'creator',
+        'technician',
+        'warehouse',
+        'note'
+      ].forEach(djLang.hitch(this, function (attr) {
+        if (this[attr]) {
+          object[attr] = this[attr]
+          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
         } else {
           object[attr] = null
+          if (dataHash) { dataHash[attr] = crc32('') }
         }
       }))
 
       if (this.get('other')) {
         object['other'] = JSON.stringify(this.get('other'))
+        if (dataHash) { dataHash['other'] = crc32(object['other']) }
       }
 
       if (!object.creator) {
@@ -188,25 +300,35 @@ define([
           currentUser = JSON.parse(currentUser)
           object.creator = 'store/User/' + currentUser.id
           this.set('creator', object.creator)
+          if (dataHash) { dataHash['creator'] = crc32(object.creator) }
         }
       }
       if (this.sup) {
         object['target'] = this.sup.get('target')
+        if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
       }
 
       if (this.get('_arrival')) {
         object.arrival = Object.assign({}, this.get('_arrival'))
+      } else {
+        object.arrival = {}
       }
 
+      dataHash['_arrival'] = {}
+      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
+        if (object.arrival[attrArr]) {
+          dataHash['_arrival'][attrArr] = crc32(object.arrival[attrArr])
+        } else {
+          dataHash['_arrival'][attrArr] = crc32('')
+        }
+      })
       object.id = this.uid
       return object
     },
 
     modified: function () {
       if (!this.get('deleted')) {
-        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}}).then((result) => {
-          console.log(result)
-        })
+        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}})
       }
     },
 
@@ -227,7 +349,7 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
-      this.resize()
+      // this.resize()
       if (window.App.OpenAtCreation[this.uid]) {
         delete window.App.OpenAtCreation[this.uid]
         this.popMeUp()
@@ -235,6 +357,18 @@ define([
       }
     },
 
+    tooltipShow: function (event) {
+      /**/
+      let node = event.target
+      if (node.dataset.name) {
+        if (this.htmlIdentity.dataset[node.dataset.name]) {
+          let tooltip = document.createElement('DIV')
+          tooltip.classList.add('smallTooltip')
+          tooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
+          window.App.toolTip(tooltip, this.domNode, event.target)
+        }
+      }
+    },
     evTouchStart: function (event) {
       event.stopPropagation()
       event.preventDefault()
@@ -277,65 +411,18 @@ define([
         }
       }
     },
-
-    addAttr: function (attr) {
-      if (this.attrs.indexOf(attr) === -1) {
-        this.attrs.push(attr)
-      }
-    },
-    _setPreviousAttr: function (value) {
-      this.addAttr('previous')
-      this._set('previous', value)
-    },
-    _setCreatorAttr: function (value) {
-      this.addAttr('creator')
-      this._set('creator', value)
-    },
-    _setFolderAttr: function (value) {
-      this.addAttr('folder')
-      this._set('folder', value)
-    },
-    _setTitleAttr: function (value) {
-      this.addAttr('title')
-      this._set('title', value)
-    },
-    _setStatusAttr: function (value) {
-      this.addAttr('status')
-      this._set('status', value)
-    },
-    _setNoteAttr: function (value) {
-      this.addAttr('note')
-      this._set('note', value)
-    },
     _setUidAttr: function (value) {
       this.uid = value
       if (this.domNode) {
         this.domNode.dataset.uid = value
       }
     },
-    _setEquipmentAttr: function (value) {
-      this.addAttr('equipment')
-      this._set('equipment', value)
-    },
-    _setReferenceAttr: function (value) {
-      this.addAttr('reference')
-      this._set('reference', value)
-    },
-    _setGpsAttr: function (value) {
-      this.addAttr('gps')
-      this._set('gps', value)
-    },
-    _setAddressAttr: function (value) {
-      this.addAttr('address')
-      this._set('address', value)
-    },
-    _setLocalityAttr: function (value) {
-      this.addAttr('locality')
-      this._set('locality', value)
-    },
-    _setCommentAttr: function (value) {
-      this.addAttr('comment')
-      this._set('comment', value)
+    _setWarehouseAttr: function (value) {
+      if (value && value.startsWith('Warehouse')) {
+        this._set('locality', value)
+      } else {
+        this._set('locality', `Warehouse/${value}`)
+      }
     },
     _setEnableAttr: function () {
       this.set('active', true)
@@ -364,7 +451,7 @@ define([
       })
     },
     _setStartAttr: function (value) {
-      this.addAttr('begin')
+
       if (value === this.get('stop')) { value -= this.get('blockSize') }
       this._set('start', value)
     },
@@ -377,26 +464,26 @@ define([
       return this.xFromTime(this.get('trueEnd'))
     },
     _setBeginAttr: function (value) {
-      this.addAttr('begin')
+
       this._set('begin', value)
       this._set('start', this.xFromTime(value))
     },
     _setStopAttr: function (value) {
-      this.addAttr('end')
+
       if (value === this.get('start')) { value += this.get('blockSize') }
       this._set('stop', value)
     },
     _setEndAttr: function (value) {
-      this.addAttr('end')
+
       this._set('end', value)
       this._set('stop', this.xFromTime(value))
     },
     _setDeliveryBeginAttr: function (value) {
-      this.addAttr('deliveryBegin')
+
       this._set('deliveryBegin', value)
     },
     _setDeliveryEndAttr: function (value) {
-      this.addAttr('deliveryEnd')
+
       this._set('deliveryEnd', value)
     },
     _setSupAttr: function (sup) {
@@ -548,65 +635,46 @@ define([
         frag.lastChild.appendChild(this.confirmedDom())
       }
 
-      var ident = document.createElement('SPAN')
+      if (!this.htmlIdentity) {
+        this.htmlIdentity = document.createElement('SPAN')
+        this.htmlIdentity.addEventListener('mouseover', this.tooltipShow.bind(this))
+      }
+      let ident = this.htmlIdentity
+      ident.classList.add('identity')
+      ident.innerHTML = ' <i class="fas fa-folder" data-name="folder"></i><i class="fas fa-wrench" data-name="equipment"></i><i class="fas fa-exchange-alt" data-name="exchange"></i><i class="fas fa-bullseye" data-name="warehouse"></i><i class="fas fa-exclamation-triangle" data-name="critic"></i><i class="far fa-user" data-name="creator"></i>'
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        var i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-folder')
-
-        ident.lastChild.appendChild(i)
+        ident.dataset.folder = this.get('folder')
       }
       if (this.get('equipment') !== '' && this.get('equipment') != null && this.get('equipment') !== '%') {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-wrench')
-
-        ident.lastChild.appendChild(i)
+        ident.dataset.equipment = this.get('equipment')
       }
-
-      if (this.get('title') !== '' && this.get('title') != null) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-exchange-alt')
-
-        ident.lastChild.setAttribute('data-balloon', this.get('title'))
-        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-
-        ident.lastChild.appendChild(i)
-      }
-
-      if (this.get('warehouse')) {
-        var warehouse = this.get('_warehouse')
-        if (warehouse) {
-          ident.appendChild(document.createElement('SPAN'))
-          ident.lastChild.appendChild(document.createTextNode(' '))
-          i = document.createElement('I')
-          i.setAttribute('class', 'fas fa-bullseye')
-          if (warehouse.color) {
-            i.setAttribute('style', 'color: ' + warehouse.color)
+      if (this.get('_creator')) {
+        let creator = this.get('_creator')
+        let currentCreator = JSON.parse(localStorage.getItem('/location/user'))
+        if (currentCreator && creator) {
+          if (currentCreator.id === creator.id) {
+            let i = this.htmlIdentity.firstElementChild
+            for (; i; i = i.nextElementSibling) {
+              if (i.classList.contains('fa-user')) {
+                i.classList.replace('far', 'fas')
+                break
+              }
+            }        
           }
-          if (warehouse.name) {
-            ident.lastChild.setAttribute('data-balloon', warehouse.name)
-            ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-          }
-
-          ident.lastChild.appendChild(i)
         }
+        if (creator.name) {
+          ident.dataset.creator = creator.name
+        }
+      }
+      if (this.get('title') !== '' && this.get('title') != null) {
+        ident.dataset.exchange = this.get('title')
       }
 
       if (this.get('other') && this.get('other').critic) {
-        ident.appendChild(document.createElement('SPAN'))
-        ident.lastChild.appendChild(document.createTextNode(' '))
-        i = document.createElement('I')
-        i.setAttribute('class', 'fas fa-exclamation-triangle')
-        ident.lastChild.setAttribute('data-balloon', this.get('other').critic)
-        ident.lastChild.setAttribute('data-balloon-pos', 'down-left')
-        ident.lastChild.appendChild(i)
+        ident.dataset.critic = this.get('other').critic
       }
+
       frag.lastChild.appendChild(ident)
 
       frag.lastChild.appendChild(document.createElement('address'))
@@ -658,11 +726,41 @@ define([
           locality.lastChild.appendChild(document.createTextNode(this.address))
         }
 
-        if (this.locality) {
-          locality.appendChild(document.createElement('SPAN'))
-          locality.lastChild.setAttribute('class', 'locality')
-          locality.lastChild.appendChild(document.createTextNode(this.locality))
+        if (this.locality && this.locality !== null) {
+          if (/^PC\/[0-9a-f]{32,32}$/.test(this.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(this.locality)) {
+            this.Stores.Locality.get(this.locality).then((entry) => {
+              if (entry.state) {
+                delete this.htmlIdentity.dataset.warehouse
+                locality.appendChild(document.createElement('SPAN'))
+                locality.lastChild.setAttribute('class', 'locality')
+                locality.lastChild.appendChild(document.createTextNode(entry.label))
+              } else {
+                this.htmlIdentity.dataset.warehouse = entry.label
+                for (let i = this.htmlIdentity.firstElementChild; i; i = i.nextElementSibling) {
+                  if (i.classList.contains('fa-bullseye')) {
+                    let colors = entry.color.split(';')
+                    if (colors.length === 2) {
+                      colors[0] = colors[0].trim().toLowerCase()
+                      colors[1] = colors[1].trim().toLowerCase()
+                      window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
+                    } else {
+                      colors[0] = colors[0].trim().toLowerCase()
+                      window.requestAnimationFrame(() => { i.style.color = colors[0] })
+                    }
+                    return
+                  }
+                }
+              }
+            })
+          } else {
+            delete this.htmlIdentity.dataset.warehouse
+            locality.appendChild(document.createElement('SPAN'))
+            locality.lastChild.setAttribute('class', 'locality')
+            locality.lastChild.appendChild(document.createTextNode(this.locality !== null ? this.locality : ''))
+          }
         }
+      } else {
+        delete this.htmlIdentity.dataset.warehouse
       }
 
       if (this.comment) {
@@ -719,7 +817,7 @@ define([
         return
       }
       window.App.setOpen(this.uid)
-      var f = new RForm({ reservation: this })
+      var f = new RForm({ reservation: this, htmlDetails: this.sup.htmlDetails })
       var title = 'Réservation ' + this.uid
 
       var cp = new DtContentPane({
@@ -733,11 +831,13 @@ define([
       tContainer.resize()
       tContainer.selectChild(cp.id)
 
-      f.nEntryDetails.innerHTML = `<label class="title">Caractéristiques</label>${this.sup.htmlDetails}`
       this.myForm = f
-      this.syncForm()
-      this.myContentPane = cp
-      f.set('_pane', [cp, tContainer])
+      this.myForm.PostCreatePromise.then(() => {
+        this.syncForm()
+        this.myContentPane = cp
+        f.set('_pane', [cp, tContainer])
+        f.set('_closeId', 'ReservationTab_' + this.get('localid'))
+      })
     },
 
     close: function () {
@@ -753,7 +853,28 @@ define([
 
     syncForm: function () {
       if (this.myForm) {
-        [ 'other', 'begin', 'end', 'deliveryBegin', 'deliveryEnd', 'status', 'address', 'locality', 'comment', 'equipment', 'reference', 'creator', 'gps', 'folder', 'warehouse', 'note' ].forEach(djLang.hitch(this, function (e) {
+        [
+          'other',
+          'begin',
+          'end',
+          'deliveryBegin',
+          'deliveryEnd',
+          'status',
+          'address',
+          'locality',
+          'comment',
+          'equipment',
+          'reference',
+          'creator',
+          'technician',
+          'gps',
+          'folder',
+          'warehouse',
+          'note',
+          'padlock',
+          'visit',
+          'vreport'
+         ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
         this.myForm.load()
@@ -800,10 +921,11 @@ define([
     remove: function () {
       return new Promise(function (resolve, reject) {
         if (confirm('Vraiment supprimer la réservation ' + this.uid)) {
-          this.domNode.parentNode.removeChild(this.domNode)
+          if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
           this.set('deleted', true)
           Query.exec(Path.url('/store/Arrival', {params: {'search.target': this.uid}})).then((result) => {
-            console.log(result)
             if (result.success && result.length > 0) {
               result.data.forEach((r) => {
                 Query.exec(Path.url(`/store/Arrival/${r.id}`), {method: 'DELETE', body: {id: r.id}})
@@ -824,137 +946,95 @@ define([
     },
 
     _drawComplement: function () {
-      var that = this
-      var x = this.complements
-      var byType = {}
-      var compdiv = document.createElement('DIV')
-      compdiv.setAttribute('style', 'position: relative; height: 100%')
+      if (!this.complements) { return null }
+      let compdiv = document.createElement('DIV')
+      compdiv.classList.add('complementDiv')
+      let begin = Math.round(this.get('trueBegin').getTime() / 1000)
+      let end = Math.round(this.get('trueEnd').getTime() / 1000)
 
-      for (var i = 0; i < x.length; i++) {
-        /* Follow set end and begin at the value of the reservation */
-        if (Number(x[i].follow)) {
-          x[i].begin = this.get('trueBegin'); x[i].end = this.get('trueEnd')
-        }
-        x[i].range = new DateRange(x[i].begin, x[i].end)
-        if (!byType[x[i].type.color]) {
-          byType[x[i].type.color] = []
-        }
-        byType[x[i].type.color].push(x[i])
+      /* if reservation is bigger than range, calculate on range */ 
+      let rBegin = Math.round(this.get('dateRange').begin.getTime() / 1000)
+      let rEnd = Math.round(this.get('dateRange').end.getTime() / 1000)
+      if (begin < rBegin) { begin = rBegin }
+      if (end > rEnd) { end = rEnd }
 
-        var overlap = true
-        while (overlap) {
-          overlap = false
-          var z = byType[x[i].type.color].pop()
-          for (var j = 0; j < byType[x[i].type.color].length; j++) {
-            var o = byType[x[i].type.color][j].range.merge(z.range)
-            if (o != null) {
-              byType[x[i].type.color][j].range = o
-              if (z.number > byType[x[i].type.color][j].number) {
-                byType[x[i].type.color][j].number = z.number
-              }
-              overlap = true
+      let lines = {}
+
+      for (let i = 0; i < this.complements.length; i++) {
+        let c = this.complements[i]
+        if (!c.type || !c.type.color) { continue }
+        let color = c.type.color
+        if (!lines[color]) {
+          lines[color] = [0]
+        } else {
+          lines[color].count++
+        }
+        /* line is full add an element on it */
+        if (lines[color][0] >= 100) {
+          continue
+        }
+        /* follow the whole reservation */
+        if (parseInt(c.follow)) {
+          lines[color][0] = 100
+        } else {
+          let b = Math.round((new Date(c.begin)).getTime() / 1000)
+          let e = Math.round((new Date(c.end)).getTime() / 1000)
+          if (e <= begin || b >= end) {
+            continue
+          }
+          if (isNaN(b) || isNaN(e)) { continue }
+
+          matchingSegment = null
+          for (let i = 1; i < lines[color].length; i++) {
+            let seg = lines[color][i]
+            if ((b < seg.end && b > seg.start) || (e > seg.begin && e < seg.end)) {
+              matchingSegment = seg
               break
             }
           }
-          if (!overlap) {
-            byType[x[i].type.color].push(z)
+
+          if (!matchingSegment) {
+            let percentStart = Math.round((b - begin) / (end - begin) * 10000) / 100
+            let percent = Math.round((e - b) / (end - begin) * 10000) / 100
+            lines[color][0] += percent
+            if (lines[color][0] >= 100) { continue }
+            lines[color].push({
+              start: b,
+              end: e,
+              percent: percent,
+              percentStart: percentStart,
+              count: 1
+            })
+          } else {
+            if (matchingSegment.start > b) {
+              matchingSegment.start = b
+            }
+            if (matchingSegment.end < e) {
+              matchingSegment.end = e
+            }
+            matchingSegment.percentStart = Math.round((matchingSegment.start - begin) / (end - begin) * 10000) / 100
+            matchingSegment.percent = Math.round((matchingSegment.end - matchingSegment.start) / (end - begin) * 10000) / 100
+            matchingSegment.count++
+            lines[color][0] += matchingSegment.percent
           }
         }
       }
-
-      var cent = 100
-      var height = Math.round(cent / Object.keys(byType).length)
-      var lineCount = 0
-
-      for (i in byType) {
-        var color = '#FFF'
-        byType[i].forEach(function (entry) {
-          var display = true
-          if (entry.number > 0) {
-            var begin = entry.range.begin
-            var end = entry.range.end
-            if (entry.type && entry.type.color) {
-              color = '#' + entry.type.color
-            }
-
-            for (var x = begin; djDate.compare(x, end, 'date') <= 0; x = djDate.add(x, 'day', 1)) {
-              var date = djDateStamp.toISOString(x, {selector: 'date'})
-              if (typeof window.Rent.Days[date] === 'undefined') {
-                window.Rent.Days[date] = {}
-              }
-              if (typeof window.Rent.Days[date][entry.type.color] === 'undefined') {
-                window.Rent.Days[date][entry.type.color] = {}
-              }
-              window.Rent.Days[date][entry.type.color][that.uid] = parseInt(entry.number)
-            }
-
-            /* Not in view as the end of this entry is after the beginning of the timeline */
-            if (djDate.compare(end, that.get('dateRange').begin, 'date') < 0) {
-              display = false
-            }
-            /* Not in view as the entry begins after the timeline end */
-            if (djDate.compare(begin, that.get('dateRange').end, 'date') > 0) {
-              display = false
-            }
-
-            /* If for some reason the entry is bigger than its container, size it to the container size */
-            if (djDate.compare(begin, that.get('trueBegin'), 'datetime') < 0) { begin = that.get('trueBegin') }
-            if (djDate.compare(end, that.get('trueEnd'), 'datetime') > 0) { end = that.get('trueEnd') }
-
-            if (display) {
-              var width = 0
-              var left = 0
-              var entryBegin = that.get('trueBegin')
-              var entryEnd = that.get('trueEnd')
-
-              if (djDate.compare(entryBegin, that.get('dateRange').begin, 'datetime') < 0) {
-                entryBegin = that.get('dateRange').begin
-              }
-              if (djDate.compare(entryEnd, that.get('dateRange').end, 'datetime') > 0) {
-                entryEnd = that.get('dateRange').end
-              }
-
-              /* base width when fully displayed */
-              width = (Math.abs(djDate.difference(begin, end, 'day')) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(end)
-              /* base left when fully displayed */
-              left = (Math.abs(djDate.difference(entryBegin, begin)) * that.get('blockSize')) - that.computeIntervalOffset(entryBegin) + that.computeIntervalOffset(begin)
-
-              /* if it begin before the current timeline's begin */
-              if (djDate.compare(begin, that.get('dateRange').begin, 'date') < 0) {
-                width = width - (Math.abs(djDate.difference(begin, that.get('dateRange').begin)) * that.get('blockSize')) + that.computeIntervalOffset(entryBegin)
-                left = 0
-              } else {
-                if (djDate.compare(begin, entryBegin, 'datetime') > 0) {
-                  width -= that.computeIntervalOffset(begin) - that.computeIntervalOffset(entryBegin)
-                }
-              }
-
-              /* if it end after the current timeline's end */
-              if (djDate.compare(end, that.get('dateRange').end, 'date') >= 0) {
-                if (djDate.compare(end, that.get('dateRange').end, 'date') === 0) {
-                  width = width - that.computeIntervalOffset(end)
-                } else {
-                  width = width - (Math.abs(djDate.difference(end, that.get('dateRange').end) + 1) * that.get('blockSize')) - that.computeIntervalOffset(end)
-                }
-              }
-
-              var div = document.createElement('DIV')
-              div.setAttribute('style', 'position: absolute; background-color: ' + color + '; left: ' + left + 'px; width: ' + width + 'px; top: ' + (lineCount * height) + '%; height: ' + height + '%;')
-              div.setAttribute('class', 'stabiloLine')
-
-              var numDiv = document.createElement('DIV')
-              numDiv.setAttribute('class', 'number'); numDiv.setAttribute('style', 'color: ' + pSBC(0.1, color))
-              for (var i = 0; i < entry.number; i++) {
-                var sym = document.createElement('I')
-                sym.setAttribute('class', 'fas fa-circle')
-                numDiv.appendChild(sym)
-              }
-              div.appendChild(numDiv)
-
-              compdiv.appendChild(div)
-            }
+      let height = Math.round(1000 / Object.keys(lines).length) / 10
+      let lineCount = 0;
+      for (let color in lines) {
+        if (lines[color][0] >= 100) {
+          let div = document.createElement('DIV')
+          div.classList.add('stabiloLine')
+          div.setAttribute('style', `position: absolute; background-color: ${color}; left: 0; width: 100%; top: ${lineCount * height}%; height: ${height}%;`)
+          compdiv.appendChild(div)
+        } else {
+          for (let i = 1; i < lines[color].length; i++) {
+            let div = document.createElement('DIV')
+            div.classList.add('stabiloLine')
+            div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color][i].percentStart}%; width: ${lines[color][i].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
+            compdiv.appendChild(div)
           }
-        })
+        }
         lineCount++
       }
 
@@ -989,7 +1069,7 @@ define([
       this.hide()
       this.inherited(arguments)
       this.sup.overlap()
-      this.sup.resize()
+      // this.sup.resize()
     },
 
     show: function () {
@@ -997,7 +1077,6 @@ define([
       if (!this.domNode) {
         this.domNode = document.createElement('DIV')
       }
-
       if (!this.TouchEvents) {
         this.TouchEvents = [djOn(this.domNode, 'touchstart', this.evTouchStart.bind(this)),
           djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
@@ -1006,14 +1085,10 @@ define([
         this.DblClick = djOn(this.domNode, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
       }
       if (!this.domNode.parentNode) {
-        fastdom.mutate(function () {
-          this.sup.data.appendChild(this.domNode)
-          if (!this.originalTop) {
-            fastdom.measure(function () {
-              this.originalTop = djDomStyle.get(this.domNode, 'top')
-            }.bind(this))
-          }
-        }.bind(this))
+        window.requestAnimationFrame(() => {
+          if (this.sup && this.sup.data) { this.sup.data.appendChild(this.domNode) }
+          if (!this.originalTop) { this.originalTop = djDomStyle.get(this.domNode, 'top') }
+        })
       }
     },
 
@@ -1027,6 +1102,8 @@ define([
     },
 
     resize: async function (fromEntry = false) {
+      let moving = false
+      if (!this.modifiedState) { return }
       if (this.deleted) {
         if (!this.destroyed) {
           this.destroy()
@@ -1079,11 +1156,16 @@ define([
         begin = range.begin
         nobegin = true
       }
+      if (!this.DisplayBegin || (this.DisplayBegin.getTime() !== begin.getTime())) { moving = true }
+      if (!moving && !this.updated) { return }
+      this.DisplayBegin = new Date(begin.getTime())
+
       var end = this.get('trueEnd')
       if (djDate.compare(range.end, end, 'date') < 0) {
         end = range.end
         noend = true
       }
+      this.DisplayEnd = new Date(end.getTime())
 
       var t1, t2
       t1 = new Date(end.getTime()); t2 = new Date(begin.getTime())
@@ -1127,47 +1209,51 @@ define([
       }
       var domclass = {reservation: true, overlap: this.get('hdivider') > 1, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
       var supRect = this.sup.view.rectangle
-      fastdom.measure(djLang.hitch(this, function () {
-        var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
-        var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
-        var myTopBorder = 1
-        var myBottomBorder = 1
 
-        var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
-        var top = supRect[1] + supTopBorder
-        height = height / this.get('hdivider')
-        top += (height + myTopBorder) * this.get('hposition')
-        var domstyle = ['position: absolute']
-        if (stopPoint < 20) {
-          stopPoint = 20
-        }
-        domstyle.push('width: ' + stopPoint + 'px')
-        domstyle.push('left: ' + startPoint + 'px')
-        domstyle.push('top: ' + top + 'px')
-        domstyle.push('height: ' + height + 'px')
+      var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
+      var supBottomBorder = djDomStyle.get(this.sup.domNode, 'border-bottom-width')
+      var myTopBorder = 1
+      var myBottomBorder = 1
 
-        var tools = document.createElement('DIV')
-        tools.setAttribute('style', 'background-color:' + bgcolor)
-        tools.setAttribute('class', 'tools')
+      var height = this.sup.originalHeight - (supBottomBorder + supTopBorder + myTopBorder + myBottomBorder)
+      var top = supRect[1] + supTopBorder
+      if (this.overlap.do) {
+        var overlapLevel = this.getOverlapLevel()
+        height /= overlapLevel
+        top += (height + myTopBorder) * (this.getOverlapOrder() - 1)
+      }
+      var domstyle = ['position: absolute']
+      if (stopPoint < 20) {
+        stopPoint = 20
+      }
+      domstyle.push('width: ' + stopPoint + 'px')
+      domstyle.push('left: ' + startPoint + 'px')
+      domstyle.push('top: ' + top + 'px')
+      domstyle.push('height: ' + height + 'px')
 
-        if (toolsOffsetBegin > 0) {
-          var div = document.createElement('DIV')
-          div.setAttribute('class', 'delivery')
-          div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
-          tools.appendChild(div)
-        }
+      var tools = document.createElement('DIV')
+      tools.setAttribute('style', 'background-color:' + bgcolor)
+      tools.setAttribute('class', 'tools')
 
-        if (toolsOffsetEnd > 0) {
-          div = document.createElement('DIV')
-          div.setAttribute('class', 'delivery')
-          div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
-          tools.appendChild(div)
-        }
+      if (toolsOffsetBegin > 0) {
+        var div = document.createElement('DIV')
+        div.setAttribute('class', 'delivery')
+        div.setAttribute('style', 'float: left; height: 100%; width: ' + toolsOffsetBegin + 'px')
+        tools.appendChild(div)
+      }
 
-        var txtdiv = this._setTextDesc()
-        var compdiv = this._drawComplement()
+      if (toolsOffsetEnd > 0) {
+        div = document.createElement('DIV')
+        div.setAttribute('class', 'delivery')
+        div.setAttribute('style', 'float: right; height: 100%; width: ' + toolsOffsetEnd + 'px')
+        tools.appendChild(div)
+      }
 
-        fastdom.mutate(djLang.hitch(this, function () {
+      var txtdiv = this._setTextDesc()
+      var compdiv = this._drawComplement()
+
+      new Promise((resolve, reject) => {
+        window.requestAnimationFrame(() => {
           if (this.domNode) {
             this.domNode.innerHTML = ''
             this.domNode.setAttribute('style', domstyle.join(';'))
@@ -1178,7 +1264,9 @@ define([
                 this.domNode.classList.remove(c)
               }
             }
-            this.domNode.appendChild(compdiv)
+            if (compdiv) {
+              this.domNode.appendChild(compdiv)
+            }
             if (txtdiv == null) {
               this.domNode.appendChild(this._currentTextDesc)
             } else {
@@ -1187,8 +1275,67 @@ define([
             }
             this.domNode.dataset.uid = this.uid
           }
-        }))
-      }))
+          resolve()
+        })
+      }).then(() => {
+        // this.showIntervention(this.domNode, moving)
+      })
+    },
+
+    showIntervention: function (parentNode, moving) {
+      if (!this.interventions || this.interventions.length <= 0) {
+        return
+      }
+      if (moving) {
+        if (!this.InterventionsSymbols) {
+          this.InterventionsSymbols = []
+        } else {
+          this.InterventionsSymbols.forEach((x) => {
+            delete x[0]
+            delete x[1]
+          })
+        }
+        let rect = this.domNode.getBoundingClientRect()
+        if (rect.width < this.get('blockSize')) { return } // under certain size don't show symbols to avoid overload
+        for (let i = 0; i < this.interventions.length; i++) {
+          let intervention = this.interventions[i]
+          let begin = new Date(this.DisplayBegin.getTime())
+          begin.setHours(12)
+          if (intervention.date.split('T')[0] < begin.toISOString().split('T')[0] ||
+              intervention.date.split('T')[0] > this.DisplayEnd.toISOString().split('T')[0]) {
+            continue
+          }
+          let d = new Date(intervention.date)
+          let left = Math.round(
+            (rect.width / (this.DisplayEnd.getTime() - this.DisplayBegin.getTime())) *
+              (d.getTime() - this.DisplayBegin.getTime())
+          )
+
+          let s = document.createElement('I')
+          s.classList.add(...GSymbol(intervention.symbol))
+          s.style.position = 'absolute'
+          s.style.top = rect.height - 24
+          s.style.left = left
+
+          let message = []
+          ;['name', 'comment', 'technician'].forEach((k) => {
+            if (intervention[k]) { message.push(intervention[k]) }
+          })
+
+          let x = new Tooltip(s, {placement: 'top', title: `${message.join(' / ')}`})
+          this.InterventionsSymbols.push([s, x])
+          window.requestAnimationFrame(() => {
+            parentNode.appendChild(s)
+          })
+        }
+      } else {
+        if (!this.InterventionsSymbols) { return }
+        this.InterventionsSymbols.forEach((s) => {
+          window.requestAnimationFrame(() => {
+            if (s[0]) { parentNode.appendChild(s[0]) }
+          })
+        })
+      }
     },
 
     highlight: function () {
@@ -1216,9 +1363,33 @@ define([
       return {uuid: uuidv4, timestamp: Date.now()}
     },
 
-    save: function (object = null) {
+    save: function (object = null, duplicate = false) {
+      this.modifiedState = true
       return new Promise(function (resolve, reject) {
-        let reservation = object === null ? this.toObject() : object
+        let creator = window.localStorage.getItem(Path.bcname('user'))
+        if (creator) {
+          creator = JSON.parse(creator)
+        }
+        let dataHash = {}
+        let reservation = object === null ? this.toObject(dataHash) : object
+        let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
+        if (dataHash && this.dataHash) {
+          for (let k in dataHash) {
+            if (k === '_arrival') {
+              for (let _k in dataHash[k]) {
+                if (this.dataHash[k] && dataHash[k] && this.dataHash[k][_k] !== dataHash[k][_k]) {
+                  modifiedLog.attribute.push(`${k}.${_k}`)
+                  this.dataHash[k][_k] = dataHash[k][_k]
+                }
+              }
+            } else {
+              if (this.dataHash[k] !== dataHash[k]) {
+                modifiedLog.attribute.push(k)
+                this.dataHash[k] = dataHash[k]
+              }
+            }
+          }
+        }
         let arrival = reservation.arrival
         delete reservation.arrival
         Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
@@ -1228,12 +1399,19 @@ define([
             return
           }
           let id = result.data[0].id
-          this.domNode.dataset.id = id
+          if (modifiedLog.attribute.length > 0 || duplicate) {
+            /* POST to mod log */
+            modifiedLog.object = id
+            Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
+          }
+          if (this.domNode) { this.domNode.dataset.id = id }
           if (!arrival || Object.keys(arrival).length === 0) {
+            this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
             resolve(id)
           } else {
             let query
             if (arrival.deleted) {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
               return
             }
@@ -1245,6 +1423,7 @@ define([
               query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
             }
             query.then((result) => {
+              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
             })
           }
@@ -1258,12 +1437,13 @@ define([
       delete object['uuid']
       delete object['id']
       delete object['arrival']
+      delete object['note']
       let creator = window.localStorage.getItem(Path.bcname('user'))
       if (creator) {
         object['creator'] = `/store/User/${JSON.parse(creator).id}`
       }
       return new Promise((resolve, reject) => {
-        this.save(object).then((id) => {
+        this.save(object, originalId).then((id) => {
           let newId = id
           let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
           let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
@@ -1273,6 +1453,7 @@ define([
             let url = Path.url('/store/ReservationContact')
             results.forEach((result) => {
               if (!result.success) { return }
+              if (result.length <= 0) { return }
               result.data.forEach((e) => {
                 delete e['id']
                 e['reservation'] = newId
@@ -1280,9 +1461,42 @@ define([
               })
               url = Path.url('/store/Association')
             })
-          })
-          Promise.all(all).then((results) => {
-            resolve(newId)
+
+            new Promise((resolve, reject) => {
+              Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
+                if (result.success && result.length > 0) {
+                  let oMId = result.data[0].uid
+                  Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
+                    if (result.success && result.length === 1) {
+                      let mId = result.data[0].id
+                      Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
+                        if (results.success && results.length > 0) {
+                          (async function () {
+                            for (let i = 0; i < results.length; i++) {
+                              let entry = results.data[i]
+                              delete entry.uid
+                              entry.mission = mId
+                              await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
+                            }
+                            resolve()
+                          })()
+                        } else {
+                          resolve()
+                        }
+                      })
+                    } else {
+                      resolve()
+                    }
+                  })
+                } else {
+                  resolve()
+                }
+              })
+            }).then(() => {
+              Promise.all(all).then((results) => {
+                resolve(newId)
+              })
+            })
           })
         })
       })
@@ -1308,7 +1522,6 @@ define([
       let associations = []
       let contacts = []
       Promise.all([pContacts, pAssociations]).then((results) => {
-        console.log(results)
         if (results[1].length > 0) {
           results[1].data.forEach((a) => {
             delete a.reservation
@@ -1329,11 +1542,12 @@ define([
           })
         }
         RFileObject.content = [
-          {reservation: rid,
-           content: reservation,
-           arrival: arrival,
-           association: associations,
-           contact: contacts
+          {
+            reservation: rid,
+            content: reservation,
+            arrival: arrival,
+            association: associations,
+            contact: contacts
           }
         ]
         let OutFile = btoa(JSON.stringify(RFileObject))

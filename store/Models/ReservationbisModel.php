@@ -21,8 +21,7 @@ class ReservationbisModel extends artnum\SQL {
       'reservation_locality' => 'string',
       'reservation_address' => 'string'
     ));
-    $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "countReservation" ON "reservation"."reservation_id" = "countReservation"."countReservation_reservation" WHERE "\\IDName" = :id');
-    $this->set_req('listing', 'SELECT * FROM "\\Table" LEFT JOIN "countReservation" ON "reservation"."reservation_id" = "countReservation"."countReservation_reservation"');
+    $this->set_req('get', 'SELECT * FROM "\\Table" LEFT JOIN "countReservation" ON "reservation"."reservation_id" = "countReservation"."countReservation_reservation"');
   }
 }
 ?>

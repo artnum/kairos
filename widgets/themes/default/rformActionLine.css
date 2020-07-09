@@ -1,0 +1,22 @@
+.noteline {
+    cursor: pointer;
+}
+
+.actionLine {
+    font-family: 'Roboto', sans-serif;
+    border-top: 1px solid #ccc;
+}
+
+.actionLine .action {
+    padding: 0.3ex 2ch;
+    color: #ccc;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0 0 8px 8px;
+    display: inline-block;
+    margin-left: 0.5ch;
+}
+
+.actionLine .action:hover {
+    background-color: #eee;
+    color: black !important;
+}

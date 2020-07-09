@@ -1,0 +1,58 @@
+.reservation.highlight {
+    z-index: 99;
+    box-shadow: 0px 0px 26px 10px hsla(300, 100%, 50%, 1) !important;
+    filter: none !important;
+}
+
+.reservation.done.highlight {
+    filter: opacity(0.5) !important;
+}
+
+.reservation .identity .fa-folder {
+    display: none;
+}
+
+.reservation .identity[data-folder] .fa-folder {
+    display: inline-block;
+}
+
+.reservation .identity .fa-wrench {
+    display: none;
+}
+
+.reservation .identity[data-equipment] .fa-wrench {
+    display: inline-block;
+}
+
+
+.reservation .identity .fa-exchange-alt {
+    display: none;
+}
+
+.reservation .identity[data-exchange] .fa-exchange-alt {
+    display: inline-block;
+}
+
+.reservation .identity .fa-bullseye {
+    display: none;
+}
+
+.reservation .identity[data-warehouse] .fa-bullseye {
+    display: inline-block;
+}
+
+.reservation .identity .fa-user {
+    display: none;
+}
+
+.reservation .identity[data-creator] .fa-user {
+    display: inline-block;
+}
+
+.reservation .identity .fa-exclamation-triangle {
+    display: none;
+}
+
+.reservation .identity[data-critic] .fa-exclamation-triangle {
+    display: inline-block;
+}

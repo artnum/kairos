@@ -1,0 +1,16 @@
+.smallTooltip, .tooltip {
+    z-index: 9999999;
+    padding: 4px;
+    border: 1px solid hsla(var(--default-reverse-bg-color-base), 1);
+    background-color: hsla(var(--default-reverse-bg-color-base), 1);
+    color: hsla(var(--default-reverse-color-base), 1);
+}
+
+.smallTooltip {
+    font-size: 10pt;
+}
+
+.tooltip {
+    font-size: 12pt;
+}
+

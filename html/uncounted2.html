@@ -1,0 +1,74 @@
+<!DOCTYPE>
+<html>
+<head>
+<title>Non décompté, fin confirmée</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table
+    data-source="store/DeepReservation/.uncounted" data-options="{parameters: {'search.status': '1', 'search.confirmed': '1'}}" data-entry-id="id">
+    <thead><tr>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
+      <th data-attribute="target:integer">Machine</th>
+      <th data-attribute="reference">Référence</th>
+      <th data-attribute="begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="end:date" data-sort-type="date">Fin</th>
+      <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform">Client</th>
+      <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
+      <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
+      <th data-attribute="_arrival.reported:date">Fin confirmée</th>
+      <th data-attribute="_arrival.done:date" data-sort-type="date">Retournée</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="https://bitwiseshiftleft.github.io/sjcl/sjcl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/transliteration@2.1.3/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="https://artnum.ch/code/js/Query.js"></script>
+<script src="https://artnum.ch/code/js/Path.js"></script>
+<script src="https://artnum.ch/code/js/Date.js"></script>
+<script src="/js/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE') 
+
+   let params = new URLSearchParams(window.location.search.substring(1))
+   let currentUser = window.localStorage.getItem(Artnum.Path.bcname('user'))
+   if (currentUser) {
+     params.append('creator', JSON.parse(currentUser).name)
+   }
+
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i], search: params}, true)
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+           break;
+       }
+     })
+     dtable.addPfunc('countDays', async function (value, entry) {
+       entry = entry[0]
+       let today = new Date()
+       today.setHours(12, 0, 0, 0)
+       let oldest = new Date(entry.begin)
+       if (entry.lastcount) {
+         oldest = new Date(entry.lastcount)
+       }
+       oldest.setHours(12, 0, 0, 0)
+       let delta = Math.round((today.getTime() - oldest.getTime()) / 86400000)
+       if (delta < 0) {
+         return ['futur', -1]
+       }
+       let open =  delta - (Math.floor(delta / 7) * 2)
+       return [`${open}`, open]
+     })
+     dtable.run()
+   }
+ }
+</script>
+</html>

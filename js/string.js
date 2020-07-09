@@ -107,5 +107,32 @@ Object.assign(String.prototype, {
 
   html  () {
     return this.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+  },
+
+  toMoney () {
+    let v = this.split(/[,.]/, 2)
+    if (v.length < 2) {
+      return `${this}.–`
+    }
+    if (parseInt(v[1]) === 0) {
+      return `${v[0]}.–`
+    } else {
+      if (parseInt(v[1]) < 10) {
+        return `${v[0]}.${v[1]}0`
+      } else {
+        return `${v[0]}.${v[1]}`
+      }
+    }
+  },
+
+  initials () {
+    let i = this.split(/\s+/)
+    let initial = ''
+    for (let v of i) {
+      if (v.length > 0) {
+        initial += v[0]
+      }
+    }
+    return initial.toUpperCase()
   }
 })
