@@ -697,24 +697,27 @@ define([
       window.requestAnimationFrame(function () { djDomClass.remove(e, 'error') })
     },
 
-    overlap: function () {
-      if (Object.keys(this.entries).length === 0) { return }
-      let days = Math.round((this.get('dateRange').end.getTime() - this.get('dateRange').begin.getTime()) / 86400000)
-      let boxes = new Array(days)
-      for (let i = 0; i < days; i++) {
-        boxes[i] = []
-      }
-      for (let k in this.entries) {
-        if (this.entries[k].deleted) { continue }
-        let slot0 = Math.round((this.entries[k].get('trueBegin').getTime() - this.get('dateRange').begin.getTime()) / 86400000)
-        let length = Math.round((this.entries[k].get('trueEnd').getTime() - this.entries[k].get('trueBegin').getTime()) / 86400000) + 1
+    show: function () {
+      var frag = document.createDocumentFragment()
+      var entries = []
 
-        if ((slot0 <= 0 && slot0 + length <= 0) || slot0 > days) { continue }
-        if (slot0 < 0) {
-          length += slot0
-          slot0 = 0
+      for (var k in this.entries) {
+        if (!this.entries[k].get('displayed')) {
+          if (this.entries[k].domNode) {
+            frag.appendChild(this.entries[k].domNode)
+          }
+          this.entries[k].set('displayed', true)
         }
-        if (slot0 + length >= days) { length = days - slot0 }
+        this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
+        entries.push(this.entries[k])
+      }
+
+      this.overlap(entries)
+      window.requestAnimationFrame(function () {
+        this.data.appendChild(frag)
+        this.resize()
+      }.bind(this))
+    },
 
     overlap: function () {
       var entries
@@ -744,10 +747,28 @@ define([
             if (overlapRoot[j].duration > entries[i].duration) {
               overlapRoot[j].overlap.elements.push(entries[i])
             } else {
-              e.set('hdivider', divider)
+              entries[i].overlap.elements = overlapRoot[j].overlap.elements.slice()
+              entries[i].overlap.elements.push(overlapRoot[j])
+              overlapRoot[j].elements = []
+              overlapRoot[j] = entries[i]
             }
+            root = false; break
           }
-        })
+        }
+        if (root) {
+          overlapRoot.push(entries[i])
+        }
+      }
+
+      for (i = 0; i < overlapRoot.length; i++) {
+        overlapRoot[i].overlap.order = 1
+        overlapRoot[i].overlap.level = overlapRoot[i].overlap.elements.length + 1
+        overlapRoot[i].overlap.do = true
+        for (j = 0; j < overlapRoot[i].overlap.elements.length; j++) {
+          overlapRoot[i].overlap.elements[j].overlap.order = j + 2
+          overlapRoot[i].overlap.elements[j].overlap.level = overlapRoot[i].overlap.elements.length + 1
+          overlapRoot[i].overlap.elements[j].overlap.do = true
+        }
       }
     },
 

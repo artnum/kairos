@@ -1207,7 +1207,7 @@ define([
         }
         toolsOffsetEnd *= this.get('blockSize') / 24
       }
-      var domclass = {reservation: true, overlap: this.get('hdivider') > 1, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
+      var domclass = {reservation: true, overlap: this.overlap.do > 0, nobegin: nobegin, noend: noend, confirmed: this.is('confirmed'), done: returnDone}
       var supRect = this.sup.view.rectangle
 
       var supTopBorder = djDomStyle.get(this.sup.domNode, 'border-top-width')
