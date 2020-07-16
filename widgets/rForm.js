@@ -723,6 +723,10 @@ define([
       for (; fset && fset.nodeName !== 'FIELDSET'; fset = fset.parentNode) ;
       let inputs = fset.getElementsByTagName('input')
       let data = {reservation: this.reservation.get('id'), technician: this.Intervention.person.value, type: this.Intervention.type.value}
+      let prevs = []
+      if (fset.dataset.previous) {
+        prevs = fset.dataset.previous.split(',')
+      }
       for (let k in inputs) {
         switch (inputs[k].name) {
           case 'iDate':
@@ -738,13 +742,38 @@ define([
           case 'iComment': data.comment = inputs[k].value === undefined ? '' : inputs[k].value; break
         }
       }
-      Query.exec(Path.url('store/Evenement'), {method: 'post', body: data}).then((result) => {
+      let queries = []
+      do {
+        let prev = prevs.pop()
+        if (prev) {
+          data.previous = String(prev).trim()
+        }
+        queries.push(fetch(Path.url('store/Evenement'), {method: 'post', body: JSON.stringify(data)}))
+      } while (prevs.length > 0)
+      Promise.all(queries).then((responses) => {
         this.interventionReload(fset)
+        this.interventionClearForm(fset)
       })
     },
 
+    interventionClearForm: function (fset) {
+      let inputs = fset.getElementsByTagName('input')
+      for (let k in inputs) {
+        if (inputs[k].name === 'iDate') {
+          window.requestAnimationFrame(() => inputs[k].value = (new Date()).toISOString().split('T')[0])
+        } else if (inputs[k].name === 'iPerson') {
+          this.Intervention.person.clear()
+        } else if (inputs[k].name === 'iType') {
+          this.Intervention.type.clear()
+        } else {
+          window.requestAnimationFrame(() => inputs[k].value = '')
+        }
+      }
+      fset.dataset.previous = ''
+    },
+
     interventionReload: function (fset) {
-      Query.exec(Path.url('store/Evenement', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
+      Query.exec(Path.url('store/Evenement/.unified', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
           if (div[i].getAttribute('name') === 'iContent') {
@@ -756,25 +785,49 @@ define([
         let frag = document.createDocumentFragment()
         for (let i = 0; i < results.length; i++) {
           let n = document.createElement('DIV')
+          n.classList.add('event')
           n.dataset.id = results.data[i].id
           let date = new Date(results.data[i].date)
 
           let technician = results.data[i].technician
-          let t = await this.Stores.User.get(technician)
-          if (t !== null) {
-            technician = t.name
+          if (technician) {
+            let t = await this.Stores.User.get(technician)
+            if (t !== null) {
+              technician = t.name
+            } else {
+              technician = ''
+            }
+          } else {
+            technician = ''
           }
           let type = results.data[i].type
-          t = await this.Stores.Status1.get(type)
-          if (t !== null) {
-            type = t.name
+          let color = 'black'
+          if (type) {
+            t = await this.Stores.Status1.get(type)
+            if (t !== null) {
+              type = t.name
+              color = t.color
+            }
+          } else {
+            type = ''
           }
+
           let comment = results.data[i].comment
-          n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${type}</span><span class="technician">${technician}</span><span class="delete"><i class="far fa-trash-alt"> </i></span>${comment === '' ? '' : '<span class="comment">' + comment + '</span>'}`
+          n.style.color = color
+          n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${type}</span><span class="technician">${technician}</span><span class="buttons"><span class="reply"><i class="fas fa-reply"></i></span><span class="delete"><i class="far fa-trash-alt"> </i></span></span>${comment === '' ? '' : '<span class="comment">' + comment + '</span>'}`
           for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
-            if (s.classList.contains('delete')) {
-              s.addEventListener('click', this.interventionDelete.bind(this))
-              break
+            if (s.classList.contains('buttons')) {
+              s.addEventListener('click', (event) => {
+                let node = event.target
+                while (node && node.nodeName !== 'SPAN') {
+                  node = node.parentNode
+                }
+                if(node.classList.contains('delete')) {
+                  this.interventionDelete(event)
+                } else if (node.classList.contains('reply')) {
+                  this.interventionReply(event)
+                }
+              })
             }
           }
           frag.appendChild(n)
@@ -786,18 +839,54 @@ define([
       }.bind(this))
     },
 
+    interventionReply: function (event) {
+      let node = event.target
+      while (node && !node.classList.contains('event')) {
+        node = node.parentNode
+      }
+      if (node.dataset.id === undefined) {
+        KAIROS.error('Aucun identifiant sur l\'élément selectionné')
+        return
+      }
+      let fset = node
+      while (fset && fset.nodeName !== 'FIELDSET') {
+        fset = fset.parentNode
+      }
+
+      if (node.classList.contains('replying')) {
+        window.requestAnimationFrame(() => node.classList.remove('replying'))
+        let a = fset.dataset.previous.split(',')
+        let b = []
+        a.forEach((e) => {
+          if (String(e).trim() !== String(node.dataset.id).trim()) {
+            b.push(String(e).trim())
+          }
+        })
+        fset.dataset.previous = b.join(',')
+      } else {
+        window.requestAnimationFrame(() => node.classList.add('replying'))
+        if (fset.dataset.previous === undefined || fset.dataset.previous === '') {
+          fset.dataset.previous = node.dataset.id
+        } else {
+          fset.dataset.previous += `,${node.dataset.id}`
+        }
+      }
+    },
+
     interventionDelete: function (event) {
+      let fset = event.target
+      while (fset && fset.nodeName !== 'FIELDSET') {
+        fset = fset.parentNode
+      }
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      Query.exec(Path.url(`store/Evenement/${id}`), {method: 'delete'}).then((result) => {
-        if (result.success) {
-          window.requestAnimationFrame(() => {
-            if (line.parentNode) {
-              line.parentNode.removeChild(line)
-            }
-          })
+      fetch(Path.url(`store/Evenement/${id}`), {method: 'delete'}).then((result) => {
+        if (!result.ok) {
+          KAIROS.error(`Suppression de l'évènmenent ${id} a échoué`)
         }
+        this.interventionReload(fset)
+        this.interventionClearForm(fset)
       })
     },
 
@@ -1135,7 +1224,7 @@ define([
           if (name && name.substr(0, 2) === 'o-') {
             var other = this.get('other')
             if (other && other[name.substr(2)]) {
-              var w = dtRegistry.byNode(inputs[i])
+              var w = dtRegistry.byNode(inputs[j])
               if (w) {
                 w.set('value', other[name.substr(2)])
               } else {
@@ -1858,7 +1947,6 @@ define([
                   // nope
                   return
                 }
-                console.log(uObject)
                 if (uObject.protocol !== 'http:' && uObject.protocol !== 'https:') {
                   alert('Accès à ce service non-supporté')
                   return
