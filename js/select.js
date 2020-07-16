@@ -5,6 +5,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
+  this.input = input
   input.setAttribute('autocomplete', 'off')
   let originalValue = input.value
   let obj = new Proxy(this, {
@@ -313,4 +314,11 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
 
   obj.value = originalValue
   return obj
+}
+
+
+Select.prototype.clear = function () {
+  this.input.classList.remove('colored')
+  this.input.value = ''
+  this.input.dataset.value = ''
 }
