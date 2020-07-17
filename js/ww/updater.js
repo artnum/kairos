@@ -233,6 +233,55 @@ function newVTimeLine () {
   return vTimeLine
 }
 
+var Status = {}
+function checkMachineState () {
+  let p = new Promise((resolve, reject) => {
+    let url = getUrl('store/Evenement/.machinestate')
+    doFetch(url).then(response => {
+      if (response.ok) {
+        response.json().then(result => {
+          for (i = 0; i < result.length; i++) {
+            let entry = result.data[i]
+            if (Channels[btoa(entry.resolvedTarget)]) {
+              if (Status[btoa(entry.type)]) {
+                entry.type = Status[btoa(entry.type)]
+                Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+              } else {
+  
+                  doFetch(getUrl(`store/${entry.type}`)).then(response => {
+                    if (response.ok) {
+                      response.json().then(status => {
+                        if (status.length === 1) {
+                          let severity = parseInt(status.data.severity)
+                          if (severity < 1000) {
+                            status.data.color = 'black'
+                          } else if (severity < 2000) {
+                            status.data.color = 'blue'
+                          } else if (severity < 3000) {
+                            status.data.color = 'darkorange'
+                          } else {
+                            status.data.color = 'red'
+                          }
+                          Status[btoa(entry.type)] = status.data
+                          entry.type = Status[btoa(entry.type)]
+                          Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+                          resolve()
+                        }
+                      })
+                    }
+                  })
+         
+              }
+            }
+          }
+          resolve()
+        })
+      }
+    })
+  })
+  p.then(() => setTimeout(checkMachineState, 5000))
+}
+
 function runUpdater () {
   let url = getUrl('store/DeepReservation')
 
@@ -252,6 +301,7 @@ function runUpdater () {
 
 const updateTimer = 10
 function startUpdater () {
+  checkMachineState()
   if (LastMod > 0) {
     let url = getUrl('store/DeepReservation')
     url.searchParams.set('search.modification', '>' + LastMod)

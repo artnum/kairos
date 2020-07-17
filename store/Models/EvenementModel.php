@@ -39,6 +39,37 @@ class EvenementModel extends artnum\SQL {
     return array(NULL, 0);
   }
 
+  function getMachineState ($options) {
+    $req = 'SELECT "evenement".*, COALESCE(NULLIF("evenement_target", \'\'), "reservation_target") 
+        AS "evenement_resolvedTarget", "status_severity" AS "evenement_severity"
+          FROM "evenement" LEFT JOIN "status" ON "status_id" = idFromURL("evenement_type")
+          LEFT JOIN "reservation" ON "reservation_id" = "evenement_reservation"
+          WHERE "evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL)
+          AND "reservation"."reservation_deleted" IS NULL;';
+    try {
+      $st = $this->get_db(true)->prepare($req);
+      if($st->execute()) {
+        $entries = array();
+        while(($data = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $entry = $this->unprefix($data);
+          if (!isset($entries[$entry['resolvedTarget']])) {
+            $entries[$entry['resolvedTarget']] = $entry;
+          } else {
+            if ($entries[$entry['resolvedTarget']]['severity'] < $entry['severity']) {
+              $entries[$entry['resolvedTarget']] = $entry;
+            }
+          }
+        }
+        return array(array_values($entries), count($entries));
+      }
+    } catch(\Exception $e) {
+      $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
+      return array(NULL, 0);
+    }
+  
+    return array(NULL, 0);
+  }
+
   function getUnified ($options) {
     $req = 'SELECT
               "evenement".*,
@@ -77,9 +108,9 @@ class EvenementModel extends artnum\SQL {
     $req = $this->prepare_statement($req, $options);
     $parts = explode(' WHERE ', $req);
     if (empty($parts[1])) {
-      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL)';
+      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL) AND "reservation"."reservation_deleted" IS NULL';
     } else {
-      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL) AND ' . $parts[1];
+      $parts[1] = '"evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL) AND "reservation"."reservation_deleted" IS NULL AND ' . $parts[1];
     }
     $req = join(' WHERE ', $parts);
     try {

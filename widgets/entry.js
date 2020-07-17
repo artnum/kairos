@@ -150,6 +150,21 @@ define([
           })
           this.modified = true
           break
+        case 'state':
+          if (!this.nControl) { return }
+          if (!msgData.value) { return }
+          if (!msgData.value.type) { return }
+          if (!msgData.value.type.color) { return }
+          let node = this.nControl.firstElementChild
+          while (node && !node.classList.contains('tools')) {
+            node = node.nextElementSibling
+          }
+          node = node.firstElementChild
+          while (node && !node.classList.contains('fa-shield-alt')) {
+            node = node.nextElementSibling
+          }
+          window.requestAnimationFrame(() => node.style.color = msgData.value.type.color)
+          break
       }
     },
     computeIntervalOffset: function (date) {
@@ -208,7 +223,22 @@ define([
       this.domNode.dataset.details = JSON.stringify(this.details)
       
       this.genDetails()
+
+      let node = this.nControl.firstElementChild
+      while (node && !node.classList.contains('tools')) {
+        node = node.nextElementSibling
+      }
+      node = node.firstElementChild
+      while (node && !node.classList.contains('fa-shield-alt')) {
+        node = node.nextElementSibling
+      }
+      node.addEventListener('click', this.EvenementPopUp.bind(this))
     },
+
+    EvenementPopUp: function (event) {
+      fetch()
+    },
+
     handleReservationEvent: function (event) {
       switch (event.type) {
         case 'change':
