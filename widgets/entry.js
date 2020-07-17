@@ -232,11 +232,44 @@ define([
       while (node && !node.classList.contains('fa-shield-alt')) {
         node = node.nextElementSibling
       }
-      node.addEventListener('click', this.EvenementPopUp.bind(this))
+      node.addEventListener('click', () => {
+        this.EvenementPopUp(node)
+      })
     },
 
-    EvenementPopUp: function (event) {
-      fetch()
+    EvenementPopUp: function (node) {
+      fetch(Path.url(`store/Evenement/.chain?machine=${this.target}`)).then(response => {
+        if (!response.ok) {
+          KAIROS.error('Erreur lors de l\'interrogation des évènements')
+          return
+        }
+        response.json().then(result => {
+          console.log(result)
+          if (result.length <= 0) {
+            KAIROS.info(`Aucune chaîne d'évènements ouverte pour la machine ${this.target}`)
+          } else {
+            if (result.length === 1) {
+              KAIROS.info(`1 chaîne d'évènements ouverte pour la machine ${this.target}`)
+            } else {
+              KAIROS.info(`${result.length} chaînes d'évènements ouvertes pour la machine ${this.target}`)
+            }
+            let chains = document.createElement('DIV')
+            chains.classList.add('evenement')
+            for (let i = 0; i < result.length; i++) {
+              let entry = result.data[i]
+              do {
+                let line = document.createElement('DIV')
+                line.classList.add((i % 2 ? 'odd' : 'even'))
+                line.innerHTML = `${entry.date} ${entry.name} ${entry.technician} ${entry.comment}`
+                chains.appendChild(line)
+                entry = entry.previous
+              } while (entry)
+            }
+            document.body.appendChild(chains)
+            Popper.createPopper(node, chains, {placement: 'right'})
+          }
+        })
+      })
     },
 
     handleReservationEvent: function (event) {

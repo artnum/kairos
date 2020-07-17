@@ -301,7 +301,6 @@ function runUpdater () {
 
 const updateTimer = 10
 function startUpdater () {
-  checkMachineState()
   if (LastMod > 0) {
     let url = getUrl('store/DeepReservation')
     url.searchParams.set('search.modification', '>' + LastMod)
@@ -321,3 +320,5 @@ function startUpdater () {
     setTimeout(startUpdater, updateTimer * 1000)
   }
 }
+
+checkMachineState()
