@@ -748,7 +748,7 @@ define([
         if (prev) {
           data.previous = String(prev).trim()
         }
-        queries.push(fetch(Path.url('store/Evenement'), {method: 'post', body: JSON.stringify(data)}))
+        queries.push(fetch(Path.url('store/Evenement'), {method: 'post', body: JSON.stringify(data), headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}))
       } while (prevs.length > 0)
       Promise.all(queries).then((responses) => {
         this.interventionReload(fset)
@@ -1911,7 +1911,8 @@ define([
       let upload = (formData) => {
         fetch(new URL(`${window.location.origin}/${KAIROS.base}/${KAIROS.uploader}`), {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})
         }).then((response) => {
           response.json().then((result) => {
             if (result.success) {
