@@ -9,6 +9,7 @@
 @import 'count.css';
 @import 'overlay.css';
 @import 'symbols.css';
+@import 'intervention.css';
 
 html {
 	overflow-x: hidden;

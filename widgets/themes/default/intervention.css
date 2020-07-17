@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css?family=B612+Mono&display=swap');
+
+div.evenement {
+    font-size: 14pt;
+    font-family: B612;
+    background-color: white;
+    width: 60ch;
+    max-height: 32ex;
+    overflow: auto;
+    box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);;
+    border: 2px solid black;
+    padding: 6px;
+}
+
+div.evenement .odd {
+    text-align: left;
+    width: 100%;
+}
+
+div.evenement .even {
+    text-align: right;
+    width: 100%;
+}
+
+div.evenement .s1 {
+    color: blue
+}
+
+div.evenement .s2 {
+    color: darkorange;
+}
+
+div.evenement .s3 {
+    color: red;
+}
