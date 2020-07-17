@@ -61,7 +61,7 @@ class DeepReservationModel extends ReservationModel {
           $where[] = 'COALESCE(arrival_reported, \'\') <> \'\'';
           $where[] = 'arrival_deleted IS NULL';
         } else {
-          $where[] = 'COALESCE(arrival_reported, \'\') <> \'\'';
+          $where[] = 'COALESCE(arrival_reported, \'\') = \'\'';
           $where[] = 'arrival_deleted IS NOT NULL';
         }
       }
