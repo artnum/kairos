@@ -881,7 +881,7 @@ define([
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      fetch(Path.url(`store/Evenement/${id}`), {method: 'delete'}).then((result) => {
+      fetch(Path.url(`store/Evenement/${id}`), {method: 'delete', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then((result) => {
         if (!result.ok) {
           KAIROS.error(`Suppression de l'évènmenent ${id} a échoué`)
         }
