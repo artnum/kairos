@@ -150,6 +150,21 @@ define([
           })
           this.modified = true
           break
+        case 'state':
+          if (!this.nControl) { return }
+          if (!msgData.value) { return }
+          if (!msgData.value.type) { return }
+          if (!msgData.value.type.color) { return }
+          let node = this.nControl.firstElementChild
+          while (node && !node.classList.contains('tools')) {
+            node = node.nextElementSibling
+          }
+          node = node.firstElementChild
+          while (node && !node.classList.contains('fa-shield-alt')) {
+            node = node.nextElementSibling
+          }
+          window.requestAnimationFrame(() => node.style.color = msgData.value.type.color)
+          break
       }
     },
     computeIntervalOffset: function (date) {
@@ -208,7 +223,82 @@ define([
       this.domNode.dataset.details = JSON.stringify(this.details)
       
       this.genDetails()
+
+      let node = this.nControl.firstElementChild
+      while (node && !node.classList.contains('tools')) {
+        node = node.nextElementSibling
+      }
+      node = node.firstElementChild
+      while (node && !node.classList.contains('fa-shield-alt')) {
+        node = node.nextElementSibling
+      }
+      node.addEventListener('click', (event) => {
+        event.stopPropagation()
+        this.EvenementPopUp(node)
+      }, {capture: true})
+      node.addEventListener('dblclick', (event) => {
+        event.stopPropagation()
+      }, {capture: true})
     },
+
+    EvenementPopUp: function (node) {
+      if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
+        this.EntryStateOpen.destroy()
+        this.EntryStateOpen = null
+        return
+      }
+      fetch(Path.url(`store/Evenement/.chain?machine=${this.target}`)).then(response => {
+        if (!response.ok) {
+          KAIROS.error('Erreur lors de l\'interrogation des évènements')
+          return
+        }
+        response.json().then(result => {
+          if (result.length <= 0) {
+            KAIROS.info(`Aucune chaîne d'évènements ouverte pour la machine ${this.target}`)
+          } else {
+            if (result.length === 1) {
+              KAIROS.info(`1 chaîne d'évènements ouverte pour la machine ${this.target}`)
+            } else {
+              KAIROS.info(`${result.length} chaînes d'évènements ouvertes pour la machine ${this.target}`)
+            }
+            let chains = document.createElement('DIV')
+            chains.classList.add('evenement')
+            for (let i = 0; i < result.length; i++) {
+              let entry = result.data[i]
+              let first = true
+              do {
+                let line = document.createElement('DIV')
+                if (entry.reservation) {
+                  line.dataset.reservationId = entry.reservation
+                }
+                line.classList.add((i % 2 ? 'odd' : 'even'))
+                line.classList.add(`s${Math.trunc(entry.severity / 1000)}`)
+                if (first) {
+                  line.classList.add('first')
+                }
+                line.innerHTML = `<span class="field date">${new Date(entry.date).fullDate()}</span><span class="field name">${entry.name}</span><span class="field technician">${entry.technician}</span><span clasS="field comment">${entry.comment}</span>`
+                chains.appendChild(line)
+                entry = entry.previous
+                first = false
+              } while (entry)
+            }
+            document.body.appendChild(chains)
+            chains.addEventListener('click', (event) => {
+              event.stopPropagation()
+              let node = event.target
+              while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+              if (node.dataset.reservationId) {
+                window.GEvent('reservation.open', {id: node.dataset.reservationId})
+              }
+            }, {capture: true})
+            if (this.EntryStateOpen === undefined || this.EntryStateOpen === null) {
+              this.EntryStateOpen = Popper.createPopper(node, chains, {placement: 'right'})
+            }
+          }
+        })
+      })
+    },
+
     handleReservationEvent: function (event) {
       switch (event.type) {
         case 'change':

@@ -16,7 +16,7 @@ function showTooltip (node, value = null) {
     tt.classList.add('smallTooltip')
     tt.innerHTML = content
     node.parentNode.insertBefore(tt, node)
-    window.GlobalTooltipPopper = new Popper(node, tt, {placement: 'top-start', removeOnDestroy: true})
+    window.GlobalTooltipPopper = Popper.createPopper(node, tt, {placement: 'top-start', removeOnDestroy: true})
   }
 }
 

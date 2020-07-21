@@ -559,7 +559,7 @@ define([
     toolTip: function (node, element, triggerElement) {
       this.toolTip_hide()
       document.body.appendChild(node)
-      window.TooltipPopper = [new Popper(element, node, {placement: 'top-start'}), node, triggerElement]
+      window.TooltipPopper = [Popper.createPopper(element, node, {placement: 'top-start'}), node, triggerElement]
       triggerElement.addEventListener('mouseout', this.toolTip_hide, {capture: true})
       triggerElement.addEventListener('mouseleave', this.toolTip_hide, {capture: true})
     },
@@ -754,6 +754,16 @@ define([
       window.setTimeout(function () {
         this.update()
       }.bind(this), 5000)
+
+      document.addEventListener('click', (event) => {
+        for (let i in this.Entries) {
+          let entry = this.Entries[i]
+          if (entry.EntryStateOpen !== undefined && entry.EntryStateOpen !== null) {
+            entry.EntryStateOpen.destroy()
+            entry.EntryStateOpen = null
+          }
+        }
+      }, {capture: true})
     },
 
     revision: function () {
@@ -1422,7 +1432,7 @@ define([
             var machine = response.data[i]
             let groupName = []
 
-            if (!machine.cn || !machine.uid) { continue }
+            if (!machine || !machine.cn || !machine.uid) { continue }
             if (machine.state && machine.state.indexOf('SOLD') !== -1) { continue }
 
             let name = `${machine.uid} <div class="name">${machine.cn}</div>`
