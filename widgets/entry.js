@@ -243,7 +243,8 @@ define([
 
     EvenementPopUp: function (node) {
       if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
-        this.EntryStateOpen.destroy()
+        this.EntryStateOpen[0].destroy()
+        this.EntryStateOpen[1].parentNode.removeChild(this.EntryStateOpen[1])
         this.EntryStateOpen = null
         return
       }
@@ -292,7 +293,7 @@ define([
               }
             }, {capture: true})
             if (this.EntryStateOpen === undefined || this.EntryStateOpen === null) {
-              this.EntryStateOpen = Popper.createPopper(node, chains, {placement: 'right'})
+              this.EntryStateOpen = [Popper.createPopper(node, chains, {placement: 'right'}), chains]
             }
           }
         })

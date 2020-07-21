@@ -759,7 +759,8 @@ define([
         for (let i in this.Entries) {
           let entry = this.Entries[i]
           if (entry.EntryStateOpen !== undefined && entry.EntryStateOpen !== null) {
-            entry.EntryStateOpen.destroy()
+            entry.EntryStateOpen[0].destroy()
+            entry.EntryStateOpen[1].parentNode.removeChild(entry.EntryStateOpen[1])
             entry.EntryStateOpen = null
           }
         }
