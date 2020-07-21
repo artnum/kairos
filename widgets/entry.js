@@ -232,19 +232,27 @@ define([
       while (node && !node.classList.contains('fa-shield-alt')) {
         node = node.nextElementSibling
       }
-      node.addEventListener('click', () => {
+      node.addEventListener('click', (event) => {
+        event.stopPropagation()
         this.EvenementPopUp(node)
-      })
+      }, {capture: true})
+      node.addEventListener('dblclick', (event) => {
+        event.stopPropagation()
+      }, {capture: true})
     },
 
     EvenementPopUp: function (node) {
+      if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
+        this.EntryStateOpen.destroy()
+        this.EntryStateOpen = null
+        return
+      }
       fetch(Path.url(`store/Evenement/.chain?machine=${this.target}`)).then(response => {
         if (!response.ok) {
           KAIROS.error('Erreur lors de l\'interrogation des évènements')
           return
         }
         response.json().then(result => {
-          console.log(result)
           if (result.length <= 0) {
             KAIROS.info(`Aucune chaîne d'évènements ouverte pour la machine ${this.target}`)
           } else {
@@ -257,16 +265,35 @@ define([
             chains.classList.add('evenement')
             for (let i = 0; i < result.length; i++) {
               let entry = result.data[i]
+              let first = true
               do {
                 let line = document.createElement('DIV')
+                if (entry.reservation) {
+                  line.dataset.reservationId = entry.reservation
+                }
                 line.classList.add((i % 2 ? 'odd' : 'even'))
-                line.innerHTML = `${entry.date} ${entry.name} ${entry.technician} ${entry.comment}`
+                line.classList.add(`s${Math.trunc(entry.severity / 1000)}`)
+                if (first) {
+                  line.classList.add('first')
+                }
+                line.innerHTML = `<span class="field date">${new Date(entry.date).fullDate()}</span><span class="field name">${entry.name}</span><span class="field technician">${entry.technician}</span><span clasS="field comment">${entry.comment}</span>`
                 chains.appendChild(line)
                 entry = entry.previous
+                first = false
               } while (entry)
             }
             document.body.appendChild(chains)
-            Popper.createPopper(node, chains, {placement: 'right'})
+            chains.addEventListener('click', (event) => {
+              event.stopPropagation()
+              let node = event.target
+              while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+              if (node.dataset.reservationId) {
+                window.GEvent('reservation.open', {id: node.dataset.reservationId})
+              }
+            }, {capture: true})
+            if (this.EntryStateOpen === undefined || this.EntryStateOpen === null) {
+              this.EntryStateOpen = Popper.createPopper(node, chains, {placement: 'right'})
+            }
           }
         })
       })

@@ -44,7 +44,7 @@ function MButton(button, choice = []) {
       }
     }
 
-    this.Popper = new Popper(this.Button, this.subMenu, {
+    this.Popper = Popper.createPopper(this.Button, this.subMenu, {
       placement: 'top-end',
       modifiers: {
         preventOverflow: {

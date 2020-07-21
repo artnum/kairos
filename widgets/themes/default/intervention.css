@@ -1,35 +1,79 @@
 @import url('https://fonts.googleapis.com/css?family=B612+Mono&display=swap');
 
+:root {
+    --intervention-odd-color: aliceblue;
+    --intervention-even-color: white;
+    --intervention-severity-0: black;
+    --intervention-severity-1: blue;
+    --intervention-severity-2: darkorange;
+    --intervention-severity-3: red;
+}
+
 div.evenement {
-    font-size: 14pt;
-    font-family: B612;
+    font-size: 12pt;
+    font-family: "B612 Mono";
     background-color: white;
     width: 60ch;
     max-height: 32ex;
     overflow: auto;
     box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);;
-    border: 2px solid black;
-    padding: 6px;
+    padding: 0;
+    margin: 0;
 }
 
-div.evenement .odd {
-    text-align: left;
-    width: 100%;
+div.evenement .field {
+    min-width: 12ch;
+    width: 12ch;
+    max-width: 12ch;
+    overflow: hidden;
 }
 
-div.evenement .even {
-    text-align: right;
-    width: 100%;
+div.evenement .field::before {
+    content: ' ';
+}
+
+div.evenement .field.comment {
+    display: block;
+    margin-left: 11ch;
+    padding: 0;
+}
+
+div.evenement .s0.odd {
+    border-right: 2px solid black;
+    background: linear-gradient(90deg, var(--intervention-odd-color) 0,  var(--intervention-odd-color) calc(100% - 4ch), var(--intervention-severity-0) 100%);
+}
+
+div.evenement .s1.odd {
+    border-right: 2px solid blue;
+    background: linear-gradient(90deg, var(--intervention-odd-color) 0,  var(--intervention-odd-color) calc(100% - 4ch),  var(--intervention-severity-1) 100%);
+}
+
+div.evenement .s2.odd {
+    border-right: 2px solid darkorange;
+    background: linear-gradient(90deg, var(--intervention-odd-color) 0,  var(--intervention-odd-color) calc(100% - 4ch),  var(--intervention-severity-2) 100%);
+}
+
+div.evenement .s3.odd {
+    border-right: 2px solid red;
+    background: linear-gradient(90deg, var(--intervention-odd-color) 0,  var(--intervention-odd-color) calc(100% - 4ch),  var(--intervention-severity-3) 100%);
+}
+
+div.evenement .s0 {
+    border-right: 2px solid black;
+    background: linear-gradient(90deg, var(--intervention-even-color) calc(100% - 8ch),  var(--intervention-even-color) calc(100% - 4ch), var(--intervention-severity-0) 100%);
 }
 
 div.evenement .s1 {
-    color: blue
+    border-right: 2px solid blue;
+    background: linear-gradient(90deg, var(--intervention-even-color) calc(100% - 8ch), var(--intervention-even-color) calc(100% - 4ch),  var(--intervention-severity-1) 100%);
 }
 
 div.evenement .s2 {
-    color: darkorange;
+    border-right: 2px solid darkorange;
+    background: linear-gradient(90deg, var(--intervention-even-color) calc(100% - 8ch), var(--intervention-even-color) calc(100% - 4ch),  var(--intervention-severity-2) 100%);
 }
 
 div.evenement .s3 {
-    color: red;
+    border-right: 2px solid red;
+    background: linear-gradient(90deg, var(--intervention-even-color) calc(100% - 8ch), var(--intervention-even-color) calc(100% - 4ch),  var(--intervention-severity-3) 100%);
 }
