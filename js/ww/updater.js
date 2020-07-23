@@ -243,11 +243,12 @@ function checkMachineState () {
           for (i = 0; i < result.length; i++) {
             let entry = result.data[i]
             if (Channels[btoa(entry.resolvedTarget)]) {
-              if (Status[btoa(entry.type)]) {
-                entry.type = Status[btoa(entry.type)]
-                Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+              if (Status[btoa(entry.type)] !== undefined) {
+                if (Status[btoa(entry.type)] !== null) {
+                  entry.type = Status[btoa(entry.type)]
+                  Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+                }
               } else {
-  
                   doFetch(getUrl(`store/${entry.type}`)).then(response => {
                     if (response.ok) {
                       response.json().then(status => {
@@ -268,6 +269,8 @@ function checkMachineState () {
                           resolve()
                         }
                       })
+                    } else {
+                      Status[btoa(entry.type)] = null
                     }
                   })
          
