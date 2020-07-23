@@ -6,6 +6,7 @@ class TagsModel extends artnum\SQL {
    }
 
    function delete($id) {
+      $retVal  = new \artnum\JStore\Result();
       list ($target, $value) = explode('.', $id, 2);
       if(!empty($value) && !empty($target)) {
          $pre_statement = sprintf('DELETE FROM `%s` WHERE %s_target = :target AND %s_value = :value',
@@ -16,17 +17,17 @@ class TagsModel extends artnum\SQL {
             $st->bindParam(':value', $value, \PDO::PARAM_STR);
             $st->bindParam(':target', $target, \PDO::PARAM_STR);
          } catch(\Exception $e) {
-            return false;
+            $retVal->addError($e->getMessage());
          }
 
-         return $st->execute();
+         $retVal->addItem($st->execute());
       }
 
-      return false;
+      return $retVal;
    }
 
    function listing($options) {
-      $results = array();
+      $retVal = new \artnum\JStore\Result();
       try {
          $st = $this->get_db()->prepare(sprintf('SELECT * FROM %s', $this->Table));
          $st->execute();
@@ -38,16 +39,17 @@ class TagsModel extends artnum\SQL {
 
             array_push($results[$row['tags_target']], $row['tags_value']);
          }
+         $retVal->setItems($results);
+         $retVal->setCount(count($results));
       } catch (\Exception $e) {
-         return array();
+         $retVal->addError($e->getMessage());
       }
       
-      return array($results, count($results));
+      return $retVal;
    }
 
    function get($id) {
-      $results = array();
-
+      $results = [];
       $pre_statement = 'SELECT * FROM %s WHERE %s = :where';
       if(substr($id, 0, 1) == '.') {
          $where = substr($id, 1);
@@ -61,7 +63,6 @@ class TagsModel extends artnum\SQL {
          $st = $this->get_db()->prepare($pre_statement);
          $st->bindParam(':where', $where, \PDO::PARAM_STR);
          $st->execute();
-
          while($row = $st->fetch()) {
             if(! isset($results[$row['tags_target']])) {
                $results[$row['tags_target']] = array();
@@ -69,18 +70,20 @@ class TagsModel extends artnum\SQL {
             array_push($results[$row['tags_target']], $row['tags_value']);
          }
       } catch(\Exception $e) {
-         return array();
+         
       }
       
       return $results;
    }
 
    function read($id) {
-      $res = $this->get($id);
-      return array(array($res), 1);
+      $retVal = new \artnum\JStore\Result();
+      $retVal->addItem($this->get($id));
+      return $retVal;
    }
 
    function write($data, $id = NULL) {
+      $retVal = new \artnum\JStore\Result();
       $insert = array();
       $delete = array();
       foreach($data as $k => $v) {
@@ -99,19 +102,18 @@ class TagsModel extends artnum\SQL {
                $this->get_db()->query(sprintf('DELETE FROM %s WHERE tags_target = %s', $this->Table, $d));
             } 
          } catch(\Exception $e) {
-            return false;
+            $retVal->addError($e->getMessage());
          }
       }
       if(count($insert) > 0) {
          try {
             $st = $this->get_db()->prepare(sprintf('INSERT INTO %s VALUES %s', $this->Table, join(',', $insert)));
-            return $st->execute();
+            $retVal->addItem($st->execute());
          } catch(\Exception $e) {
-            return false;
+            $retVal->addError($e->getMessage());
          }
-      } else {
-         return true;
       }
+      return $retVal;
    }
 }
 ?>
