@@ -425,47 +425,44 @@ define([
     },
 
     clearTags: function () {
-      var def = new DjDeferred()
-      var that = this
-
-      that.nTags.setAttribute('class', 'tags')
-      window.requestAnimationFrame(function () {
-        while (that.nTags.firstChild) {
-          that.nTags.removeChild(that.nTags.firstChild)
-        }
-        def.resolve()
+      return new Promise((resolve, reject) => {
+        this.nTags.setAttribute('class', 'tags')
+        window.requestAnimationFrame(() => {
+          this.nTags.innerHTML = ''
+          resolve()
+        })
       })
-
-      return def.promise
     },
 
     eEditTags: function (event) {
-      var that = this
-      var form = document.createElement('FORM')
-      var input = document.createElement('INPUT')
-      form.appendChild(input)
-      var button = document.createElement('BUTTON')
-      button.setAttribute('type', 'submit'); button.appendChild(document.createTextNode('Ok'))
-      form.appendChild(button)
-
-      input.setAttribute('value', this.tags.join(', '))
-
-      djOn.once(form, 'submit', (event) => {
+      let form = document.createElement('FORM')
+      form.innerHTML = `<input type="text" name="tags" value="${this.tags.join(', ')}" /><input type="submit" value="Ok" />`
+      form.addEventListener('submit', event => {
         event.preventDefault()
+        let input = event.target.firstElementChild
+        while (input && input.getAttribute('name') !== 'tags') { input = input.nextElementSibling }
 
-        var tags = input.value.split(',')
+        let tags = input.value.split(',')
         for (var i in tags) {
           tags[i] = tags[i].trim()
         }
-        that.tags = tags
-        var q = {}
-        q[that.url] = tags
-        Req.post(String(Path.url('store/Tags/?!=' + that.url)), { query: q }).then(function () {
-          that.clearTags().then(() => { that.displayTags(tags) })
+        this.tags = tags
+        let q = {}
+        q[this.url] = tags
+        Req.post(String(Path.url('store/Tags/?!=' + this.url)), { query: q }).then(() => {
+          this.clearTags().then(() => { this.displayTags(tags) })
         })
       })
 
-      window.requestAnimationFrame(function () { that.clearTags().then(function () { that.nTags.setAttribute('class', 'tags edit'); that.nTags.appendChild(form); input.focus() }) })
+      this.clearTags().then(() => {
+        this.nTags.setAttribute('class', 'tags edit'); 
+        window.requestAnimationFrame(() => {
+          this.nTags.appendChild(form); 
+          let input = form.firstElementChild
+          while (input && input.getAttribute('name') !== 'tags') { input = input.nextElementSibling }
+          input.focus() 
+        })
+      }) 
     },
 
     focus: function () {
