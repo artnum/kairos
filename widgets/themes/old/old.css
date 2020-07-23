@@ -8,6 +8,8 @@
 @import '../default/symbols.css';
 @import '../default/rformActionLine.css';
 @import '../default/rformInputLine.css';
+@import '../default/intervention.css';
+
 
 html {
 	overflow-x: hidden;

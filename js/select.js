@@ -224,7 +224,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     window.requestAnimationFrame((event) => {
       if (!list.parentNode) {
         input.parentNode.insertBefore(list, input.nextSiblingElement)
-        popper = new Popper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
+        popper = Popper.createPopper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
       }
     })
     let value = input.value
