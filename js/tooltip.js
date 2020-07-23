@@ -16,14 +16,16 @@ function showTooltip (node, value = null) {
     tt.classList.add('smallTooltip')
     tt.innerHTML = content
     node.parentNode.insertBefore(tt, node)
-    window.GlobalTooltipPopper = Popper.createPopper(node, tt, {placement: 'top-start', removeOnDestroy: true})
+    window.GlobalTooltipPopper = [Popper.createPopper(node, tt, {placement: 'top'}), tt]
   }
 }
 
 function hideTooltip () {
   if (window.GlobalTooltipPopper) {
-    if (window.GlobalTooltipPopper.destroy) {
-      window.GlobalTooltipPopper.destroy()
+    if (window.GlobalTooltipPopper[0] && window.GlobalTooltipPopper[0].destroy) {
+      let node = window.GlobalTooltipPopper[1]
+      window.requestAnimationFrame(() => node.parentNode.removeChild(node))
+      window.GlobalTooltipPopper[0].destroy()
     }
     delete window.GlobalTooltipPopper
   }
