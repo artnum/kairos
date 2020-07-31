@@ -16,6 +16,8 @@
         <label><input data-dojo-type="dijit/form/CheckBox" data-dojo-attach-event="click:toggleDelivery" data-dojo-attach-point="nDelivery" /> Livraison différente</label>
         <label name="H:begin" class="small"><span data-href="beginDate" class="targetable">Début :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="beginDate" data-dojo-attach-point="beginDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="beginTime" data-dojo-attach-point="beginTime" /></label>
         <label name="H:end" class="small"><span data-href="endDate" class="targetable">Fin :</span><input class="ui" data-dojo-type="dijit/form/DateTextBox" data-dojo-props="constraints: {datePattern: 'EEE dd.MM.yy'}" name="endDate" data-dojo-attach-point="endDate" /> <input class="ui" data-dojo-type="dijit/form/TimeTextBox" name="endTime" data-dojo-attach-point="endTime" /></label>
+        <label name="H:deliveryRemark" calss="small"><span style="min-width: 100%;">Livraison la veille :</span><br /><input class="ui" style="min-width: 100%;" data-dojo-attach-point="nDeliveryRemark" data-dojo-type="dijit/form/TextBox" name="deliveryRemark" /></label>
+
         <button name="H:confirmed" data-dojo-attach-point="nConfirmed"><i class="far fa-calendar-check" aria-hidden="true"></i> Fin confirmée</button>
         <button data-dojo-attach-point="nConfirmedAndReturned"><i class="fab fa-fort-awesome" aria-hidden="true"></i> Ramenée</button>
       </fieldset>

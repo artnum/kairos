@@ -151,7 +151,8 @@ define([
       ;[
         'visit',
         'vreport',
-        'padlock'
+        'padlock',
+        'deliveryRemark'
       ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.dataHash[attr] = crc32(json[attr])
@@ -251,7 +252,8 @@ define([
       ;[
         'visit',
         'vreport',
-        'padlock'
+        'padlock',
+        'deliveryRemark'
       ].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
@@ -872,6 +874,7 @@ define([
           'warehouse',
           'note',
           'padlock',
+          'deliveryRemark',
           'visit',
           'vreport'
          ].forEach(djLang.hitch(this, function (e) {
