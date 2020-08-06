@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getPageRect, getElementRect,fastdom, APPConf, DoWait, Holiday, Tooltip, Popper */
+/* global getPageRect, getElementRect, APPConf, DoWait, Holiday, Tooltip, Popper */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -1123,26 +1123,24 @@ define([
       } else {
         this.originalTarget = null
       }
-
-      fastdom.measure(function () {
-        var none = true
-        for (var i = 0; i < days.length; i++) {
-          var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
-          if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
-            fastdom.mutate(function () {
-              sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
-            })
-            none = false
-            break
-          }
-        }
-
-        if (none) {
-          fastdom.mutate(function () {
-            sight.removeAttribute('style')
+      
+      var none = true
+      for (var i = 0; i < days.length; i++) {
+        var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
+        if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
+          window.requestAnimationFrame(() => {
+            sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
           })
+          none = false
+          break
         }
-      })
+      }
+
+      if (none) {
+        window.requestAnimationFrame(() => {
+          sight.removeAttribute('style')
+        })
+      }
 
       this.lastClientXY[0] = event.clientX
       this.lastClientXY[1] = event.clientY
@@ -1412,11 +1410,11 @@ define([
           frag.firstChild.appendChild(node)
         }
 
-        fastdom.mutate(djLang.hitch(this, function () {
+        window.requestAnimationFrame(() => {
           if (this.nVerticals.firstChild) { this.nVerticals.removeChild(that.nVerticals.firstChild) }
           this.nVerticals.appendChild(frag)
           this.currentVerticalLine = this.get('blockSize')
-        }))
+        })
       }
     },
 

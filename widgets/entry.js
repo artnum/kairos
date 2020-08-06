@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global getElementRect, fastdom, Tooltip */
+/* global getElementRect, Tooltip */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',

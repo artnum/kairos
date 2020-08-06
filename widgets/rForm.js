@@ -204,6 +204,9 @@ define([
     _setPadlockAttr: function (value) {
       this.nPadlock.set('value', value)
     },
+    _setDeliveryRemarkAttr: function (value) {
+      this.nDeliveryRemark.set('value', value)
+    },
     _setVisitAttr: function (value) {
       this.nAddVisit.value = value
       if (this.nAddVisit.value) {
@@ -1685,6 +1688,7 @@ define([
           this.reservation.set('visit', this.nAddVisit.value)
           this.reservation.set('vreport', this.nAddReport.value)
           this.reservation.set('padlock', this.nPadlock.value)
+          this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
           this.reservation.save().then((id) => {
             this.resize()

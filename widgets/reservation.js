@@ -1,5 +1,5 @@
 /* eslint-env browser, amd */
-/* global DateRange, pSBC, fastdom, Histoire, Tooltip, GSymbol, crc32 */
+/* global DateRange, pSBC, Histoire, Tooltip, GSymbol, crc32 */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -151,7 +151,8 @@ define([
       ;[
         'visit',
         'vreport',
-        'padlock'
+        'padlock',
+        'deliveryRemark'
       ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
           this.dataHash[attr] = crc32(json[attr])
@@ -251,7 +252,8 @@ define([
       ;[
         'visit',
         'vreport',
-        'padlock'
+        'padlock',
+        'deliveryRemark'
       ].forEach(djLang.hitch(this, function (attr) {
         if (this[attr]) {
           object[attr] = this[attr]
@@ -490,10 +492,10 @@ define([
       if (this.sup === sup) { return }
       this._set('sup', sup)
       if (this.domNode && this.domNode.parentNode) {
-        fastdom.mutate(djLang.hitch(this, function () {
+        window.requestAnimationFrame(() => {
           this.domNode.parentNode.removeChild(this.domNode)
           sup.data.appendChild(this.domNode)
-        }))
+        })
       }
     },
     _getDeliveryBeginAttr: function () {
@@ -872,6 +874,7 @@ define([
           'warehouse',
           'note',
           'padlock',
+          'deliveryRemark',
           'visit',
           'vreport'
          ].forEach(djLang.hitch(this, function (e) {
@@ -1057,19 +1060,18 @@ define([
     },
 
     destroy: function () {
-      fastdom.mutate(function () {
+      window.requestAnimationFrame(() => {
         if (this.domNode) {
           if (this.domNode.parentNode) {
             this.domNode.parentNode.removeChild(this.domNode)
           }
           delete this.domNode
         }
-      }.bind(this))
+      })
       this.destroyed = true
       this.hide()
       this.inherited(arguments)
       this.sup.overlap()
-      // this.sup.resize()
     },
 
     show: function () {
@@ -1093,11 +1095,11 @@ define([
     },
 
     hide: function () {
-      fastdom.mutate(function () {
+      window.requestAnimationFrame(() => {
         if (this.domNode && this.domNode.parentNode) {
           this.domNode.parentNode.removeChild(this.domNode)
         }
-      }.bind(this))
+      })
       this._gui.hidden = true
     },
 
