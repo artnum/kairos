@@ -422,7 +422,7 @@ $PDF->hr();
 $PDF->SetFontSize(6);
 $PDF->printTaggedLn(array('%cb', 'Total HT'), array('break' => false));
 $PDF->printTaggedLn(array('%cb', fprice($count['total'])), array('align' => 'right'));
-$PDF->Output('Décompte ' . $count['id'] .  '.pdf', 'I'); 
+$PDF->Output('I', 'Décompte ' . $count['id'] .  '.pdf', true); 
 
 $JClient->patch(array('id' => $count['id'], 'printed' => (new DateTime())->format('c')), $count['id'], 'Count');
 ?>

@@ -56,7 +56,7 @@ for ($pages = 0; $pages < 3; $pages++) {
   $PDF->AddPage();
   $PDF->setFontSize(5);
 
-  $PDF->SetY($PDF->tMargin);
+  $PDF->SetY($PDF->getMargin('t'));
 
   if(! is_null($addrs['client'])) {
     $PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb', ' pour ' . $addrs['client'][0], '%c'), array('align' => 'right'));
@@ -323,9 +323,9 @@ for ($pages = 0; $pages < 3; $pages++) {
 }
 
 if(is_null($addrs['client'])) {
-   $PDF->Output('Reçu ' . $reservation['id'] .  '.pdf', 'I'); 
+   $PDF->Output('I', 'Reçu ' . $reservation['id'] .  '.pdf', true); 
 } else {
-   $PDF->Output('Reçu ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', 'I'); 
+   $PDF->Output('I', 'Reçu ' . $reservation['id'] . ' @ ' . $addrs['client'][0] . '.pdf', true); 
 
 }
 ?>

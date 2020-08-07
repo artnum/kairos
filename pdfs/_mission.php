@@ -88,7 +88,7 @@ $PDF->setFontSize(2);
 $PDF->tab(1);
 $PDF->setFontSize(5);
 
-$PDF->setY($PDF->tMargin);
+$PDF->setY($PDF->getMargin('t'));
 $PDF->printTaggedLn(array('Location ', $reservation['id'], '%cb'), array('align' => 'right')); 
 
 $PDF->vtab(1);
@@ -453,7 +453,7 @@ if (count($files) > 0) {
 }
 
 $count = 0;
-$PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+$PDF->Output('F', sprintf('%s/%05d.pdf', $PDFDir, $count), true);
 $PDFUniteList = array(escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count)));
 
 $dispfile = array('full' => array(), 'quarter' => array());
@@ -490,7 +490,7 @@ foreach (array('full', 'quarter') as $dispo) {
     if ($posCount === -1 || $posCount + 1 >= count($DispositionSizes[$dispo]['positions'])) {
       $posCount = 0;
       if ($PDF !== null) {
-        $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $PDF->Output('F', sprintf('%s/%05d.pdf', $PDFDir, $count), true);
         $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
       }
       $PDF = new LocationPDF();
@@ -556,19 +556,23 @@ foreach (array('full', 'quarter') as $dispo) {
       imagecopyresampled($gd2, $gd, 0, 0, 0, 0, $endWidth, $endHeight, imagesx($gd), imagesy($gd));
       imagedestroy($gd);
 
-      imagejpeg($gd2, $outfile);
+      $result = imagejpeg($gd2, $outfile);
       imagedestroy($gd2);
-      $endMmWidth = round($endWidth / $dpi * INCH);
-      $endMmHeight = round($endHeight / $dpi * INCH);
-      $left = abs(round(($cmWidth - $endMmWidth)) / 2) + $position[0];
-      $top = abs(round(($cmHeight - $endMmHeight) / 2)) + $position[1];
-      $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
-      $unlink_files[] = $outfile;
+      if ($result && is_readable($outfile)) {
+        $endMmWidth = round($endWidth / $dpi * INCH);
+        $endMmHeight = round($endHeight / $dpi * INCH);
+        $left = abs(round(($cmWidth - $endMmWidth)) / 2) + $position[0];
+        $top = abs(round(($cmHeight - $endMmHeight) / 2)) + $position[1];
+        $PDF->Image($outfile, $left, $top, $endMmWidth, $endMmHeight, 'JPEG');
+      }
+      if (is_readable($outfile)) {
+        $unlink_files[] = $outfile;
+      }
     }
   }
 }
 if ($PDF !== null) {
-  $PDF->Output(sprintf('%s/%05d.pdf', $PDFDir, $count));
+  $PDF->Output('F', sprintf('%s/%05d.pdf', $PDFDir, $count), true);
   $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
 }
 
