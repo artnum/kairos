@@ -158,15 +158,15 @@ $PDF->printTaggedLn(array('%cb', 'Facturation'), array('underline' => true));
 if ($count['_invoice']['address'] && $contacts[$count['_invoice']['address']]) {
    foreach ($contacts[$count['_invoice']['address']] as $line) {
       if (!empty($line)) {
-         $PDF->printTaggedLn(array('%c', $line), array('max-width' => $PDF->w / 3));
+         $PDF->printTaggedLn(array('%c', $line), array('max-width' => $PDF->getDimension('w') / 3));
       }
    }
 } else {
-   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => $PDF->w / 3, 'square' => 6));
+   $PDF->squaredFrame(36, array('color' => '#999', 'line' => 0.1, 'lined' => true, 'x-origin' => $PDF->GetX(), 'line-type' => 'dotted', 'skip' => true, 'length' => $PDF->getDimension('w') / 3, 'square' => 6));
 }
 
 $PDF->close_block();
-$PDF->left = $PDF->w / 3;
+$PDF->left = $PDF->getDimension('w') / 3;
 $PDF->SetY($y);
 $PDF->br();
 $PDF->block('our_ref');
