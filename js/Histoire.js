@@ -95,12 +95,11 @@ class Histoire {
 
   static NOTE (type, object, text) {
     return new Promise((resolve, reject) => {
-      let url = new URL(`${window.origin}/${APPConf.history}`)
-      let creator = window.localStorage.getItem(`/${APPConf.base}/user`)
+      let url = new URL(`${window.origin}/${KAIROS.history}`)
+      let creator = window.localStorage.getItem(`/${KAIROS.getBaseName()}/user`)
       if (creator) {
         creator = JSON.parse(creator)
       }
-
       if (creator && creator.id && !isNaN(parseInt(creator.id))) {
         creator = parseInt(creator.id)
       } else {

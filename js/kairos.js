@@ -47,3 +47,7 @@ KAIROS.log = function (level, txt, code) {
 KAIROS.getBase = function () {
   return `${window.location.origin}/${KAIROS.base}`
 }
+
+KAIROS.getBaseName = function () {
+  return KAIROS.base.replace(/\//g, '')
+}

@@ -11,7 +11,7 @@ define([
         let n = document.createElement('DIV')
         let name = ''
         if (entry._user && entry._user.name) {
-          entry._user.name
+          name = entry._user.name
         }
         n.classList.add('noteline')
         n.innerHTML = `<span class="message">${entry.details.content}</span><span class="metadata"><span class="date">${new Date(entry.date).fullDate()}</span> <span class="hour">${new Date(entry.date).shortHour()}</span>/<span class="user initials" title="${name}">${name.initials()}</span><span>`
