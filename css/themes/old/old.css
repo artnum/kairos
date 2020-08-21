@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
 @import 'rform.css';
 @import '../default/entry.css';
 @import 'reservation.css';
+@import '../default/input.css';
 @import '../default/tooltip.css';
 @import '../default/command.css';
 @import '../default/count.css';
@@ -9,7 +11,11 @@
 @import '../default/rformActionLine.css';
 @import '../default/rformInputLine.css';
 @import '../default/intervention.css';
+@import '../../select.css';
+@import '../../color.css';
+@import '../../mbutton.css';
 
+#loadingOverlay { display: none; }
 
 html {
 	overflow-x: hidden;

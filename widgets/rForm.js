@@ -46,7 +46,6 @@ define([
   'location/count',
   'location/countList',
   'location/Stores/Locality',
-  'location/Stores/User',
   'location/Stores/Machine',
   'location/Stores/Status',
   'location/Stores/Unit',
@@ -102,7 +101,6 @@ define([
   Count,
   CountList,
   Locality,
-  User,
   Machine,
   Status,
   Unit,
@@ -709,7 +707,7 @@ define([
             this.Intervention.type = new Select(inputs[k], this.Stores.Status1, {allowFreeText: false, realSelect: true})
             break
           case 'iPerson':
-            this.Intervention.person = new Select(inputs[k], this.Stores.User, {allowFreeText: true, realSelect: true})
+            this.Intervention.person = new Select(inputs[k], new UserStore(), {allowFreeText: true, realSelect: true})
             break
           }
         }
@@ -921,12 +919,12 @@ define([
         }, { capture: true })
 
         let L = new Locality()
-        let U = new User()
+        let U = new UserStore()
         let M = new Machine()
         let S = new Status({type: '0'})
         this.Stores = {
           Locality: L,
-          User: U,
+          User: new UserStore(),
           Machine: M,
           Unit: new Unit()
         }
@@ -941,9 +939,9 @@ define([
         this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
         this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-        this.nArrivalCreator = new Select(this.nArrivalCreator, U, { allowFreeText: false, realSelect: true })
-        this.nCreator = new Select(this.nCreator, U, { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, U, { allowFreeText: true, realSelect: false })
+        this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
+        this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
+        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: false })
         this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()

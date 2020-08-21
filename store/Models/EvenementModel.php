@@ -59,17 +59,20 @@ class EvenementModel extends artnum\SQL {
       FROM "evenement"
       LEFT JOIN "user" ON "user_id" = IDFromURL("evenement_technician")
       LEFT JOIN "status" ON "status_id" = IDFromURL("evenement_type")
-      LEFT JOIN "reservation" ON "evenement_reservation" = "reservation_id"
-      WHERE "reservation_target" = :target OR "evenement_target" = :target
-        AND "reservation_deleted" IS NULL';
+      LEFT JOIN "reservation" ON "evenement_reservation" = "reservation_id"';
 
-    if (empty($options['machine'])) {
+    $st = null;
+    if (!empty($options['machine'])) {
+      $st = $this->get_db(true)->prepare($req . ' WHERE "reservation_target" = :target OR "evenement_target" = :target AND "reservation_deleted" IS NULL');
+      $st->bindParam(':target', $options['machine'], PDO::PARAM_STR);
+    } else if (!empty($options['reservation'])) {
+      $st = $this->get_db(true)->prepare($req . ' WHERE "evenement_reservation" = :id AND "reservation_deleted" IS NULL');
+      $st->bindParam(':id', $options['reservation'], PDO::PARAM_STR);
+    } else {
       return $result;
     }
 
     try {
-      $st = $this->get_db(true)->prepare($req);
-      $st->bindParam(':target', $options['machine'], PDO::PARAM_STR);
       if($st->execute()) {
         $entries = array();
         while(($data = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {

@@ -2,13 +2,12 @@
 <html>
 <head>
   <title>Location</title>
-  <link rel="stylesheet" href="../css/color.css" />
+<link rel="stylesheet" href="../css/loading.css" id="cssLoading" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
 
 <link rel="stylesheet" href="../css/timeline.css" />
-<link rel="stylesheet" href="../css/mbutton.css" />
 <link href="../css/dtable.css" rel="stylesheet" />
 <link rel="stylesheet" href="../css/fontawesome-all.min.css" />
 <link rel="stylesheet" href="../css/balloon.css/balloon.min.css" />
@@ -52,16 +51,6 @@ function storageAvailable(type) {
   }
 }
 
- let themeCss = document.createElement('LINK')
- themeCss.type="text/css"
- themeCss.rel="stylesheet"
- themeCss.href="../widgets/themes/default/default.css"
- if (localStorage.getItem('location/theme')) {
-   let theme = localStorage.getItem('location/theme')
-   themeCss.href=`../widgets/themes/${theme}/${theme}.css`
- }
- document.head.appendChild(themeCss)
- 
 if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
   document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
 }
@@ -80,6 +69,7 @@ dojoConfig = {
 </script>
 <script src="../resources/symbols.js"></script>
 <script src="../conf/app.js"></script>
+<script src="../js/css"></script>
 <script src="../js/gevent.js"></script>
 <script src="../js/crc32.js"></script>
 <script src="../js/Histoire.js"></script>
@@ -89,6 +79,7 @@ dojoConfig = {
 <script src="../js/tooltip.js"></script>
 <script src="../js/dLoop.js"></script>
 <script src="../js/MButton.js"></script>
+<script src="../js/stores/user.js"></script>
 <script src="../node_modules/popper.js/dist/umd/popper.min.js"></script>
 <script src="../node_modules/tooltip.js/dist/umd/tooltip.min.js"></script>
 <script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
@@ -125,5 +116,6 @@ dojoConfig = {
 		});
 	});
 </script>
+<div id="loadingOverlay">&nbsp;</div>
 </body>
 </html>

@@ -43,3 +43,7 @@ KAIROS.log = function (level, txt, code) {
 
   window.requestAnimationFrame(() => document.getElementById('LogLine').appendChild(div))
 }
+
+KAIROS.getBase = function () {
+  return `${window.location.origin}/${KAIROS.base}`
+}

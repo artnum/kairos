@@ -1,0 +1,8 @@
+input.kairos, textarea.kairos, select.kairos {
+    padding: 0.2ex 0.2ch 0.2ex 0.2ch;
+    margin: 0.2ex 0 0.2ex 0;
+    font-size: 10pt;
+    font-family: 'B612 Mono', monospace;
+    border: 1px solid hsla(var(--default-color-base), 0.4);
+    background-color: var(--default-bg-color);
+}
