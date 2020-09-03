@@ -762,10 +762,14 @@ define([
 
           let technician = results.data[i].technician
           if (technician) {
-            let t = await this.Stores.User.get(technician)
-            if (t !== null) {
-              technician = t.name
-            } else {
+            try {
+              let t = await this.Stores.User.get(technician)
+              if (t !== null) {
+                technician = t.name
+              } else {
+                technician = ''
+              }
+            } catch (e) {
               technician = ''
             }
           } else {
