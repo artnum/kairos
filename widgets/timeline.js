@@ -844,32 +844,25 @@ define([
         that.searchMenu.addChild(new DtMenuSeparator())
 
         /* */
-        Query.exec(Path.url('store/User', {params: {'search.function': 'admin', 'search.disabled': 0}})).then(function (users) {
-          var currentUser = null
-          if (window.localStorage.getItem(Path.bcname('user'))) {
-            try {
-              currentUser = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-            } catch (e) {
-              currentUser = null
-            }
-          }
-          if (!currentUser) {
-            if (users.success && users.length > 0) {
-              currentUser = users.data[0]
-              window.localStorage.setItem(Path.bcname('user'), JSON.stringify(currentUser))
-            }
-          }
-
-          if (users.success && users.length > 0) {
-            users.data.forEach(function (user) {
-              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser.id === user.id, group: 'user'})
+        let userStore = new UserStore()
+        UserStore.getCurrentUser().then(currentUser => {
+          userStore.search({'function': 'admin', 'disabled': 0}).then(users => {
+            users.forEach((user) => {
+              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
+              radio.domNode.dataset.user = JSON.stringify(user)
               this.userSelectMenu.addChild(radio)
-              radio.on('click', function (event) {
-                window.localStorage.setItem(Path.bcname('user'), this)
-              }.bind(JSON.stringify(user)))
-            }.bind(this))
-          }
-        }.bind(this))
+              radio.on('click', event => {
+                let node = event.target
+                while (node && !node.dataset.user) {
+                  node = node.parentNode
+                }
+                if (node) {
+                  window.localStorage.setItem(`/${KAIROS.getBaseName()}/user`, node.dataset.user)
+                }
+              })
+            })
+          })
+        })
 
         var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 

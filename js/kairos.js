@@ -30,7 +30,9 @@ KAIROS.log = function (level, txt, code) {
   }
 
   div.setAttribute('class', 'message ' + level)
-  div.appendChild(document.createTextNode(' ' + txt))
+  if (!code) { code = '' }
+  else { code = `(${code})` }
+  div.appendChild(document.createTextNode(`${txt} ${code}`))
 
   window.setTimeout(() => {
     window.requestAnimationFrame(() => div.parentNode.removeChild(div))

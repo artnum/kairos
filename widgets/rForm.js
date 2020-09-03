@@ -130,8 +130,6 @@ define([
       this.initRequests = []
       this.LocalData = {}
       this.loaded = {status: false, warehouse: false, association: false, user: false}
-      this.userStore = new DjMemory()
-      this.userStore_bis = new DjMemory()
 
       window.GEvent.listen('count.reservation-add', function (event) {
         if (event.detail.reservation && event.detail.reservation === this.reservation.uid) {
@@ -173,17 +171,6 @@ define([
         }
       })
     },
-
-    getUser: async function (value) {
-      if (!value) { return null }
-      var user = await Query.exec(Path.url(value))
-      if (user.success && user.length === 1) {
-        return user.data
-      }
-
-      return null
-    },
-
     _setCreatorAttr: function (value) {
       this.nCreator.value = value
     },
@@ -211,23 +198,6 @@ define([
         this.nAddReport.disabled = false
       } else {
         this.nAddReport.disabled = true
-      }
-    },
-    eChangeUser: async function (event) {
-      if (window.localStorage.getItem(Path.bcname('user'))) {
-        var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-        _c = 'store/User/' + _c.id
-        if (event.target.getAttribute('data-target') === 'c') {
-          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.uid), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
-          if (mod.success && mod.length === 1) {
-            this.set('creator', _c)
-          }
-        } else {
-          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
-          if (mod.success && mod.length === 1) {
-            this.set('arrivalCreator', _c)
-          }
-        }
       }
     },
 
@@ -1149,34 +1119,6 @@ define([
           this.loaded.association = true
         }
         this.set('warehouse', this.reservation.get('warehouse'))
-
-        if (!this.loaded.user) {
-          fetch(Path.url('store/User'), {credentials: 'same-origin'}).then((response) => { return response.json() }).then((json) => {
-            if (json.type === 'results' && json.data && json.data.length > 0) {
-              this.loaded.user = true
-              var store = this.get('userStore')
-              var storeBis = this.get('userStore_bis')
-              for (var i = 0; i < json.data.length; i++) {
-                if (!store.get('/store/User/' + json.data[i].id)) {
-                  store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-                }
-                if (!storeBis.get('/store/User/' + json.data[i].id)) {
-                  storeBis.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-                }
-              }
-            }
-            if (this.reservation.get('creator')) {
-              this.set('creator', this.reservation.get('creator'))
-            } else {
-              if (window.localStorage.getItem(Path.bcname('user'))) {
-                var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-                this.set('creator', 'store/User/' + _c.id)
-              }
-            }
-          })
-        } else {
-          this.set('creator', this.reservation.get('creator'))
-        }
 
         if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
           this.nConfirmed.value = true

@@ -1,8 +1,11 @@
 /* eslint-env worker */
 /* global objectHash */
+importScripts('../../conf/app.js')
+importScripts('../kairos.js')
 importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 importScripts('/js/Path.js')
+importScripts('../stores/user.js')
 
 let LastMod = 0
 let Entries = {}
@@ -243,6 +246,7 @@ function checkMachineState () {
           for (i = 0; i < result.length; i++) {
             let entry = result.data[i]
             if (Channels[btoa(entry.resolvedTarget)]) {
+              if (entry.type === '') { continue }
               if (Status[btoa(entry.type)] !== undefined) {
                 if (Status[btoa(entry.type)] !== null) {
                   entry.type = Status[btoa(entry.type)]

@@ -30,45 +30,46 @@
 <script src="../node_modules/artnum/DTable.js"></script>
 <script>
  window.onload = function () {
-   var tables = document.getElementsByTagName('TABLE') 
+    var tables = document.getElementsByTagName('TABLE')
 
-   let params = new URLSearchParams(window.location.search.substring(1))
-   let currentUser = window.localStorage.getItem(Artnum.Path.bcname('user'))
-   if (currentUser) {
-     params.append('creator', JSON.parse(currentUser).name)
-   }
+    let params = new URLSearchParams(window.location.search.substring(1))
+    UserStore.getCurrentUser().then(currentUser => {
+      if (currentUser) {
+        params.append('creator', currentUser.name)
+      }
 
-   for (var i = 0; i < tables.length; i++) {
-     var dtable = new Artnum.DTable({table: tables[i], search: params}, true)
-     if (transliterate) {
-       dtable.transliterate = transliterate
-     }
-     dtable.addEventListener('click', function (event) {
-       let details = event.detail
-       switch (details.attribute) {
-         case 'id':
-           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
-           break;
-       }
-     })
-     dtable.addPfunc('countDays', async function (value, entry) {
-       entry = entry[0]
-       let today = new Date()
-       today.setHours(12, 0, 0, 0)
-       let oldest = new Date(entry.begin)
-       if (entry.lastcount) {
-         oldest = new Date(entry.lastcount)
-       }
-       oldest.setHours(12, 0, 0, 0)
-       let delta = Math.round((today.getTime() - oldest.getTime()) / 86400000)
-       if (delta < 0) {
-         return ['futur', -1]
-       }
-       let open =  delta - (Math.floor(delta / 7) * 2)
-       return [`${open}`, open]
-     })
-     dtable.run()
-   }
- }
+      for (var i = 0; i < tables.length; i++) {
+        var dtable = new Artnum.DTable({ table: tables[i], search: params }, true)
+        if (transliterate) {
+          dtable.transliterate = transliterate
+        }
+        dtable.addEventListener('click', function (event) {
+          let details = event.detail
+          switch (details.attribute) {
+            case 'id':
+              window.GEvent('reservation.attribute-click', { attribute: 'id', value: details.value })
+              break;
+          }
+        })
+        dtable.addPfunc('countDays', async function (value, entry) {
+          entry = entry[0]
+          let today = new Date()
+          today.setHours(12, 0, 0, 0)
+          let oldest = new Date(entry.begin)
+          if (entry.lastcount) {
+            oldest = new Date(entry.lastcount)
+          }
+          oldest.setHours(12, 0, 0, 0)
+          let delta = Math.round((today.getTime() - oldest.getTime()) / 86400000)
+          if (delta < 0) {
+            return ['futur', -1]
+          }
+          let open = delta - (Math.floor(delta / 7) * 2)
+          return [`${open}`, open]
+        })
+        dtable.run()
+      }
+    })
+  }
 </script>
 </html>

@@ -235,97 +235,99 @@ define([
       }
     },
 
-    toObject: function (dataHash = {}) {
-      var object = {}
+    toObject: function () {
+      let dataHash = {}
+      return new Promise ((resolve, reject) => {
+        var object = {}
 
-      ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
-        if (!this[attr]) {
-          object[attr] = null
-          if (dataHash) { dataHash[attr] = crc32('') }
+        ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
+          if (!this[attr]) {
+            object[attr] = null
+            if (dataHash) { dataHash[attr] = crc32('') }
+          } else {
+            object[attr] = djDateStamp.toISOString(this[attr])
+            if (dataHash) { dataHash[attr] = crc32(object[attr]) }
+          }
+        }))
+
+        /* string value */
+        ;[
+          'visit',
+          'vreport',
+          'padlock',
+          'deliveryRemark'
+        ].forEach(djLang.hitch(this, function (attr) {
+          if (this[attr]) {
+            object[attr] = this[attr]
+            if (dataHash) { dataHash[attr] = crc32(this[attr]) }
+          } else {
+            object[attr] = ''
+            if (dataHash) { dataHash[attr] = crc32('') }
+          }
+        }))
+
+        /* nullifiable value */
+        ;[
+          'uuid',
+          'status',
+          'address',
+          'locality',
+          'comment',
+          'equipment',
+          'reference',
+          'gps',
+          'folder',
+          'title',
+          'previous',
+          'creator',
+          'technician',
+          'warehouse',
+          'note'
+        ].forEach(djLang.hitch(this, function (attr) {
+          if (this[attr]) {
+            object[attr] = this[attr]
+            if (dataHash) { dataHash[attr] = crc32(this[attr]) }
+          } else {
+            object[attr] = null
+            if (dataHash) { dataHash[attr] = crc32('') }
+          }
+        }))
+
+        if (this.get('other')) {
+          object['other'] = JSON.stringify(this.get('other'))
+          if (dataHash) { dataHash['other'] = crc32(object['other']) }
+        }
+
+        if (!object.creator) {
+          let currentUser = UserStore.getCurrentUser()
+          if (currentUser) {
+            object.creator = creator.getUrl()
+            this.set('creator', object.creator)
+            if (dataHash) { dataHash['creator'] = crc32(object.creator) }
+          }
+        }
+        if (this.sup) {
+          object['target'] = this.sup.get('target')
+          if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
+        }
+
+        if (this.get('_arrival')) {
+          object.arrival = Object.assign({}, this.get('_arrival'))
         } else {
-          object[attr] = djDateStamp.toISOString(this[attr])
-          if (dataHash) { dataHash[attr] = crc32(object[attr]) }
+          object.arrival = {}
         }
-      }))
 
-      /* string value */
-      ;[
-        'visit',
-        'vreport',
-        'padlock',
-        'deliveryRemark'
-      ].forEach(djLang.hitch(this, function (attr) {
-        if (this[attr]) {
-          object[attr] = this[attr]
-          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
-        } else {
-          object[attr] = ''
-          if (dataHash) { dataHash[attr] = crc32('') }
-        }
-      }))
-
-      /* nullifiable value */
-      ;[
-        'uuid',
-        'status',
-        'address',
-        'locality',
-        'comment',
-        'equipment',
-        'reference',
-        'gps',
-        'folder',
-        'title',
-        'previous',
-        'creator',
-        'technician',
-        'warehouse',
-        'note'
-      ].forEach(djLang.hitch(this, function (attr) {
-        if (this[attr]) {
-          object[attr] = this[attr]
-          if (dataHash) { dataHash[attr] = crc32(this[attr]) }
-        } else {
-          object[attr] = null
-          if (dataHash) { dataHash[attr] = crc32('') }
-        }
-      }))
-
-      if (this.get('other')) {
-        object['other'] = JSON.stringify(this.get('other'))
-        if (dataHash) { dataHash['other'] = crc32(object['other']) }
-      }
-
-      if (!object.creator) {
-        var currentUser = window.localStorage.getItem(Path.bcname('user'))
-        if (currentUser) {
-          currentUser = JSON.parse(currentUser)
-          object.creator = 'store/User/' + currentUser.id
-          this.set('creator', object.creator)
-          if (dataHash) { dataHash['creator'] = crc32(object.creator) }
-        }
-      }
-      if (this.sup) {
-        object['target'] = this.sup.get('target')
-        if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
-      }
-
-      if (this.get('_arrival')) {
-        object.arrival = Object.assign({}, this.get('_arrival'))
-      } else {
-        object.arrival = {}
-      }
-
-      dataHash['_arrival'] = {}
-      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
-        if (object.arrival[attrArr]) {
-          dataHash['_arrival'][attrArr] = crc32(object.arrival[attrArr])
-        } else {
-          dataHash['_arrival'][attrArr] = crc32('')
-        }
+        dataHash['_arrival'] = {}
+        ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
+          if (object.arrival[attrArr]) {
+            dataHash['_arrival'][attrArr] = crc32(object.arrival[attrArr])
+          } else {
+            dataHash['_arrival'][attrArr] = crc32('')
+          }
+        })
+        object.id = this.uid
+        resolve([object, dataHash])
       })
-      object.id = this.uid
-      return object
     },
 
     modified: function () {
@@ -1368,135 +1370,135 @@ define([
     save: function (object = null, duplicate = false) {
       this.modifiedState = true
       return new Promise(function (resolve, reject) {
-        let creator = window.localStorage.getItem(Path.bcname('user'))
-        if (creator) {
-          creator = JSON.parse(creator)
-        }
-        let dataHash = {}
-        let reservation = object === null ? this.toObject(dataHash) : object
-        let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
-        if (dataHash && this.dataHash) {
-          for (let k in dataHash) {
-            if (k === '_arrival') {
-              for (let _k in dataHash[k]) {
-                if (this.dataHash[k] && dataHash[k] && this.dataHash[k][_k] !== dataHash[k][_k]) {
-                  modifiedLog.attribute.push(`${k}.${_k}`)
-                  this.dataHash[k][_k] = dataHash[k][_k]
+        this.toObject().then(obj => {
+          let dataHash = obj[1]
+          let reservation = object === null ? obj[0] : object
+          let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
+          if (dataHash && this.dataHash) {
+            for (let k in dataHash) {
+              if (k === '_arrival') {
+                for (let _k in dataHash[k]) {
+                  if (this.dataHash[k] && dataHash[k] && this.dataHash[k][_k] !== dataHash[k][_k]) {
+                    modifiedLog.attribute.push(`${k}.${_k}`)
+                    this.dataHash[k][_k] = dataHash[k][_k]
+                  }
+                }
+              } else {
+                if (this.dataHash[k] !== dataHash[k]) {
+                  modifiedLog.attribute.push(k)
+                  this.dataHash[k] = dataHash[k]
                 }
               }
-            } else {
-              if (this.dataHash[k] !== dataHash[k]) {
-                modifiedLog.attribute.push(k)
-                this.dataHash[k] = dataHash[k]
-              }
             }
           }
-        }
-        let arrival = reservation.arrival
-        delete reservation.arrival
-        Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
-          if (!result.success || result.length !== 1) {
-            this.error(`Erreur pour enregistrer ${reservation.id ? 'la réservation ' + reservation.id : 'la nouvelle réservation'}`, 1)
-            reject(new Error('Writing failed'))
-            return
-          }
-          let id = result.data[0].id
-          if (modifiedLog.attribute.length > 0 || duplicate) {
-            /* POST to mod log */
-            modifiedLog.object = id
-            Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
-          }
-          if (this.domNode) { this.domNode.dataset.id = id }
-          if (!arrival || Object.keys(arrival).length === 0) {
-            this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
-            resolve(id)
-          } else {
-            let query
-            if (arrival.deleted) {
-              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
-              resolve(id)
+          let arrival = reservation.arrival
+          delete reservation.arrival
+          Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
+            if (!result.success || result.length !== 1) {
+              this.error(`Erreur pour enregistrer ${reservation.id ? 'la réservation ' + reservation.id : 'la nouvelle réservation'}`, 1)
+              reject(new Error('Writing failed'))
               return
             }
-            if (arrival._op && arrival._op.toLowerCase() === 'delete') {
-              this.set('_arrival', null)
-              query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
-            } else {
-              arrival.target = id
-              query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
+            let id = result.data[0].id
+            if (modifiedLog.attribute.length > 0 || duplicate) {
+              /* POST to mod log */
+              modifiedLog.object = id
+              Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
             }
-            query.then((result) => {
+            if (this.domNode) { this.domNode.dataset.id = id }
+            if (!arrival || Object.keys(arrival).length === 0) {
               this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
               resolve(id)
-            })
-          }
+            } else {
+              let query
+              if (arrival.deleted) {
+                this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
+                resolve(id)
+                return
+              }
+              if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+                this.set('_arrival', null)
+                query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
+              } else {
+                arrival.target = id
+                query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
+              }
+              query.then((result) => {
+                this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
+                resolve(id)
+              })
+            }
+          })
         })
       }.bind(this))
     },
 
     copy: function () {
-      let object = this.toObject()
-      let originalId = object['id']
-      delete object['uuid']
-      delete object['id']
-      delete object['arrival']
-      delete object['note']
-      let creator = window.localStorage.getItem(Path.bcname('user'))
-      if (creator) {
-        object['creator'] = `/store/User/${JSON.parse(creator).id}`
-      }
-      return new Promise((resolve, reject) => {
-        this.save(object, originalId).then((id) => {
-          let newId = id
-          let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
-          let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
+      this.toObject().then(obj => {
+        let object = obj[0]
+        let originalId = object['id']
+        delete object['uuid']
+        delete object['id']
+        delete object['arrival']
+        delete object['note']
+        let creator = UserStore.getCurrentUser()
+        if (creator) {
+          object['creator'] = creator.getUrl()
+        }
+        return new Promise((resolve, reject) => {
+          this.save(object, originalId).then((id) => {
+            let newId = id
+            let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
+            let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
 
-          let all = []
-          Promise.all([contacts, associations]).then((results) => {
-            let url = Path.url('/store/ReservationContact')
-            results.forEach((result) => {
-              if (!result.success) { return }
-              if (result.length <= 0) { return }
-              result.data.forEach((e) => {
-                delete e['id']
-                e['reservation'] = newId
-                all.push(Query.exec(url, {method: 'POST', body: e}))
+            let all = []
+            Promise.all([contacts, associations]).then((results) => {
+              let url = Path.url('/store/ReservationContact')
+              results.forEach((result) => {
+                if (!result.success) { return }
+                if (result.length <= 0) { return }
+                result.data.forEach((e) => {
+                  delete e['id']
+                  e['reservation'] = newId
+                  all.push(Query.exec(url, {method: 'POST', body: e}))
+                })
+                url = Path.url('/store/Association')
               })
-              url = Path.url('/store/Association')
-            })
 
-            new Promise((resolve, reject) => {
-              Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
-                if (result.success && result.length > 0) {
-                  let oMId = result.data[0].uid
-                  Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
-                    if (result.success && result.length === 1) {
-                      let mId = result.data[0].id
-                      Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
-                        if (results.success && results.length > 0) {
-                          (async function () {
-                            for (let i = 0; i < results.length; i++) {
-                              let entry = results.data[i]
-                              delete entry.uid
-                              entry.mission = mId
-                              await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
-                            }
+              new Promise((resolve, reject) => {
+                Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
+                  if (result.success && result.length > 0) {
+                    let oMId = result.data[0].uid
+                    Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
+                      if (result.success && result.length === 1) {
+                        let mId = result.data[0].id
+                        Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
+                          if (results.success && results.length > 0) {
+                            (async function () {
+                              for (let i = 0; i < results.length; i++) {
+                                let entry = results.data[i]
+                                delete entry.uid
+                                entry.mission = mId
+                                await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
+                              }
+                              resolve()
+                            })()
+                          } else {
                             resolve()
-                          })()
-                        } else {
-                          resolve()
-                        }
-                      })
-                    } else {
-                      resolve()
-                    }
-                  })
-                } else {
-                  resolve()
-                }
-              })
-            }).then(() => {
-              Promise.all(all).then((results) => {
-                resolve(newId)
+                          }
+                        })
+                      } else {
+                        resolve()
+                      }
+                    })
+                  } else {
+                    resolve()
+                  }
+                })
+              }).then(() => {
+                Promise.all(all).then((results) => {
+                  resolve(newId)
+                })
               })
             })
           })
@@ -1505,55 +1507,57 @@ define([
     },
 
     export: function () {
-      let RFileObject = {version: 1.0}
-      let reservation = this.toObject()
-      let arrival = {}
-      let rid = reservation.id
-      if (reservation.type) {
-        reservation.type = `store/Status/${reservation.type}`
-      }
-      delete reservation.id
-      if (reservation.arrival) {
-        arrival = reservation.arrival
-        delete arrival.target
-        delete reservation.arrival
-      }
+      this.toObject().then(obj => {
+        let RFileObject = {version: 1.0}
+        let reservation = obj[0]
+        let arrival = {}
+        let rid = reservation.id
+        if (reservation.type) {
+          reservation.type = `store/Status/${reservation.type}`
+        }
+        delete reservation.id
+        if (reservation.arrival) {
+          arrival = reservation.arrival
+          delete arrival.target
+          delete reservation.arrival
+        }
 
-      let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
-      let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
-      let associations = []
-      let contacts = []
-      Promise.all([pContacts, pAssociations]).then((results) => {
-        if (results[1].length > 0) {
-          results[1].data.forEach((a) => {
-            delete a.reservation
-            if (a.type) {
-              let t = a.type.split('/')
-              a.type = `store/Status/${t[t.length - 1]}`
-            }
-            associations.push(a)
-          })
-        }
-        if (results[0].length > 0) {
-          results[0].data.forEach((c) => {
-            delete c.reservation
-            if (c.target) {
-              c.target = `store${c.target}`
-            }
-            contacts.push(c)
-          })
-        }
-        RFileObject.content = [
-          {
-            reservation: rid,
-            content: reservation,
-            arrival: arrival,
-            association: associations,
-            contact: contacts
+        let pContacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': rid}}))
+        let pAssociations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': rid}}))
+        let associations = []
+        let contacts = []
+        Promise.all([pContacts, pAssociations]).then((results) => {
+          if (results[1].length > 0) {
+            results[1].data.forEach((a) => {
+              delete a.reservation
+              if (a.type) {
+                let t = a.type.split('/')
+                a.type = `store/Status/${t[t.length - 1]}`
+              }
+              associations.push(a)
+            })
           }
-        ]
-        let OutFile = btoa(JSON.stringify(RFileObject))
-        window.open(`data:application/octet-stream;filename=export.txt,base64,${OutFile}`, 'export.txt')
+          if (results[0].length > 0) {
+            results[0].data.forEach((c) => {
+              delete c.reservation
+              if (c.target) {
+                c.target = `store${c.target}`
+              }
+              contacts.push(c)
+            })
+          }
+          RFileObject.content = [
+            {
+              reservation: rid,
+              content: reservation,
+              arrival: arrival,
+              association: associations,
+              contact: contacts
+            }
+          ]
+          let OutFile = btoa(JSON.stringify(RFileObject))
+          window.open(`data:application/octet-stream;filename=export.txt,base64,${OutFile}`, 'export.txt')
+        })
       })
     },
 

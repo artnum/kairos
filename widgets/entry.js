@@ -595,13 +595,14 @@ define([
       day.setHours(8, 0, 0, 0)
 
       this.defaultStatus().then(function (s) {
-        let user = JSON.parse(localStorage.getItem('/location/user'))
-        var newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
-        this.creating[newReservation.localid] = newReservation
-        newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
-        newReservation.save().then((id) => {
-          newReservation.set('uid', id)
-          newReservation.popMeUp()
+        UserStore.getCurrentUser().then(currentUser => {
+          var newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
+          this.creating[newReservation.localid] = newReservation
+          newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
+          newReservation.save().then((id) => {
+            newReservation.set('uid', id)
+            newReservation.popMeUp()
+          })
         })
       }.bind(this))
     },
