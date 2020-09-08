@@ -1434,71 +1434,73 @@ define([
     },
 
     copy: function () {
-      this.toObject().then(obj => {
-        let object = obj[0]
-        let originalId = object['id']
-        delete object['uuid']
-        delete object['id']
-        delete object['arrival']
-        delete object['note']
-        let creator = UserStore.getCurrentUser()
-        if (creator) {
-          object['creator'] = creator.getUrl()
-        }
-        return new Promise((resolve, reject) => {
-          this.save(object, originalId).then((id) => {
-            let newId = id
-            let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
-            let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
+      return new Promise((resolve, reject) => {
+        this.toObject().then(obj => {
+          let object = obj[0]
+          let originalId = object['id']
+          delete object['uuid']
+          delete object['id']
+          delete object['arrival']
+          delete object['note']
+          UserStore.getCurrentUser().then(creator => {
+            if (creator) {
+              object['creator'] = creator.getUrl()
+            }
+              this.save(object, originalId).then((id) => {
+                let newId = id
+                let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
+                let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
 
-            let all = []
-            Promise.all([contacts, associations]).then((results) => {
-              let url = Path.url('/store/ReservationContact')
-              results.forEach((result) => {
-                if (!result.success) { return }
-                if (result.length <= 0) { return }
-                result.data.forEach((e) => {
-                  delete e['id']
-                  e['reservation'] = newId
-                  all.push(Query.exec(url, {method: 'POST', body: e}))
-                })
-                url = Path.url('/store/Association')
-              })
-
-              new Promise((resolve, reject) => {
-                Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
-                  if (result.success && result.length > 0) {
-                    let oMId = result.data[0].uid
-                    Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
-                      if (result.success && result.length === 1) {
-                        let mId = result.data[0].id
-                        Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
-                          if (results.success && results.length > 0) {
-                            (async function () {
-                              for (let i = 0; i < results.length; i++) {
-                                let entry = results.data[i]
-                                delete entry.uid
-                                entry.mission = mId
-                                await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
-                              }
-                              resolve()
-                            })()
-                          } else {
-                            resolve()
-                          }
-                        })
-                      } else {
-                        resolve()
-                      }
+                let all = []
+                Promise.all([contacts, associations]).then((results) => {
+                  let url = Path.url('/store/ReservationContact')
+                  results.forEach((result) => {
+                    if (!result.success) { return }
+                    if (result.length <= 0) { return }
+                    result.data.forEach((e) => {
+                      delete e['id']
+                      e['reservation'] = newId
+                      all.push(Query.exec(url, {method: 'POST', body: e}))
                     })
-                  } else {
-                    resolve()
-                  }
+                    url = Path.url('/store/Association')
+                  })
+
+                  new Promise((resolve, reject) => {
+                  Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
+                    if (result.success && result.length > 0) {
+                      let oMId = result.data[0].uid
+                      Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
+                        if (result.success && result.length === 1) {
+                          let mId = result.data[0].id
+                          Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
+                            if (results.success && results.length > 0) {
+                              (async function () {
+                                for (let i = 0; i < results.length; i++) {
+                                  let entry = results.data[i]
+                                  delete entry.uid
+                                  entry.mission = mId
+                                  await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
+                                }
+                                resolve()
+                              })()
+                            } else {
+                              resolve()
+                            }
+                          })
+                        } else {
+                          resolve()
+                        }
+                      })
+                    } else {
+                      resolve()
+                    }
+                  })
+                }).then(() => {
+                  Promise.all(all).then((results) => {
+                    resolve(newId)
+                  })
                 })
-              }).then(() => {
-                Promise.all(all).then((results) => {
-                  resolve(newId)
-                })
+                
               })
             })
           })
