@@ -1,12 +1,12 @@
-KAIROS.info = function (txt, code) {
+KAIROS.info = function (txt, code = 0) {
   this.log('info', txt, code)
 }
 
-KAIROS.warn = function (txt, code) {
+KAIROS.warn = function (txt, code = 0) {
   this.log('warning', txt, code)
 }
 
-KAIROS.error = function (txt, code) {
+KAIROS.error = function (txt, code = 0) {
   this.log('error', txt, code)
 }
 
