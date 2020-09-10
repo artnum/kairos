@@ -42,6 +42,7 @@ function KairosEvent(type, detail, place = null) {
             }
         })
     }
+
     return new Promise((resolve, reject) => {
         let promises = []
         const url = new URL('store/Evenement', KAIROS.getBase())
@@ -55,13 +56,14 @@ function KairosEvent(type, detail, place = null) {
                 })
             })
         } else {
-            let whoDid = document.createElement('FORM')
+            const whoDid = document.createElement('FORM')
             whoDid.classList.add('who')
             whoDid.innerHTML = `<input type="text" class="kairos" value="" placeholder="Par" /> <br /><div class="mbuttonMain mbutton mbuttonSingle"><button class="mbuttonLeft" type="submit">Ok</button></div>`
             const s = new Select(whoDid.firstElementChild, new UserStore(), { allowFreeText: true, realSelect: true })
             if (place === null) {
                 throw new Error('No place have been set')
             } else {
+                document.body.appendChild(whoDid)
                 let pop = Popper.createPopper(place, whoDid, {
                     onFirstUpdate: state => {
                         whoDid.firstElementChild.focus()
