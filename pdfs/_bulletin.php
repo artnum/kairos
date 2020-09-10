@@ -36,13 +36,14 @@ if (isset($_GET['forceType'])) {
 $creator = null;
 if (isset($reservation['creator']) && !empty($reservation['creator'])) {
   if (strpos($reservation['creator'], '/') !== FALSE) {
-    $url = explode('/', $reservation['creator'], 2);
+    $url = explode('/', sanitize_path($reservation['creator']), 2);
     $res = $JClient->get($url[1], $url[0]);
     if ($res['success'] && $res['length'] === 1) {
       $creator = $res['data'];
     }
   }
 }
+
 
 $res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
 $machine = null;

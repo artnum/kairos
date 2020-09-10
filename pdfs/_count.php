@@ -173,7 +173,7 @@ $PDF->block('our_ref');
 $PDF->background_block('#EEEEEE');
 
 
-$creator = $reservations[0]['creator'];
+$creator = sanitize_path($reservations[0]['creator']);
 $creator = explode('/', $creator);
 $creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
 if ($creator && $creator['success'] && $creator['length'] == 1) {
@@ -187,17 +187,19 @@ if ($creator && isset($creator['name'])) {
 $PDF->close_block();
 $PDF->br();
 
-$PDF->block('their_ref');
-$PDF->background_block('#EEEEEE');
-if ($has_global_reference) {
-   $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
-}
-if (!is_null($clientManager)) {
-   $PDF->printTaggedLn(array('%c', 'Votre responsable : ', '%cb', $clientManager), array('multiline' => true));
-}
+if (!empty($count['reference']) || !empty($clientManager)) {
+   $PDF->block('their_ref');
+   $PDF->background_block('#EEEEEE');
+   if ($has_global_reference) {
+      $PDF->printTaggedLn(array('%c', 'Votre référence : ', '%cb', $count['reference']), array('multiline' => true));
+   }
+   if (!is_null($clientManager)) {
+      $PDF->printTaggedLn(array('%c', 'Votre responsable : ', '%cb', $clientManager), array('multiline' => true));
+   }
 
-$PDF->close_block();
-$PDF->br();
+   $PDF->close_block();
+   $PDF->br();
+}
 
 $PDF->block('range');
 $PDF->background_block('#EEEEEE');

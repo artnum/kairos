@@ -17,7 +17,7 @@ $reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['dat
 $creator = null;
 if (isset($reservation['creator']) && !empty($reservation['creator'])) {
   if (strpos($reservation['creator'], '/') !== FALSE) {
-    $url = explode('/', $reservation['creator'], 2);
+    $url = explode('/', sanitize_path($reservation['creator']), 2);
     $res = $JClient->get($url[1], $url[0]);
     if ($res['success'] && $res['length'] === 1) {
       $creator = $res['data'];
