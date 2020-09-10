@@ -1641,7 +1641,7 @@ define([
               var entry = window.App.getEntry(reservation.get('target'))
               var oldEntry = window.App.getEntry(changeMachine)
               if (entry) {
-                window.App.info(`Réservation ${reservation.uid} correctement déplacée`)
+                KAIROS.info(`Réservation ${reservation.uid} correctement déplacée`)
                 delete oldEntry.entries[reservation.uid]
                 entry.entries[reservation.uid] = reservation
                 entry.resize()

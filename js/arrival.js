@@ -178,61 +178,13 @@ Arrival.prototype.done = function (event) {
     req.done = now.toISOString()
   }
 
-  let whoDid = document.createElement('FORM')
-  whoDid.classList.add('who')
-  whoDid.innerHTML = `<input type="text" class="kairos" value="" placeholder="Par" /> <br /><div class="mbuttonMain mbutton mbuttonSingle"><button class="mbuttonLeft" type="submit">Ok</button></div>`
-  let s = new Select(whoDid.firstElementChild, new UserStore(), {allowFreeText: true, realSelect: true})
-  document.body.appendChild(whoDid)
-
-  let pop = Popper.createPopper(event.target, whoDid)
-
-  var close = (unset = true) => {
-    pop.destroy()
-    if (whoDid.parentNode) {
-      whoDid.parentNode.removeChild(whoDid)
-    }
-    if (unset) { event.target.value = false }
-  }
-
-  window.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
-      close()  
-    }
-  }, {capture: true})
-
-  whoDid.addEventListener('submit', event => {  
-    event.preventDefault()
-    let url = new URL('store/Evenement/.chain', KAIROS.getBase())
-    url.searchParams.append('reservation', reservationId)
-
-    fetch(url, {headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then(response => {
-      if (!response.ok) { KAIROS.error('Impossible d\'obtenir la chaîne d\'évènements'); return }
-      response.json().then(result => {
-        let promises = []
-        for (let i = 0; i < result.length; i++) {
-          let ev = result.data[i]
-          let url = new URL('store/Evenement', KAIROS.getBase())
-          let body = {
-            reservation: reservationId,
-            previous: ev.id,
-            type: 'Status/20',
-            technician: s.value,
-            date: new Date().toISOString(),
-            comment: ''
-          }
-          promises.push(fetch(url, {method: 'POST', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`}), body: JSON.stringify(body)}))
-        }
-        Promise.all(promises).then(() =>{
-          Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
-            if (result.success && result.length === 1) {
-              Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
-              this.RChannel.postMessage({op: 'touch', id: reservationId})
-            }
-          })
-          close(false)
-        })
-      }, reason => { KAIROS.error('Impossible d\'obtenir la chaîne d\'évènements'); return })
-    }, reason => { KAIROS.error('Impossible d\'obtenir la chaîne d\'évènements'); return })
+  KairosEvent('autoReturn', {reservation: reservationId, append: true}, event.target).then(() => {
+    Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
+      if (result.success && result.length === 1) {
+        Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
+        this.RChannel.postMessage({op: 'touch', id: reservationId})
+      }
+    })
   })
 }
 

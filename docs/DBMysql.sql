@@ -291,6 +291,7 @@ CREATE TABLE IF NOT EXISTS "evenement" (
        "evenement_technician" CHAR(64) DEFAULT NULL,
        "evenement_target" CHAR(32) DEFAULT NULL,
        "evenement_previous" INTEGER DEFAULT NULL,
+	   "evenement_process" CHAR(32) DEFAULT '', -- for automatic process to add identifying information
        FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
        FOREIGN KEY ("evenement_previous") REFERENCES "evenement"("evenement_id") ON UPDATE CASCADE ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";

@@ -1422,6 +1422,13 @@ define([
               } else {
                 arrival.target = id
                 query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
+                if (!!arrival.done) {
+                  UserStore.getCurrentUser().then(current => {
+                    KairosEvent('autoReturn', {technician: current.getUrl(), reservation: id, append: true})
+                  })
+                } else {
+                  KairosEvent.removeAutoAdded('autoReturn', id);
+                }
               }
               query.then((result) => {
                 this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
