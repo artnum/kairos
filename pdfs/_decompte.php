@@ -294,7 +294,7 @@ for ($pages = 0; $pages < 3; $pages++) {
     $PDF->printTaggedLn(array('%c',  $reservation['folder']));
   }
   if ($reservation['creator']) {
-    $creator = explode('/', sanitize_url($reservation['creator']));
+    $creator = explode('/', sanitize_path($reservation['creator']));
     if (count($creator) > 0) {
       $r = $JClient->get($creator[count($creator) - 1], 'User');
       if ($r['type'] == 'results') {
