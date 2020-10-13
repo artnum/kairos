@@ -85,6 +85,44 @@ class DeepReservationModel extends ReservationModel {
     return $result;
   }
 
+  function getUnconfirmed ($options) {
+    $result = new \artnum\JStore\Result();
+    $req = 'SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name,
+    creator.user_phone AS creator_phone, creator.user_id AS creator_id,
+    creator.user_color AS creator_color, status_color AS reservation_color
+    FROM reservation
+    LEFT JOIN warehouse ON warehouse.warehouse_id = reservation.reservation_id
+    LEFT JOIN arrival ON arrival.arrival_target = reservation.reservation_id
+    LEFT JOIN user AS creator ON creator.user_id =
+         IDFromUrl(reservation.reservation_creator)
+    LEFT JOIN status ON reservation_status = status_id
+    WHERE (arrival_reported is null and arrival_done is null) and reservation.reservation_end <= :day
+   ;';
+    $day = new DateTime();
+    if (isset($options['search'])) {
+      if(isset($options['search']['day'])) {
+        try {
+          $day = new DateTime($options['search']['day']);
+        } catch (\Exception $e) {
+          $day = new DateTime();
+        }
+      }
+    }
+
+    try {
+      $st = $this->DB->prepare($req);     
+      $st->bindValue(':day', $day->format('Y-m-d'), PDO::PARAM_STR);
+      if ($st->execute()) {
+        while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $result->addItem($this->unprefix($row));
+        }
+      }     
+    } catch (\Exception $e) {
+      $result->addError($e->getMessage(), $e);
+    }
+    return $result;
+  }
+
   function getToprepare ($options) {
     $result = new \artnum\JStore\Result();
     $req = 'SELECT reservation_target FROM reservation

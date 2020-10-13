@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fin à contrôler</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table
+    data-source="store/DeepReservation/.unconfirmed" data-options="{}" data-entry-id="id">
+    <thead><tr>
+      <th data-attribute="id:integer" data-class="clickable">N°</th>
+      <th data-attribute="target:integer">Machine</th>
+      <th data-attribute="begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="end:date" data-sort-type="date">Fin</th>
+      <th data-attribute="reference">Référence</th>
+      <th data-attribute="_creator.name">Responsable Airnace</th>
+      <th data-attribute="client_">Client</th>
+      <th data-attribute="responsable_">Responsable client</th>      
+      <th data-attribute="place_">Contact sur place</th>
+      <th data-attribute="equipment">Équipement</th>
+      <th data-attribute="address">Adresse</th>
+      <th data-attribute="@../store/$locality label|%%">Localité</th>
+      <th data-attribute="comment">Commentaire</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="../conf/app.js"></script>
+<script src="../js/kairos.js"></script>
+<script src="../js/stores/user.js"></script>
+<script src="../node_modules/sjcl/sjcl.js"></script>
+<script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="../js/tel.js"></script>
+<script src="../node_modules/artnum/Query.js"></script>
+<script src="../node_modules/artnum/Path.js"></script>
+<script src="../node_modules/artnum/Date.js"></script>
+<script src="../node_modules/artnum/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE')
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i], postprocess: createLinkFromPhone})
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+           break;
+       }
+     })
+   }
+ }
+</script>
+</html>
