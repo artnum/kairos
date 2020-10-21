@@ -51,6 +51,7 @@ define([
   'location/update',
   'location/count',
   'location/countList',
+  'location/reservation',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -102,9 +103,10 @@ define([
   Entry,
 
   tlPopup, tlKeys, update, Filters,
-
   Count,
   CountList,
+  Reservation,
+
   Req,
   Path,
   Query,
@@ -1663,34 +1665,40 @@ define([
 
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
-      return new Promise(function (resolve, reject) {
-        Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
-          if (result && result.length === 0) {
-            reject()
-          } else {
-            var reservation = result.data
-            if (reservation.deleted) {
+      return new Promise((resolve, reject) => {
+        fetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+          if (!response.ok) { reject(); return }
+          response.json().then(result=> {
+            if (result && result.length === 0) {
               reject()
-              DoWait(false)
-              return
-            }
-            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
-            this.update()
-            var data = result.data
-            this.Entries[data.target].addOrUpdateReservation([data])
-            if (this.Entries[data.target].openReservation(data.id)) {
-              if (!dontmove) {
-                let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
-                window.scroll(0, pos.y - (window.innerHeight / 3))
-              }
-              resolve()
             } else {
-              reject()
+              var reservation = result.data
+              if (reservation.deleted) {
+                dontmove = true
+              }
+              if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
+              this.update()
+              let data = result.data
+              if (this.Entries[data.target]) {
+                this.Entries[data.target].addOrUpdateReservation([data])
+                if (this.Entries[data.target].openReservation(data.id)) {
+                  if (!dontmove) {
+                    let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                    window.scroll(0, pos.y - (window.innerHeight / 3))
+                  }
+                  resolve()
+                } else {
+                  reject()
+                }
+              } else {
+                let reservation = new Reservation({uid: data.id, sup: null, _json: data})
+                reservation.popMeUp()
+              }
+              DoWait(false)
             }
-            DoWait(false)
-          }
-        }.bind(this), () => DoWait(false))
-      }.bind(this), () => DoWait(false))
+          })
+        }, () => DoWait(false))
+      }, () => DoWait(false))
     },
 
     print: function (url) {

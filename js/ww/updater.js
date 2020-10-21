@@ -75,8 +75,10 @@ function targetMessages (msg, targetId = null) {
   }
 }
 
+var fetchId = 0
 function doFetch(url) {
-  return fetch(url, {credential: 'include'})
+  fetchId++
+  return fetch(url, {credential: 'include', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${fetchId}`})})
 }
 
 function getUrl (suffix) {

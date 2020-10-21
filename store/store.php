@@ -3,12 +3,19 @@ require('artnum/autoload.php');
 require('../lib/url.php');
 require('../lib/dbs.php');
 require('../lib/ini.php');
+require('../lib/cacheid.php');
 
 $ini_conf = load_ini_configuration();
 
 $file = new \artnum\Files();
 $http_request = new \artnum\HTTP\JsonRequest();
-$store = new \artnum\JStore\Generic($http_request, true);
+$store = new \artnum\JStore\Generic(
+  $http_request,
+  true,
+  [
+    'ridCache' => new CacheID()
+  ]
+);
 
 $pdo = init_pdo($ini_conf);
 if (is_null($pdo)) {

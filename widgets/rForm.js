@@ -130,7 +130,8 @@ define([
       this.initRequests = []
       this.LocalData = {}
       this.loaded = {status: false, warehouse: false, association: false, user: false}
-
+      this.deleted = false
+      
       window.GEvent.listen('count.reservation-add', function (event) {
         if (event.detail.reservation && event.detail.reservation === this.reservation.uid) {
           this.refreshCount()
@@ -143,6 +144,10 @@ define([
           }
         }
       }.bind(this))
+      if (args && args.deleted) {
+        this.deleted = args.deleted
+      }
+
       if (args.reservation && args.reservation.sup && args.reservation.isNew) {
         this.Defaults = Query.exec(Path.url('store/Entry', {params: {'search.ref': args.reservation.sup.target, 'search.name': '~default.%'}}))
         this.isNew = true

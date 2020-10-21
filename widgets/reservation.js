@@ -121,6 +121,8 @@ define([
         }
       }
 
+      this._target = json.target
+
       if (this.sup && json.target !== this.get('target')) {
         var oldEntry = window.App.getEntry(this.get('target'))
         var newEntry = window.App.getEntry(json.target)
@@ -135,7 +137,7 @@ define([
 
       djLang.mixin(this, json)
       this.dataOriginal = json
-      this.dataHash['target'] = crc32(this.get('target'))
+      this.dataHash['target'] = crc32(this.get('target') ? this.get('target') : '__no_target__')
       this.set('updated', true)
       ;[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
         if (json[attr]) {
@@ -332,8 +334,18 @@ define([
 
     modified: function () {
       if (!this.get('deleted')) {
-        Query.exec(Path.url(`/store/Reservation/${this.uid}`), {method: 'PATCH', body: {id: this.uid}})
+        fetch(Path.url(`/store/Reservation/${this.uid}`), {
+            method: 'PATCH',
+            body: JSON.stringify({id: this.uid})
+          })
       }
+    },
+
+    restore: function () {
+      fetch(Path.url(`/store/Reservation/${this.uid}`), {
+        method: 'PATCH',
+        headers: new Headers({'X-Restore': new Date().toISOString(), 'X-Request-Id': `${new Date().toISOString()}-${performance.now()}`})
+      })
     },
 
     error: function (txt, code) {
@@ -813,6 +825,7 @@ define([
       }
       this.popMeUp()
     },
+
     popMeUp: async function () {
       var tContainer = dtRegistry.byId('tContainer')
       if (this.get('localid') == null) { return }
@@ -820,8 +833,9 @@ define([
         tContainer.selectChild('ReservationTab_' + this.get('localid'))
         return
       }
+
       window.App.setOpen(this.uid)
-      var f = new RForm({ reservation: this, htmlDetails: this.sup.htmlDetails })
+      var f = new RForm({reservation: this, htmlDetails: this.sup ? this.sup.htmlDetails : '<p></p>', deleted: this.deleted ? true : false})
       var title = 'Réservation ' + this.uid
 
       var cp = new DtContentPane({
@@ -891,6 +905,9 @@ define([
     },
 
     _getTargetAttr: function () {
+      if (!this.sup && this._target) {
+        return this._target
+      }
       if (!this.sup) { return null }
       return this.sup.get('target')
     },
@@ -1073,7 +1090,9 @@ define([
       this.destroyed = true
       this.hide()
       this.inherited(arguments)
-      this.sup.overlap()
+      if (this.sup) {
+        this.sup.overlap()
+      }
     },
 
     show: function () {
