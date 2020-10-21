@@ -96,7 +96,7 @@ class DeepReservationModel extends ReservationModel {
     LEFT JOIN user AS creator ON creator.user_id =
          IDFromUrl(reservation.reservation_creator)
     LEFT JOIN status ON reservation_status = status_id
-    WHERE (arrival_reported is null and arrival_done is null) and reservation.reservation_end <= :day
+    WHERE ((arrival_reported is null and arrival_done is null) and reservation.reservation_end <= :day) and reservation.reservation_deleted is null
    ;';
     $day = new DateTime();
     if (isset($options['search'])) {
