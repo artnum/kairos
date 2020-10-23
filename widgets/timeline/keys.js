@@ -1,6 +1,6 @@
 /* Timeline app -> key code */
 /* eslint-env amd, browser */
-/* global APPConf */
+/* global KAIROS */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -49,7 +49,9 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
-      this.commandLetters = [ 'j', 'm', 'r', 'd' ]
+      this.func = null
+      this.suggest = null
+      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c' ]
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
@@ -60,7 +62,7 @@ define([
           this.switchCommandMode()
         }
       }.bind(this))
-      window.addEventListener('keydown', async function (event) {
+      window.addEventListener('keydown', event => {
         if (this.commandLetters.indexOf(event.key) !== -1 && event.ctrlKey) {
           event.preventDefault()
           this.switchCommandMode().then(() => {
@@ -70,27 +72,36 @@ define([
           })
           return
         }
-        if (event.key === APPConf.CommandWindow.escapeKey) {
-          this.switchCommandMode()
+        if (event.key === KAIROS.CommandWindow.escapeKey) {
+          let cMode = this.switchCommandMode()
+          if (event.shiftKey) {
+            cMode.then(() => {
+              this.goToSearchBox()
+              this.func = this.cmdProcessor
+            })
+          }
         } else {
           if (this.CommandMode) {
             switch (event.key) {
-              case APPConf.exitKey:
+              case KAIROS.exitKey:
                 if (this.CommandOverlay) {
+                  this.suggest = null
                   if (this.func) {
                     this.func = null
                     document.activeElement.blur()
+                    if (this.resultBox && this.resultBox.parentNode) {
+                      this.resultBox.parentNode.removeChild(this.resultBox)
+                    }
                     for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
                       if (n.firstChild && n.firstChild.innerHTML) {
-                        window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
-                      }
+                        window.requestAnimationFrame(() => n.dataset.selected = '0')                      }
                     }
                   } else {
                     this.switchCommandMode()
                   }
                 }
                 break
-              case APPConf.enterKey:
+              case KAIROS.enterKey:
                 event.preventDefault()
                 if (this.func) {
                   var r = this.func(document.getElementById('commandSearchBox').value)
@@ -110,7 +121,7 @@ define([
             }
           }
         }
-      }.bind(this), {capture: true})
+      }, {capture: true})
     },
 
     goToSearchBox: function () {
@@ -158,9 +169,9 @@ define([
         for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
           if (n.firstChild && n.firstChild.innerHTML) {
             if (n.firstChild.innerHTML.toLowerCase() === event.key) {
-              window.requestAnimationFrame(() => n.firstChild.setAttribute('style', 'background-color: hsla(126, 100%, 56%, 0.6)'))
+              window.requestAnimationFrame(() => n.dataset.selected = '1')
             } else {
-              window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
+              window.requestAnimationFrame(() => n.dataset.selected = '0')
             }
           }
         }
@@ -186,9 +197,19 @@ define([
           this.goToSearchBox()
           this.func = this.gotoCount
           break
+        case 'c':
+          this.goToSearchBox()
+          this.func = this.searchByClient
+          this.setResultBox()
+          break
+        case ':':
+          this.goToSearchBox()
+          this.func = this.cmdProcessor
+          break
       }
       return done
     },
+
     gotoDay: async function (val) {
       var elements = val.split(/(?:\/|\.|-|\s)/)
       var date = new Date()
@@ -225,10 +246,15 @@ define([
       return false
     },
     gotoCount: async function (val) {
-      Query.exec(Path.url(`store/Count/${val}`)).then(function (result) {
-        if (result.success && result.length === 1) {
+      fetch(new URL(`store/Count/${val}`, KAIROS.getBase())).then(response => {
+        if (!response.ok) { return }
+        response.json().then(results => {
+          if (results.length !== 1) {
+            KAIROS.warn('Numéro de décompte inconnu')
+            return
+          }
           window.GEvent('count.open', {id: val})
-        }
+        })
       })
     },
     gotoMachine: async function (val) {
@@ -254,6 +280,27 @@ define([
     },
     gotoReservation: async function (val) {
       this.doSearchLocation(val, true).then(() => { return true }, () => { return false })
+    },
+
+    searchByClient: function (val) {
+      let search = new ClientSearch(document.getElementById('commandModeOverlayList'))
+      search.search(val)
+    },
+
+    setResultBox: function () {
+      if (!this.resultBox) {
+        this.resultBox = document.createElement('DIV')
+        this.resultBox.classList.add('results')
+        let list = document.createElement('DIV')
+        list.classList.add('list')
+        list.id = 'commandModeOverlayList'
+        this.resultBox.appendChild(list)
+      }
+      if (this.resultBox.parentNode) {
+        window.requestAnimationFrame(() => this.resultBox.innerHTML = '')
+      } else {
+        window.requestAnimationFrame(() => document.getElementById('commandModeOverlay').appendChild(this.resultBox))
+      }
     },
 
     keys: function (event) {
@@ -285,7 +332,23 @@ define([
             break
         }
       }
-    }
+    },
 
+    cmdProcessor: function (val) {
+      let argv = val.split(/\s+/)
+      switch (argv[0]) {
+        case 'sort':
+          switch (argv[1]) {
+            default:
+            case 'default':
+              this.sortEntries(this._sort_default())
+              break
+            case 'warehouse':
+              this.sortEntries(this._sort_warehouse(), true)
+              break
+          }
+          return true
+      }
+    }
   })
 })

@@ -102,16 +102,13 @@ dojoConfig = {
 <script src="https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script> 
 <script>
 	require([
-		"dojo/_base/lang",
 		"location/timeline",
 		"location/entry",
-		"dojo/request/xhr",
-		"dijit/registry",
-		"dijit/Dialog",
 		"dojo/domReady!"
-	], function (djLang, timeline, entry, djXhr, dtRegistry, dtDialog) {
+	], function (timeline, entry) {
 		wantdb( () => {
-			window.App = new timeline();
+      window.App = new timeline();
+      KAIROS.timeline = window.App
 			window.App.DB = DB;
 			document.getElementsByTagName('body')[0].appendChild(window.App.domNode);
 			window.App.run();

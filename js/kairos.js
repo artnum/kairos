@@ -1,3 +1,5 @@
+KAIROS.timeline = null
+
 KAIROS.info = function (txt, code = 0) {
   this.log('info', txt, code)
 }

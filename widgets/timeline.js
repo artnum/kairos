@@ -23,10 +23,6 @@ define([
   'dojo/dom-class',
   'dojo/dom-style',
   'dojo/dom-geometry',
-  'dojo/throttle',
-  'dojo/debounce',
-  'dojo/request/xhr',
-  'dojo/window',
   'dojo/promise/all',
   'dijit/registry',
   'dijit/form/DateTextBox',
@@ -79,10 +75,6 @@ define([
   djDomClass,
   djDomStyle,
   djDomGeo,
-  djThrottle,
-  djDebounce,
-  djXhr,
-  djWindow,
   djAll,
   dtRegistry,
   DtDateTextBox,
@@ -218,12 +210,16 @@ define([
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
-      djXhr.get(String(Path.url('store/Status/')), {handleAs: 'json', query: {'search.type': 0}}).then(function (results) {
-        if (results && results.type === 'results') {
+      let url = new URL('store/Status/', KAIROS.getBase())
+      url.searchParams.append('search.type', 0)
+      fetch(url).then(response => {
+        if (!response.ok) { return }
+        response.json().then(results => {
+          if (results.length <= 0) { return }
           for (var i = 0; i < results.data.length; i++) {
             sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
           }
-        }
+        })
       })
 
       if (typeof window.Rent === 'undefined') {
@@ -1489,10 +1485,44 @@ define([
       }.bind(this))
     },
 
-    sortAndDisplayEntries: function () {
-      this.entries.sort((a, b) => {
+    _sort_warehouse: function () {
+      let sortedEntries = this._sort_default()
+      let warehouse = []
+      let nowarehouse = []
+
+      sortedEntries.forEach(k => {
+        let set = false
+        let loc = this.Entries[k].get('currentLocation')
+        if (loc) {
+          if (loc.value) {
+            if (loc.value !== '') {
+              warehouse.push(k)
+              set = true
+            }
+          }
+        }
+        if (!set) { nowarehouse.push(k) }
+      })
+ 
+      warehouse.sort((a, b) => {
+        let locA = this.Entries[a].get('currentLocation')
+        let locB = this.Entries[b].get('currentLocation')
+
+        return -locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
+      })
+
+      return [...nowarehouse, ...warehouse]
+    },
+
+    _sort_default: function () {
+      let sortedEntries = Object.keys(this.Entries)
+      sortedEntries.sort((ka, kb) => {
+        let a = this.Entries[ka]
+        let b = this.Entries[kb]
+
         let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
         let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
+        
         let ida = aT
         let idb = bT
         a.domNode.dataset.groupId = Math.floor(aT / 100)
@@ -1501,19 +1531,24 @@ define([
         if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
         if (aT !== Infinity && bT !== Infinity && Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
-        const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
+        const techData = [ 'float:workheight:r', 'float:floorheight:r', 'float:maxcapacity:r', 'float:sideoffset:r' ]
         for (let i = 0; i < techData.length; i++) {
-          let [name, reverse] = techData[i].split(':', 2)
-          let aT = a.get(name)
-          let bT = b.get(name)
+          let [type, name, reverse] = techData[i].split(':', 3)
+          switch (type) {
+            case 'int':
+            case 'float':
+              let aT = type === 'int' ? parseInt(a.get(name)) : parseFloat(a.get(name))
+              let bT = type === 'int' ? parseInt(b.get(name)) : parseFloat(b.get(name))
 
-          if (aT - bT !== 0) {
-            if (reverse === undefined) {
-              return aT - bT
-            } else {
-              return bT - aT
+              if (aT - bT !== 0) {
+                if (reverse === undefined) {
+                  return aT - bT
+                } else {
+                  return bT - aT
+                }
+              }
+              break
             }
-          }
         }
         if (aT === Infinity && bT === Infinity) {
           return a.get('target').localeCompare(b.get('target'))
@@ -1522,7 +1557,13 @@ define([
         return idb - ida
       })
 
-      this.entries.forEach((e) => {
+      return sortedEntries
+    },
+
+    sortAndDisplayEntries: function () {
+      let sortedEntries = this._sort_default()
+      sortedEntries.forEach((k) => {
+        let e = this.Entries[k]
         let inType = false
         let insertBefore = null
         if (e.domNode.dataset.pushToEnd) {
@@ -1550,6 +1591,33 @@ define([
         }
       }
       this.entries = [...entriesOrder]
+    },
+
+    sortEntries: function (orderedKeys, linear = false) {
+      let container = this.domEntries
+      if (linear) {
+        for (let k of orderedKeys) {
+          let dom  = this.Entries[k].domNode
+          if (dom.parentNode) {
+            dom.parentNode.removeChild(dom)
+          }
+          container.insertBefore(dom, container.firstElementChild)
+        }
+      } else {
+        let last = null
+        for (let k of orderedKeys) {
+          let dom = this.Entries[k].domNode
+          if (dom.parentNode !== null) {
+            container.removeChild(dom)
+          }
+          if (last === null) {
+            container.insertBefore(dom, container.firstElementChild)
+          } else {
+            container.insertBefore(dom, last.nextElementSibling)
+          }
+          last = dom
+        }
+      }
     },
 
     updateChild: function () {
