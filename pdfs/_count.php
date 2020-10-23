@@ -3,7 +3,7 @@ include('base.php');
 include('../lib/format.php');
 
 $JClient = new artnum\JRestClient(base_url('/store'));
-$Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
+$Machine = $JClient;
 
 $res = $JClient->get($_GET['id'], 'Count');
 if (!$res['success'] || $res['length'] != 1) {
@@ -172,17 +172,20 @@ $PDF->br();
 $PDF->block('our_ref');
 $PDF->background_block('#EEEEEE');
 
-
-$creator = sanitize_path($reservations[0]['creator']);
-$creator = explode('/', $creator);
-$creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
-if ($creator && $creator['success'] && $creator['length'] == 1) {
-   $creator = $creator['data'];
-}
-
 $PDF->printTaggedLn(array('%c', 'Notre référence : ', '%cb',  'DEC ' . $count['id']));
-if ($creator && isset($creator['name'])) {
-   $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator['name']), array('multiline' => true));
+$creator = sanitize_path($reservations[0]['creator']);
+if (strpos($creator, '/') !== FALSE) {
+   $creator = explode('/', $creator);
+   $creator = $JClient->get($creator[count($creator) - 1], $creator[count($creator) - 2]);
+   if ($creator && $creator['success'] && $creator['length'] == 1) {
+      $creator = $creator['data'];
+   }
+
+   if ($creator && isset($creator['name'])) {
+      $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator['name']), array('multiline' => true));
+   }
+} else {
+   $PDF->printTaggedLn(array('%c', 'Notre responsable : ', '%cb', $creator), array('multiline' => true));
 }
 $PDF->close_block();
 $PDF->br();

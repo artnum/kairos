@@ -76,14 +76,41 @@ KAIROS.fetch = function (url, options = {}) {
     if (!(options.headers instanceof Headers)) {
       options.headers = new Headers(options.headers)
     }
-    /* replace request id anyway */
-    options.headers.set('X-Request-Id', rid)
+    /* x-request-id might be used for auth purpose, don't change */
+    if (!options.headers.has('X-Request-Id')) {
+      options.headers.set('X-Request-Id', rid)
+    }
   }
 
   if (!(url instanceof URL)) {
-    url = new URL(url)
+    let origin = GLOBAL.location.origin || GLOBAL.origin
+    if (origin) {
+      url = new URL(url, GLOBAL.location.origin)
+    }
   }
 
-  return __kairos_fetch(url, options)
+  let query = __kairos_fetch(url, options)
+  query.then(response => {
+    if (response.ok) { return } // don't process good response
+    let headers = response.headers
+    if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
+    response.json().then(error => {
+      if (!error.message) { return }
+      switch(Math.trunc(response.status / 100)) {
+        case 3:
+          KAIROS.log(`Message serveur : "${errror.message}"`)
+          break
+        case 4:
+          KAIROS.warn(`Attention serveur : "${errror.message}"`)
+          break;
+        default:
+        case 5:
+          KAIROS.error(`Erreur serveur : "${error.message}"`)
+          break
+      }
+    })
+  })
+
+  return query
 }
 fetch = KAIROS.fetch
