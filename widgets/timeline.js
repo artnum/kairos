@@ -1508,10 +1508,10 @@ define([
         let locA = this.Entries[a].get('currentLocation')
         let locB = this.Entries[b].get('currentLocation')
 
-        return -locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
+        return locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
       })
 
-      return [...nowarehouse, ...warehouse]
+      return [...warehouse, ...nowarehouse]
     },
 
     _sort_default: function () {
@@ -1601,7 +1601,7 @@ define([
           if (dom.parentNode) {
             dom.parentNode.removeChild(dom)
           }
-          container.insertBefore(dom, container.firstElementChild)
+          container.appendChild(dom, container.firstElementChild)
         }
       } else {
         let last = null
