@@ -14,7 +14,7 @@ KAIROS.error = function (txt, code = 0) {
 
 KAIROS.log = function (level, txt, code) {
   var timeout = 10000
-  var div = document.createElement('DIV')
+  let div = document.createElement('DIV')
 
   switch (level) {
     case 'info': timeout = 3000
@@ -31,18 +31,25 @@ KAIROS.log = function (level, txt, code) {
       break
   }
 
-  div.setAttribute('class', 'message ' + level)
+  div.classList.add('message', level)
   if (!code) { code = '' }
   else { code = `(${code})` }
-  div.appendChild(document.createTextNode(`${txt} ${code}`))
+  window.requestAnimationFrame(() =>{
+    div.appendChild(document.createTextNode(` ${txt} ${code}`))
+    document.body.classList.add(`${level}`)
+  })
 
   window.setTimeout(() => {
-    window.requestAnimationFrame(() => div.parentNode.removeChild(div))
+    window.requestAnimationFrame(() => {
+      div.parentNode.removeChild(div)
+      document.body.classList.remove('info', 'error', 'warning')
+    })
   }, timeout)
 
   div.addEventListener('click', () => {
     window.clearTimeout(timeout)
     div.parentNode.removeChild(div)
+    document.body.classList.remove('info', 'error', 'warning')
   })
 
   window.requestAnimationFrame(() => document.getElementById('LogLine').appendChild(div))

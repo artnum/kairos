@@ -107,7 +107,7 @@ define([
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
       if (dtRegistry.byId('location_entry_' + args['target'])) {
-        alert('La machine ' + args['target'] + ' existe à double dans la base de donnée !')
+        KAIROS.error('La machine ' + args['target'] + ' existe à double dans la base de donnée !')
       } else {
         this.id = 'location_entry_' + args['target']
       }
