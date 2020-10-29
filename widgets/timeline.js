@@ -9,25 +9,20 @@ define([
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
-  'dijit/layout/ContentPane',
 
   'dojo/text!./templates/timeline.html',
 
   'dojo/aspect',
   'dojo/date',
   'dojo/date/stamp',
-  'dojo/dom',
   'dojo/dom-construct',
   'dojo/on',
-  'dojo/dom-attr',
   'dojo/dom-class',
   'dojo/dom-style',
   'dojo/dom-geometry',
   'dojo/promise/all',
   'dijit/registry',
   'dijit/form/DateTextBox',
-  'dijit/form/NumberTextBox',
-  'dijit/form/Button',
   'dijit/MenuBar',
   'dijit/MenuBarItem',
   'dijit/PopupMenuBarItem',
@@ -62,24 +57,19 @@ define([
   dtWidgetBase,
   dtTemplatedMixin,
   dtWidgetsInTemplateMixin,
-  dtContentPane,
 
   _template,
   djAspect,
   djDate,
   djDateStamp,
-  djDom,
   djDomConstruct,
   djOn,
-  djDomAttr,
   djDomClass,
   djDomStyle,
   djDomGeo,
   djAll,
   dtRegistry,
   DtDateTextBox,
-  dtNumberTextBox,
-  dtButton,
   dtMenuBar,
   dtMenuBarItem,
   dtPopupMenuBarItem,
@@ -107,25 +97,18 @@ define([
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
-    OpenAtCreation: {},
     center: null,
     offset: 260,
     blockSize: 42,
     baseClass: 'timeline',
     templateString: _template,
     zoomCss: null,
-    lines: null,
-    moveQueue: null,
     timeout: null,
     lastDay: null,
     firstDay: null,
     verticals: null,
     lastClientXY: [0, 0],
-    logs: null,
-    lockEvents: null,
-    lastId: 0,
     lastMod: 0,
-    inputString: '',
     eventStarted: null,
     daysZoom: 0,
     compact: false,
@@ -133,16 +116,13 @@ define([
 
     constructor: function (args) {
       djLang.mixin(this, arguments)
-      this.lastId = 0
       this.verticals = []
       this.days = []
       this.weekNumber = []
       this.entries = []
       this.Entries = {}
-      this.lines = null
       this.todayOffset = -1
       this.months = []
-      this.moveQueue = []
       this.timeout = null
       this.lastDay = null
       this.firstDay = null
@@ -150,10 +130,7 @@ define([
       this.center = new Date()
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
       this.lastClientXY = []
-      this.logs = []
-      this.inputString = ''
       this.lastMod = ''
-      this.lastId = ''
       this.xDiff = 0
       this.daysZoom = 30
       this.compact = false
@@ -1409,80 +1386,79 @@ define([
       }
     },
 
+    loadEntries: function (exclude = {}) {
+      return new Promise((resolve, reject) => {
+        let url = new URL('store/Machine', KAIROS.getBase())
+
+        for (let ex of Object.keys(exclude)) {
+          let values = exclude[ex]
+          if (!Array.isArray(values)) {
+            values = [values]
+          }
+          values.forEach(v => {
+            url.searchParams.append(`search.${ex}`, `!${v}`)
+          })
+        }
+
+        fetch(url).then(response => {
+          if (!response.ok) {
+            KAIROS.error('Chargement des machines échoués')
+            reject()
+            return;
+          }
+            
+          response.json().then(results => {
+            if (results.length <= 0) {
+              KAIROS.warn('Pas de machines sur le serveur')
+              reject()
+              return
+            }
+            let entriesLoaded = []
+            for (var i = 0; i < results.length; i++) {
+              let entry = results.data[i]
+
+              if (!entry|| !entry.cn || !entry.uid) { continue }
+              if (this.Entries[entry.uid]) { 
+                entriesLoaded.push(entry.uid)
+                continue 
+              }
+              entriesLoaded.push(entry.uid)
+
+              let name = `${entry.uid} <div class="name">${entry.cn}</div>`
+              let e = new Entry({
+                name: name, 
+                sup: this, 
+                isParent: true, 
+                target: entry.uid, 
+                label: entry.cn, 
+                url: `/store/Machine/${entry.uid}`, 
+                channel: new MessageChannel(), 
+                details: entry})
+              this.Updater.postMessage({op: 'newTarget', target: entry.uid}, [e.port()])
+              this.placeEntry(e)
+            }
+            for (let k in this.Entries) {
+              if (entriesLoaded.indexOf(k) === -1) {
+                this.Entries[k].destroy()
+                delete this.Entries[k]
+              }
+            }
+            resolve()
+          })
+        })
+      })
+    },
+
     run: function () {
-      var loaded = []
       this.currentPosition = 0
       this.update()
-
-      Query.exec(Path.url('store/Machine')).then(async function (response) {
-        /* TODO when updated completly use new fetch api */
-        if (response.data) {
-          var category = {}
-          for (var i = 0; i < response.data.length; i++) {
-            var machine = response.data[i]
-            let groupName = []
-
-            if (!machine || !machine.cn || !machine.uid) { continue }
-            if (machine.state && machine.state.indexOf('SOLD') !== -1) { continue }
-
-            let name = `${machine.uid} <div class="name">${machine.cn}</div>`
-            if (machine.family) {
-              if (Array.isArray(machine.family)) {
-                machine.family.forEach((g) => {
-                  groupName.push(g.replace(/(\s|-)/g, ''))
-                })
-              } else {
-                groupName.push(machine.family.replace(/(\s|-)/g, ''))
-              }
-            }
-            if (machine.type) {
-              if (Array.isArray(machine.type)) {
-                machine.type.forEach((g) => {
-                  groupName.push(g.replace(/(\s|-)/g, ''))
-                })
-              } else {
-                groupName.push(machine.type.replace(/(\s|-)/g, ''))
-              }
-            }
-            let e = new Entry({name: name, sup: this, isParent: true, target: machine.uid, label: machine.cn, url: `/store/Machine/${machine.uid}`, channel: new MessageChannel(), details: machine})
-            this.Updater.postMessage({op: 'newTarget', target: machine.uid}, [e.port()])
-            this.placeEntry(e)
-
-            var families = []
-            var types = []
-            if (machine.family && machine.type) {
-              families = String(machine.family).split(',')
-              types = String(machine.type).split(',')
-              if (!djLang.isArray(families)) { families = new Array(families) }
-              if (!djLang.isArray(types)) { types = new Array(types) }
-
-              for (var j = 0; j < families.length; j++) {
-                if (!category[families[j]]) {
-                  category[families[j]] = {}
-                }
-
-                for (var k = 0; k < types.length; k++) {
-                  if (!category[families[j]][types[k]]) {
-                    category[families[j]][types[k]] = []
-                  }
-                  category[families[j]][types[k]].push(e.target)
-                }
-              }
-
-              djDomClass.add(e.domNode, groupName)
-              loaded.push(e.loaded)
-            }
-          }
-        }
-        this.categories = category
-        djAll(loaded).then(function () {
-          this.sortAndDisplayEntries()
-          this.buildMenu()
-          this.update()
-          window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
-          window.setInterval(function () { this.refresh() }.bind(this), 10000)
-        }.bind(this))
-      }.bind(this))
+      this.loadEntries({state: 'SOLD'}).then(() => {
+        this.sortAndDisplayEntries()
+        this.buildMenu()
+        this.update()
+        window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
+        window.setInterval(function () { this.refresh() }.bind(this), 10000)
+      })
     },
 
     _sort_warehouse: function () {

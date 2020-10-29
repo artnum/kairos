@@ -353,9 +353,28 @@ define([
     cmdProcessor: function (val) {
       return new Promise ((resolve, reject) => {
         let argv = val.split(/\s+/)
+        for (let i = 0; i < argv.length; i++) {
+          argv[i] = argv[i].toLowerCase()
+        }
         switch (argv[0]) {
           default:
             resolve(false)
+            return
+          case 'show':
+            let loadEntries
+            switch(argv[1]){
+              default:
+              case 'default':
+                loadEntries = this.loadEntries({state: 'SOLD'})
+                break
+              case 'all':
+                loadEntries = this.loadEntries()
+                break
+            }
+            loadEntries.then(() => {
+              this.sortAndDisplayEntries()
+            })
+            resolve(true)
             return
           case 'sort':
             switch (argv[1]) {

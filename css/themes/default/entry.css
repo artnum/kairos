@@ -160,3 +160,11 @@
 .entry .parentMachine {
     color: hsla(var(--default-color-base), 0.5);
 }
+
+.entry.SOLD {
+    text-decoration: line-through;
+}
+
+.nodisplay {
+    display: none !important;
+}

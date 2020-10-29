@@ -18,7 +18,6 @@ define([
   'dijit/registry',
 
   'location/reservation',
-  'location/update',
 ], function (
   djDeclare,
   djLang,
@@ -36,9 +35,8 @@ define([
   dtRegistry,
 
   Reservation,
-  update,
 ) {
-  return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
+  return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented], {
     baseClass: 'entry',
     templateString: _template,
     stores: {},
@@ -146,9 +144,6 @@ define([
       return (7 * bs) + ((17 - 7) * 3.8 * bs) + ((hour - 17) * bs)
     },
 
-    update: function () {
-    },
-
     postCreate: function () {
       this.domNode.addEventListener('dblclick', event => { this.evtDblClick(event) })
       this.domNode.addEventListener('touchend', event=> { this.evTouchEnd(event) })
@@ -188,6 +183,14 @@ define([
       this.domNode.dataset.details = JSON.stringify(this.details)
       
       this.genDetails()
+      if (this.details) {
+        if (!Array.isArray(this.details.state)) {
+          this.details.state = [this.details.state]
+        }
+        this.details.state.forEach(state => {
+          this.domNode.classList.add(state)
+        })
+      }
 
       let node = this.nControl.firstElementChild
       while (node && !node.classList.contains('tools')) {
@@ -201,6 +204,7 @@ define([
         event.stopPropagation()
         this.EvenementPopUp(node)
       }, {capture: true})
+
       node.addEventListener('dblclick', (event) => {
         event.stopPropagation()
       }, {capture: true})
@@ -756,6 +760,14 @@ define([
           overlapRoot[i].overlap.elements[j].overlap.level = overlapRoot[i].overlap.elements.length + 1
           overlapRoot[i].overlap.elements[j].overlap.do = true
         }
+      }
+    },
+
+    display: function (yes = true) {
+      if (!yes) {
+        this.domNode.classList.add('nodisplay')
+      } else {
+        this.domNode.classList.remove('nodisplay')
       }
     },
 

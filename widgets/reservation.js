@@ -366,11 +366,6 @@ define([
       this._gui.hidden = true
       this.set('active', false)
       // this.resize()
-      if (window.App.OpenAtCreation[this.uid]) {
-        delete window.App.OpenAtCreation[this.uid]
-        this.popMeUp()
-        this.highlight()
-      }
     },
 
     tooltipShow: function (event) {
