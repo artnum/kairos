@@ -1250,6 +1250,15 @@ define([
           } else {
             window.localStorage.setItem(Path.bcname('autoprint'), '1')
           }
+          break
+        case 'showDeleted':
+          this.set('sold', !this.get('sold'))
+          if (this.get('sold')) {
+            this.cmdProcessor('show all')
+          } else {
+            this.cmdProcessor('show default')
+          }
+          break
       }
       this.update(true)
       let pos = getElementRect(targetNode.domNode)
