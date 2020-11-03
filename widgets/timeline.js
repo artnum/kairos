@@ -1451,8 +1451,8 @@ define([
               if (entry.family && entry.type) {
                 families = String(entry.family).split(',')
                 types = String(entry.type).split(',')
-                if (Array.isArray(families)) { families = [families] }
-                if (Array.isArray(types)) { types = [types] }
+                if (!Array.isArray(families)) { families = [families] }
+                if (!Array.isArray(types)) { types = [types] }
                 for (let j = 0; j < families.length; j++) {
                   if (!category[families[j]]) {
                     category[families[j]] = {}
