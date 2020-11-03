@@ -269,6 +269,14 @@ define([
         var top = -1
         for (var n = this.domEntries.firstChild; n; n = n.nextElementSibling) {
           if (n.dataset.reference === val) {
+            window.requestAnimationFrame(() => {
+              n.classList.add('highlight')
+            })
+            setTimeout(() => {
+              window.requestAnimationFrame(() => {
+                n.classList.remove('highlight')
+              })
+            }, KAIROS.ui.highlightTime)
             top = 0
             var e = n
             do {
@@ -359,6 +367,20 @@ define([
         switch (argv[0]) {
           default:
             resolve(false)
+            return
+          case 'set':
+            if (argv[1].substring(0, 7) === 'kairos.') {
+              switch(argv[1].substring(7)) {
+                case 'highlighttime': 
+                  if (isNaN(parseInt(argv[2]))) {
+                    KAIROS.ui.highlightTime = 1500
+                  } else {
+                    KAIROS.ui.highlightTime = parseInt(argv[2]) 
+                  }
+                break
+              }
+            }
+            resolve(true)
             return
           case 'show':
             let loadEntries
