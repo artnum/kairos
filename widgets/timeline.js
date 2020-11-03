@@ -1389,7 +1389,7 @@ define([
     loadEntries: function (exclude = {}) {
       return new Promise((resolve, reject) => {
         let url = new URL('store/Machine', KAIROS.getBase())
-
+        let category = {}
         for (let ex of Object.keys(exclude)) {
           let values = exclude[ex]
           if (!Array.isArray(values)) {
@@ -1436,7 +1436,29 @@ define([
                 details: entry})
               this.Updater.postMessage({op: 'newTarget', target: entry.uid}, [e.port()])
               this.placeEntry(e)
+
+              let families = []
+              let types = []
+              if (entry.family && entry.type) {
+                families = String(entry.family).split(',')
+                types = String(entry.type).split(',')
+                if (Array.isArray(families)) { families = [families] }
+                if (Array.isArray(types)) { types = [types] }
+                for (let j = 0; j < families.length; j++) {
+                  if (!category[families[j]]) {
+                    category[families[j]] = {}
+                  }
+  
+                  for (var k = 0; k < types.length; k++) {
+                    if (!category[families[j]][types[k]]) {
+                      category[families[j]][types[k]] = []
+                    }
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }              
+              }
             }
+            this.categories = category
             for (let k in this.Entries) {
               if (entriesLoaded.indexOf(k) === -1) {
                 this.Entries[k].destroy()
