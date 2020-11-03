@@ -373,6 +373,7 @@
 .rForm .message {
     margin: initial;
     padding: initial;
+    border: none !important;
 }
 
 @import '../default/rformInputLine.css';

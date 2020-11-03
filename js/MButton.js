@@ -72,6 +72,15 @@ function MButton(button, choice = []) {
       get: this.getValue.bind(this),
       set: this.setValue.bind(this)
     })
+    new Proxy(button, {
+      set: function(target, property, value, receiver) {
+        if (property === 'value') {
+          this._setValue(value)
+        } else {
+          target[property] = value
+        }
+      }.bind(this)
+    })    
     Object.assign(this, {
       state: 0,
       values: [choice.unset, choice.set],

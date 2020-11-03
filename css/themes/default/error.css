@@ -1,0 +1,33 @@
+.logline {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+    width: 100%;
+	margin: 0;
+	padding: 0;
+	z-index: 99999;
+    background-color: var(--default-bg-color);
+    font-size: 1.2em;
+}
+
+.message {
+	margin: 2px 5px 2px 5px;
+    padding: 2px;
+    border: 2px solid;
+    cursor: pointer;
+}
+
+.message.error {
+    background-color: var(--message-err-bg-color);
+    border-color: var(--message-err-border-color);
+}
+
+.message.warning {
+    background-color: var(--message-warn-bg-color);
+    border-color: var(--message-warn-border-color);
+}
+
+.message.info {
+    background-color: var(--message-info-bg-color);
+    border-color: var(--message-info-border-color);
+}

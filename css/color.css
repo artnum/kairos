@@ -28,6 +28,9 @@
     --message-err-bg-color: hsla(var(--error-color-base), 0.2);
     --message-warn-bg-color: hsla(var(--warn-color-base), 0.2);
     --message-info-bg-color: hsla(var(--info-color-base), 0.2);
+    --message-err-border-color: hsla(var(--error-color-base), 0.7);
+    --message-warn-border-color: hsla(var(--warn-color-base), 0.7);
+    --message-info-border-color: hsla(var(--info-color-base), 0.7);
 }
 
 span.error {

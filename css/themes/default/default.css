@@ -1,15 +1,23 @@
+@import url('https://fonts.googleapis.com/css?family=Questrial|Roboto');
 @import 'rform.css';
-@import '../default/entry.css';
+@import 'rformInputLine.css';
+@import 'rformTable.css';
+@import 'rformActionLine.css';
+@import 'entry.css';
 @import 'reservation.css';
-@import '../default/tooltip.css';
-@import '../default/command.css';
-@import '../default/count.css';
-@import '../default/overlay.css';
-@import '../default/symbols.css';
-@import '../default/rformActionLine.css';
-@import '../default/rformInputLine.css';
-@import '../default/intervention.css';
+@import 'tooltip.css';
+@import 'command.css';
+@import 'count.css';
+@import 'overlay.css';
+@import 'symbols.css';
+@import 'intervention.css';
+@import 'input.css';
+@import 'error.css';
+@import '../../select.css';
+@import '../../color.css';
+@import '../../mbutton.css';
 
+#loadingOverlay { display: none; }
 
 html {
 	overflow-x: hidden;
@@ -120,34 +128,6 @@ body.waiting * {
 	text-align: center;
 }
 
-.logline {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	margin: 0;
-	padding: 0;
-	z-index: 599;
-	background-color: var(--default-bg-color);
-}
-
-.message {
-	margin: 0 5px 0  5px;
-	padding: 2px;
-}
-
-.message.error {
-    background-color: var(--message-err-bg-color);
-}
-
-.message.warning {
-    background-color: var(--message-warn-bg-color);
-}
-
-.message.info {
-    background-color: var(--message-info-bg-color);
-}
-
 /* windows */
 .topWin {
   background-color: var(--default-bg-color);
@@ -226,6 +206,7 @@ body.waiting * {
 }
 
 .entry .edit button, .entry .edit input {
+    font-size: 1em;
     padding: 2px;
     border: 1px solid var(--default-color);
     margin: 1px;
@@ -415,6 +396,7 @@ body.waiting * {
     color: hsla(var(--default-color-base), 0.5) !important;
 }
 
+
 /* rForm */
 
 /* Contact form */
@@ -439,16 +421,16 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .docOverlay {
-    background-color: white !important;
+    background-color: var(--default-bg-color-base);
     border: none !important;
 }
 
 .button {
     font-weight: bold;
-    border: 1px solid black;
+    border: 1px solid var(--default-color-base);
     padding: 2px 0 2px 4px;
-    background-color: white;
-    color: black;
+    background-color: var(--default-bg-color-base);
+    color: var(--default-color-base);
     font-size: 12px;
 }
 
@@ -465,58 +447,3 @@ input[type=number]::-webkit-outer-spin-button {
     color: white;
     font-weight: bold;
 }
-
-
-.rForm .dropZone {
-    text-align: center;
-    border: 3px dashed hsla(var(--default-color-base), 0.3);
-    color: hsla(var(--default-color-base), 0.3);
-    min-height: 6ex;
-}
-
-.rForm .dropZone:focus, .rForm .dropZone.dragOver {
-    border: 3px dashed hsla(var(--default-color-base), 0.5);
-    color: hsla(var(--default-color-base), 0.5);
-}
-
-.rForm .dropZone.dragToDelete {
-    color: hsla(var(--delete-color-base), 0.3) !important;
-    border-color: 3px dashed hsla(var(--delete-color-base), 0.3) !important;
-}
-
-.rForm .dropZone.dragToDelete.dragOver {
-    color: hsla(var(--delete-color-base), 0.5) !important;
-    border-color: 3px dashed hsla(var(--delete-color-base), 0.5) !important;
-}
-
-.rForm .imageZone {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-}
-
-.rForm .imageZone div {
-    display: inline-block;
-    max-width: 180px;
-    max-height: 100px;
-    width: 180px;
-    height: 120px;    
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-position: center;
-    margin: 3px;
-}
-
-.rForm .imageZone img {
-    max-height: 100%;
-    max-width: 100%;
-}
-
-.rForm .imageZone .ddSpacer {
-    border: 1px dotted hsla(var(--default-color-base), 1);
-    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQImWNgYGD4z4AE/gMADwMB/414xEUAAAAASUVORK5CYII=) repeat;
-    height: 120px;
-    min-height: 120px;
-    width: 4px;
-}
-

@@ -9,29 +9,20 @@ define([
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
-  'dijit/layout/ContentPane',
 
   'dojo/text!./templates/timeline.html',
 
   'dojo/aspect',
   'dojo/date',
   'dojo/date/stamp',
-  'dojo/dom',
   'dojo/dom-construct',
   'dojo/on',
-  'dojo/dom-attr',
   'dojo/dom-class',
   'dojo/dom-style',
   'dojo/dom-geometry',
-  'dojo/throttle',
-  'dojo/debounce',
-  'dojo/request/xhr',
-  'dojo/window',
   'dojo/promise/all',
   'dijit/registry',
   'dijit/form/DateTextBox',
-  'dijit/form/NumberTextBox',
-  'dijit/form/Button',
   'dijit/MenuBar',
   'dijit/MenuBarItem',
   'dijit/PopupMenuBarItem',
@@ -51,6 +42,7 @@ define([
   'location/update',
   'location/count',
   'location/countList',
+  'location/reservation',
 
   'artnum/dojo/Request',
   'artnum/Path',
@@ -65,28 +57,19 @@ define([
   dtWidgetBase,
   dtTemplatedMixin,
   dtWidgetsInTemplateMixin,
-  dtContentPane,
 
   _template,
   djAspect,
   djDate,
   djDateStamp,
-  djDom,
   djDomConstruct,
   djOn,
-  djDomAttr,
   djDomClass,
   djDomStyle,
   djDomGeo,
-  djThrottle,
-  djDebounce,
-  djXhr,
-  djWindow,
   djAll,
   dtRegistry,
   DtDateTextBox,
-  dtNumberTextBox,
-  dtButton,
   dtMenuBar,
   dtMenuBarItem,
   dtPopupMenuBarItem,
@@ -102,9 +85,10 @@ define([
   Entry,
 
   tlPopup, tlKeys, update, Filters,
-
   Count,
   CountList,
+  Reservation,
+
   Req,
   Path,
   Query,
@@ -113,25 +97,18 @@ define([
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
     tlPopup, tlKeys, update, Filters, GEvent ], {
-    OpenAtCreation: {},
     center: null,
     offset: 260,
     blockSize: 42,
     baseClass: 'timeline',
     templateString: _template,
     zoomCss: null,
-    lines: null,
-    moveQueue: null,
     timeout: null,
     lastDay: null,
     firstDay: null,
     verticals: null,
     lastClientXY: [0, 0],
-    logs: null,
-    lockEvents: null,
-    lastId: 0,
     lastMod: 0,
-    inputString: '',
     eventStarted: null,
     daysZoom: 0,
     compact: false,
@@ -139,16 +116,13 @@ define([
 
     constructor: function (args) {
       djLang.mixin(this, arguments)
-      this.lastId = 0
       this.verticals = []
       this.days = []
       this.weekNumber = []
       this.entries = []
       this.Entries = {}
-      this.lines = null
       this.todayOffset = -1
       this.months = []
-      this.moveQueue = []
       this.timeout = null
       this.lastDay = null
       this.firstDay = null
@@ -156,10 +130,7 @@ define([
       this.center = new Date()
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
       this.lastClientXY = []
-      this.logs = []
-      this.inputString = ''
       this.lastMod = ''
-      this.lastId = ''
       this.xDiff = 0
       this.daysZoom = 30
       this.compact = false
@@ -216,12 +187,16 @@ define([
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
-      djXhr.get(String(Path.url('store/Status/')), {handleAs: 'json', query: {'search.type': 0}}).then(function (results) {
-        if (results && results.type === 'results') {
+      let url = new URL('store/Status/', KAIROS.getBase())
+      url.searchParams.append('search.type', 0)
+      fetch(url).then(response => {
+        if (!response.ok) { return }
+        response.json().then(results => {
+          if (results.length <= 0) { return }
           for (var i = 0; i < results.data.length; i++) {
             sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
           }
-        }
+        })
       })
 
       if (typeof window.Rent === 'undefined') {
@@ -844,32 +819,25 @@ define([
         that.searchMenu.addChild(new DtMenuSeparator())
 
         /* */
-        Query.exec(Path.url('store/User', {params: {'search.function': 'admin', 'search.disabled': 0}})).then(function (users) {
-          var currentUser = null
-          if (window.localStorage.getItem(Path.bcname('user'))) {
-            try {
-              currentUser = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-            } catch (e) {
-              currentUser = null
-            }
-          }
-          if (!currentUser) {
-            if (users.success && users.length > 0) {
-              currentUser = users.data[0]
-              window.localStorage.setItem(Path.bcname('user'), JSON.stringify(currentUser))
-            }
-          }
-
-          if (users.success && users.length > 0) {
-            users.data.forEach(function (user) {
-              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser.id === user.id, group: 'user'})
+        let userStore = new UserStore()
+        UserStore.getCurrentUser().then(currentUser => {
+          userStore.search({'function': 'admin', 'disabled': 0}).then(users => {
+            users.forEach((user) => {
+              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
+              radio.domNode.dataset.user = JSON.stringify(user)
               this.userSelectMenu.addChild(radio)
-              radio.on('click', function (event) {
-                window.localStorage.setItem(Path.bcname('user'), this)
-              }.bind(JSON.stringify(user)))
-            }.bind(this))
-          }
-        }.bind(this))
+              radio.on('click', event => {
+                let node = event.target
+                while (node && !node.dataset.user) {
+                  node = node.parentNode
+                }
+                if (node) {
+                  window.localStorage.setItem(`/${KAIROS.getBaseName()}/user`, node.dataset.user)
+                }
+              })
+            })
+          })
+        })
 
         var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
 
@@ -1418,86 +1386,141 @@ define([
       }
     },
 
+    loadEntries: function (exclude = {}) {
+      return new Promise((resolve, reject) => {
+        let url = new URL('store/Machine', KAIROS.getBase())
+        let category = {}
+        for (let ex of Object.keys(exclude)) {
+          let values = exclude[ex]
+          if (!Array.isArray(values)) {
+            values = [values]
+          }
+          values.forEach(v => {
+            url.searchParams.append(`search.${ex}`, `!${v}`)
+          })
+        }
+
+        fetch(url).then(response => {
+          if (!response.ok) {
+            KAIROS.error('Chargement des machines échoués')
+            reject()
+            return;
+          }
+            
+          response.json().then(results => {
+            if (results.length <= 0) {
+              KAIROS.warn('Pas de machines sur le serveur')
+              reject()
+              return
+            }
+            let entriesLoaded = []
+            for (var i = 0; i < results.length; i++) {
+              let entry = results.data[i]
+
+              if (!entry|| !entry.cn || !entry.uid) { continue }
+              if (this.Entries[entry.uid]) { 
+                entriesLoaded.push(entry.uid)
+                continue 
+              }
+              entriesLoaded.push(entry.uid)
+
+              let name = `${entry.uid} <div class="name">${entry.cn}</div>`
+              let e = new Entry({
+                name: name, 
+                sup: this, 
+                isParent: true, 
+                target: entry.uid, 
+                label: entry.cn, 
+                url: `/store/Machine/${entry.uid}`, 
+                channel: new MessageChannel(), 
+                details: entry})
+              this.Updater.postMessage({op: 'newTarget', target: entry.uid}, [e.port()])
+              this.placeEntry(e)
+
+              let families = []
+              let types = []
+              if (entry.family && entry.type) {
+                families = String(entry.family).split(',')
+                types = String(entry.type).split(',')
+                if (Array.isArray(families)) { families = [families] }
+                if (Array.isArray(types)) { types = [types] }
+                for (let j = 0; j < families.length; j++) {
+                  if (!category[families[j]]) {
+                    category[families[j]] = {}
+                  }
+  
+                  for (var k = 0; k < types.length; k++) {
+                    if (!category[families[j]][types[k]]) {
+                      category[families[j]][types[k]] = []
+                    }
+                    category[families[j]][types[k]].push(e.target)
+                  }
+                }              
+              }
+            }
+            this.categories = category
+            for (let k in this.Entries) {
+              if (entriesLoaded.indexOf(k) === -1) {
+                this.Entries[k].destroy()
+                delete this.Entries[k]
+              }
+            }
+            resolve()
+          })
+        })
+      })
+    },
+
     run: function () {
-      var loaded = []
       this.currentPosition = 0
       this.update()
+      this.loadEntries({state: 'SOLD'}).then(() => {
+        this.sortAndDisplayEntries()
+        this.buildMenu()
+        this.update()
+        window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
+        window.setInterval(function () { this.refresh() }.bind(this), 10000)
+      })
+    },
 
-      Query.exec(Path.url('store/Machine')).then(async function (response) {
-        /* TODO when updated completly use new fetch api */
-        if (response.data) {
-          var category = {}
-          for (var i = 0; i < response.data.length; i++) {
-            var machine = response.data[i]
-            let groupName = []
+    _sort_warehouse: function () {
+      let sortedEntries = this._sort_default()
+      let warehouse = []
+      let nowarehouse = []
 
-            if (!machine || !machine.cn || !machine.uid) { continue }
-            if (machine.state && machine.state.indexOf('SOLD') !== -1) { continue }
-
-            let name = `${machine.uid} <div class="name">${machine.cn}</div>`
-            if (machine.family) {
-              if (Array.isArray(machine.family)) {
-                machine.family.forEach((g) => {
-                  groupName.push(g.replace(/(\s|-)/g, ''))
-                })
-              } else {
-                groupName.push(machine.family.replace(/(\s|-)/g, ''))
-              }
-            }
-            if (machine.type) {
-              if (Array.isArray(machine.type)) {
-                machine.type.forEach((g) => {
-                  groupName.push(g.replace(/(\s|-)/g, ''))
-                })
-              } else {
-                groupName.push(machine.type.replace(/(\s|-)/g, ''))
-              }
-            }
-            let e = new Entry({name: name, sup: this, isParent: true, target: machine.uid, label: machine.cn, url: `/store/Machine/${machine.uid}`, channel: new MessageChannel(), details: machine})
-            this.Updater.postMessage({op: 'newTarget', target: machine.uid}, [e.port()])
-            this.placeEntry(e)
-
-            var families = []
-            var types = []
-            if (machine.family && machine.type) {
-              families = String(machine.family).split(',')
-              types = String(machine.type).split(',')
-              if (!djLang.isArray(families)) { families = new Array(families) }
-              if (!djLang.isArray(types)) { types = new Array(types) }
-
-              for (var j = 0; j < families.length; j++) {
-                if (!category[families[j]]) {
-                  category[families[j]] = {}
-                }
-
-                for (var k = 0; k < types.length; k++) {
-                  if (!category[families[j]][types[k]]) {
-                    category[families[j]][types[k]] = []
-                  }
-                  category[families[j]][types[k]].push(e.target)
-                }
-              }
-
-              djDomClass.add(e.domNode, groupName)
-              loaded.push(e.loaded)
+      sortedEntries.forEach(k => {
+        let set = false
+        let loc = this.Entries[k].get('currentLocation')
+        if (loc) {
+          if (loc.value) {
+            if (loc.value !== '') {
+              warehouse.push(k)
+              set = true
             }
           }
         }
-        this.categories = category
-        djAll(loaded).then(function () {
-          this.sortAndDisplayEntries()
-          this.buildMenu()
-          this.update()
-          window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
-          window.setInterval(function () { this.refresh() }.bind(this), 10000)
-        }.bind(this))
-      }.bind(this))
+        if (!set) { nowarehouse.push(k) }
+      })
+ 
+      warehouse.sort((a, b) => {
+        let locA = this.Entries[a].get('currentLocation')
+        let locB = this.Entries[b].get('currentLocation')
+
+        return locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
+      })
+
+      return [...warehouse, ...nowarehouse]
     },
 
-    sortAndDisplayEntries: function () {
-      this.entries.sort((a, b) => {
+    _sort_default: function () {
+      let sortedEntries = Object.keys(this.Entries)
+      sortedEntries.sort((ka, kb) => {
+        let a = this.Entries[ka]
+        let b = this.Entries[kb]
+
         let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
         let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
+        
         let ida = aT
         let idb = bT
         a.domNode.dataset.groupId = Math.floor(aT / 100)
@@ -1506,19 +1529,24 @@ define([
         if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
         if (aT !== Infinity && bT !== Infinity && Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
 
-        const techData = [ 'workheight:r', 'floorheight:r', 'maxcapacity:r', 'sideoffset:r' ]
+        const techData = [ 'float:workheight:r', 'float:floorheight:r', 'float:maxcapacity:r', 'float:sideoffset:r' ]
         for (let i = 0; i < techData.length; i++) {
-          let [name, reverse] = techData[i].split(':', 2)
-          let aT = a.get(name)
-          let bT = b.get(name)
+          let [type, name, reverse] = techData[i].split(':', 3)
+          switch (type) {
+            case 'int':
+            case 'float':
+              let aT = type === 'int' ? parseInt(a.get(name)) : parseFloat(a.get(name))
+              let bT = type === 'int' ? parseInt(b.get(name)) : parseFloat(b.get(name))
 
-          if (aT - bT !== 0) {
-            if (reverse === undefined) {
-              return aT - bT
-            } else {
-              return bT - aT
+              if (aT - bT !== 0) {
+                if (reverse === undefined) {
+                  return aT - bT
+                } else {
+                  return bT - aT
+                }
+              }
+              break
             }
-          }
         }
         if (aT === Infinity && bT === Infinity) {
           return a.get('target').localeCompare(b.get('target'))
@@ -1527,7 +1555,13 @@ define([
         return idb - ida
       })
 
-      this.entries.forEach((e) => {
+      return sortedEntries
+    },
+
+    sortAndDisplayEntries: function () {
+      let sortedEntries = this._sort_default()
+      sortedEntries.forEach((k) => {
+        let e = this.Entries[k]
         let inType = false
         let insertBefore = null
         if (e.domNode.dataset.pushToEnd) {
@@ -1555,6 +1589,33 @@ define([
         }
       }
       this.entries = [...entriesOrder]
+    },
+
+    sortEntries: function (orderedKeys, linear = false) {
+      let container = this.domEntries
+      if (linear) {
+        for (let k of orderedKeys) {
+          let dom  = this.Entries[k].domNode
+          if (dom.parentNode) {
+            dom.parentNode.removeChild(dom)
+          }
+          container.appendChild(dom, container.firstElementChild)
+        }
+      } else {
+        let last = null
+        for (let k of orderedKeys) {
+          let dom = this.Entries[k].domNode
+          if (dom.parentNode !== null) {
+            container.removeChild(dom)
+          }
+          if (last === null) {
+            container.insertBefore(dom, container.firstElementChild)
+          } else {
+            container.insertBefore(dom, last.nextElementSibling)
+          }
+          last = dom
+        }
+      }
     },
 
     updateChild: function () {
@@ -1670,34 +1731,40 @@ define([
 
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
-      return new Promise(function (resolve, reject) {
-        Query.exec(Path.url('store/DeepReservation/' + loc)).then(function (result) {
-          if (result && result.length === 0) {
-            reject()
-          } else {
-            var reservation = result.data
-            if (reservation.deleted) {
+      return new Promise((resolve, reject) => {
+        fetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+          if (!response.ok) { reject(); return }
+          response.json().then(result=> {
+            if (result && result.length === 0) {
               reject()
-              DoWait(false)
-              return
-            }
-            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
-            this.update()
-            var data = result.data
-            this.Entries[data.target].addOrUpdateReservation([data])
-            if (this.Entries[data.target].openReservation(data.id)) {
-              if (!dontmove) {
-                let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
-                window.scroll(0, pos.y - (window.innerHeight / 3))
-              }
-              resolve()
             } else {
-              reject()
+              var reservation = result.data
+              if (reservation.deleted) {
+                dontmove = true
+              }
+              if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
+              this.update()
+              let data = result.data
+              if (this.Entries[data.target]) {
+                this.Entries[data.target].addOrUpdateReservation([data])
+                if (this.Entries[data.target].openReservation(data.id)) {
+                  if (!dontmove) {
+                    let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                    window.scroll(0, pos.y - (window.innerHeight / 3))
+                  }
+                  resolve()
+                } else {
+                  reject()
+                }
+              } else {
+                let reservation = new Reservation({uid: data.id, sup: null, _json: data})
+                reservation.popMeUp()
+              }
+              DoWait(false)
             }
-            DoWait(false)
-          }
-        }.bind(this), () => DoWait(false))
-      }.bind(this), () => DoWait(false))
+          })
+        }, () => DoWait(false))
+      }, () => DoWait(false))
     },
 
     print: function (url) {

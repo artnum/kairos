@@ -25,6 +25,7 @@ define([
   'dojo/promise/all',
 
   'dijit/form/Form',
+  'dijit/form/NumberTextBox',
   'dijit/form/DateTextBox',
   'dijit/form/TimeTextBox',
   'dijit/form/Textarea',
@@ -46,7 +47,6 @@ define([
   'location/count',
   'location/countList',
   'location/Stores/Locality',
-  'location/Stores/User',
   'location/Stores/Machine',
   'location/Stores/Status',
   'location/Stores/Unit',
@@ -81,6 +81,7 @@ define([
   djAll,
 
   dtForm,
+  djNumberTextBox,
   dtDateTextBox,
   dtTimeTextBox,
   djTextarea,
@@ -102,7 +103,6 @@ define([
   Count,
   CountList,
   Locality,
-  User,
   Machine,
   Status,
   Unit,
@@ -132,9 +132,8 @@ define([
       this.initRequests = []
       this.LocalData = {}
       this.loaded = {status: false, warehouse: false, association: false, user: false}
-      this.userStore = new DjMemory()
-      this.userStore_bis = new DjMemory()
-
+      this.deleted = false
+      
       window.GEvent.listen('count.reservation-add', function (event) {
         if (event.detail.reservation && event.detail.reservation === this.reservation.uid) {
           this.refreshCount()
@@ -147,6 +146,10 @@ define([
           }
         }
       }.bind(this))
+      if (args && args.deleted) {
+        this.deleted = args.deleted
+      }
+
       if (args.reservation && args.reservation.sup && args.reservation.isNew) {
         this.Defaults = Query.exec(Path.url('store/Entry', {params: {'search.ref': args.reservation.sup.target, 'search.name': '~default.%'}}))
         this.isNew = true
@@ -175,17 +178,6 @@ define([
         }
       })
     },
-
-    getUser: async function (value) {
-      if (!value) { return null }
-      var user = await Query.exec(Path.url(value))
-      if (user.success && user.length === 1) {
-        return user.data
-      }
-
-      return null
-    },
-
     _setCreatorAttr: function (value) {
       this.nCreator.value = value
     },
@@ -213,23 +205,6 @@ define([
         this.nAddReport.disabled = false
       } else {
         this.nAddReport.disabled = true
-      }
-    },
-    eChangeUser: async function (event) {
-      if (window.localStorage.getItem(Path.bcname('user'))) {
-        var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-        _c = 'store/User/' + _c.id
-        if (event.target.getAttribute('data-target') === 'c') {
-          var mod = await Query.exec(Path.url('store/Reservation/' + this.reservation.uid), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
-          if (mod.success && mod.length === 1) {
-            this.set('creator', _c)
-          }
-        } else {
-          mod = await Query.exec(Path.url('store/Arrival/' + this.reservation.get('_arrival').id), {method: 'PATCH', body: JSON.stringify({ id: this.reservation.uid, creator: _c })})
-          if (mod.success && mod.length === 1) {
-            this.set('arrivalCreator', _c)
-          }
-        }
       }
     },
 
@@ -473,7 +448,7 @@ define([
       this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
       this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
       this.nMComment.set('value', '')
-      this.associationRefresh()
+      this.associationRefresh().then (() => {}, () => {KAIROS.error('Reject de l\'opération') })
     },
 
     doRemoveComplement: function (event) {
@@ -490,50 +465,65 @@ define([
       if (id != null) {
         var url = Path.url('store/Association/' + id)
         Query.exec(url, {method: 'DELETE'}).then(function () {
-          that.associationRefresh()
+          that.associationRefresh().then(() => {}, () => {KAIROS.error('Reject de l\'opération') })
         })
       }
     },
 
     associationRefresh: function () {
-      var def = new DjDeferred()
-      var that = this
-      Req.get(String(Path.url('store/Association/')), { query: { 'search.reservation': this.reservation.get('uid') } }).then(function (results) {
-        if (results && results.data && results.data.length > 0) {
-          var types = []
-          results.data.forEach(function (r) {
-            if (types.indexOf(r.type) === -1) { types.push(r.type) }
-          })
-
-          var t = {}
-          types.forEach(function (type) {
-            if (type !== '') {
-              t[type] = Req.get(type)
-            }
-          })
-          djAll(t).then(function (types) {
-            for (var k in types) {
-              for (var i = 0; i < results.data.length; i++) {
-                if (results.data[i].type === k) {
-                  if (types[k] && types[k].data) {
-                    results.data[i].type = types[k].data
-                  }
+      return new Promise((resolve, reject) => {
+        let url = new URL('store/Association', KAIROS.getBase())
+        url.searchParams.append('search.reservation', this.reservation.get('uid'))
+        fetch(url).then((response) => {
+          if (!response.ok) { return }
+          response.json().then(results => {
+            if (results.length > 0) {
+              let types = []
+              let queries = []
+              for (let i = 0; i < results.length; i++) {  
+                let entry = results.data[i]
+                if (types.indexOf(entry.type) === -1) {
+                  let query = fetch(new URL(entry.type, KAIROS.getBase()))
+                  queries.push(new Promise((resolve, reject) => {
+                    query.then (response => {
+                      if (!response.ok) { resolvedType[entry.type] = null; return }
+                      response.json().then(result => {
+                        if (result.length !== 1) { resolve(null); return }
+                        if (Array.isArray(result.data)) { resolve(result.data[0]) }
+                        else { resolve(result.data) }
+                      })
+                    })
+                  }))
                 }
               }
+
+              Promise.all(queries).then(types => {
+                let complements = results.data
+                for (let i = 0; i < complements.length; i++) {
+                  let type = complements[i].type.split('/')
+                  type = type[type.length - 1]
+                  for (let j = 0; j < types.length; j++) {
+                    if (types[j].id === type) {
+                      complements[i].type = types[j]
+                    }
+                  }
+                }
+                this.reservation.complements = complements
+                this.associationEntries(this.reservation.complements)
+                resolve()
+                return
+              })
+              resolve()
+              return
+            } else {
+              this.reservation.complements = []
+              this.associationEntries([])
+              resolve()
+              return
             }
-
-            that.reservation.complements = results.data
-            that.associationEntries(that.reservation.complements)
-            def.resolve()
-          })
-        } else {
-          that.reservation.complements = []
-          that.associationEntries([])
-          def.resolve()
-        }
+          }, () => reject())
+        }, () => reject())
       })
-
-      return def.promise
     },
 
     doAddEditComplement: function () {
@@ -571,12 +561,12 @@ define([
       if (query['id'] == null) {
         var url = Path.url('store/Association')
         Query.exec(url, {method: 'post', body: query}).then(function () {
-          that.associationRefresh().then(() => { that.reservation.resize() })
+          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
         })
       } else {
         url = Path.url('store/Association/' + query['id'])
         Query.exec(url, {method: 'patch', body: query}).then(() => {
-          that.associationRefresh().then(() => { that.reservation.resize() })
+          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
 
           that.nComplementId.value = ''
           that.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')
@@ -709,7 +699,7 @@ define([
             this.Intervention.type = new Select(inputs[k], this.Stores.Status1, {allowFreeText: false, realSelect: true})
             break
           case 'iPerson':
-            this.Intervention.person = new Select(inputs[k], this.Stores.User, {allowFreeText: true, realSelect: true})
+            this.Intervention.person = new Select(inputs[k], new UserStore(), {allowFreeText: true, realSelect: true})
             break
           }
         }
@@ -794,10 +784,14 @@ define([
 
           let technician = results.data[i].technician
           if (technician) {
-            let t = await this.Stores.User.get(technician)
-            if (t !== null) {
-              technician = t.name
-            } else {
+            try {
+              let t = await this.Stores.User.get(technician)
+              if (t !== null) {
+                technician = t.name
+              } else {
+                technician = ''
+              }
+            } catch (e) {
               technician = ''
             }
           } else {
@@ -921,12 +915,12 @@ define([
         }, { capture: true })
 
         let L = new Locality()
-        let U = new User()
+        let U = new UserStore()
         let M = new Machine()
         let S = new Status({type: '0'})
         this.Stores = {
           Locality: L,
-          User: U,
+          User: new UserStore(),
           Machine: M,
           Unit: new Unit()
         }
@@ -941,9 +935,9 @@ define([
         this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
         this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-        this.nArrivalCreator = new Select(this.nArrivalCreator, U, { allowFreeText: false, realSelect: true })
-        this.nCreator = new Select(this.nCreator, U, { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, U, { allowFreeText: true, realSelect: false })
+        this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
+        this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
+        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: false })
         this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()
@@ -1151,34 +1145,6 @@ define([
           this.loaded.association = true
         }
         this.set('warehouse', this.reservation.get('warehouse'))
-
-        if (!this.loaded.user) {
-          fetch(Path.url('store/User'), {credentials: 'same-origin'}).then((response) => { return response.json() }).then((json) => {
-            if (json.type === 'results' && json.data && json.data.length > 0) {
-              this.loaded.user = true
-              var store = this.get('userStore')
-              var storeBis = this.get('userStore_bis')
-              for (var i = 0; i < json.data.length; i++) {
-                if (!store.get('/store/User/' + json.data[i].id)) {
-                  store.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-                }
-                if (!storeBis.get('/store/User/' + json.data[i].id)) {
-                  storeBis.add({name: json.data[i].name, id: '/store/User/' + json.data[i].id})
-                }
-              }
-            }
-            if (this.reservation.get('creator')) {
-              this.set('creator', this.reservation.get('creator'))
-            } else {
-              if (window.localStorage.getItem(Path.bcname('user'))) {
-                var _c = JSON.parse(window.localStorage.getItem(Path.bcname('user')))
-                this.set('creator', 'store/User/' + _c.id)
-              }
-            }
-          })
-        } else {
-          this.set('creator', this.reservation.get('creator'))
-        }
 
         if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
           this.nConfirmed.value = true
@@ -1697,7 +1663,7 @@ define([
               var entry = window.App.getEntry(reservation.get('target'))
               var oldEntry = window.App.getEntry(changeMachine)
               if (entry) {
-                window.App.info(`Réservation ${reservation.uid} correctement déplacée`)
+                KAIROS.info(`Réservation ${reservation.uid} correctement déplacée`)
                 delete oldEntry.entries[reservation.uid]
                 entry.entries[reservation.uid] = reservation
                 entry.resize()

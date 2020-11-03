@@ -1,0 +1,14 @@
+body {
+    overflow: hidden;
+}
+
+#loadingOverlay {
+    display: block !important;
+    background-color: hsla(0, 100%, 100%, 0.8);
+    z-index: 99999;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+}

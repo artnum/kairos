@@ -400,7 +400,7 @@ define([
 
     start: async function () {
       this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF'})
-      this.doc.addEventListener('close', function (event) { window.location.hash = '' })
+      this.doc.addEventListener('close', function (event) { })
       this.Total = 0
       this.Entries = {}
       window.GEvent.listen('count.count-deleted', function (event) {

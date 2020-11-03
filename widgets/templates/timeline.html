@@ -59,7 +59,8 @@
       <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./upcoming.html', true); }">À venir</div>
       <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./now.html', true); }">En cours</div>
       <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./passed.html', true); }">Passées</div>
-      <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./todo.html', true); }">Incomplètes</div>
+	  <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./todo.html', true); }">Incomplètes</div>
+	  <div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./unconfirmed.html', true); }">Fin à contrôler</div>
     </div>
   </div>
 </div>
@@ -70,7 +71,6 @@
 <div data-dojo-attach-point="line" class="line"></div>
 <div data-dojo-attach-point="subline" class="line subline"></div>
 </div>
-<div id="LogLine" data-dojo-attach-point="logline" class="logline"></div>
 <div class="reservationContainer" data-dojo-attach-point="domEntries"></div>
 <div style="display: none;" class="nohandle leftpane" data-artnum-maximize="yes"> 
   <div class="titleBar">

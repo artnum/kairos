@@ -12,27 +12,12 @@ define([
 
   'dojo/text!./templates/entry.html',
 
-  'dojo/dom',
   'dojo/date',
-  'dojo/date/stamp',
-  'dojo/dom-construct',
-  'dojo/on',
   'dojo/dom-class',
   'dojo/dom-style',
-  'dojo/request/xhr',
-  'dojo/promise/all',
-  'dojo/dom-geometry',
-
-  'dijit/Dialog',
   'dijit/registry',
 
   'location/reservation',
-  'location/rForm',
-  'location/update',
-
-  'artnum/dojo/Request',
-  'artnum/Path',
-  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
@@ -44,30 +29,14 @@ define([
 
   _template,
 
-  djDom,
   djDate,
-  djDateStamp,
-  djDomConstruct,
-  djOn,
   djDomClass,
   djDomStyle,
-  djXhr,
-  djAll,
-  djDomGeometry,
-
-  dtDialog,
   dtRegistry,
 
   Reservation,
-  rForm,
-
-  update,
-
-  Req,
-  Path,
-  Query
 ) {
-  return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented, update], {
+  return djDeclare('location.entry', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented], {
     baseClass: 'entry',
     templateString: _template,
     stores: {},
@@ -75,7 +44,6 @@ define([
     sup: null,
     isParent: false,
     target: null,
-    newReservation: null,
     intervalZoomFactors: [],
     waiters: 0, /* number of nested "waiting" func */
     originalHeight: 0,
@@ -90,7 +58,6 @@ define([
       this.lastTouchTarget = null
       this.waiters = 0
       this.childs = {}
-      this.newReservation = null
       this.target = null
       this.isParent = false
       this.sup = null
@@ -107,7 +74,7 @@ define([
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
       if (dtRegistry.byId('location_entry_' + args['target'])) {
-        alert('La machine ' + args['target'] + ' existe à double dans la base de donnée !')
+        KAIROS.error('La machine ' + args['target'] + ' existe à double dans la base de donnée !')
       } else {
         this.id = 'location_entry_' + args['target']
       }
@@ -177,37 +144,30 @@ define([
       return (7 * bs) + ((17 - 7) * 3.8 * bs) + ((hour - 17) * bs)
     },
 
-    update: function () {
-    },
-
     postCreate: function () {
-      djOn(this.domNode, 'click', djLang.hitch(this, this.eClick))
-      djOn(this.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
-      djOn(this.sup, 'cancel-reservation', djLang.hitch(this, this.cancelReservation))
-      djOn(this.domNode, 'dblclick', djLang.hitch(this, this.evtDblClick))
-      djOn(this.domNode, 'touchend', djLang.hitch(this, this.evTouchEnd))
-      djOn(this.domNode, 'touchstart', djLang.hitch(this, this.evTouchStart))
-      djOn(this.sup, 'zoom', function () {
-        djDomStyle.set(this.domNode, 'height', '')
-        this.originalHeight = djDomStyle.get(this.domNode, 'height')
-        this.resize()
-      }.bind(this))
+      this.domNode.addEventListener('dblclick', event => { this.evtDblClick(event) })
+      this.domNode.addEventListener('touchend', event=> { this.evTouchEnd(event) })
+      this.domNode.addEventListener('touchstart', event => { this.evTouchStart(event) })
 
       this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73 /* in chrome value here is 0, set default known value for now */
 
       this.view = { rectangle: getElementRect(this.domNode) }
       this.verifyLock()
-      Query.exec(Path.url('store/Tags/', {params: {'!': this.url}})).then(function (response) {
-        if (response.success && response.length > 0) {
-          for (var i in response.data[0]) {
-            response.data[0][i].forEach(function (tag) {
-              this.tags.push(tag)
-            }.bind(this))
+      let url = new URL(`store/Tags/`, KAIROS.getBase())
+      url.searchParams.append('!', this.url)
+      fetch(url).then(response => {
+        if (!response.ok) { return }
+        response.json().then(result => {
+          if (result.length > 0) {
+            for (let i in result.data[0]) {
+              result.data[0][i].forEach(tag => {
+                this.tags.push(tag)
+              })
+            }
           }
-        }
-
-        this.displayTags(this.tags)
-      }.bind(this))
+          this.displayTags(this.tags)
+        })
+      })
 
       var frag = document.createDocumentFragment()
 
@@ -223,6 +183,14 @@ define([
       this.domNode.dataset.details = JSON.stringify(this.details)
       
       this.genDetails()
+      if (this.details) {
+        if (!Array.isArray(this.details.state)) {
+          this.details.state = [this.details.state]
+        }
+        this.details.state.forEach(state => {
+          this.domNode.classList.add(state)
+        })
+      }
 
       let node = this.nControl.firstElementChild
       while (node && !node.classList.contains('tools')) {
@@ -236,6 +204,7 @@ define([
         event.stopPropagation()
         this.EvenementPopUp(node)
       }, {capture: true})
+
       node.addEventListener('dblclick', (event) => {
         event.stopPropagation()
       }, {capture: true})
@@ -248,7 +217,9 @@ define([
         this.EntryStateOpen = null
         return
       }
-      fetch(Path.url(`store/Evenement/.chain?machine=${this.target}`)).then(response => {
+      let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
+      url.searchParams.append('machine', this.target)
+      fetch(url).then(response => {
         if (!response.ok) {
           KAIROS.error('Erreur lors de l\'interrogation des évènements')
           return
@@ -399,29 +370,30 @@ define([
     },
 
     displayTags: function (tags) {
-      var def = new DjDeferred()
-
-      var notag = true
-      var that = this
-      var frag = document.createDocumentFragment()
-      if (tags.length > 0) {
-        tags.forEach(function (tag) {
-          if (tag !== '') {
-            notag = false
-            var s = document.createElement('A')
-            s.setAttribute('class', 'tag ' + tag.tagify())
-            s.setAttribute('href', '#' + tag.tagify())
-            s.appendChild(document.createTextNode(tag))
-            frag.appendChild(s)
-          }
+      return new Promise((resolve, reject) => {
+        let notag = true
+        let frag = document.createDocumentFragment()
+        if (tags.length > 0) {
+          tags.forEach(function (tag) {
+            if (tag !== '') {
+              notag = false
+              var s = document.createElement('A')
+              s.setAttribute('class', 'tag ' + tag.tagify())
+              s.setAttribute('href', '#' + tag.tagify())
+              s.appendChild(document.createTextNode(tag))
+              frag.appendChild(s)
+            }
+          })
+        }
+        if (notag) {
+          frag.appendChild(document.createTextNode('Ajouter ... '))
+        }
+        window.requestAnimationFrame(() => {
+          this.nTags.appendChild(frag); 
+          this.nTags.addEventListener('dblclick', event => { this.eEditTags(event) }, {once: true})
+          resolve()
         })
-      }
-      if (notag) {
-        frag.appendChild(document.createTextNode('Ajouter ... '))
-      }
-      window.requestAnimationFrame(function () { that.nTags.appendChild(frag); djOn.once(that.nTags, 'dblclick', djLang.hitch(that, that.eEditTags)); def.resolve() })
-
-      return def.promise
+      })
     },
 
     clearTags: function () {
@@ -449,8 +421,14 @@ define([
         this.tags = tags
         let q = {}
         q[this.url] = tags
-        Req.post(String(Path.url('store/Tags/?!=' + this.url)), { query: q }).then(() => {
-          this.clearTags().then(() => { this.displayTags(tags) })
+        let url = new URL('store/Tags', KAIROS.getBase())
+        url.searchParams.append('!', this.url)
+        fetch(url, {method: 'post', body: JSON.stringify(q)}).then (response => {
+          if (!response.ok) { return }
+          response.json().then(results => {
+            console.log(results)
+            this.clearTags().then(() => { this.displayTags(tags) })
+          })
         })
       })
 
@@ -492,32 +470,37 @@ define([
     eEditLocation: function (event) {
       var location = this.get('currentLocation')
       var frag = document.createDocumentFragment()
-      var saveLocFn = function (event) {
+      var saveLocFn = (event) => {
         var node = null
         var input = null
+        let url
         for (node = event.target; node.nodeName !== 'DIV'; node = node.parentNode);
         for (input = node.firstChild; input.nodeName !== 'INPUT'; input = input.nextSibling);
         if (node.getAttribute('data-id')) {
           var body = {id: node.getAttribute('data-id'), value: input.value}
           var method = 'PATCH'
-          var url = Path.url('store/Entry/' + body.id)
+          url = new URL(`store/Entry/${body.id}`, KAIROS.getBase())
         } else {
           body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
           method = 'POST'
-          url = Path.url('store/Entry')
+          url = new URL('store/Entry', KAIROS.getBase())
         }
 
-        Query.exec(url, {method: method, body: body}).then(function (result) {
-          if (result.success && result.length === 1) {
-            Query.exec(Path.url('store/Entry/' + result.data[0].id)).then(function (result) {
-              if (result.success && result.length === 1) {
+        fetch(url, {method: method, body: JSON.stringify(body)}).then(response => {
+          if (!response.ok) { return }
+          response.json().then(result => {
+            if (result.length !== 1) { return }
+            fetch(new URL(`store/Entry/${result.data[0].id}`, KAIROS.getBase())).then((response) => {
+              if (!response.ok) { return }
+              response.json().then(result => {
+                if (result.length !== 1) { return }
                 this.set('currentLocation', result.data)
                 this.displayLocation()
-              }
-            }.bind(this))
-          }
-        }.bind(this))
-      }.bind(this)
+              })
+            })
+          })
+        })
+      }
 
       frag.appendChild(document.createElement('INPUT'))
       if (location && location.value) {
@@ -540,20 +523,6 @@ define([
       }.bind(this))
     },
 
-    cancelReservation: function () {
-      if (this.newReservation) {
-        var that = this
-        this.unlock().then(function () {
-          var r = that.newReservation.o
-          that.newReservation = null
-          window.requestAnimationFrame(function () {
-            r.domNode.parentNode.removeChild(r.domNode)
-            r.destroy()
-          })
-        })
-      }
-    },
-
     defaultStatus: function () {
       return this.sup.defaultStatus()
     },
@@ -564,9 +533,9 @@ define([
       if (window.App.touchTimeout) {
         clearTimeout(window.App.touchTimeout)
       }
-      window.App.touchTimeout = setTimeout(function () {
+      window.App.touchTimeout = setTimeout(() => {
         this.evtDblClick(event)
-      }.bind(this), 500)
+      }, 500)
     },
 
     evTouchEnd: function (event) {
@@ -594,19 +563,17 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      this.defaultStatus().then(function (s) {
-        let user = JSON.parse(localStorage.getItem('/location/user'))
-        var newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: `User/${user.id}`, create: true})
-        this.creating[newReservation.localid] = newReservation
-        newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
-        newReservation.save().then((id) => {
-          newReservation.set('uid', id)
-          newReservation.popMeUp()
+      this.defaultStatus().then((s) => {
+        UserStore.getCurrentUser().then(currentUser => {
+          let newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
+          this.creating[newReservation.localid] = newReservation
+          newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
+          newReservation.save().then((id) => {
+            newReservation.set('uid', id)
+            newReservation.popMeUp()
+          })
         })
-      }.bind(this))
-    },
-
-    copy: function (original) {
+      })
     },
 
     _getOffsetAttr: function () {
@@ -642,70 +609,6 @@ define([
       }
 
       return datehour
-    },
-    eMouseMove: function (event) {
-      if (this.newReservation) {
-        this.newReservation.o.animate(event.clientX)
-      }
-    },
-    eClick: function (event) {
-      var that = this
-      if (event.clientX <= this.get('offset')) { return }
-      if (!this.newReservation && event.ctrlKey) {
-        this.lock().then(djLang.hitch(this, function (locked) {
-          this.defaultStatus().then(djLang.hitch(this, function (s) {
-            if (locked) {
-              var dBegin = this.dayFromX(event.clientX)
-              var dEnd = new Date(dBegin)
-              dBegin.setHours(8, 0, 0, 0)
-              dEnd.setHours(17, 0, 0, 0)
-              this.newReservation = {start: dBegin}
-              this.newReservation.o = new Reservation({ sup: that, status: s, begin: dBegin, end: dEnd, clickPoint: event.clientX })
-              this.newReservation.o.addEventListener('change', this.handleReservationEvent.bind(this))
-
-              djOn.once(this.newReservation.o.domNode, 'click', djLang.hitch(this, this.eClick))
-              djOn.once(this.newReservation.o.domNode, 'mousemove', djLang.hitch(this, this.eMouseMove))
-              this.own(this.newReservation)
-              djDomClass.add(this.newReservation.o.domNode, 'selected')
-              this.data.appendChild(this.newReservation.o.domNode)
-            }
-          }))
-        }))
-      }
-      if (this.newReservation) {
-        this._startWait()
-        var r = this.newReservation
-        this.newReservation = null
-
-        var currentDay = this.dayFromX(event.clientX)
-        if (djDate.compare(currentDay, r.start) < 0) {
-          currentDay.setHours(8, 0, 0, 0)
-          r.o.set('begin', currentDay)
-          r.o.set('end', r.start)
-        } else {
-          currentDay.setHours(17, 0, 0, 0)
-          r.o.set('begin', r.start)
-          r.o.set('end', currentDay)
-        }
-
-        r.o.save().then(djLang.hitch(this, function (result) {
-          if (result.type === 'error') {
-            this.error("Impossible d'enregistrer les données", 300)
-            this.unlock()
-          } else {
-            var oldId = r.o.get('id')
-            dtRegistry.remove(oldId)
-            r.o.set('IDent', result.data.id)
-            dtRegistry.add(r.o)
-            r.o.domNode.setAttribute('widgetid', result.data.id)
-            r.o.domNode.setAttribute('id', result.data.id)
-            djDomClass.remove(r.o.domNode, 'selected')
-            r.o.popMeUp()
-            this._stopWait()
-            this.unlock()
-          }
-        }))
-      }
     },
     _getBlockSizeAttr: function () {
       return this.sup.get('blockSize')
@@ -857,6 +760,14 @@ define([
           overlapRoot[i].overlap.elements[j].overlap.level = overlapRoot[i].overlap.elements.length + 1
           overlapRoot[i].overlap.elements[j].overlap.do = true
         }
+      }
+    },
+
+    display: function (yes = true) {
+      if (!yes) {
+        this.domNode.classList.add('nodisplay')
+      } else {
+        this.domNode.classList.remove('nodisplay')
       }
     },
 

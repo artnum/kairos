@@ -18,6 +18,9 @@
     </tr></thead>
   </table>
 </body>
+<script src="../conf/app.js"></script>
+<script src="../js/kairos.js"></script>
+<script src="../js/stores/user.js"></script>
 <script src="../node_modules/sjcl/sjcl.js"></script>
 <script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
 <script src="../js/gevent.js"></script>
@@ -27,32 +30,33 @@
 <script src="../node_modules/artnum/DTable.js"></script>
 <script>
  window.onload = function () {
-   var tables = document.getElementsByTagName('TABLE') 
+    var tables = document.getElementsByTagName('TABLE')
 
-   let params = new URLSearchParams(window.location.search.substring(1))
-   let currentUser = window.localStorage.getItem(Artnum.Path.bcname('user'))
-   if (currentUser) {
-     params.append('creator', JSON.parse(currentUser).name)
-   }
+    let params = new URLSearchParams(window.location.search.substring(1))
+    UserStore.getCurrentUser().then(currentUser => {
+      if (currentUser) {
+        params.append('creator', currentUser.name)
+      }
 
-   for (var i = 0; i < tables.length; i++) {
-     var dtable = new Artnum.DTable({table: tables[i], search: params}, true)
-     if (transliterate) {
-       dtable.transliterate = transliterate
-     }
-     dtable.addEventListener('click', function (event) {
-       let details = event.detail
-       switch (details.attribute) {
-         case 'id':
-           window.GEvent('count.attribute-click', {attribute: 'id', value: details.value})
-           break;
-          case 'reservation':
-            window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
-            break
-       }
-     })
-     dtable.run()
-   }
- }
+      for (var i = 0; i < tables.length; i++) {
+        var dtable = new Artnum.DTable({ table: tables[i], search: params }, true)
+        if (transliterate) {
+          dtable.transliterate = transliterate
+        }
+        dtable.addEventListener('click', function (event) {
+          let details = event.detail
+          switch (details.attribute) {
+            case 'id':
+              window.GEvent('count.attribute-click', { attribute: 'id', value: details.value })
+              break;
+            case 'reservation':
+              window.GEvent('reservation.attribute-click', { attribute: 'id', value: details.value })
+              break
+          }
+        })
+        dtable.run()
+      }
+    })
+  }
 </script>
 </html>

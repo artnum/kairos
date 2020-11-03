@@ -1,6 +1,6 @@
 /* Timeline app -> key code */
 /* eslint-env amd, browser */
-/* global APPConf */
+/* global KAIROS */
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
@@ -49,7 +49,9 @@ define([
 ) {
   return djDeclare('location.timeline.keys', [ djEvented ], {
     constructor: function () {
-      this.commandLetters = [ 'j', 'm', 'r', 'd' ]
+      this.func = null
+      this.suggest = null
+      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c' ]
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
@@ -60,43 +62,47 @@ define([
           this.switchCommandMode()
         }
       }.bind(this))
-      window.addEventListener('keydown', async function (event) {
-        if (this.commandLetters.indexOf(event.key) !== -1 && event.ctrlKey) {
-          event.preventDefault()
-          this.switchCommandMode().then(() => {
-            if (this.commandKeys(event)) {
-              this.switchCommandMode()
-            }
-          })
-          return
-        }
-        if (event.key === APPConf.CommandWindow.escapeKey) {
-          this.switchCommandMode()
+      window.addEventListener('keydown', event => {
+        if (event.ctrlKey) { return }
+        if (event.key === KAIROS.CommandWindow.escapeKey) {
+          let cMode = this.switchCommandMode()
+          if (event.shiftKey) {
+            cMode.then(() => {
+              this.goToSearchBox()
+              this.func = this.cmdProcessor
+            })
+          }
         } else {
           if (this.CommandMode) {
             switch (event.key) {
-              case APPConf.exitKey:
+              case KAIROS.exitKey:
                 if (this.CommandOverlay) {
+                  this.suggest = null
                   if (this.func) {
                     this.func = null
                     document.activeElement.blur()
+                    if (this.resultBox && this.resultBox.parentNode) {
+                      this.resultBox.parentNode.removeChild(this.resultBox)
+                    }
                     for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
                       if (n.firstChild && n.firstChild.innerHTML) {
-                        window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
-                      }
+                        window.requestAnimationFrame(() => n.dataset.selected = '0')                      }
                     }
                   } else {
                     this.switchCommandMode()
                   }
                 }
                 break
-              case APPConf.enterKey:
+              case KAIROS.enterKey:
                 event.preventDefault()
                 if (this.func) {
-                  var r = this.func(document.getElementById('commandSearchBox').value)
-                  if (r) {
-                    this.switchCommandMode()
-                  }
+                  this.func(document.getElementById('commandSearchBox').value).then(result => {
+                    if (result) {
+                      this.switchCommandMode()
+                    } else {
+                      KAIROS.warn(`La commande n'a pas pu être interprétée`)
+                    }
+                  })
                 }
                 break
               default:
@@ -110,7 +116,7 @@ define([
             }
           }
         }
-      }.bind(this), {capture: true})
+      }, {capture: true})
     },
 
     goToSearchBox: function () {
@@ -158,9 +164,9 @@ define([
         for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
           if (n.firstChild && n.firstChild.innerHTML) {
             if (n.firstChild.innerHTML.toLowerCase() === event.key) {
-              window.requestAnimationFrame(() => n.firstChild.setAttribute('style', 'background-color: hsla(126, 100%, 56%, 0.6)'))
+              window.requestAnimationFrame(() => n.dataset.selected = '1')
             } else {
-              window.requestAnimationFrame(() => n.firstChild.removeAttribute('style'))
+              window.requestAnimationFrame(() => n.dataset.selected = '0')
             }
           }
         }
@@ -186,74 +192,139 @@ define([
           this.goToSearchBox()
           this.func = this.gotoCount
           break
+        case 'c':
+          this.goToSearchBox()
+          this.func = this.searchByClient
+          this.setResultBox()
+          break
+        case ':':
+          this.goToSearchBox()
+          this.func = this.cmdProcessor
+          break
       }
       return done
     },
-    gotoDay: async function (val) {
-      var elements = val.split(/(?:\/|\.|-|\s)/)
-      var date = new Date()
-      var y = date.getFullYear()
-      var m = date.getMonth()
-      switch (elements.length) {
-        default: return false
-        case 3:
-          if (isNaN(parseInt(elements[2]))) {
-            return false
-          }
-          y = parseInt(elements[2])
-          if (y < 100) { y += ((Math.round(date.getFullYear() / 100)) * 100) }
-          /* fall through */
-        case 2:
-          if (isNaN(parseInt(elements[1]))) {
-            return false
-          }
-          m = parseInt(elements[1]) - 1
-          /* fall through */
-        case 1:
-          if (isNaN(parseInt(elements[0]))) {
-            return false
-          }
-          var d = parseInt(elements[0])
-          date.setFullYear(y, m, d)
-          break
-      }
-      if (Boolean(+date) && date.getDate() === d) {
-        this.set('center', date)
-        this.update()
-        return true
-      }
-      return false
-    },
-    gotoCount: async function (val) {
-      Query.exec(Path.url(`store/Count/${val}`)).then(function (result) {
-        if (result.success && result.length === 1) {
-          window.GEvent('count.open', {id: val})
+
+    gotoDay: function (val) {
+      return new Promise((resolve, reject) => {
+        var elements = val.split(/(?:\/|\.|-|\s)/)
+        var date = new Date()
+        var y = date.getFullYear()
+        var m = date.getMonth()
+        switch (elements.length) {
+          default: 
+            resolve(false)
+            return
+          case 3:
+            if (isNaN(parseInt(elements[2]))) {
+              resolve(false)
+              return
+            }
+            y = parseInt(elements[2])
+            if (y < 100) { y += ((Math.round(date.getFullYear() / 100)) * 100) }
+            /* fall through */
+          case 2:
+            if (isNaN(parseInt(elements[1]))) {
+              resolve(false)
+              return
+            }
+            m = parseInt(elements[1]) - 1
+            /* fall through */
+          case 1:
+            if (isNaN(parseInt(elements[0]))) {
+              resolve(false)
+              return
+            }
+            var d = parseInt(elements[0])
+            date.setFullYear(y, m, d)
+            break
         }
+        if (Boolean(+date) && date.getDate() === d) {
+          this.set('center', date)
+          this.update()
+          resolve(true)
+          return
+        }
+        resolve(false)
       })
     },
-    gotoMachine: async function (val) {
-      var top = -1
-      for (var n = this.domEntries.firstChild; n; n = n.nextElementSibling) {
-        if (n.dataset.reference === val) {
-          top = 0
-          var e = n
-          do {
-            top += e.offsetTop || 0
-            e = e.offsetParent
-          } while (e)
-          break
-        }
-      }
-      if (top !== -1) {
-        var hh = Math.round(window.innerHeight / 3)
-        window.scrollTo(0, top - hh)
-        return true
-      }
 
-      return false
+    gotoCount: function (val) {
+      return new Promise((reject, resolve) => {
+        fetch(new URL(`store/Count/${val}`, KAIROS.getBase())).then(response => {
+          if (!response.ok) { resolve(false); return }
+          response.json().then(results => {
+            if (results.length !== 1) {
+              resolve(false)
+              return
+            }
+            window.GEvent('count.open', {id: val})
+            resolve(true)
+          })
+        })
+      })
     },
-    gotoReservation: async function (val) {
-      this.doSearchLocation(val, true).then(() => { return true }, () => { return false })
+    gotoMachine: function (val) {
+      return new Promise((resolve, reject) => {
+        var top = -1
+        for (var n = this.domEntries.firstChild; n; n = n.nextElementSibling) {
+          if (n.dataset.reference === val) {
+            window.requestAnimationFrame(() => {
+              n.classList.add('highlight')
+            })
+            setTimeout(() => {
+              window.requestAnimationFrame(() => {
+                n.classList.remove('highlight')
+              })
+            }, KAIROS.ui.highlightTime)
+            top = 0
+            var e = n
+            do {
+              top += e.offsetTop || 0
+              e = e.offsetParent
+            } while (e)
+            break
+          }
+        }
+        if (top !== -1) {
+          var hh = Math.round(window.innerHeight / 3)
+          window.scrollTo(0, top - hh)
+          resolve(true)
+          return
+        }
+
+        resolve(false)
+        return
+      })
+    },
+    gotoReservation: function (val) {
+      return new Promise((resolve, reject) => {
+        this.doSearchLocation(val, true).then(() => { resolve(true) }, () => { resolve(false) })
+      })
+    },
+
+    searchByClient: function (val) {
+      return new Promise((resolve, reject) => {
+        let search = new ClientSearch(document.getElementById('commandModeOverlayList'))
+        search.search(val)
+        resolve(true)
+      })
+    },
+
+    setResultBox: function () {
+      if (!this.resultBox) {
+        this.resultBox = document.createElement('DIV')
+        this.resultBox.classList.add('results')
+        let list = document.createElement('DIV')
+        list.classList.add('list')
+        list.id = 'commandModeOverlayList'
+        this.resultBox.appendChild(list)
+      }
+      if (this.resultBox.parentNode) {
+        window.requestAnimationFrame(() => this.resultBox.innerHTML = '')
+      } else {
+        window.requestAnimationFrame(() => document.getElementById('commandModeOverlay').appendChild(this.resultBox))
+      }
     },
 
     keys: function (event) {
@@ -285,7 +356,62 @@ define([
             break
         }
       }
-    }
+    },
 
+    cmdProcessor: function (val) {
+      return new Promise ((resolve, reject) => {
+        let argv = val.split(/\s+/)
+        for (let i = 0; i < argv.length; i++) {
+          argv[i] = argv[i].toLowerCase()
+        }
+        switch (argv[0]) {
+          default:
+            resolve(false)
+            return
+          case 'set':
+            if (argv[1].substring(0, 7) === 'kairos.') {
+              switch(argv[1].substring(7)) {
+                case 'highlighttime': 
+                  if (isNaN(parseInt(argv[2]))) {
+                    KAIROS.ui.highlightTime = 1500
+                  } else {
+                    KAIROS.ui.highlightTime = parseInt(argv[2]) 
+                  }
+                break
+              }
+            }
+            resolve(true)
+            return
+          case 'show':
+            let loadEntries
+            switch(argv[1]){
+              default:
+              case 'default':
+                loadEntries = this.loadEntries({state: 'SOLD'})
+                break
+              case 'all':
+                loadEntries = this.loadEntries()
+                break
+            }
+            loadEntries.then(() => {
+              this.sortAndDisplayEntries()
+            })
+            resolve(true)
+            return
+          case 'sort':
+            switch (argv[1]) {
+              default:
+              case 'default':
+                this.sortEntries(this._sort_default())
+                break
+              case 'warehouse':
+                this.sortEntries(this._sort_warehouse(), true)
+                break
+            }
+            resolve(true)
+            return
+        }
+      })
+    }
   })
 })

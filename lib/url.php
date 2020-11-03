@@ -44,4 +44,16 @@ function base_url ($append = '') {
 
    return $url;
 }
+
+function sanitize_path ($path) {
+   $path = explode('/', $path);
+   $out_path = [];
+   foreach($path as $p) {
+      if (!empty($p)) {
+         $out_path[] = $p;
+      }
+   }
+   return implode('/', $out_path);
+}
+
 ?>

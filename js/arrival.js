@@ -177,12 +177,15 @@ Arrival.prototype.done = function (event) {
     var now = new Date()
     req.done = now.toISOString()
   }
-  Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then(function (result) {
-    if (result.success && result.length === 1) {
-      Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
-      this.RChannel.postMessage({op: 'touch', id: reservationId})
-    }
-  }.bind(this))
+
+  KairosEvent('autoReturn', {reservation: reservationId, append: true}, event.target).then(() => {
+    Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
+      if (result.success && result.length === 1) {
+        Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
+        this.RChannel.postMessage({op: 'touch', id: reservationId})
+      }
+    })
+  })
 }
 
 Arrival.prototype.progress = function (event) {
@@ -361,14 +364,20 @@ Arrival.prototype.add = async function (retval) {
   if (retval.inprogress && !retval.done) {
   } else if (!retval.inprogress && !retval.done) {
   }
-  var doneBtn = this.html.button('Fait')
-  var progBtn = this.html.button('En cours')
+
+  let dBtn = document.createElement('BUTTON')
+  dBtn.innerHTML = '<i class="fab fa-fort-awesome" aria-hidden="true"></i> Retournée'
+  let pBtn = document.createElement('BUTTON')
+  pBtn.innerHTML = '<i class="far fa-calendar-check" aria-hidden="true"></i> En cours'
+  
+  dom.appendChild(this.html.cell([pBtn, dBtn], magnitude))
+  let doneBtn = new MButton(dBtn, { set: () => (new Date()).toISOString(), unset: '' })
+  let progBtn = new MButton(pBtn, { set: () => (new Date()).toISOString(), unset: '' })
   if (retval.inprogress) {
-    progBtn.setAttribute('class', 'button selected')
+    progBtn.setValue(true)
   }
 
   retval.RChannel = this.RChannel
-  dom.appendChild(this.html.cell([progBtn, doneBtn], magnitude))
   doneBtn.addEventListener('click', this.done.bind(retval))
   progBtn.addEventListener('click', this.progress.bind(retval))
 

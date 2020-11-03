@@ -3,70 +3,29 @@ define([
   'dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/Evented',
-  'dojo/Deferred',
-
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
-
   'dojo/text!./templates/contacts.html',
-
-  'dojo/dom',
-  'dojo/date',
-  'dojo/date/stamp',
-  'dojo/dom-construct',
   'dojo/on',
   'dojo/dom-style',
-  'dojo/dom-class',
   'dojo/dom-form',
   'dojo/dom-attr',
   'dojo/request/xhr',
-
   'dijit/form/Form',
-  'dijit/form/DateTextBox',
-  'dijit/form/TimeTextBox',
-  'dijit/form/Button',
-  'dijit/form/RadioButton',
-  'dijit/form/Select',
-  'dijit/registry',
-
   'location/card',
-  'artnum/Path',
-  'artnum/Query'
 ], function (
   djDeclare,
   djLang,
   djEvented,
-  djDeferred,
-
   dtWidgetBase,
   dtTemplatedMixin,
   dtWidgetsInTemplateMixin,
-
   _template,
-
-  djDom,
-  djDate,
-  djDateStamp,
-  djDomConstruct,
   djOn,
   djDomStyle,
-  djDomClass,
   djDomForm,
-  djDomAttr,
-
-  djXhr,
-  dtForm,
-  dtDateTextBox,
-  dtTimeTextBox,
-  dtButton,
-  dtRadioButton,
-  dtSelect,
-  dtRegistry,
-
-  Card,
-  Path,
-  Query
+  Card
 ) {
   return djDeclare('location.contacts', [ dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
     baseClass: 'contacts',
@@ -117,7 +76,7 @@ define([
       var terms = f.search.split(/\s+/)
       var selected = []
       var rules = false
-      var url = Path.url('store/Contacts')
+      let url = new URL('store/Contacts', KAIROS.getBase())
       if (f.company && f.company === 'on') {
         url.searchParams.set('search.objectclass', 'organization')
         rules = true
@@ -178,35 +137,38 @@ define([
       if (selected.length === 0) {
         this.nSearch.set('state', 'Error')
       } else {
-        Query.exec(url).then(djLang.hitch(this, function (res) {
-          var frag = document.createDocumentFragment()
-          frag.appendChild(document.createElement('DIV'))
-          frag.lastChild.setAttribute('class', 'results')
-          if (res.length === 0) {
-            frag.lastChild.appendChild(document.createTextNode('Pas de résultats'))
-          } else {
-            res.data.forEach(djLang.hitch(this, function (entry) {
-              var c = new Card('/Contacts/')
-              c.entry(entry)
+        fetch(url).then(response => {
+          if (!response.ok) { return }
+          response.json().then(res => {
+            var frag = document.createDocumentFragment()
+            frag.appendChild(document.createElement('DIV'))
+            frag.lastChild.setAttribute('class', 'results')
+            if (res.length === 0) {
+              frag.lastChild.appendChild(document.createTextNode('Pas de résultats'))
+            } else {
+              res.data.forEach(djLang.hitch(this, function (entry) {
+                var c = new Card('/Contacts/')
+                c.entry(entry)
 
-              djOn(c.domNode, 'click', djLang.hitch(this, function (event) {
-                /* get form once again it may have changed */
-                var f = djDomForm.toObject(this.nForm.domNode)
-                var id = dtRegistry.getEnclosingWidget(event.target).get('identity')
-                if (id != null) {
-                  this.sup.saveContact(id, { type: f.cType, comment: f.details })
-                  this.resetResults()
-                }
+                djOn(c.domNode, 'click', djLang.hitch(this, function (event) {
+                  /* get form once again it may have changed */
+                  var f = djDomForm.toObject(this.nForm.domNode)
+                  var id = dtRegistry.getEnclosingWidget(event.target).get('identity')
+                  if (id != null) {
+                    this.sup.saveContact(id, { type: f.cType, comment: f.details })
+                    this.resetResults()
+                  }
+                }))
+                frag.lastChild.appendChild(c.domNode)
               }))
-              frag.lastChild.appendChild(c.domNode)
+            }
+            window.requestAnimationFrame(djLang.hitch(this, () => {
+              this.resetResults()
+              djDomStyle.set(this.nFreeFormField, 'display', 'none')
+              this.domNode.appendChild(frag)
             }))
-          }
-          window.requestAnimationFrame(djLang.hitch(this, () => {
-            this.resetResults()
-            djDomStyle.set(this.nFreeFormField, 'display', 'none')
-            this.domNode.appendChild(frag)
-          }))
-        }))
+          })
+        })
       }
       return false
     }
