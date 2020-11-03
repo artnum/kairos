@@ -479,28 +479,36 @@ define([
           response.json().then(results => {
             if (results.length > 0) {
               let types = []
-              let resolvedType = {}
               let queries = []
               for (let i = 0; i < results.length; i++) {  
                 let entry = results.data[i]
                 if (types.indexOf(entry.type) === -1) {
-                  types.push(entry.type)
                   let query = fetch(new URL(entry.type, KAIROS.getBase()))
-                  resolvedType[entry.type] = query
-                  queries.push(query)
-                  resolvedType[entry.type].then (response => {
-                    if (!response.ok) { resolvedType[entry.type] = null; return }
-                    response.json().then(result => {
-                      if (result.length !== 1) { resolvedType[entry.type] = null; return }
-                      if (Array.isArray(result.data)) { resolvedType[entry.type] = result.data[0] }
-                      else { resolvedType[entry.type] = result.data }
+                  queries.push(new Promise((resolve, reject) => {
+                    query.then (response => {
+                      if (!response.ok) { resolvedType[entry.type] = null; return }
+                      response.json().then(result => {
+                        if (result.length !== 1) { resolve(null); return }
+                        if (Array.isArray(result.data)) { resolve(result.data[0]) }
+                        else { resolve(result.data) }
+                      })
                     })
-                  })
+                  }))
                 }
               }
 
-              Promise.all(queries).then(() => {
-                this.reservation.complements = results.data
+              Promise.all(queries).then(types => {
+                let complements = results.data
+                for (let i = 0; i < complements.length; i++) {
+                  let type = complements[i].type.split('/')
+                  type = type[type.length - 1]
+                  for (let j = 0; j < types.length; j++) {
+                    if (types[j].id === type) {
+                      complements[i].type = types[j]
+                    }
+                  }
+                }
+                this.reservation.complements = complements
                 this.associationEntries(this.reservation.complements)
                 resolve()
                 return
