@@ -25,6 +25,7 @@ define([
   'dojo/promise/all',
 
   'dijit/form/Form',
+  'dijit/form/NumberTextBox',
   'dijit/form/DateTextBox',
   'dijit/form/TimeTextBox',
   'dijit/form/Textarea',
@@ -80,6 +81,7 @@ define([
   djAll,
 
   dtForm,
+  djNumberTextBox,
   dtDateTextBox,
   dtTimeTextBox,
   djTextarea,
@@ -446,7 +448,7 @@ define([
       this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
       this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
       this.nMComment.set('value', '')
-      this.associationRefresh()
+      this.associationRefresh().then (() => {}, () => {KAIROS.error('Reject de l\'opération') })
     },
 
     doRemoveComplement: function (event) {
@@ -463,50 +465,57 @@ define([
       if (id != null) {
         var url = Path.url('store/Association/' + id)
         Query.exec(url, {method: 'DELETE'}).then(function () {
-          that.associationRefresh()
+          that.associationRefresh().then(() => {}, () => {KAIROS.error('Reject de l\'opération') })
         })
       }
     },
 
     associationRefresh: function () {
-      var def = new DjDeferred()
-      var that = this
-      Req.get(String(Path.url('store/Association/')), { query: { 'search.reservation': this.reservation.get('uid') } }).then(function (results) {
-        if (results && results.data && results.data.length > 0) {
-          var types = []
-          results.data.forEach(function (r) {
-            if (types.indexOf(r.type) === -1) { types.push(r.type) }
-          })
-
-          var t = {}
-          types.forEach(function (type) {
-            if (type !== '') {
-              t[type] = Req.get(type)
-            }
-          })
-          djAll(t).then(function (types) {
-            for (var k in types) {
-              for (var i = 0; i < results.data.length; i++) {
-                if (results.data[i].type === k) {
-                  if (types[k] && types[k].data) {
-                    results.data[i].type = types[k].data
-                  }
+      return new Promise((resolve, reject) => {
+        let url = new URL('store/Association', KAIROS.getBase())
+        url.searchParams.append('search.reservation', this.reservation.get('uid'))
+        fetch(url).then((response) => {
+          if (!response.ok) { return }
+          response.json().then(results => {
+            if (results.length > 0) {
+              let types = []
+              let resolvedType = {}
+              let queries = []
+              for (let i = 0; i < results.length; i++) {  
+                let entry = results.data[i]
+                if (types.indexOf(entry.type) === -1) {
+                  types.push(entry.type)
+                  let query = fetch(new URL(entry.type, KAIROS.getBase()))
+                  resolvedType[entry.type] = query
+                  queries.push(query)
+                  resolvedType[entry.type].then (response => {
+                    if (!response.ok) { resolvedType[entry.type] = null; return }
+                    response.json().then(result => {
+                      if (result.length !== 1) { resolvedType[entry.type] = null; return }
+                      if (Array.isArray(result.data)) { resolvedType[entry.type] = result.data[0] }
+                      else { resolvedType[entry.type] = result.data }
+                    })
+                  })
                 }
               }
+
+              Promise.all(queries).then(() => {
+                this.reservation.complements = results.data
+                this.associationEntries(this.reservation.complements)
+                resolve()
+                return
+              })
+              resolve()
+              return
+            } else {
+              this.reservation.complements = []
+              this.associationEntries([])
+              resolve()
+              return
             }
-
-            that.reservation.complements = results.data
-            that.associationEntries(that.reservation.complements)
-            def.resolve()
-          })
-        } else {
-          that.reservation.complements = []
-          that.associationEntries([])
-          def.resolve()
-        }
+          }, () => reject())
+        }, () => reject())
       })
-
-      return def.promise
     },
 
     doAddEditComplement: function () {
@@ -544,12 +553,12 @@ define([
       if (query['id'] == null) {
         var url = Path.url('store/Association')
         Query.exec(url, {method: 'post', body: query}).then(function () {
-          that.associationRefresh().then(() => { that.reservation.resize() })
+          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
         })
       } else {
         url = Path.url('store/Association/' + query['id'])
         Query.exec(url, {method: 'patch', body: query}).then(() => {
-          that.associationRefresh().then(() => { that.reservation.resize() })
+          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
 
           that.nComplementId.value = ''
           that.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')

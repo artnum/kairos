@@ -10,6 +10,10 @@ KAIROS.warn = function (txt, code = 0) {
 
 KAIROS.error = function (txt, code = 0) {
   this.log('error', txt, code)
+  console.group('Erreur')
+  console.log(txt, code)
+  console.trace()
+  console.groupEnd()
 }
 
 KAIROS.log = function (level, txt, code) {
@@ -41,7 +45,7 @@ KAIROS.log = function (level, txt, code) {
 
   window.setTimeout(() => {
     window.requestAnimationFrame(() => {
-      div.parentNode.removeChild(div)
+      if (div.parentNode) { div.parentNode.removeChild(div) }
       document.body.classList.remove('info', 'error', 'warning')
     })
   }, timeout)

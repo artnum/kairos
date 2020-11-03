@@ -421,16 +421,16 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .docOverlay {
-    background-color: white !important;
+    background-color: var(--default-bg-color-base) !important;
     border: none !important;
 }
 
 .button {
     font-weight: bold;
-    border: 1px solid black;
+    border: 1px solid var(--default-color-base);
     padding: 2px 0 2px 4px;
-    background-color: white;
-    color: black;
+    background-color: var(--default-bg-color-base);
+    color: var(--default-color-base);
     font-size: 12px;
 }
 
