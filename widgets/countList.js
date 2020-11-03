@@ -26,7 +26,7 @@ define([
 
       if (arguments[0].integrated) {
         this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
-        this.doc.addEventListener('close', function (event) { window.location.hash = '' })
+        this.doc.addEventListener('close', function (event) { })
       } else {
         if (arguments[0].parent) {
           this.doc = arguments[0].parent
