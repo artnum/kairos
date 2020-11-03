@@ -525,8 +525,13 @@ foreach (array('full', 'quarter') as $dispo) {
         $PDF = null;
         $gd = null;
         $posCount = -1;
-        symlink($img, sprintf('%s/%05d.pdf', $PDFDir, $count));
-        $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        $retval = 0;
+        $output = null;
+        exec(sprintf('pdfinfo %s', escapeshellarg($img)), $output, $retval);
+        if (intval($retval) === 0) {
+          symlink($img, sprintf('%s/%05d.pdf', $PDFDir, $count));
+          $PDFUniteList[] = escapeshellarg(sprintf('%s/%05d.pdf', $PDFDir, $count));
+        }
         break;
     }
     if (!is_null($gd)) {
