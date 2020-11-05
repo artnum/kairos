@@ -1259,6 +1259,14 @@ define([
             this.cmdProcessor('show default')
           }
           break
+          case 'sortWarehouse':
+            this.set('sortw', !this.get('sortw'))
+            if (this.get('sortw')) {
+              this.cmdProcessor('sort warehouse')
+            } else {
+              this.cmdProcessor('sort default')
+            }
+            break
       }
       this.update(true)
       let pos = getElementRect(targetNode.domNode)
@@ -1451,8 +1459,8 @@ define([
               if (entry.family && entry.type) {
                 families = String(entry.family).split(',')
                 types = String(entry.type).split(',')
-                if (Array.isArray(families)) { families = [families] }
-                if (Array.isArray(types)) { types = [types] }
+                if (!Array.isArray(families)) { families = [families] }
+                if (!Array.isArray(types)) { types = [types] }
                 for (let j = 0; j < families.length; j++) {
                   if (!category[families[j]]) {
                     category[families[j]] = {}
