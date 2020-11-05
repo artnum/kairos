@@ -1259,6 +1259,14 @@ define([
             this.cmdProcessor('show default')
           }
           break
+          case 'sortWarehouse':
+            this.set('sortw', !this.get('sortw'))
+            if (this.get('sortw')) {
+              this.cmdProcessor('sort warehouse')
+            } else {
+              this.cmdProcessor('sort default')
+            }
+            break
       }
       this.update(true)
       let pos = getElementRect(targetNode.domNode)
