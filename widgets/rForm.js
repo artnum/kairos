@@ -210,13 +210,13 @@ define([
 
     _setBeginAttr: function (value) {
       this.beginDate.set('value', value.toISOString())
-      this.beginTime.set('value', value.toISOString())
+      this.beginTime.value = value.toISOString()
       this._set('begin', value)
     },
 
     _setEndAttr: function (value) {
       this.endDate.set('value', value.toISOString())
-      this.endTime.set('value', value.toISOString())
+      this.endTime.value = value.toISOString()
       this._set('end', value)
     },
 
@@ -226,7 +226,7 @@ define([
         return
       }
       this.nDeliveryBeginDate.set('value', value.toISOString())
-      this.nDeliveryBeginTime.set('value', value.toISOString())
+      this.nDeliveryBeginTime.value = value.toISOString()
       this._set('deliveryBegin', value)
     },
 
@@ -236,7 +236,7 @@ define([
         return
       }
       this.nDeliveryEndDate.set('value', value.toISOString())
-      this.nDeliveryEndTime.set('value', value.toISOString())
+      this.nDeliveryEndTime.value = value.toISOString()
       this._set('deliveryEnd', value)
     },
 
@@ -582,11 +582,11 @@ define([
         return
       }
       if (this.reservation.get('deliveryBegin')) {
-        var newDate = this.beginDate.get('value').join(this.beginTime.get('value'))
+        var newDate = this.beginDate.get('value').join(this.beginTime.value)
         var diff = djDate.difference(newDate, this.reservation.get('begin'), 'second')
         newDate = djDate.add(this.reservation.get('deliveryBegin'), 'second', -diff)
         this.nDeliveryBeginDate.set('value', newDate)
-        this.nDeliveryBeginTime.set('value', newDate)
+        this.nDeliveryBeginTime.value = newDate
       }
     },
 
@@ -595,11 +595,11 @@ define([
         return
       }
       if (this.reservation.get('deliveryEnd')) {
-        var newDate = this.endDate.get('value').join(this.endTime.get('value'))
+        var newDate = this.endDate.get('value').join(this.endTime.value)
         var diff = djDate.difference(newDate, this.reservation.get('end'), 'second')
         newDate = djDate.add(this.reservation.get('deliveryEnd'), 'second', -diff)
         this.nDeliveryEndDate.set('value', newDate)
-        this.nDeliveryEndTime.set('value', newDate)
+        this.nDeliveryEndTime.value = newDate
       }
     },
 
@@ -969,10 +969,14 @@ define([
           }
         }))
 
+        this.beginTime = new HourBox(this.nBeginTime)
+        this.beginTime.addEventListener('change', this.changeBegin.bind(this))
+        this.endTime = new HourBox(this.nEndTime)
+        this.endTime.addEventListener('change', this.changeEnd.bind(this))
+        this.deliveryBeginTime = new HourBox(this.nDeliveryBeginTime)
+        this.deliveryEndTime = new HourBox(this.nDeliveryEndTime)
         djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
-        djOn(this.beginTime, 'change', djLang.hitch(this, this.changeBegin))
         djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
-        djOn(this.endTime, 'change', djLang.hitch(this, this.changeEnd))
 
         this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
         djOn(this.domNode, 'mousemove', function (event) {
@@ -985,9 +989,9 @@ define([
         this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), { capture: true })
 
         this.nMBeginDate.set('value', this.beginDate.get('value'))
-        this.nMBeginTime.set('value', this.beginTime.get('value'))
+        this.nMBeginTime.set('value', this.beginTime.value)
         this.nMEndDate.set('value', this.endDate.get('value'))
-        this.nMEndTime.set('value', this.endTime.get('value'))
+        this.nMEndTime.set('value', this.endTime.value)
         this.dtable = new Artnum.DTable({ table: this.nCountTable, sortOnly: true })
         djOn(this.nForm, 'click', this.clickForm.bind(this))
 
@@ -1255,11 +1259,11 @@ define([
         djDomStyle.set(this.nDeliveryFields, 'display', '')
 
         if (!this.deliveryBegin) {
-          this.nDeliveryBeginTime.set('value', this.beginTime.get('value'))
+          this.deliveryBeginTime.value = this.beginTime.value
           this.nDeliveryBeginDate.set('value', this.beginDate.get('value'))
         }
         if (!this.deliveryEnd) {
-          this.nDeliveryEndTime.set('value', this.endTime.get('value'))
+          this.deliveryEndTime.value = this.endTime.value
           this.nDeliveryEndDate.set('value', this.endDate.get('value'))
         }
       } else {
@@ -1294,18 +1298,18 @@ define([
           this.nArrivalCreator.value = `User/${user.id}`
         }
         this.nBack.setAttribute('style', '')
-        this.endTime.set('readOnly', true)
+        this.endTime.readonly = true
         this.endDate.set('readOnly', true)
-        this.nDeliveryEndTime.set('readOnly', true)
+        this.nDeliveryEndTime.setAttribute('readonly', '1')
         this.nDeliveryEndDate.set('readOnly', true)
       } else {
         if (!this.nArrivalInprogress.value) {
           this.nArrivalDone.disabled = true
         }
         this.nBack.setAttribute('style', 'display: none')
-        this.endTime.set('readOnly', false)
+        this.endTime.readonly = true
         this.endDate.set('readOnly', false)
-        this.nDeliveryEndTime.set('readOnly', false)
+        this.nDeliveryEndTime.removeAttribute('readonly')
         this.nDeliveryEndDate.set('readOnly', false)
       }
     },
@@ -1492,7 +1496,8 @@ define([
       })
 
       var f = this.nForm.get('value')
-
+      f.beginTime = this.beginTime.value
+      f.endTime = this.endTime.value
       if (f.beginDate == null || f.endDate == null || f.beginTime == null || f.endTime == null) {
         this.beginDate.set('state', 'Error')
         this.endDate.set('state', 'Error')
@@ -1509,8 +1514,8 @@ define([
       }
 
       if (this.nDelivery.get('checked')) {
-        var deliveryBegin = f.deliveryBeginDate.join(f.deliveryBeginTime)
-        var deliveryEnd = f.deliveryEndDate.join(f.deliveryEndTime)
+        var deliveryBegin = f.deliveryBeginDate.join(this.deliveryBeginTime.value)
+        var deliveryEnd = f.deliveryEndDate.join(this.deliveryEndTime.value)
 
         if (djDate.compare(deliveryBegin, deliveryEnd) >= 0) {
           this.nDeliveryBeginDate.set('state', 'Error')
@@ -1579,6 +1584,8 @@ define([
         }
 
         let f = this.nForm.get('value')
+        f.beginTime = this.beginTime.value
+        f.endTime = this.endTime.value
         var other = {}
         for (var k in f) {
           if (k.substr(0, 2) === 'o-') {
@@ -1592,8 +1599,8 @@ define([
         let deliveryBegin = begin
         let deliveryEnd = end
         if (this.nDelivery.get('checked')) {
-          deliveryBegin = f.deliveryBeginDate.join(f.deliveryBeginTime)
-          deliveryEnd = f.deliveryEndDate.join(f.deliveryEndTime)
+          deliveryBegin = f.deliveryBeginDate.join(this.deliveryBeginTime.value)
+          deliveryEnd = f.deliveryEndDate.join(this.deliveryEndTime.value)
         } else {
           deliveryBegin = ''
           deliveryEnd = ''
