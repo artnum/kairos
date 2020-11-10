@@ -13,13 +13,13 @@
       <th data-attribute="begin:date" data-sort-type="date">Début</th>
       <th data-attribute="end:date" data-sort-type="date">Fin</th>
       <th data-attribute="reference">Référence</th>
-      <th data-attribute="@../store/$creator @../store/Reservation/$reservation @../store/CountReservation?search.count=$id name" data-sort-name="creator" data-process="creator">Responsable</th>
+      <th data-attribute="@store/$creator @store/Reservation/$reservation @store/CountReservation?search.count=$id name" data-sort-name="creator" data-process="creator">Responsable</th>
       <th data-attribute="client_">Client</th>
       <th data-attribute="responsable_">Responsable client</th>      
       <th data-attribute="place_">Contact sur place</th>
       <th data-attribute="equipment">Équipement</th>
       <th data-attribute="address">Adresse</th>
-      <th data-attribute="@../store/$locality label|%%">Localité</th>
+      <th data-attribute="@store/$locality label|%%">Localité</th>
       <th data-attribute="comment">Commentaire</th>
     </tr></thead>
   </table>
@@ -42,11 +42,10 @@
       if (currentUser) {
         params.append('creator', currentUser.name)
       }
-      console.log(currentUser)
-
       var tables = document.getElementsByTagName('TABLE')
       for (var i = 0; i < tables.length; i++) {
         let dtable = new Artnum.DTable({table: tables[i], search: params, postprocess: createLinkFromPhone}, true)
+        dtable.URLPrefix = KAIROS.getBase()
         if (transliterate) {
           dtable.transliterate = transliterate
         }
