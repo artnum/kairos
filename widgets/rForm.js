@@ -226,7 +226,7 @@ define([
         return
       }
       this.nDeliveryBeginDate.set('value', value.toISOString())
-      this.nDeliveryBeginTime.value = value.toISOString()
+      this.deliveryBeginTime.value = value.toISOString()
       this._set('deliveryBegin', value)
     },
 
@@ -236,7 +236,7 @@ define([
         return
       }
       this.nDeliveryEndDate.set('value', value.toISOString())
-      this.nDeliveryEndTime.value = value.toISOString()
+      this.deliveryEndTime.value = value.toISOString()
       this._set('deliveryEnd', value)
     },
 
@@ -586,7 +586,7 @@ define([
         var diff = djDate.difference(newDate, this.reservation.get('begin'), 'second')
         newDate = djDate.add(this.reservation.get('deliveryBegin'), 'second', -diff)
         this.nDeliveryBeginDate.set('value', newDate)
-        this.nDeliveryBeginTime.value = newDate
+        this.deliveryBeginTime.value = newDate
       }
     },
 
@@ -599,7 +599,7 @@ define([
         var diff = djDate.difference(newDate, this.reservation.get('end'), 'second')
         newDate = djDate.add(this.reservation.get('deliveryEnd'), 'second', -diff)
         this.nDeliveryEndDate.set('value', newDate)
-        this.nDeliveryEndTime.value = newDate
+        this.deliveryEndTime.value = newDate
       }
     },
 
