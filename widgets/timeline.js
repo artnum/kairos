@@ -710,7 +710,6 @@ define([
               switch (String(sub.substr(0, 3)).toLowerCase()) {
                 case 'dec':
                   if (String(sub.substr(4, 1) === '*')) {
-                    new CountList({integrated: true}) // eslint-disable-line
                   } else {
                     new Count({'data-id': sub.substr(3)}) // eslint-disable-line
                   }
@@ -757,6 +756,13 @@ define([
           setTimeout(this.revision.bind(this), 5400000)
         }.bind(this))
       }.bind(this))
+    },
+
+    countList: function () {
+      if (this.CountList) {
+        delete this.CountList
+      }
+      this.CountList = new CountList({integrated: true})
     },
 
     mask: function (state, callback) {

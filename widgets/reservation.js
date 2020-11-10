@@ -850,6 +850,7 @@ define([
         this.myContentPane = cp
         f.set('_pane', [cp, tContainer])
         f.set('_closeId', 'ReservationTab_' + this.get('localid'))
+        KAIROS.stackClosable(this.close.bind(this))
       })
     },
 

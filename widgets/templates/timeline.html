@@ -49,7 +49,7 @@
   <div data-dojo-type="dijit/PopupMenuBarItem">
     <label>Décomptes</label>
 		<div data-dojo-type="dijit/DropDownMenu" id="countMenu">
-			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.location.hash = '#DEC*' }">Liste</div>
+			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.countList(); }">Liste</div>
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./count.html', true); }">Décompte à valider</div>
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./unbilled.html', true); }">Décompte non-facturé</div>
 			<div data-dojo-type="dijit/MenuItem" data-dojo-props="onClick: () => { window.App.openWindow('./uncounted.html', true); }">Non-décompté, en cours</div>
