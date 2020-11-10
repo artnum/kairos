@@ -7,7 +7,6 @@ require('../lib/cacheid.php');
 
 $ini_conf = load_ini_configuration();
 
-$file = new \artnum\Files();
 $http_request = new \artnum\HTTP\JsonRequest();
 $store = new \artnum\JStore\Generic(
   $http_request,
