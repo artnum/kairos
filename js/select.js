@@ -233,7 +233,10 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       currentValue = input.dataset.value
       value = ''
     }
+    let currentRequest = performance.now()
+    this.latestRequest = currentRequest
     store.query(value, currentValue).then((data) => {
+      if (this.latestRequest !== currentRequest) { return }
       let frag = document.createDocumentFragment()
       if (data.length < 1) {
         degenerate()

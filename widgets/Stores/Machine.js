@@ -49,7 +49,11 @@ define([
             let x = txt.split(' ', 2)
             if (!isNaN(parseInt(x[0], 10)) && String(parseInt(x[0], 10)) === x[0]) {
               searchId = x[0]
-              searchName = x[1].toAscii()
+              if (x[1].trim() === '') {
+                searchName = searchId
+              } else {
+                searchName = x[1].toAscii()
+              }
             }
           }
         }
