@@ -26,6 +26,7 @@ define([
 
       if (arguments[0].integrated) {
         this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
+        KAIROS.stackClosable(this.doc.close.bind(this.doc))
         this.doc.addEventListener('close', function (event) { })
       } else {
         if (arguments[0].parent) {
