@@ -45,16 +45,8 @@
     min-height: 10ex;
 }
 
-.rForm .dijitTimeTextBox {
-    width: 4em;
-}
-
-.rForm .dualEntry .dijitTextBox {
+s.rForm .dualEntry .dijitTextBox {
     width: 180px;
-}
-
-.rForm .dualEntry .dijitTimeTextBox {
-    width: 4em;
 }
 
 .rForm .dualEntry label {
@@ -198,7 +190,7 @@
     max-width: 18ch !important;
     min-width: 18ch !important;
 }
-.rForm .dijitTimeTextBox {
+.rForm .dijitTimeTextBox, .rForm .HourBox {
     width: 8ch !important;
     max-width: 8ch !important;
     min-width: 8ch !important;
