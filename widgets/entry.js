@@ -211,10 +211,17 @@ define([
     },
 
     EvenementPopUp: function (node) {
+      let closeEvPopUp = () => {
+        KAIROS.removeClosableFromStack(closeEvPopUp)
+        if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
+          this.EntryStateOpen[0].destroy()
+          this.EntryStateOpen[1].parentNode.removeChild(this.EntryStateOpen[1])
+          this.EntryStateOpen = null
+        }
+      }
+      KAIROS.stackClosable(closeEvPopUp)
       if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
-        this.EntryStateOpen[0].destroy()
-        this.EntryStateOpen[1].parentNode.removeChild(this.EntryStateOpen[1])
-        this.EntryStateOpen = null
+        closeEvPopUp()
         return
       }
       let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())

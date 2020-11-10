@@ -855,6 +855,7 @@ define([
     },
 
     close: function () {
+      KAIROS.removeClosableFromStack(this.close.bind(this))
       if (this.myForm) {
         this.myForm.close()
       }

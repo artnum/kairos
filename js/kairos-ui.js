@@ -66,11 +66,28 @@ KAIROS.stackClosable = function (closeFunction) {
     KAIROS._closables.push(closeFunction)
 }
 
+KAIROS.removeClosableFromStack = function (closeFunction) {
+    if (!KAIROS._closables) { return }
+    if (KAIROS._currentClosable && KAIROS._currentClosable === closeFunction) { return }
+    for (let i = 0; i < KAIROS._closables.length; i++) {
+        if (KAIROS._closables[i] === closeFunction) {
+            KAIROS._closables.splice(i, 1)
+            break
+        }
+    }
+}
+
 KAIROS.closeNext = function () {
     if (KAIROS._closables) {
         let closeFunction = KAIROS._closables.pop()
         if (closeFunction && closeFunction instanceof Function) {
-            closeFunction()
+            KAIROS._currentClosable = closeFunction
+            try {
+                closeFunction()
+            } catch (e) {
+                console.log('already closed') 
+            }
+            KAIROS._currentClosable = null
             return true
         }
     }
