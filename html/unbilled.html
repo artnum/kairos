@@ -8,13 +8,13 @@
   <table data-source="store/Count" data-options="{parameters: {'search.invoice': '-', 'search.deleted': '-'}}" data-entry-id="id">
     <thead><tr>
       <th data-attribute="id:integer" data-class="clickable">N°</th>
-      <th data-attribute="@../store/CountReservation?search.count=$id reservation" data-class="clickable">Reservation</th>
-      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id begin:date" data-sort-type="date">Début</th>
-      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id end:date" data-sort-type="date">Fin</th>
-      <th data-attribute="@../store/$creator @../store/Reservation/$reservation @../store/CountReservation?search.count=$id name" data-sort-name="creator">Responsable</th>
-      <th data-attribute="@../store/Arrival?search.target=$reservation @../store/CountReservation?search.count=$id reported:date">Fin confirmée</th>
-      <th data-attribute="@../store/Reservation/$reservation @../store/CountReservation?search.count=$id reference|#">Référence</th>
-      <th data-attribute="@../store/$target @../store/ReservationContact?search.reservation=$reservation @../store/CountReservation?search.count=$id displayname|@../store/ReservationContact?search.reservation=$reservation @../store/CountReservation?search.count=$id freeform">Client</th>
+      <th data-attribute="@store/CountReservation?search.count=$id reservation" data-class="clickable">Reservation</th>
+      <th data-attribute="@store/Reservation/$reservation @store/CountReservation?search.count=$id begin:date" data-sort-type="date">Début</th>
+      <th data-attribute="@store/Reservation/$reservation @store/CountReservation?search.count=$id end:date" data-sort-type="date">Fin</th>
+      <th data-attribute="@store/$creator @store/Reservation/$reservation @store/CountReservation?search.count=$id name" data-sort-name="creator">Responsable</th>
+      <th data-attribute="@store/Arrival?search.target=$reservation @store/CountReservation?search.count=$id reported:date">Fin confirmée</th>
+      <th data-attribute="@store/Reservation/$reservation @store/CountReservation?search.count=$id reference|#">Référence</th>
+      <th data-attribute="@store/$target @store/ReservationContact?search.reservation=$reservation @store/CountReservation?search.count=$id displayname|@store/ReservationContact?search.reservation=$reservation @store/CountReservation?search.count=$id freeform">Client</th>
     </tr></thead>
   </table>
 </body>
@@ -43,6 +43,7 @@
         if (transliterate) {
           dtable.transliterate = transliterate
         }
+        dtable.URLPrefix = KAIROS.getBase()
         dtable.addEventListener('click', function (event) {
           let details = event.detail
           switch (details.attribute) {

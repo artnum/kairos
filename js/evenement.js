@@ -46,58 +46,87 @@ function KairosEvent(type, detail, place = null) {
     return new Promise((resolve, reject) => {
         let promises = []
         const url = new URL('store/Evenement', KAIROS.getBase())
-        if (detail.technician) {
-            getBody(type, detail).then(bodies => {
-                bodies.forEach(body => {
-                    promises.push(fetch(url, { method: 'POST', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }), body: JSON.stringify(body) }))
-                })
-                Promise.all(promises).then(() => {
-                    resolve(this)
-                })
-            })
-        } else {
-            const whoDid = document.createElement('FORM')
-            whoDid.classList.add('who')
-            whoDid.innerHTML = `<input type="text" class="kairos" value="" placeholder="Par" /> <br /><div class="mbuttonMain mbutton mbuttonSingle"><button class="mbuttonLeft" type="submit">Ok</button></div>`
-            const s = new Select(whoDid.firstElementChild, new UserStore(), { allowFreeText: true, realSelect: true })
-            if (place === null) {
-                throw new Error('No place have been set')
-            } else {
-                document.body.appendChild(whoDid)
-                let pop = Popper.createPopper(place, whoDid, {
-                    onFirstUpdate: state => {
-                        whoDid.firstElementChild.focus()
-                    }
-                })
 
-                let closePopper = (unset = true) => {
-                    pop.destroy()
-                    if (whoDid.parentNode) {
-                        whoDid.parentNode.removeChild(whoDid)
-                    }
-                    if (unset) { event.target.value = false }
-                }
-
-                window.addEventListener('keydown', event => {
-                    if (event.key === 'Escape') {
-                        closePopper()
-                    }
-                }, { capture: true })
-
-                whoDid.addEventListener('submit', event => {
-                    event.preventDefault()
-                    getBody(type, Object.assign(detail, {technician: s.value})).then(bodies => {
-                        bodies.forEach(body => {
-                            promises.push(fetch(url, { method: 'POST', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }), body: JSON.stringify(body) }))
+        /* check for existence of event before adding */
+        const checkPromise = new Promise ((resolve, reject) => {
+            if (detail.reservation) {
+                const checkUrl = new URL('store/Evenement', KAIROS.getBase())
+                checkUrl.searchParams.append('search.reservation', detail.reservation)
+                checkUrl.searchParams.append('search.process', `kairos:${type}`)
+                checkUrl.searchParams.append('search.type', KAIROS.events[type])
+                fetch(checkUrl).then (response => {
+                    if (response.ok) {
+                        response.json().then(result => {
+                            if (result.length > 0) {
+                                resolve(false)
+                                return
+                            }
+                            resolve(true)
                         })
+                    } else {
+                        resolve(true)
+                    }
+                })
+            } else { 
+                resolve(true)
+            }
+        })
+
+        checkPromise.then(addEvent => {
+            if (!addEvent) { resolve(this); return }
+            if (detail.technician) {
+                getBody(type, detail).then(bodies => {
+                    bodies.forEach(body => {
+                        promises.push(fetch(url, { method: 'POST', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }), body: JSON.stringify(body) }))
                     })
-                    closePopper(true)
                     Promise.all(promises).then(() => {
                         resolve(this)
                     })
                 })
+            } else {
+                const whoDid = document.createElement('FORM')
+                whoDid.classList.add('who')
+                whoDid.innerHTML = `<input type="text" class="kairos" value="" placeholder="Par" /> <br /><div class="mbuttonMain mbutton mbuttonSingle"><button class="mbuttonLeft" type="submit">Ok</button></div>`
+                const s = new Select(whoDid.firstElementChild, new UserStore(), { allowFreeText: true, realSelect: true })
+                if (place === null) {
+                    throw new Error('No place have been set')
+                } else {
+                    document.body.appendChild(whoDid)
+                    let pop = Popper.createPopper(place, whoDid, {
+                        onFirstUpdate: state => {
+                            whoDid.firstElementChild.focus()
+                        }
+                    })
+
+                    let closePopper = (unset = true) => {
+                        pop.destroy()
+                        if (whoDid.parentNode) {
+                            whoDid.parentNode.removeChild(whoDid)
+                        }
+                        if (unset) { event.target.value = false }
+                    }
+
+                    window.addEventListener('keydown', event => {
+                        if (event.key === 'Escape') {
+                            closePopper()
+                        }
+                    }, { capture: true })
+
+                    whoDid.addEventListener('submit', event => {
+                        event.preventDefault()
+                        getBody(type, Object.assign(detail, {technician: s.value})).then(bodies => {
+                            bodies.forEach(body => {
+                                promises.push(fetch(url, { method: 'POST', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }), body: JSON.stringify(body) }))
+                            })
+                        })
+                        closePopper(true)
+                        Promise.all(promises).then(() => {
+                            resolve(this)
+                        })
+                    })
+                }
             }
-        }
+        })
     })
 }
 

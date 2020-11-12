@@ -102,6 +102,9 @@ function HourBox (targetNode) {
 
     proxy.domNode.addEventListener('focus', function (event) {
         const hourbox = event.target
+        setTimeout(() => {
+            hourbox.setSelectionRange(0, hourbox.value.length)
+        }, 80)
         this.timeSelector.innerHTML = hourSelector
         KAIROS.stackClosable(this.closeTimeSelector.bind(this))
         window.requestAnimationFrame(() => {
@@ -109,7 +112,12 @@ function HourBox (targetNode) {
             Popper.createPopper(this.domNode, this.timeSelector, {placement: 'bottom', strategy: 'fixed'})
         })
     }.bind(proxy))
-
+    proxy.domNode.addEventListener('click', function (event) {
+        const hourbox = event.target
+        setTimeout(() => {
+            hourbox.setSelectionRange(0, hourbox.value.length)
+        }, 80)   
+     }.bind(proxy))
     return proxy
 }
 

@@ -13,7 +13,7 @@
       <th data-attribute="reference">Référence</th>
       <th data-attribute="begin:date" data-sort-type="date">Début</th>
       <th data-attribute="end:date" data-sort-type="date">Fin</th>
-      <th data-attribute="@../store/$_contacts.target displayname|_contacts.freeform" data-class="clickable">Client</th>
+      <th data-attribute="@store/$_contacts.target displayname|_contacts.freeform" data-class="clickable">Client</th>
       <th data-process="countDays" data-sort-type="integer">Jours sans décompte</th>
       <th data-attribute="_creator.name" data-sort-name="creator">Responsable</th>
 <!--      <th data-attribute="_arrival.reported:bool">Fin confirmée</th>
@@ -43,6 +43,7 @@
 
       for (var i = 0; i < tables.length; i++) {
         var dtable = new Artnum.DTable({ table: tables[i], search: params }, true)
+        dtable.URLPrefix = KAIROS.getBase()
         if (transliterate) {
           dtable.transliterate = transliterate
         }
