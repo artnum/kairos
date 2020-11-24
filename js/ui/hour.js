@@ -106,7 +106,7 @@ function HourBox (targetNode) {
             hourbox.setSelectionRange(0, hourbox.value.length)
         }, 80)
         this.timeSelector.innerHTML = hourSelector
-        KAIROS.stackClosable(this.closeTimeSelector.bind(this))
+        this.closeTimeSelector.closableIdx = KAIROS.stackClosable(this.closeTimeSelector.bind(this))
         window.requestAnimationFrame(() => {
             this.domNode.parentNode.insertBefore(this.timeSelector, this.domNode.nextElementSibling)
             Popper.createPopper(this.domNode, this.timeSelector, {placement: 'bottom', strategy: 'fixed'})
@@ -133,6 +133,9 @@ HourBox.prototype.closeTimeSelector = function () {
             this.timeSelector.parentNode.removeChild(this.timeSelector)
         }
     })
+    if (this.closeTimeSelector.closableIdx) {
+        KAIROS.removeClosableByIdx(this.closeTimeSelector.closableIdx)
+    }
     this.tmpHour = null
 }
 

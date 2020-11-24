@@ -218,8 +218,11 @@ define([
           this.EntryStateOpen[1].parentNode.removeChild(this.EntryStateOpen[1])
           this.EntryStateOpen = null
         }
+        if (closeEvPopUp.closableIdx) {
+          KAIROS.removeClosableByIdx(closeEvPopUp.closableIdx)
+        }
       }
-      KAIROS.stackClosable(closeEvPopUp)
+      closeEvPopUp.closableIdx = KAIROS.stackClosable(closeEvPopUp)
       if (this.EntryStateOpen !== undefined && this.EntryStateOpen !== null) {
         closeEvPopUp()
         return

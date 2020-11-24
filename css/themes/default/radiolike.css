@@ -1,0 +1,101 @@
+.radiolike {
+    color: gray;
+    padding: 4 8 4 8;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.radiolike[data-state="set"] {
+    color: black;
+}
+
+.radiolike {
+    background: linear-gradient(hsla(0, 0%, 90%, 1), hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 80%, 1) 50%, hsla(0, 0%, 80%, 1) 100%);
+}
+
+.radiolike:active {
+    background: linear-gradient(hsla(0, 0%, 100%, 1), hsla(0, 0%, 100%, 1) 50%, hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 90%, 1) 100%) !important;
+}
+
+.radiolike:hover {
+    background: linear-gradient(hsla(0, 0%, 70%, 1), hsla(0, 0%, 70%, 1) 50%, hsla(0, 0%, 60%, 1) 50%, hsla(0, 0%, 60%, 1) 100%);
+}
+
+.radiolike[data-state="set"] {
+    background: linear-gradient(hsla(230, 70%, 90%, 1), hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 80%, 1) 50%, hsla(230, 70%, 80%, 1) 100%);
+    border: 1px solid hsla(230, 70%, 40%, 1);
+    border-right: 2px solid hsla(230, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(230, 70%, 50%, 1);
+
+}
+.radiolike[data-state="set"]:active {
+    background: linear-gradient(hsla(230, 70%, 100%, 1), hsla(230, 70%, 100%, 1) 50%, hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 90%, 1) 100%) !important;
+}
+
+.radiolike[data-state="set"]:hover {
+    background: linear-gradient(hsla(230, 70%, 70%, 1), hsla(230, 70%, 70%, 1) 50%, hsla(230, 70%, 60%, 1) 50%, hsla(230, 70%   , 60%, 1) 100%);
+
+}
+
+
+/* green set button */
+.radiolike.green[data-state="set"]  {
+    background: linear-gradient(hsla(100, 70%, 90%, 1), hsla(100, 70%, 90%, 1) 50%, hsla(100, 70%, 80%, 1) 50%, hsla(100, 70%, 80%, 1) 100%);
+
+}
+.radiolike.green[data-state="set"]:active {
+    background: linear-gradient(hsla(100, 70%, 100%, 1), hsla(100, 70%, 100%, 1) 50%, hsla(100, 70%, 90%, 1) 50%, hsla(100, 70%, 90%, 1) 100%) !important;
+}
+.radiolike.green:hover {
+    background: linear-gradient(hsla(100, 10%, 70%, 1), hsla(100, 10%, 70%, 1) 50%, hsla(100, 10%, 60%, 1) 50%, hsla(100, 10%, 60%, 1) 100%);
+}
+.radiolike.green[data-state="set"]:hover  {
+    background: linear-gradient(hsla(100, 70%, 70%, 1), hsla(100, 70%, 70%, 1) 50%, hsla(100, 70%, 60%, 1) 50%, hsla(100, 70%   , 60%, 1) 100%);
+
+}
+.radiolike.green[data-state="set"] {
+    border: 1px solid hsla(100, 70%, 40%, 1);
+    border-right: 2px solid hsla(100, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(100, 70%, 50%, 1);
+}
+
+/* red set button */
+.radiolike.red[data-state="set"] {
+    background: linear-gradient(hsla(0, 70%, 90%, 1), hsla(0, 70%, 90%, 1) 50%, hsla(0, 70%, 80%, 1) 50%, hsla(0, 70%, 80%, 1) 100%);
+
+}
+.radiolike.red[data-state="set"]:active {
+    background: linear-gradient(hsla(0, 70%, 100%, 1), hsla(0, 70%, 100%, 1) 50%, hsla(0, 70%, 90%, 1) 50%, hsla(0, 70%, 90%, 1) 100%) !important;
+}
+.radiolike.red:hover {
+    background: linear-gradient(hsla(0, 10%, 70%, 1), hsla(0, 10%, 70%, 1) 50%, hsla(0, 10%, 60%, 1) 50%, hsla(0, 10%, 60%, 1) 100%);
+}
+.radiolike.red[data-state="set"]:hover {
+    background: linear-gradient(hsla(0, 70%, 70%, 1), hsla(0, 70%, 70%, 1) 50%, hsla(0, 70%, 60%, 1) 50%, hsla(0, 70%   , 60%, 1) 100%);
+
+}
+.radiolike.red[data-state="set"] {
+    border: 1px solid hsla(0, 70%, 40%, 1);
+    border-right: 2px solid hsla(0, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(0, 70%, 50%, 1);
+}
+
+/* yellow  set button */
+.radiolike.yellow[data-state="set"] {
+    background: linear-gradient(hsla(60, 70%, 90%, 1), hsla(60, 70%, 90%, 1) 50%, hsla(60, 70%, 80%, 1) 50%, hsla(60, 70%, 80%, 1) 100%);
+
+}
+.radiolike.yellow[data-state="set"]:active {
+    background: linear-gradient(hsla(60, 70%, 100%, 1), hsla(60, 70%, 100%, 1) 50%, hsla(60, 70%, 90%, 1) 50%, hsla(60, 70%, 90%, 1) 100%) !important;
+}
+.radiolike.yellow:hover {
+    background: linear-gradient(hsla(60, 10%, 70%, 1), hsla(60, 10%, 70%, 1) 50%, hsla(60, 10%, 60%, 1) 50%, hsla(60, 10%, 60%, 1) 100%);
+}
+.radiolike.yellow[data-state="set"]:hover {
+    background: linear-gradient(hsla(60, 70%, 70%, 1), hsla(60, 70%, 70%, 1) 50%, hsla(60, 70%, 60%, 1) 50%, hsla(60, 70%   , 60%, 1) 100%);
+}
+.radiolike.yellow[data-state="set"] {
+    border: 1px solid hsla(60, 70%, 40%, 1);
+    border-right: 2px solid hsla(60, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(60, 70%, 50%, 1);
+}

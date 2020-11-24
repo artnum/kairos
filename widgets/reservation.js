@@ -850,7 +850,7 @@ define([
         this.myContentPane = cp
         f.set('_pane', [cp, tContainer])
         f.set('_closeId', 'ReservationTab_' + this.get('localid'))
-        KAIROS.stackClosable(this.close.bind(this))
+        this.close.closableIdx = KAIROS.stackClosable(this.close.bind(this))
       })
     },
 
@@ -860,6 +860,9 @@ define([
         this.myForm.close()
       }
       this.closeForm()
+      if (this.close.closableIdx) {
+        KAIROS.removeClosableByIdx(this.close.closableIdx)
+      }
     },
     closeForm: function () {
       this.myForm = null
@@ -1440,7 +1443,9 @@ define([
                 query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
                 if (!!arrival.done) {
                   UserStore.getCurrentUser().then(current => {
-                    KairosEvent('autoReturn', {technician: current.getUrl(), reservation: id, append: true})
+                    KairosEvent.hasAnyEventOfType(KAIROS.events['autoReturn'], id).then(has => {
+                      if (!has) { KairosEvent('autoReturn', {technician: current.getUrl(), reservation: id, append: true}) }
+                    })
                   })
                 } else {
                   KairosEvent.removeAutoAdded('autoReturn', id);

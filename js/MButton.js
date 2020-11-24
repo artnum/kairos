@@ -150,7 +150,6 @@ MButton.prototype.setDisabled = function (value) {
       if (this.CButton !== undefined) {
         this.CButton.setAttribute('disabled', '1')
       }
-      this.MButton.value = false
       this._disabled = true
   } else {
       this.Button.removeAttribute('disabled')
@@ -162,8 +161,27 @@ MButton.prototype.setDisabled = function (value) {
   }
 }
 
+MButton.prototype.setColorFlavor = function (flavor) {
+  switch (flavor.toLowerCase()) {
+    case 'yellow': flavor = 'yellow'; break
+    case 'red': flavor = 'red'; break
+    case 'green': flavor = 'green'; break
+    default: flavor = ''; break
+  }
+  window.requestAnimationFrame(() => {
+    this.Button.classList.remove('yellow', 'red', 'green')    
+    if (flavor) {
+      this.Button.classList.add(flavor)
+    }
+  })
+}
+
 MButton.prototype.getValue = function () {
-  return this._value
+  if (this._disabled) {
+
+  } else {
+    return this._value
+  }
 }
 
 /* when loading from db use _setValue */

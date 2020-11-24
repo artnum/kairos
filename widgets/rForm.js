@@ -628,6 +628,7 @@ define([
         addVReport: new MButton(this.nAddReport, { set: () => (new Date()).toISOString(), unset: '' }),
         addArrivalInProgress: new MButton(this.nArrivalInprogress, { set: () => (new Date()).toISOString(), unset: '' }),
         addArrivalDone: new MButton(this.nArrivalDone, { set: () => (new Date()).toISOString(), unset: '' }),
+        addControl: new MButton(this.nControl, {set:true, unset: false}),
         addEnd: new MButton(this.nConfirmed, { set: () => (new Date()).toISOString(), unset: '' }),
         addEndAndDone: new MButton(this.nConfirmedAndReturned)
       }
@@ -669,6 +670,13 @@ define([
           this.nArrivalDone.disabled = true
         }
       })
+      this.nArrivalDone.addEventListener('change', event => {
+        if (event.target.value) {
+          this.nControl.disabled = false
+        } else {
+          this.nControl.disabled = true
+        }
+      })
       this.nAddVisit.addEventListener('change', (event) => {
         if (event.target.value) {
           this.nAddReport.disabled = false
@@ -676,18 +684,108 @@ define([
           this.nAddReport.disabled = true
         }
       })
+
+      this.Buttons.addControl.addEventListener('change', event => {
+        if (!event.target.value) {
+          this.Buttons.addControl.setColorFlavor('')
+          KairosEvent.removeAutoAdded('autoCheck', this.reservation.id).then(() => { this.interventionReload() })
+          window.requestAnimationFrame(() => {
+            if (this.Buttons.addControl.popup) {
+              if (this.Buttons.addControl.popup && this.Buttons.addControl.popup.parentNode) {
+                this.Buttons.addControl.popup.parentNode.removeChild(this.Buttons.addControl.popup)
+              }
+              delete this.Buttons.addControl.popup
+            }
+          })
+        } else {
+          const Form = `<form>
+              <div class="radiogroup">État :  <br><span class="state radiolike" data-checked="1" data-flavor="green" data-value="${KAIROS.events.autoCheck[0]}"><i class="fas fa-smile"></i> En ordre</span>
+                      <span class="state radiolike" data-flavor="yellow" data-value="${KAIROS.events.autoCheck[1]}"><i class="fas fa-meh"></i> Défaut</span>
+                      <span class="state radiolike" data-flavor="red" data-value="${KAIROS.events.autoCheck[2]}"><i class="fas fa-frown"></i> Panne</span></div><br>
+              Remarque : <input type="text" name="comment" value="" /><br>
+              <input type="submit" value="Valider">
+              </form>
+            `
+            const element = document.createElement('DIV')
+            element.classList.add('addControl')
+            element.innerHTML = Form
+            let radioGroup
+            element.querySelectorAll('.radiogroup').forEach (node => {
+              radioGroup = new RadioLikeGroup(node)
+            })
+            let evenementPopper = Popper.createPopper(event.target, element, {placement: 'bottom'})
+            let closeFunc = () => {
+              evenementPopper.destroy()
+              window.requestAnimationFrame(() => {
+                element.parentNode.removeChild(element)
+              })
+              if (closeFunc.closableIdx) {
+                KAIROS.removeClosableByIdx(closeFunc.closableIdx)
+              }
+            }
+            closeFunc.closableIdx = KAIROS.stackClosable(closeFunc)
+
+            element.addEventListener('submit', event => {
+              event.preventDefault()
+              let form = new FormData(event.target)
+              UserStore.getCurrentUser().then(current => {
+                KairosEvent('autoCheck', {
+                  reservation: this.reservation.id,
+                  type: radioGroup.value,
+                  technician: current.getUrl(),
+                  comment: form.get('comment'),
+                  append: true
+                }).then(() => { this.interventionReload(); closeFunc() })
+              })
+            })
+            this.Buttons.addControl.popup = element
+            window.requestAnimationFrame(() => {
+              event.target.parentNode.insertBefore(element, event.target)
+              element.querySelector('input[name="comment"]').focus()
+              evenementPopper.update()
+            })
+        }
+      })
+      this.interventionSetCheckButton()      
+    },
+
+    interventionSetCheckButton: function () {
+      KairosEvent.hasAutoAdded('autoCheck', this.reservation.id).then(evenement => {
+        if (evenement) {
+          this.Buttons.addControl.setDisabled(false)
+          this.Buttons.addControl._setValue(true)
+          switch(evenement.type) {
+            case KAIROS.events.autoCheck[0]: this.Buttons.addControl.setColorFlavor('green'); break
+            case KAIROS.events.autoCheck[1]: this.Buttons.addControl.setColorFlavor('yellow'); break
+            case KAIROS.events.autoCheck[2]: this.Buttons.addControl.setColorFlavor('red'); break
+          }
+        } else {
+          this.Buttons.addControl._setValue(false)
+          this.Buttons.addControl.setColorFlavor('')
+        }
+      }, () => {
+        this.Buttons.addControl._setValue(false)
+        this.Buttons.addControl.setColorFlavor('')
+      })
+    },
+
+    interventionGetDomNode: function () {
+      let node = this.domNode.getElementsByTagName('fieldset')
+      let fset = null
+      for (let k in node) {
+        if (node[k].classList.contains('intervention')) {
+          fset = node[k]
+          break
+        }
+      }
+      return fset
     },
 
     interventionCreate: function () {
       return new Promise((resolve, reject) => {
         this.Stores.Status1 = new Status({type: 3})
-        let fset = this.domNode.getElementsByTagName('fieldset')
-        for (let k in fset) {
-          if (fset[k].classList.contains('intervention')) {
-            fset = fset[k]
-            break
-          }
-        }
+        let fset = this.interventionGetDomNode()
+        if (fset === null) { return }
         this.Intervention = {}
         let inputs = fset.getElementsByTagName('input')
         for (let k in inputs) {
@@ -741,7 +839,7 @@ define([
         if (prev) {
           data.previous = String(prev).trim()
         }
-        queries.push(fetch(Path.url('store/Evenement'), {method: 'post', body: JSON.stringify(data), headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}))
+        queries.push(fetch(new URL('store/Evenement', KAIROS.getBase()), {method: 'post', body: JSON.stringify(data)}))
       } while (prevs.length > 0)
       Promise.all(queries).then((responses) => {
         this.interventionReload(fset)
@@ -749,7 +847,11 @@ define([
       })
     },
 
-    interventionClearForm: function (fset) {
+    interventionClearForm: function (fset = null) {
+      if (!fset) {
+        fset = this.interventionGetDomNode()
+        if (!fset) { return }
+      }
       let inputs = fset.getElementsByTagName('input')
       for (let k in inputs) {
         if (inputs[k].name === 'iDate') {
@@ -765,7 +867,11 @@ define([
       fset.dataset.previous = ''
     },
 
-    interventionReload: function (fset) {
+    interventionReload: function (fset = null) {
+      if (!fset) {
+        fset = this.interventionGetDomNode()
+        if (!fset) { return }
+      }
       Query.exec(Path.url('store/Evenement/.unified', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
@@ -829,6 +935,7 @@ define([
           }
           frag.appendChild(n)
         }
+        this.interventionSetCheckButton()
         window.requestAnimationFrame(() => {
           div.innerHTML = ''
           div.appendChild(frag)
