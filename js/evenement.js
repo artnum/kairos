@@ -130,6 +130,24 @@ function KairosEvent(type, detail, place = null) {
     })
 }
 
+KairosEvent.hasAnyEventOfType = function (type, reservation) {
+    return new Promise ((resolve, reject) => {
+        const url = new URL('store/Evenement', KAIROS.getBase())
+        url.searchParams.append('search.reservation', reservation)
+        url.searchParams.append('search.type', type)
+        fetch (url).then(response => {
+            if (!response.ok) { resolve(false); return }
+            response.json().then(result => {
+                if (result.length > 0) {
+                    resolve(true)
+                } else {
+                    resolve(false)
+                }
+            })
+        })
+    })
+}
+
 KairosEvent.removeAutoAdded = function (type, reservation) {
     if (KAIROS.events[type] === undefined) {
         throw new Error('Ne peut supprimer un évènement inexistant')
