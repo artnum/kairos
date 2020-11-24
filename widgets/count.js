@@ -400,9 +400,9 @@ define([
 
     start: async function () {
       this.doc = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF'})
-      KAIROS.stackClosable(this.doc.close.bind(this.doc))
+      this.doc.close.closableIdx = KAIROS.stackClosable(this.doc.close.bind(this.doc))
       this.doc.addEventListener('close', (event) => { 
-        KAIROS.removeClosableFromStack(this.doc.close.bind(this.doc))
+        KAIROS.removeClosableByIdx(this.doc.close.bind(this.doc.close.closableIdx))
       })
       this.Total = 0
       this.Entries = {}

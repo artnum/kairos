@@ -8,7 +8,7 @@ function KairosEvent(type, detail, place = null) {
                 comment: typeof detail.comment === 'string' ? detail.comment : '',
                 date: new Date().toISOString(),
                 technician: detail.technician !== undefined ? detail.technician : null, // this must be set by caller
-                type: KAIROS.events[type],
+                type: detail.type ? detail.type : KAIROS.events[type],
                 process: `kairos:${type}`
             }
             if (detail.reservation) {
@@ -18,7 +18,7 @@ function KairosEvent(type, detail, place = null) {
                     let url = new URL('store/Evenement/.chain', KAIROS.getBase())
                     url.searchParams.append('reservation', detail.reservation)
                     let bodies = []
-                    fetch(url, { headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }) }).then(response => {
+                    fetch(url).then(response => {
                         if (!response.ok) { KAIROS.error('Impossible d\'obtenir la chaîne d\'évènements'); return }
                         response.json().then(result => {
                             for (let i = 0; i < result.length; i++) {
@@ -53,7 +53,7 @@ function KairosEvent(type, detail, place = null) {
                 const checkUrl = new URL('store/Evenement', KAIROS.getBase())
                 checkUrl.searchParams.append('search.reservation', detail.reservation)
                 checkUrl.searchParams.append('search.process', `kairos:${type}`)
-                checkUrl.searchParams.append('search.type', KAIROS.events[type])
+                checkUrl.searchParams.append('search.type', detail.type ? detail.type : KAIROS.events[type])
                 fetch(checkUrl).then (response => {
                     if (response.ok) {
                         response.json().then(result => {
@@ -116,7 +116,7 @@ function KairosEvent(type, detail, place = null) {
                         event.preventDefault()
                         getBody(type, Object.assign(detail, {technician: s.value})).then(bodies => {
                             bodies.forEach(body => {
-                                promises.push(fetch(url, { method: 'POST', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}` }), body: JSON.stringify(body) }))
+                                promises.push(fetch(url, { method: 'POST', body: JSON.stringify(body) }))
                             })
                         })
                         closePopper(true)
@@ -134,18 +134,43 @@ KairosEvent.removeAutoAdded = function (type, reservation) {
     if (KAIROS.events[type] === undefined) {
         throw new Error('Ne peut supprimer un évènement inexistant')
     }
-    const url = new URL('store/Evenement', KAIROS.getBase())
-    url.searchParams.append('search.reservation', reservation)
-    url.searchParams.append('search.process', `kairos:${type}`)
+    return new Promise((resolve, reject) => {
+        const url = new URL('store/Evenement', KAIROS.getBase())
+        url.searchParams.append('search.reservation', reservation)
+        url.searchParams.append('search.process', `kairos:${type}`)
 
-    fetch(url, {headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then(response => {
-        if (!response.ok) {
-            throw new Error('Erreur de réponse')
-        }
-        response.json().then(result => {
-            for (let i = 0; i < result.length; i++) {
-                let delUrl = new URL(`store/Evenement/${result.data[i].id}`, KAIROS.getBase())
-                fetch(delUrl, {method: 'DELETE', headers: new Headers({ 'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})})
+        fetch(url).then(response => {
+            if (!response.ok) {
+                resolve()
+                throw new Error('Erreur de réponse')
+            }
+            response.json().then(result => {
+                for (let i = 0; i < result.length; i++) {
+                    let delUrl = new URL(`store/Evenement/${result.data[i].id}`, KAIROS.getBase())
+                    fetch(delUrl, {method: 'DELETE'})
+                }
+                resolve()
+            })
+        }, reason => resolve())
+    })
+}
+
+KairosEvent.hasAutoAdded = function (type, reservation) {
+    return new Promise ((resolve, reject) => {
+        const checkUrl = new URL('store/Evenement', KAIROS.getBase())
+        checkUrl.searchParams.append('search.reservation', reservation)
+        checkUrl.searchParams.append('search.process', `kairos:${type}`)
+        fetch(checkUrl).then (response => {
+            if (response.ok) {
+                response.json().then(result => {
+                    if (result.length > 0) {
+                        resolve(result.data[0])
+                        return
+                    }
+                    resolve(null)
+                })
+            } else {
+                resolve(null)
             }
         })
     })

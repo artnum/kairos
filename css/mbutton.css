@@ -42,11 +42,28 @@
     border-bottom: 2px solid hsla(230, 70%, 50%, 1);
 }
 
+.mbutton.set.green {
+    border: 1px solid hsla(100, 70%, 40%, 1);
+    border-right: 2px solid hsla(100, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(100, 70%, 50%, 1);
+}
+
+.mbutton.set.red {
+    border: 1px solid hsla(0, 70%, 40%, 1);
+    border-right: 2px solid hsla(0, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(0, 70%, 50%, 1);
+}
+
+.mbutton.set.yellow {
+    border: 1px solid hsla(60, 70%, 40%, 1);
+    border-right: 2px solid hsla(60, 70%, 50%, 1);
+    border-bottom: 2px solid hsla(60, 70%, 50%, 1);
+}
+
 .mbutton.set button {
     background: linear-gradient(hsla(230, 70%, 90%, 1), hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 80%, 1) 50%, hsla(230, 70%, 80%, 1) 100%);
 
 }
-
 .mbutton.set:active button {
     background: linear-gradient(hsla(230, 70%, 100%, 1), hsla(230, 70%, 100%, 1) 50%, hsla(230, 70%, 90%, 1) 50%, hsla(230, 70%, 90%, 1) 100%) !important;
 }
@@ -55,26 +72,69 @@
     background: linear-gradient(hsla(230, 70%, 70%, 1), hsla(230, 70%, 70%, 1) 50%, hsla(230, 70%, 60%, 1) 50%, hsla(230, 70%   , 60%, 1) 100%);
 
 }
-.mbutton button, .dijitButton {
+
+/* green set button */
+.mbutton.set.green button {
+    background: linear-gradient(hsla(100, 70%, 90%, 1), hsla(100, 70%, 90%, 1) 50%, hsla(100, 70%, 80%, 1) 50%, hsla(100, 70%, 80%, 1) 100%);
+
+}
+.mbutton.set.green:active button {
+    background: linear-gradient(hsla(100, 70%, 100%, 1), hsla(100, 70%, 100%, 1) 50%, hsla(100, 70%, 90%, 1) 50%, hsla(100, 70%, 90%, 1) 100%) !important;
+}
+
+.mbutton.set.green:hover button {
+    background: linear-gradient(hsla(100, 70%, 70%, 1), hsla(100, 70%, 70%, 1) 50%, hsla(100, 70%, 60%, 1) 50%, hsla(100, 70%   , 60%, 1) 100%);
+
+}
+
+/* red set button */
+.mbutton.set.red button {
+    background: linear-gradient(hsla(0, 70%, 90%, 1), hsla(0, 70%, 90%, 1) 50%, hsla(0, 70%, 80%, 1) 50%, hsla(0, 70%, 80%, 1) 100%);
+
+}
+.mbutton.set.red:active button {
+    background: linear-gradient(hsla(0, 70%, 100%, 1), hsla(0, 70%, 100%, 1) 50%, hsla(0, 70%, 90%, 1) 50%, hsla(0, 70%, 90%, 1) 100%) !important;
+}
+
+.mbutton.set.red:hover button {
+    background: linear-gradient(hsla(0, 70%, 70%, 1), hsla(0, 70%, 70%, 1) 50%, hsla(0, 70%, 60%, 1) 50%, hsla(0, 70%   , 60%, 1) 100%);
+
+}
+
+/* yellow  set button */
+.mbutton.set.yellow button {
+    background: linear-gradient(hsla(60, 70%, 90%, 1), hsla(60, 70%, 90%, 1) 50%, hsla(60, 70%, 80%, 1) 50%, hsla(60, 70%, 80%, 1) 100%);
+
+}
+.mbutton.set.yellow:active button {
+    background: linear-gradient(hsla(60, 70%, 100%, 1), hsla(60, 70%, 100%, 1) 50%, hsla(60, 70%, 90%, 1) 50%, hsla(60, 70%, 90%, 1) 100%) !important;
+}
+
+.mbutton.set.yellow:hover button {
+    background: linear-gradient(hsla(60, 70%, 70%, 1), hsla(60, 70%, 70%, 1) 50%, hsla(60, 70%, 60%, 1) 50%, hsla(60, 70%   , 60%, 1) 100%);
+
+}
+
+.mbutton button, .dijitButton, button, input[type="button"], input[type="submit"], input[type="reset"]{
     background: linear-gradient(hsla(0, 0%, 90%, 1), hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 80%, 1) 50%, hsla(0, 0%, 80%, 1) 100%);
 }
 
-.mbutton button:active, .dijitButton:active {
+.mbutton button:active, .dijitButton:active, button:active, input[type="button"]:active, input[type="submit"]:active, input[type="reset"]:active {
     background: linear-gradient(hsla(0, 0%, 100%, 1), hsla(0, 0%, 100%, 1) 50%, hsla(0, 0%, 90%, 1) 50%, hsla(0, 0%, 90%, 1) 100%) !important;
 }
 
-.mbutton button:hover, .dijitButton:hover {
+.mbutton button:hover, .dijitButton:hover, button:hover, input[type="button"]:hover, input[type="submit"]:hover, input[type="reset"]:hover {
     background: linear-gradient(hsla(0, 0%, 70%, 1), hsla(0, 0%, 70%, 1) 50%, hsla(0, 0%, 60%, 1) 50%, hsla(0, 0%, 60%, 1) 100%);
 }
 
 .mbutton button.mbuttonRight {
     border-left: 1px dotted gray;
     float: right;
-    width: 28px;
+    width: 24px;
 }
 
 .mbutton button.mbuttonLeft {
-    width: 180px;
+    width: 176px;
     font-weight: bold;
     border-right: 1px solid transparent;
 }
@@ -116,13 +176,15 @@
     border: none !important;
     box-shadow: none !important;
 }
-.mbutton, .dijitButton {
+.mbutton, .dijitButton, button, input[type="button"], input[type="submit"], input[type="reset"] {
     font-size: 1em;
-    width: 208px;
+    width: 200px;
     border: 1px solid hsla(var(--button-color), 1);
     border-right: 2px solid hsla(var(--button-color), 0.8);
     border-bottom: 2px solid hsla(var(--button-color), 0.8);
     margin: 1px;
+    max-height: 28px;
+    min-height: 28px;
 }
 
 .mbuttonMain {
