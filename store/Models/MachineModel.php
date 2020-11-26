@@ -45,10 +45,12 @@ class MachineModel extends artnum\LDAP {
         if (!is_null($entry)) {
           $entry['uid'] = $id;
           $entry['reference'] = $id;
-          if (!empty($entry['airaltref']) &&
-              ((is_array($entry['airaltref']) && in_array($id, $entry['airaltref']) ||
-               (strval($entry['airaltref']) === strval($id))))) {
-            $entry['parent'] = $entry['description'];
+          if (!empty($entry['airaltref'])) {
+            if (is_array($entry['airaltref']) && in_array($id, $entry['airaltref'])) {
+              $entry['parent'] = $entry['description'];
+            } else if (!is_array($entry['airaltref']) && strval($entry['airaltref']) === strval($id)) {
+              $entry['parent'] = $entry['description'];
+            }
           }
           $result->setItems($entry);
           $result->setCount(1);
