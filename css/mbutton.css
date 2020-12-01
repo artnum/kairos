@@ -144,10 +144,17 @@
 }
 
 .mbuttonSubmenu {
+    min-width: 220px;
+    max-width: 260px;
     display: block;
-    width: 32ch;
-    border: 1px solid hsla(var(--button-color), 1);
-    background-color: hsla(var(--button-color2), 1);
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: 1em;
+}
+
+.mbuttonSubmenu button {
+    margin: 0;
 }
 
 .mbuttonSubmenu button {
@@ -176,6 +183,7 @@
     border: none !important;
     box-shadow: none !important;
 }
+
 .mbutton, .dijitButton, button, input[type="button"], input[type="submit"], input[type="reset"] {
     font-size: 1em;
     width: 200px;

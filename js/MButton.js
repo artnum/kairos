@@ -29,7 +29,7 @@ function MButton(button, choice = []) {
     this.CButton = document.createElement('BUTTON')
     this.CButton.innerHTML = '+'
     this.subMenu = document.createElement('DIV')
-    this.subMenu.classList.add('mbuttonSubmenu', 'mbutton')
+    this.subMenu.classList.add('mbuttonSubmenu')
 
     for (let i = 0; i < choice.length; i++) {
       let s = document.createElement('button')
@@ -43,7 +43,6 @@ function MButton(button, choice = []) {
         }.bind(this))
       }
     }
-
     this.Popper = Popper.createPopper(this.Button, this.subMenu, {
       placement: 'top-end',
       modifiers: {
@@ -125,8 +124,8 @@ MButton.prototype.show = function (event) {
   event.stopPropagation()
   window.addEventListener('click', this.hide.bind(this))
   window.requestAnimationFrame(() => {
-    this.Popper.update()
     this.Button.parentNode.insertBefore(this.subMenu, this.Button)
+    this.Popper.update()
   })
 }
 
