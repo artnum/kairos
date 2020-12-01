@@ -713,7 +713,9 @@ define([
             element.querySelectorAll('.radiogroup').forEach (node => {
               radioGroup = new RadioLikeGroup(node)
             })
-            let evenementPopper = Popper.createPopper(event.target, element, {placement: 'bottom'})
+            let evenementPopper = Popper.createPopper(event.target, element, {
+              placement: 'left-start'
+            })
             let closeFunc = () => {
               evenementPopper.destroy()
               window.requestAnimationFrame(() => {
@@ -740,9 +742,9 @@ define([
             })
             this.Buttons.addControl.popup = element
             window.requestAnimationFrame(() => {
-              event.target.parentNode.insertBefore(element, event.target)
-              element.querySelector('input[name="comment"]').focus()
+              event.target.parentNode.appendChild(element)
               evenementPopper.update()
+              element.querySelector('input[name="comment"]').focus()
             })
         }
       })
