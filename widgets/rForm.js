@@ -633,8 +633,8 @@ define([
         addEndAndDone: new MButton(this.nConfirmedAndReturned),
         addFault: new MButton(this.nFault),
         addBreak: new MButton(this.nBreak),
-        addDiesel: new MButton(this.nDiesel)
-
+        addDiesel: new MButton(this.nDiesel),
+        addDiesel2: new MButton(this.nDiesel2)
       }
 
       this.Buttons.del.addEventListener('click', () => {
@@ -799,7 +799,7 @@ define([
       `
       const AddDieselBox = `
       <form>
-      Quantité : <input type="text" name="comment" value="" /><br>
+      Quantité [lt]: <input type="text" name="comment" value="" /><br>
       <input type="submit" value="Valider">
       </form>
     `
@@ -841,6 +841,17 @@ define([
         let popup = new KPopup('Remplissage diesel', {
           content: AddDieselBox,
           reference: this.Buttons.addDiesel
+        })
+        popup.open()
+        popup.addEventListener('submit', event => {
+          event.preventDefault()
+          AddEventFunction(event.target, KAIROS.events.addDiesel, popup)
+        })
+      })
+      this.Buttons.addDiesel2.addEventListener('click', event => {
+        let popup = new KPopup('Remplissage diesel', {
+          content: AddDieselBox,
+          reference: this.Buttons.addDiesel2
         })
         popup.open()
         popup.addEventListener('submit', event => {
