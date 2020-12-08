@@ -37,8 +37,8 @@
         <label name="H:_arrival.other"><span>Clefs :</span><input class="ui" data-dojo-attach-point="nArrivalKeys" data-dojo-type="dijit/form/TextBox" name="arrivalKeys" /></label>
         <label name="H:_arrival.comment"><span>Remarque :</span><input class="ui" data-dojo-attach-point="nArrivalComment" data-dojo-type="dijit/form/TextBox" name="arrivalComment" /></label>
         <button name="H:_arrival.inprogress" data-dojo-attach-point="nArrivalInprogress"><i class="fas fa-shipping-fast" aria-hidden="true"></i> En cours</button>
-        <button name="H:_arrival.done" data-dojo-attach-point="nArrivalDone" disabled="1"><i class="fab fa-fort-awesome" aria-hidden="true"></i> Retournée</button>
-        <button data-dojo-attach-point="nControl" disabled="1"><i class="far fa-thumbs-up" aria-hidden="true"></i> Contrôlée</button>
+        <button name="H:_arrival.done" data-dojo-attach-point="nArrivalDone"><i class="fab fa-fort-awesome" aria-hidden="true"></i> Retournée</button>
+        <button data-dojo-attach-point="nControl"><i class="far fa-thumbs-up" aria-hidden="true"></i> Contrôlée</button>
       </fieldset>
       
       <fieldset class="full ui">
@@ -89,15 +89,17 @@
 	<input type="hidden" value="" data-dojo-attach-point="nComplementId" name="idComplement" />
 	<button data-dojo-type="dijit/form/Button" value="Ajouter" data-dojo-attach-point="nAddEditComplementButton" type="button" data-dojo-attach-event="click:doAddEditComplement" ><i class="fa fa-plus" aria-hidden="true"></i> Ajouter</button>
 	<button data-dojo-type="dijit/form/Button" value="Reset" type="button" data-dojo-attach-event="click:doResetComplement" ><i class="fas fa-eraser" aria-hidden="true"></i> Annuler</button>
-      </fieldset>
+  </fieldset>
 
-      <fieldset class="ui full intervention typezone"><legend>Évènement</legend>
-        <label><span>Date :</span><input type="date" name="iDate" /></label><label><span>Type :</span><input name="iType" type="text" /></label>
-        <label><span>Personne :</span><input type="text" name="iPerson" /></label><label class="one"><span>Remarque :</span><input name="iComment" type="text" /></label>
-        <button type="button" name="iAdd">Ajout</button>
-        <div class="content note" name="iContent">
-        </div>
-      </fieldset>
+  <fieldset class="ui full intervention typezone"><legend>Évènement</legend>
+    <button data-dojo-attach-point="nFault" value="fault"><i class="fas fa-car-crash"></i> Défaut</button>
+    <button data-dojo-attach-point="nBreak" value="break"><i class="fas fa-exclamation-triangle"></i> Panne</button><br>
+    <label><span>Date :</span><input type="date" name="iDate" /></label><label><span>Type :</span><input name="iType" type="text" /></label>
+    <label><span>Personne :</span><input type="text" name="iPerson" /></label><label class="one"><span>Remarque :</span><input name="iComment" type="text" /></label>
+    <button type="button" name="iAdd">Ajout</button>
+    <div class="content note" name="iContent">
+    </div>
+  </fieldset>
 
 <!--      <fieldset class="ui full">
         <legend>Offre</legend>

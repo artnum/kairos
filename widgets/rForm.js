@@ -527,14 +527,13 @@ define([
     },
 
     doAddEditComplement: function () {
-      var that = this
       var query = {}
       var f = djDomForm.toObject(this.nComplementsForm)
 
       if (!f.nMFollow) {
-        ;['nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach(function (i) {
+        ;['nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach(i => {
           if (f[i] === '') {
-            that[i].set('state', 'Error')
+            this[i].set('state', 'Error')
           }
         })
 
@@ -559,17 +558,18 @@ define([
       }
 
       if (query['id'] == null) {
-        var url = Path.url('store/Association')
-        Query.exec(url, {method: 'post', body: query}).then(function () {
-          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
+        let url = new URL(`${KAIROS.getBase()}/store/Association`)
+        fetch(url, {method: 'post', body: JSON.stringify(query)}).then(response => {
+          if (!response.ok) { return }
+          this.associationRefresh().then(() => { this.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
         })
       } else {
-        url = Path.url('store/Association/' + query['id'])
-        Query.exec(url, {method: 'patch', body: query}).then(() => {
-          that.associationRefresh().then(() => { that.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
-
-          that.nComplementId.value = ''
-          that.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')
+        let url = new URL(`${KAIROS.getBase()}/store/Association/${query.id}`)
+        fetch(url, {method: 'patch', body: JSON.stringify(query)}).then(response => {
+          if (!response.ok) { return }
+          this.associationRefresh().then(() => { this.reservation.resize() }, () => {KAIROS.error('Reject de l\'opération') })
+          this.nComplementId.value = ''
+          this.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')
         })
       }
     },
@@ -630,7 +630,9 @@ define([
         addArrivalDone: new MButton(this.nArrivalDone, { set: () => (new Date()).toISOString(), unset: '' }),
         addControl: new MButton(this.nControl, {set:true, unset: false}),
         addEnd: new MButton(this.nConfirmed, { set: () => (new Date()).toISOString(), unset: '' }),
-        addEndAndDone: new MButton(this.nConfirmedAndReturned)
+        addEndAndDone: new MButton(this.nConfirmedAndReturned),
+        addFault: new MButton(this.nFault),
+        addBreak: new MButton(this.nBreak)
       }
 
       this.Buttons.del.addEventListener('click', () => {
@@ -651,14 +653,85 @@ define([
       })
       this.Buttons.copy.addEventListener('click', this.doCopy.bind(this))
       this.Buttons.save.addEventListener('click', this.doSaveAndQuit.bind(this))
-      this.nConfirmed.addEventListener('change', (event) => {
-        if (event.target.value) {
-          this.nConfirmedAndReturned.disabled = false
-        } else {
-          this.nConfirmedAndReturned.disabled = true
-        }
-        this.toggleConfirmed()
+
+      this.Buttons.addEnd.linkDisabledState(this.Buttons.addArrivalInProgress)
+      this.Buttons.addArrivalInProgress.linkDisabledState(this.Buttons.addArrivalDone)
+      this.Buttons.addArrivalDone.linkDisabledState(this.Buttons.addControl)
+      this.Buttons.addVisit.linkDisabledState(this.Buttons.addVReport)
+
+      this.Buttons.addEnd.addEventListener('set', event => {
+        let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
+        url.searchParams.append('search.reservation', this.reservation.id)
+        
+        let fetchArrival = new Promise((resolve, reject) => {
+          fetch(url).then(response => {
+            if (!response.ok) { resolve(null); return }
+            response.json().then(result => {
+              if (result.length === 1) {
+                resolve(result.data[0])
+              } else {
+                resolve(null)
+              }
+            })
+          })
+        })
+        Promise.all([fetchArrival, UserStore.getCurrentUser()]).then((arrival, user) => {
+          if (arrival !== null) {
+            if (arrival.inprogress) {
+              this.Buttons.addArrivalInProgress.setValue(true)
+            }
+            if (arrival.done) {
+              this.Buttons.addArrivalDone.setValue(true)
+            }
+            this.nArrivalDate.set('value', arrival.reported)
+            this.nArrivalTime.set('value', arrival.reported)
+            this.nArrivalCreator.value = arrival.creator
+          } else {
+            this.Buttons.addArrivalInProgress.setValue(false)
+            this.Buttons.addArrivalDone.setValue(false)
+            this.nArrivalDate.set('value', new Date())
+            this.nArrivalTime.set('value', new Date())
+            this.nArrivalCreator.value = user.getUrl()
+          }
+          window.requestAnimationFrame(() => {
+            this.nBack.style.removeProperty('display')
+          })
+        })
       })
+
+      this.Buttons.addEnd.addEventListener('unset', event => {
+        UserStore.getCurrentUser().then(user => {
+          this.nArrivalDone = false
+          this.nArrivalInprogress = false
+
+          window.requestAnimationFrame(() => {
+            this.nBack.style.setProperty('display', 'none')
+          })
+        })
+      })
+
+      this.Buttons.addArrivalDone.addEventListener('set', event => {
+        let id = this.reservation.id
+        Promise.all([UserStore.getCurrentUser(), KairosEvent.hasAnyEventOfType(KAIROS.events['autoReturn'], id)]).then(([user, has]) => {
+          if (!has) {
+            KairosEvent('autoReturn', {technician: user.getUrl(), reservation: id, append: true}).then(() => {
+              this.interventionReload()
+            })
+          }
+        })
+      })
+      this.Buttons.addArrivalDone.addEventListener('unset', event => {
+        let id = this.reservation.id
+        KairosEvent.hasAnyEventOfType(KAIROS.events['autoReturn'], id).then(has => {
+          if (has) {
+            KairosEvent.removeAutoAdded('autoReturn', id).then(() => {
+              this.interventionReload()
+            })
+          }
+        })
+      })
+
+
       this.nConfirmedAndReturned.addEventListener('click', (event) => {
         event.preventDefault()
         this.toggleConfirmedAndReturned()
@@ -670,33 +743,12 @@ define([
           this.nArrivalDone.disabled = true
         }
       })
-      this.nArrivalDone.addEventListener('change', event => {
-        if (event.target.value) {
-          this.nControl.disabled = false
-        } else {
-          this.nControl.disabled = true
-        }
-      })
-      this.nAddVisit.addEventListener('change', (event) => {
-        if (event.target.value) {
-          this.nAddReport.disabled = false
-        } else {
-          this.nAddReport.disabled = true
-        }
-      })
 
       this.Buttons.addControl.addEventListener('change', event => {
         if (!event.target.value) {
           this.Buttons.addControl.setColorFlavor('')
           KairosEvent.removeAutoAdded('autoCheck', this.reservation.id).then(() => { this.interventionReload() })
-          window.requestAnimationFrame(() => {
-            if (this.Buttons.addControl.popup) {
-              if (this.Buttons.addControl.popup && this.Buttons.addControl.popup.parentNode) {
-                this.Buttons.addControl.popup.parentNode.removeChild(this.Buttons.addControl.popup)
-              }
-              delete this.Buttons.addControl.popup
-            }
-          })
+          this.Buttons.addControl.popup.close()
         } else {
           const Form = `<form>
               <div class="radiogroup">État :  <br><span class="state radiolike" data-checked="1" data-flavor="green" data-value="${KAIROS.events.autoCheck[0]}"><i class="fas fa-smile"></i> En ordre</span>
@@ -713,20 +765,12 @@ define([
             element.querySelectorAll('.radiogroup').forEach (node => {
               radioGroup = new RadioLikeGroup(node)
             })
-            let evenementPopper = Popper.createPopper(event.target, element, {
-              placement: 'left-start'
+            let popup = new KPopup('Contrôle', {reference: event.target})
+            popup.setContentDiv(element)
+            popup.open().then((content) => {
+              content.querySelector('input[name="comment"]').focus()
             })
-            let closeFunc = () => {
-              evenementPopper.destroy()
-              window.requestAnimationFrame(() => {
-                element.parentNode.removeChild(element)
-              })
-              if (closeFunc.closableIdx) {
-                KAIROS.removeClosableByIdx(closeFunc.closableIdx)
-              }
-            }
-            closeFunc.closableIdx = KAIROS.stackClosable(closeFunc)
-
+            this.Buttons.addControl.popup = popup
             element.addEventListener('submit', event => {
               event.preventDefault()
               let form = new FormData(event.target)
@@ -737,18 +781,52 @@ define([
                   technician: current.getUrl(),
                   comment: form.get('comment'),
                   append: true
-                }).then(() => { this.interventionReload(); closeFunc() })
+                }).then(() => { this.interventionReload(); popup.close() })
               })
-            })
-            this.Buttons.addControl.popup = element
-            window.requestAnimationFrame(() => {
-              event.target.parentNode.appendChild(element)
-              evenementPopper.update()
-              element.querySelector('input[name="comment"]').focus()
             })
         }
       })
-      this.interventionSetCheckButton()      
+      this.interventionSetCheckButton()
+
+      const AddMessageBox = `
+        <form>
+        Remarque : <input type="text" name="comment" value="" /><br>
+        <input type="submit" value="Valider">
+        </form>
+      `
+      const AddEventFunction = (formNode, type, popup) => {
+        let form = new FormData(formNode)
+        UserStore.getCurrentUser().then(current => {
+          KairosEvent.createNewChain('shortEvent', this.reservation.id, form.get('comment'), current.getUrl(), type).then(() => { 
+            this.interventionReload();
+            popup.close()
+          })  
+        })
+      }
+
+      this.Buttons.addFault.addEventListener('click', event => {
+        let popup = new KPopup('Ajout panne', {
+          content: AddMessageBox,
+          reference: this.Buttons.addFault
+        })
+        popup.open()
+        popup.addEventListener('submit', event => {
+          event.preventDefault()
+          AddEventFunction(event.target, KAIROS.events.autoCheck[1], popup)
+        })
+      })
+
+      this.Buttons.addBreak.addEventListener('click', event => {
+        let popup = new KPopup('Ajout défaut', {
+          content: AddMessageBox,
+          reference: this.Buttons.addBreak
+        })
+        popup.open()
+        popup.addEventListener('submit', event => {
+          event.preventDefault()
+          AddEventFunction(event.target, KAIROS.events.autoCheck[2], popup)
+        })
+      })
     },
 
     interventionSetCheckButton: function () {
@@ -789,7 +867,8 @@ define([
         let fset = this.interventionGetDomNode()
         if (fset === null) { return }
         this.Intervention = {}
-        let inputs = fset.getElementsByTagName('input')
+        let button = null
+        let inputs = [...fset.getElementsByTagName('input'), ...fset.getElementsByTagName('button')]
         for (let k in inputs) {
           switch (inputs[k].name) {
           case 'iDate':
@@ -801,9 +880,11 @@ define([
           case 'iPerson':
             this.Intervention.person = new Select(inputs[k], new UserStore(), {allowFreeText: true, realSelect: true})
             break
+          case 'iAdd':
+            button = inputs[k]
+            break
           }
         }
-        let button = fset.getElementsByTagName('button')[0]
         button = new MButton(button)
         button.addEventListener('click', this.interventionAdd.bind(this))
         this.interventionReload(fset)
@@ -1383,44 +1464,9 @@ define([
     toggleConfirmedAndReturned: function () {
       if (!this.nConfirmed.value) {
         this.nConfirmed.value = true
-        this.toggleConfirmed()
       }
       this.nArrivalInprogress.value = true
-      this.nArrivalDone.disabled = false
       this.nArrivalDone.value = true
-    },
-
-    toggleConfirmed: function (dontset = false) {
-      let user = JSON.parse(localStorage.getItem('/location/user'))
-      if (this.nConfirmed.value) {
-        this.nConfirmedAndReturned.disabled = false
-        this.nArrivalDone.value = false
-        this.nArrivalInprogress.value = false
-        var retVal = this.reservation.get('_arrival')
-        if (retVal && retVal.id && retVal.reported) {
-          this.nArrivalDate.set('value', retVal.reported)
-          this.nArrivalTime.set('value', retVal.reported)
-          this.nArrivalCreator.value = retVal.creator
-        } else {
-          this.nArrivalDate.set('value', new Date())
-          this.nArrivalTime.set('value', new Date())
-          this.nArrivalCreator.value = `User/${user.id}`
-        }
-        this.nBack.setAttribute('style', '')
-        this.endTime.readonly = true
-        this.endDate.set('readOnly', true)
-        this.nDeliveryEndTime.setAttribute('readonly', '1')
-        this.nDeliveryEndDate.set('readOnly', true)
-      } else {
-        if (!this.nArrivalInprogress.value) {
-          this.nArrivalDone.disabled = true
-        }
-        this.nBack.setAttribute('style', 'display: none')
-        this.endTime.readonly = true
-        this.endDate.set('readOnly', false)
-        this.nDeliveryEndTime.removeAttribute('readonly')
-        this.nDeliveryEndDate.set('readOnly', false)
-      }
     },
 
     createContact: function (entry, type) {
@@ -1482,7 +1528,7 @@ define([
       }
 
       if (id != null) {
-        var url = Path.url('store/ReservationContact')
+        let url = Path.url('store/ReservationContact')
         url.searchParams.set('search.reservation', this.reservation.uid)
         url.searchParams.set('search.target', id)
         url.searchParams.set('search.comment', type)
@@ -1504,7 +1550,7 @@ define([
           }
         }))
       } else {
-        url = Path.url('store/ReservationContact')
+        let url = Path.url('store/ReservationContact')
         url.searchParams.set('search.reservation', this.reservation.uid)
         url.searchParams.set('search.target', id)
         url.searchParams.set('search.freeform', options.freeform)

@@ -1,113 +1,130 @@
 function MButton(button, choice = []) {
   let single = true
   this.Button = document.createElement('DIV')
+  this.domNode = this.Button
   this.MButton = button
+  this.Events = {}
   button.setAttribute('type', 'button')
-
-  Object.defineProperty(this.MButton, 'disabled', {
-    get: this.getDisabled.bind(this),
-    set: this.setDisabled.bind(this)
-  })
-  Object.assign(this, {
-    _disabled: false
-  })
-  
-  if (this.MButton.hasAttribute('disabled')) {
-    this.setDisabled(true)
-  }
-
-  ;['name', 'id'].forEach((attr) => {
-    if (this.MButton.hasAttribute(attr)) {
-      let val = this.MButton.getAttribute(attr)
-      this.MButton.removeAttribute(attr)
-      this.Button.setAttribute(attr, val)
-    }
-  })
-
-  if (Array.isArray(choice) && choice.length > 0) {
-    single = false
-    this.CButton = document.createElement('BUTTON')
-    this.CButton.innerHTML = '+'
-    this.subMenu = document.createElement('DIV')
-    this.subMenu.classList.add('mbuttonSubmenu')
-
-    for (let i = 0; i < choice.length; i++) {
-      let s = document.createElement('button')
-      s.innerHTML = choice[i].label
-      this.subMenu.appendChild(s)
-      for (let k in choice[i].events) {
-        s.addEventListener(k, function (event) {
-          event.stopPropagation()
-          choice[i].events[k](event)
-          this.hide()
-        }.bind(this))
-      }
-    }
-    this.Popper = Popper.createPopper(this.Button, this.subMenu, {
-      placement: 'top-end',
-      modifiers: {
-        preventOverflow: {
-          enabled: true,
-          boundariesElement: this.MButton
+  this.initialized = new Promise((resovle, reject) => {
+    this.MutObserver = new MutationObserver((mutList, observer) => {
+      for (const mutation of mutList) {
+        if (mutation.type === 'attributes') {
+          if (mutation.attributeName === 'disabled') {
+            if (mutation.target.hasAttribute('disabled')) {
+              this.setDisabled(true, true)
+            } else {
+              this.setDisabled(false, true)
+            }
+          }
         }
       }
     })
 
-    this.CButton.addEventListener('click', (event) => {
-      if (this.subMenu.parentNode) {
-        this.hide(event)
-      } else {
-        this.show(event)
-      }
-    })
-  } else if (
-    typeof choice === 'object' &&
-    choice !== null &&
-    choice.set !== undefined &&
-    choice.unset !== undefined
-  ) {
-    this.MButton.addEventListener('click', this.trigger.bind(this))
-    Object.defineProperty(this.MButton, 'value', {
-      get: this.getValue.bind(this),
-      set: this.setValue.bind(this)
-    })
-    new Proxy(button, {
-      set: function(target, property, value, receiver) {
-        if (property === 'value') {
-          this._setValue(value)
-        } else {
-          target[property] = value
-        }
-      }.bind(this)
-    })    
+    this.MutObserver.observe(this.MButton, {attributes: true})
     Object.assign(this, {
-      state: 0,
-      values: [choice.unset, choice.set],
-      _value: null,
+      _disabled: false
     })
-    this.MButton.value = false
-  }
-
-  window.requestAnimationFrame(() => {
-    /* Style */
-    if (this.MButton.getAttribute('style')) {
-      this.Button.setAttribute('style', this.MButton.getAttribute('style'))
-      this.MButton.removeAttribute('style')
-    }
-    this.Button.classList.add('mbuttonMain', 'mbutton')
-    this.MButton.classList.add('mbuttonLeft')
-    if (!single) {
-      this.CButton.classList.add('mbuttonRight')
+    
+    if (this.MButton.hasAttribute('disabled')) {
+      this.setDisabled(true, true)
     } else {
-      this.Button.classList.add('mbuttonSingle')
+      this.setDisabled(false, true)
     }
 
-    /* Place */
-    let p = button.parentNode
-    p.insertBefore(this.Button, button)
-    p.removeChild(button)
-    this.Button.appendChild(button)
-    if (!single) { this.Button.appendChild(this.CButton) }
+    ;['name', 'id'].forEach((attr) => {
+      if (this.MButton.hasAttribute(attr)) {
+        let val = this.MButton.getAttribute(attr)
+        this.MButton.removeAttribute(attr)
+        this.Button.setAttribute(attr, val)
+      }
+    })
+
+    if (Array.isArray(choice) && choice.length > 0) {
+      single = false
+      this.CButton = document.createElement('BUTTON')
+      this.CButton.innerHTML = '+'
+      this.subMenu = document.createElement('DIV')
+      this.subMenu.classList.add('mbuttonSubmenu')
+
+      for (let i = 0; i < choice.length; i++) {
+        let s = document.createElement('button')
+        s.innerHTML = choice[i].label
+        this.subMenu.appendChild(s)
+        for (let k in choice[i].events) {
+          s.addEventListener(k, function (event) {
+            event.stopPropagation()
+            choice[i].events[k](event)
+            this.hide()
+          }.bind(this))
+        }
+      }
+      this.Popper = Popper.createPopper(this.Button, this.subMenu, {
+        placement: 'top-end',
+        modifiers: {
+          preventOverflow: {
+            enabled: true,
+            boundariesElement: this.MButton
+          }
+        }
+      })
+
+      this.CButton.addEventListener('click', (event) => {
+        if (this.subMenu.parentNode) {
+          this.hide(event)
+        } else {
+          this.show(event)
+        }
+      })
+    } else if (
+      typeof choice === 'object' &&
+      choice !== null &&
+      choice.set !== undefined &&
+      choice.unset !== undefined
+    ) {
+      this.MButton.addEventListener('click', this.trigger.bind(this))
+      Object.defineProperty(this.MButton, 'value', {
+        get: this.getValue.bind(this),
+        set: this.setValue.bind(this)
+      })
+      new Proxy(button, {
+        set: function(target, property, value, receiver) {
+          if (property === 'value') {
+            this._setValue(value)
+          } else {
+            target[property] = value
+          }
+        }.bind(this)
+      })    
+      Object.assign(this, {
+        state: 0,
+        values: [choice.unset, choice.set],
+        _value: null,
+      })
+      this.MButton.value = false
+    }
+
+    window.requestAnimationFrame(() => {
+      /* Style */
+      if (this.MButton.getAttribute('style')) {
+        this.Button.setAttribute('style', this.MButton.getAttribute('style'))
+        this.MButton.removeAttribute('style')
+      }
+      this.Button.classList.add('mbuttonMain', 'mbutton')
+      this.MButton.classList.add('mbuttonLeft')
+      if (!single) {
+        this.CButton.classList.add('mbuttonRight')
+      } else {
+        this.Button.classList.add('mbuttonSingle')
+      }
+
+      /* Place */
+      let p = button.parentNode
+      p.insertBefore(this.Button, button)
+      p.removeChild(button)
+      this.Button.appendChild(button)
+      if (!single) { this.Button.appendChild(this.CButton) }
+      resovle()
+    })
   })
 }
 
@@ -133,7 +150,22 @@ MButton.prototype.getDisabled = function () {
   return this._disabled
 }
 
-MButton.prototype.setDisabled = function (value) {
+/* straight is when value is 1, linked button is enabled, when value is 0, linked button
+ * is disabled. reverse = 1 is the opposite.
+ * As setLinkedState call setDisabled, 1 must be 0 to enable
+ */ 
+MButton.prototype.linkDisabledState = function (linked, reverse = false) {
+  this.linkedState = [linked, reverse]
+  this.setLinkedState(this.state)
+}
+
+MButton.prototype.setLinkedState = function (value) {
+  if (this.linkedState) {
+    this.linkedState[0].setDisabled(this.linkedState[1] ? value : !value)
+  }
+}
+
+MButton.prototype.setDisabled = function (value, fromMbutton = false) {
   switch(value) {
     case 'on':
     case '1':
@@ -145,19 +177,22 @@ MButton.prototype.setDisabled = function (value) {
 
   if (value) {
       this.Button.setAttribute('disabled', '1')
-      this.MButton.setAttribute('disabled', '1')
+      if (!fromMbutton) { this.MButton.setAttribute('disabled', '1') }
       if (this.CButton !== undefined) {
         this.CButton.setAttribute('disabled', '1')
       }
       this._disabled = true
+      this.setLinkedState(true)
+
   } else {
       this.Button.removeAttribute('disabled')
-      this.MButton.removeAttribute('disabled')
+      if (!fromMbutton) { this.MButton.removeAttribute('disabled') }
       if (this.CButton !== undefined) {
         this.CButton.removeAttribute('disabled')
       }
       this._disabled = false
   }
+  this.setLinkedState(this._disabled ? false : this.state)
 }
 
 MButton.prototype.setColorFlavor = function (flavor) {
@@ -188,10 +223,17 @@ MButton.prototype._setValue = function (value) {
   if (value === undefined || value === 'false' || !value) {
     this.state = 0
     window.requestAnimationFrame(() => this.Button.classList.remove('set'))
+    if (this.Events['unset'] !== undefined && this.Events['unset'] instanceof Function) {
+      this.Events['unset']()
+    }
   } else {
     this.state = 1
     window.requestAnimationFrame(() => this.Button.classList.add('set'))
+    if (this.Events['set'] !== undefined && this.Events['set'] instanceof Function) {
+      this.Events['set']()
+    }
   }
+  this.setLinkedState(this.state)
   this._value = value
   return this.values[this.state]
 }
@@ -222,9 +264,25 @@ MButton.prototype.trigger = function (event) {
 }
 
 MButton.prototype.addEventListener = function (type, listener, options = undefined) {
-  this.MButton.addEventListener(type, listener, options)
+  switch (type.toLowerCase()) {
+    default:
+      this.MButton.addEventListener(type, listener, options)
+      break
+    case 'set':
+    case 'unset':
+      this.Events[type.toLowerCase()] = listener
+      break
+  }
 }
 
 MButton.prototype.removeEventListener = function (type, listener, options = undefined) {
-  this.MButton.removeEventListener(type, listener, options)
+  switch (type.toLowerCase()) {
+    default:
+      this.MButton.removeEventListener(type, listener, options)
+      break
+    case 'set':
+    case 'unset':
+      delete this.Events[type.toLowerCase()]
+      break
+  }
 }

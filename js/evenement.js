@@ -130,6 +130,19 @@ function KairosEvent(type, detail, place = null) {
     })
 }
 
+KairosEvent.createNewChain = function KairosEvent(process, reservation, comment, technician, type) {
+    const body = {
+        comment: comment,
+        date: new Date().toISOString(),
+        technician: technician,
+        type: type,
+        process: `kairos:${process}`,
+        reservation: reservation
+    }
+    const url = new URL('store/Evenement', KAIROS.getBase())
+    return fetch(url, {method: 'POST', body: JSON.stringify(body)})
+}
+
 KairosEvent.hasAnyEventOfType = function (type, reservation) {
     return new Promise ((resolve, reject) => {
         const url = new URL('store/Evenement', KAIROS.getBase())
