@@ -659,6 +659,7 @@ define([
       this.Buttons.addEnd.linkDisabledState(this.Buttons.addArrivalInProgress)
       this.Buttons.addArrivalInProgress.linkDisabledState(this.Buttons.addArrivalDone)
       this.Buttons.addArrivalDone.linkDisabledState(this.Buttons.addControl)
+      this.Buttons.addArrivalDone.linkDisabledState(this.Buttons.addDiesel)
       this.Buttons.addVisit.linkDisabledState(this.Buttons.addVReport)
 
       this.Buttons.addEnd.addEventListener('set', event => {

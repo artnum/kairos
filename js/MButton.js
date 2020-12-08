@@ -4,6 +4,7 @@ function MButton(button, choice = []) {
   this.domNode = this.Button
   this.MButton = button
   this.Events = {}
+  this.linkedState = []
   button.setAttribute('type', 'button')
   this.initialized = new Promise((resovle, reject) => {
     this.MutObserver = new MutationObserver((mutList, observer) => {
@@ -164,13 +165,13 @@ MButton.prototype.getDisabled = function () {
  * As setLinkedState call setDisabled, 1 must be 0 to enable
  */ 
 MButton.prototype.linkDisabledState = function (linked, reverse = false) {
-  this.linkedState = [linked, reverse]
+  this.linkedState.push([linked, reverse])
   this.setLinkedState(this.state)
 }
 
 MButton.prototype.setLinkedState = function (value) {
-  if (this.linkedState) {
-    this.linkedState[0].setDisabled(this.linkedState[1] ? value : !value)
+  for (let i = 0; i < this.linkedState.length; i++) {
+    this.linkedState[i][0].setDisabled(this.linkedState[i][1] ? value : !value)
   }
 }
 
