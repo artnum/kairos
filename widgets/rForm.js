@@ -632,7 +632,9 @@ define([
         addEnd: new MButton(this.nConfirmed, { set: () => (new Date()).toISOString(), unset: '' }),
         addEndAndDone: new MButton(this.nConfirmedAndReturned),
         addFault: new MButton(this.nFault),
-        addBreak: new MButton(this.nBreak)
+        addBreak: new MButton(this.nBreak),
+        addDiesel: new MButton(this.nDiesel)
+
       }
 
       this.Buttons.del.addEventListener('click', () => {
@@ -794,6 +796,12 @@ define([
         <input type="submit" value="Valider">
         </form>
       `
+      const AddDieselBox = `
+      <form>
+      Quantité : <input type="text" name="comment" value="" /><br>
+      <input type="submit" value="Valider">
+      </form>
+    `
       const AddEventFunction = (formNode, type, popup) => {
         let form = new FormData(formNode)
         UserStore.getCurrentUser().then(current => {
@@ -825,6 +833,18 @@ define([
         popup.addEventListener('submit', event => {
           event.preventDefault()
           AddEventFunction(event.target, KAIROS.events.autoCheck[2], popup)
+        })
+      })
+
+      this.Buttons.addDiesel.addEventListener('click', event => {
+        let popup = new KPopup('Remplissage diesel', {
+          content: AddDieselBox,
+          reference: this.Buttons.addDiesel
+        })
+        popup.open()
+        popup.addEventListener('submit', event => {
+          event.preventDefault()
+          AddEventFunction(event.target, KAIROS.events.addDiesel, popup)
         })
       })
     },
