@@ -109,6 +109,10 @@ function MButton(button, choice = []) {
         this.Button.setAttribute('style', this.MButton.getAttribute('style'))
         this.MButton.removeAttribute('style')
       }
+      if (this.MButton.classList.contains('flavored')) {
+        this.MButton.classList.remove('flavored')
+        this.Button.classList.add('flavored')
+      }
       this.Button.classList.add('mbuttonMain', 'mbutton')
       this.MButton.classList.add('mbuttonLeft')
       if (!single) {
@@ -123,6 +127,11 @@ function MButton(button, choice = []) {
       p.removeChild(button)
       this.Button.appendChild(button)
       if (!single) { this.Button.appendChild(this.CButton) }
+
+      if (button.dataset.flavor) {
+        this.setColorFlavor(button.dataset.flavor)
+      }
+
       resovle()
     })
   })
