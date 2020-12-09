@@ -662,9 +662,15 @@ define([
       this.Buttons.addArrivalDone.linkDisabledState(this.Buttons.addDiesel)
       this.Buttons.addVisit.linkDisabledState(this.Buttons.addVReport)
 
+      this.Buttons.addEndAndDone.addEventListener('click', event => {
+        this.Buttons.addEnd.setValue(true)
+        this.Buttons.addArrivalInProgress.setValue(true)
+        this.Buttons.addArrivalDone.setValue(true)
+      })
+
       this.Buttons.addEnd.addEventListener('set', event => {
         let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
-        url.searchParams.append('search.reservation', this.reservation.id)
+        url.searchParams.append('search.target', this.reservation.id)
         
         let fetchArrival = new Promise((resolve, reject) => {
           fetch(url).then(response => {
@@ -690,8 +696,6 @@ define([
             this.nArrivalTime.set('value', arrival.reported)
             this.nArrivalCreator.value = arrival.creator
           } else {
-            this.Buttons.addArrivalInProgress.setValue(false)
-            this.Buttons.addArrivalDone.setValue(false)
             this.nArrivalDate.set('value', new Date())
             this.nArrivalTime.set('value', new Date())
             this.nArrivalCreator.value = user.getUrl()
@@ -1799,7 +1803,7 @@ define([
             arrival = Object.assign(arrival, res.data[0])
           }
 
-          if (this.nConfirmed.value) {
+          if (this.Buttons.addEnd.getValue()) {
             arrival.deleted = null
             arrival.target = this.reservation.uid
             if (f.arrivalDate) {
@@ -1814,8 +1818,8 @@ define([
             arrival.contact = f.arrivalAddress
             arrival.locality = this.nArrivalLocality.value
             arrival.other = f.arrivalKeys
-            arrival.done = this.nArrivalDone.value
-            arrival.inprogress = this.nArrivalInprogress.value
+            arrival.done = this.Buttons.addArrivalDone.getValue()
+            arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
 
             this.reservation.set('_arrival', arrival)
           } else {
