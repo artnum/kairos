@@ -684,7 +684,7 @@ define([
             })
           })
         })
-        Promise.all([fetchArrival, UserStore.getCurrentUser()]).then((arrival, user) => {
+        Promise.all([fetchArrival, UserStore.getCurrentUser()]).then(([arrival, user]) => {
           if (arrival !== null) {
             if (arrival.inprogress) {
               this.Buttons.addArrivalInProgress.setValue(true)
