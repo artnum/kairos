@@ -28,7 +28,7 @@ class ReservationModel extends artnum\SQL {
       $result = new \artnum\JStore\Result();
       if (empty($options['from'])) {
          $from = new DateTime('now');
-         $from->setDate($from->format('y'), 1, 1);
+         $from->setDate($from->format('Y'), 1, 1);
          $from->setTime(0, 0, 0, 0);
          $options['from'] = $from->format('U');
       } else {
@@ -54,6 +54,7 @@ class ReservationModel extends artnum\SQL {
          ORDER BY "reservation_totUser" DESC;
        */
       $query = 'SELECT idFromUrl("reservation_creator") AS "reservation_id", "reservation_creator", COUNT("reservation_id") AS "reservation_totUser",
+                  MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
                   (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0) AS "reservation_total"
                   FROM "reservation"  
                   WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 __USER__

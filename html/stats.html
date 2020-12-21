@@ -11,6 +11,8 @@
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
       <th data-attribute="total">Total réservations</th>
       <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
+      <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
     </tr></thead>
   </table>
 </body>
@@ -43,7 +45,7 @@
      dtable.addPfunc('tsToStr', (value, entry) => {
          let d = new Date()
          d.setTime(parseInt(value) * 1000)
-         return [`${d.fullDate()}`, d.getTime()]
+         return [`${d.fullDate()} ${d.shortHour()}`, d.getTime()]
      })
      dtable.run()
    }
