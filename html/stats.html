@@ -48,7 +48,7 @@
         entry = entry[0]
         let from = parseInt(entry.first)
         let to = parseInt(entry.last)
-        let x = (((to - from) / 86400) / entry.totUser).toFixed(2)
+        let x = (parseInt(entry.totUser) / ((parseInt(to) - parseInt(from)) / 86400)).toFixed(2)
         return [`${x}`, x]
      })
      dtable.addPfunc('tsToStr', (value, entry) => {
