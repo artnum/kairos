@@ -11,12 +11,14 @@
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
       <th data-attribute="total">Total réservations</th>
       <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
       <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
       <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
     </tr></thead>
   </table>
 </body>
 <script src="../conf/app.js"></script>
+<script src="/js/Date.js"></script>
 <script src="../js/kairos.js"></script>
 <script src="../js/kairos-ui.js"></script>
 <script src="../js/stores/user.js"></script>
@@ -41,6 +43,13 @@
         entry = entry[0]
         let percent = (parseInt(entry.totUser) * 100 / parseInt(entry.total)).toFixed(2)
         return [`${percent} %`, percent]
+     })
+     dtable.addPfunc('calcPerDay', (value, entry) => {
+        entry = entry[0]
+        let from = parseInt(entry.first)
+        let to = parseInt(entry.last)
+        let x = (((to - from) / 86400) / entry.totUser).toFixed(2)
+        return [`${x}`, x]
      })
      dtable.addPfunc('tsToStr', (value, entry) => {
          let d = new Date()
