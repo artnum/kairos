@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Réservations en cours</title>
+<title>Statistiques</title>
 <link href="../css/unify.css" rel="stylesheet" />
 </head>
 <body>
+    <h1>Statistiques</h1>
+    <h2>Par personne</h2>
   <table data-source="store/Reservation/.stats" data-options="{}" >
     <thead><tr>
       <th data-attribute="@store/$creator name">Personne</th>
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
+      <th data-attribute="total">Total réservations</th>
+      <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
+      <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
+      <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
+    </tr></thead>
+  </table>
+  <h2>Par machine</h2>
+  <table data-source="store/Reservation/.machinestats" data-options="{}" >
+    <thead><tr>
+      <th data-attribute="@store/Machine/$target reference">Machine</th>
+      <th data-attribute="totUser:integer">Réservations par machines</th>
       <th data-attribute="total">Total réservations</th>
       <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
       <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>

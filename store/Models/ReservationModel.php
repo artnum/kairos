@@ -82,5 +82,53 @@ class ReservationModel extends artnum\SQL {
       return $result;
    }
 
+   function getMachineStats($options) {
+      $result = new \artnum\JStore\Result();
+      if (empty($options['from'])) {
+         $from = new DateTime('now');
+         $from->setDate($from->format('Y'), 1, 1);
+         $from->setTime(0, 0, 0, 0);
+         $options['from'] = $from->format('U');
+      } else {
+         $from = new DateTime($options['from']);
+         $options['from'] = $from->format('U');
+      }
+      if (empty($options['to'])) {
+         $to = new DateTime('now');
+         $options['to'] = $to->format('U');
+      } else {
+         $to = new DateTime($options['to']);
+         $options['to'] = $to->format('U');
+      }
+      
+      $query = 'SELECT "reservation_target" AS "reservation_id", "reservation_target", COUNT("reservation_id") AS "reservation_totUser",
+                  MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
+                  (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0) AS "reservation_total"
+                  FROM "reservation"  
+                  WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 __MACHINE__
+                  GROUP BY "reservation_target"
+                  ORDER BY "reservation_totUser" DESC';
+
+      if (empty($options['machine'])) {
+         $query = str_replace('__MACHINE__', '', $query);
+      } else {
+         $query = str_replace('__MACHINE__', ' AND "reservation_target" = :machine', $query);
+      }
+
+      $stmt = $this->get_db(true)->prepare($query);
+      $stmt->bindParam(':from', $options['from'], PDO::PARAM_INT);
+      $stmt->bindParam(':to', $options['to'], PDO::PARAM_INT);
+      if (!empty($options['machine'])) {
+         $stmt->bindParam(':machine', $options['machine'], PDO::PARAM_INT);
+      }
+
+      if ($stmt->execute()) {
+         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $result->addItem($this->unprefix($row));
+         }
+      }
+      return $result;
+   }
+
 }
 ?>
