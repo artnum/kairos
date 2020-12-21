@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Réservations en cours</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+  <table data-source="store/Reservation/.stats" data-options="{}" >
+    <thead><tr>
+      <th data-attribute="@store/$creator name">Personne</th>
+      <th data-attribute="totUser:integer">Réservations utilisateur</th>
+      <th data-attribute="total">Total réservations</th>
+      <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="../conf/app.js"></script>
+<script src="../js/kairos.js"></script>
+<script src="../js/kairos-ui.js"></script>
+<script src="../js/stores/user.js"></script>
+<script src="../js/tel.js"></script>
+<script src="../node_modules/sjcl/sjcl.js"></script>
+<script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="../node_modules/artnum/Query.js"></script>
+<script src="../node_modules/artnum/Path.js"></script>
+<script src="../node_modules/artnum/Date.js"></script>
+<script src="../node_modules/artnum/DTable.js"></script>
+<script>
+ window.onload = function () {
+   var tables = document.getElementsByTagName('TABLE')   
+   for (var i = 0; i < tables.length; i++) {
+     var dtable = new Artnum.DTable({table: tables[i]}, true)
+     dtable.URLPrefix = KAIROS.getBase()
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.addPfunc('calcPercent', (value, entry) => {
+        entry = entry[0]
+        let percent = (parseInt(entry.totUser) * 100 / parseInt(entry.total)).toFixed(2)
+        return [`${percent} %`, percent]
+     })
+     dtable.addPfunc('tsToStr', (value, entry) => {
+         let d = new Date()
+         d.setTime(parseInt(value) * 1000)
+         return [`${d.fullDate()}`, d.getTime()]
+     })
+     dtable.run()
+   }
+ }
+</script>
+</html>
