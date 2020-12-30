@@ -84,6 +84,7 @@ class ReservationModel extends artnum\SQL {
 
    function getMachineStats($options) {
       $result = new \artnum\JStore\Result();
+      $from;
       if (empty($options['from'])) {
          $from = new DateTime('now');
          $from->setDate($from->format('Y'), 1, 1);
@@ -93,6 +94,7 @@ class ReservationModel extends artnum\SQL {
          $from = new DateTime($options['from']);
          $options['from'] = $from->format('U');
       }
+      $to;
       if (empty($options['to'])) {
          $to = new DateTime('now');
          $options['to'] = $to->format('U');
@@ -101,6 +103,11 @@ class ReservationModel extends artnum\SQL {
          $options['to'] = $to->format('U');
       }
       
+      $diffPeriod = $from->diff($to, true);
+      $sundaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 7);
+      $saturdaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 6);
+
+
       $query = 'SELECT "reservation_target" AS "reservation_id", "reservation_target", COUNT("reservation_id") AS "reservation_totUser",
                   MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
                   (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0) AS "reservation_total"
@@ -122,7 +129,7 @@ class ReservationModel extends artnum\SQL {
          $stmt->bindParam(':machine', $options['machine'], PDO::PARAM_INT);
       }
 
-$query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begin", "reservation_end" AS "end", "reservation_deliveryBegin" AS "deliveryBegin", "reservation_deliveryEnd" AS "deliveryEnd"
+      $query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begin", "reservation_end" AS "end", "reservation_deliveryBegin" AS "deliveryBegin", "reservation_deliveryEnd" AS "deliveryEnd"
                  FROM "reservation" 
                  WHERE UNIX_TIMESTAMP(STR_TO_DATE("reservation_begin", \'%Y-%m-%dT%T\')) <= :to 
                    AND UNIX_TIMESTAMP(STR_TO_DATE("reservation_end", \'%Y-%m-%dT%T\')) >= :from 
@@ -143,6 +150,11 @@ $query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begi
                while ($reservation = $subQuery->fetch(PDO::FETCH_ASSOC)) {
                   $begin = new DateTime($reservation['begin']);
                   $end = new DateTime($reservation['end']);
+                  
+                  $days = $begin->diff($end, true)->days + 1;
+                  $sundays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 7);
+                  $saturdays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 6);
+
                   $dBegin = is_null($reservation['deliveryBegin']) ? null : new DateTime($reservation['deliveryBegin']);
                   $dEnd = is_null($reservation['deliveryEnd']) ? null : new DateTime($reservation['deliveryEnd']);
 
@@ -155,28 +167,26 @@ $query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begi
                      $dBegin = null;
                   }
 
-                  $diffA = abs($end->getTimestamp() - $begin->getTimestamp());
-                  $diffB = 0;
                   if (!is_null($dBegin)) {
-                     $diffB = abs($dBegin->getTimestamp() - $begin->getTimestamp());
-                     $entry['daysWaiting'] += $diffB / 86400;
+                     $diffB = $dBegin->diff($begin, true)->days;
+                     $entry['daysWaiting'] += $diffB;
                   }
-                  $diffC = 0;
                   if (!is_null($dEnd)) {
-                     $diffC = abs($end->getTimestamp() - $dEnd->getTimestamp());
-                     $entry['daysWaiting'] += $diffC / 86400;
+                     $diffC = $dEnd->diff($end, true)->days;
+                     $entry['daysWaiting'] += $diffC;
                   }
 
                   if ($reservation['status'] == 1) {
-                     $entry['daysReserved'] += $diffA / 86400;
+                     $entry['daysReserved'] += $days - ($saturdays + $sundays);
                   } else if ($reservation['status'] == 3) {
-                     $entry['daysRepair'] += $diffA / 86400;
+                     $entry['daysRepair'] += $days- ($saturdays + $sundays);
                   }
                }
             }
-            $entry['daysRepair'] = round($entry['daysRepair'], 2);
-            $entry['daysWaiting'] = round($entry['daysWaiting'], 2);
-            $entry['daysReserved'] = round($entry['daysReserved'], 2);
+            $entry['daysRepair'] = $entry['daysRepair'];
+            $entry['daysWaiting'] = $entry['daysWaiting'];
+            $entry['daysReserved'] = $entry['daysReserved'];
+            $entry['daysPeriod'] = $diffPeriod->days - ($sundaysPeriod + $saturdaysPeriod);
             $result->addItem($entry);
          }
       }

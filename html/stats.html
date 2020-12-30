@@ -23,10 +23,10 @@
     <thead><tr>
       <th data-attribute="@store/Machine/$target reference">Machine</th>
       <th data-attribute="totUser:integer">Réservations</th>
-      <th data-attribute="daysReserved:float">Jours "réservé"</th>
-      <th data-attribute="daysRepair:float">Jours "entretien"</th>
-      <th data-attribute="daysWaiting:float">Jours livraison différée</th>
-      <th data-process="calcPercentYear" data-sort-type="float">Pourcent sur 365j</th>
+      <th data-attribute="daysReserved:integer">Jours "réservé"</th>
+      <th data-attribute="daysRepair:integer">Jours "entretien"</th>
+      <th data-attribute="daysWaiting:integer">Jours livraison différée</th>
+      <th data-process="calcPercentYear" data-sort-type="float">Taux d'utilisation</th>
       <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
       <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
     </tr></thead>
@@ -62,8 +62,8 @@
 
      dtable.addPfunc('calcPercentYear', (value, entry) => {
         entry = entry[0]
-        let percent = (parseInt(entry.daysReserved) * 100 / 365).toFixed(2)
-        return [`${percent} %`, percent]
+        let percent = (parseInt(entry.daysReserved) * 100 / entry.daysPeriod).toFixed(2)
+        return [`${percent} % (${entry.daysPeriod})`, percent]
      })
      dtable.addPfunc('calcPerDay', (value, entry) => {
         entry = entry[0]
