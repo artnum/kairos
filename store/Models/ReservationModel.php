@@ -142,6 +142,16 @@ class ReservationModel extends artnum\SQL {
                   $end = new DateTime($reservation['end']);
                   $dBegin = is_null($reservation['deliveryBegin']) ? null : new DateTime($reservation['deliveryBegin']);
                   $dEnd = is_null($reservation['deliveryEnd']) ? null : new DateTime($reservation['deliveryEnd']);
+
+                  if ($end->getTimestamp() > $options['to']) {
+                     $end = new DateTime("@$options[to]");
+                     $dEnd = null;
+                  }
+                  if ($begin->getTimestamp() < $options['from']) {
+                     $begin = new DateTime("@$options[from]");
+                     $dBegin = null;
+                  }
+
                   $diffA = abs($end->getTimestamp() - $begin->getTimestamp());
                   $diffB = 0;
                   if (!is_null($dBegin)) {
