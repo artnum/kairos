@@ -93,13 +93,8 @@ body.waiting * {
 #Sight {
     position: absolute;
     z-index: 400;
-    background-color: var(--highlight-color);
-    opacity: 0.2;
+    background-color: hsla(0, 0%, 0%, 0.1) !important;
     pointer-events: none;
-}
-
-.reservationContainer .entry:hover {
-    background-color: hsla(var(--default-highlight-color-base), 0.2) !important;
 }
 
 /* Menu */

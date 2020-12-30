@@ -121,16 +121,22 @@ define([
           if (!this.nControl) { return }
           if (!msgData.value) { return }
           if (!msgData.value.type) { return }
-          if (!msgData.value.type.color) { return }
-          let node = this.nControl.firstElementChild
-          while (node && !node.classList.contains('tools')) {
-            node = node.nextElementSibling
+          if (!msgData.value.type.severity) { return }
+   
+          let eventType = ''
+          switch(Math.trunc(msgData.value.type.severity / 1000)) {
+            case 0: eventType = 'eventNone'; break
+            case 1: eventType = 'eventCheck'; break
+            case 2: eventType = 'eventError'; break
+            case 3: eventType = 'eventFailure'; break
           }
-          node = node.firstElementChild
-          while (node && !node.classList.contains('fa-shield-alt')) {
-            node = node.nextElementSibling
-          }
-          window.requestAnimationFrame(() => node.style.color = msgData.value.type.color)
+          window.requestAnimationFrame(() => {
+            this.domNode.classList.remove('eventNone')
+            this.domNode.classList.remove('evenCheck')
+            this.domNode.classList.remove('eventError')
+            this.domNode.classList.remove('eventFailure')
+            this.domNode.classList.add(eventType)
+          })
           break
       }
     },

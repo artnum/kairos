@@ -25,6 +25,7 @@
 
 
 .reservationContainer .entry .control .tools .fa-shield-alt {
+    color: black;
     cursor: pointer;
 }
 
@@ -173,4 +174,30 @@
     z-index: 99;
     box-shadow: 0px 0px 26px 10px hsla(300, 100%, 50%, 1) !important;
     filter: none !important;
+}
+
+
+.entry.eventFailure {
+    background-color: hsla(0, 100%, 50%, 0.2) !important;
+}
+
+.entry.eventError {
+    background-color: hsla(60, 100%, 50%, 0.2) !important;
+}
+
+.entry.eventCheck {
+    background-color: hsla(240, 100%, 50%, 0.2) !important;
+}
+
+.entry:hover {
+    background-color: hsla(0, 0%, 0%, 0.1) !important;
+}
+.entry.eventFailure:hover {
+    background-color: hsla(0, 100%, 50%, 0.4) !important;
+}
+.entry.eventError:hover {
+    background-color: hsla(60, 100%, 50%, 0.4) !important;
+}
+.entry.eventCheck:hover {
+    background-color: hsla(240, 100%, 50%, 0.4) !important;
 }
