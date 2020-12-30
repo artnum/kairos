@@ -122,9 +122,12 @@ class ReservationModel extends artnum\SQL {
          $stmt->bindParam(':machine', $options['machine'], PDO::PARAM_INT);
       }
 
-      $query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begin", "reservation_end" AS "end", "reservation_deliveryBegin" AS "deliveryBegin", "reservation_deliveryEnd" AS "deliveryEnd"
+$query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begin", "reservation_end" AS "end", "reservation_deliveryBegin" AS "deliveryBegin", "reservation_deliveryEnd" AS "deliveryEnd"
                  FROM "reservation" 
-                 WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_target" = :target';
+                 WHERE UNIX_TIMESTAMP(STR_TO_DATE("reservation_begin", \'%Y-%m-%dT%T\')) <= :to 
+                   AND UNIX_TIMESTAMP(STR_TO_DATE("reservation_end", \'%Y-%m-%dT%T\')) >= :from 
+                   AND COALESCE("reservation_deleted", 0) = 0 
+                   AND "reservation_target" = :target';
       if ($stmt->execute()) {
          while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $entry = $this->unprefix($row);
