@@ -122,9 +122,49 @@ class ReservationModel extends artnum\SQL {
          $stmt->bindParam(':machine', $options['machine'], PDO::PARAM_INT);
       }
 
+      $query2 = 'SELECT "reservation_status" AS "status", "reservation_begin" AS "begin", "reservation_end" AS "end", "reservation_deliveryBegin" AS "deliveryBegin", "reservation_deliveryEnd" AS "deliveryEnd"
+                 FROM "reservation" 
+                 WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_target" = :target';
       if ($stmt->execute()) {
          while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $result->addItem($this->unprefix($row));
+            $entry = $this->unprefix($row);
+
+            $subQuery = $this->get_db(true)->prepare($query2);
+            $subQuery->bindParam(':from', $options['from'], PDO::PARAM_INT);
+            $subQuery->bindParam(':to', $options['to'], PDO::PARAM_INT);
+            $subQuery->bindParam(':target', $entry['id'], PDO::PARAM_STR);
+            $entry['daysReserved'] = 0;
+            $entry['daysRepair'] = 0;
+            $entry['daysWaiting'] = 0;
+            if ($subQuery->execute()) {
+               while ($reservation = $subQuery->fetch(PDO::FETCH_ASSOC)) {
+                  $begin = new DateTime($reservation['begin']);
+                  $end = new DateTime($reservation['end']);
+                  $dBegin = is_null($reservation['deliveryBegin']) ? null : new DateTime($reservation['deliveryBegin']);
+                  $dEnd = is_null($reservation['deliveryEnd']) ? null : new DateTime($reservation['deliveryEnd']);
+                  $diffA = abs($end->getTimestamp() - $begin->getTimestamp());
+                  $diffB = 0;
+                  if (!is_null($dBegin)) {
+                     $diffB = abs($dBegin->getTimestamp() - $begin->getTimestamp());
+                     $entry['daysWaiting'] += $diffB / 86400;
+                  }
+                  $diffC = 0;
+                  if (!is_null($dEnd)) {
+                     $diffC = abs($end->getTimestamp() - $dEnd->getTimestamp());
+                     $entry['daysWaiting'] += $diffC / 86400;
+                  }
+
+                  if ($reservation['status'] == 1) {
+                     $entry['daysReserved'] += $diffA / 86400;
+                  } else if ($reservation['status'] == 3) {
+                     $entry['daysRepair'] += $diffA / 86400;
+                  }
+               }
+            }
+            $entry['daysRepair'] = round($entry['daysRepair'], 2);
+            $entry['daysWaiting'] = round($entry['daysWaiting'], 2);
+            $entry['daysReserved'] = round($entry['daysReserved'], 2);
+            $result->addItem($entry);
          }
       }
       return $result;
