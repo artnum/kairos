@@ -150,13 +150,6 @@ class ReservationModel extends artnum\SQL {
                while ($reservation = $subQuery->fetch(PDO::FETCH_ASSOC)) {
                   $begin = new DateTime($reservation['begin']);
                   $end = new DateTime($reservation['end']);
-                  
-                  $days = $begin->diff($end, true)->days + 1;
-                  $sundays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 7);
-                  $saturdays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 6);
-
-                  $dBegin = is_null($reservation['deliveryBegin']) ? null : new DateTime($reservation['deliveryBegin']);
-                  $dEnd = is_null($reservation['deliveryEnd']) ? null : new DateTime($reservation['deliveryEnd']);
 
                   if ($end->getTimestamp() > $options['to']) {
                      $end = new DateTime("@$options[to]");
@@ -166,6 +159,13 @@ class ReservationModel extends artnum\SQL {
                      $begin = new DateTime("@$options[from]");
                      $dBegin = null;
                   }
+
+                  $days = $begin->diff($end, true)->days + 1;
+                  $sundays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 7);
+                  $saturdays = intval($days / 7) + ($begin->format('N') + $days % 7 >= 6);
+
+                  $dBegin = is_null($reservation['deliveryBegin']) ? null : new DateTime($reservation['deliveryBegin']);
+                  $dEnd = is_null($reservation['deliveryEnd']) ? null : new DateTime($reservation['deliveryEnd']);
 
                   if (!is_null($dBegin)) {
                      $diffB = $dBegin->diff($begin, true)->days;
