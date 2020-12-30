@@ -179,11 +179,15 @@ Arrival.prototype.done = function (event) {
   }
 
   KairosEvent('autoReturn', {reservation: reservationId, append: true}, event.target).then(() => {
-    Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
-      if (result.success && result.length === 1) {
-        Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
-        this.RChannel.postMessage({op: 'touch', id: reservationId})
-      }
+    let url = new URL(`${KAIROS.getBase()}/store/Arrival/${req.id}`)
+    fetch(url, {method: 'PATCH', body: JSON.stringify(req)}).then(response => {
+      if (!response.ok) { KAIROS.error('Erreur serveur'); return }
+      response.json(result => {
+        if (result.length === 1) {
+          Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
+          this.RChannel.postMessage({op: 'touch', id: reservationId})
+        }
+      })
     })
   })
 }
@@ -204,18 +208,22 @@ Arrival.prototype.doneAndChecked = function (event) {
   }
 
   KairosEvent('autoReturn', {reservation: reservationId, append: true}, event.target).then((kevent) => {
-    Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
-      if (result.success && result.length === 1) {
-        KairosEvent('autoCheck', {
-          reservation: reservationId,
-          type: KAIROS.events.autoCheck[0],
-          technician: kevent.technician,
-          comment: '',
-          append: true
-        })
-        Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
-        this.RChannel.postMessage({op: 'touch', id: reservationId})
-      }
+    let url = new URL(`${KAIROS.getBase()}/store/Arrival/${req.id}`)
+    fetch(url, {method: 'PATCH', body: JSON.stringify(req)}).then(response => {
+      if (!response.ok) { KAIROS.error('Erreur serveur'); return }
+      response.json().then(result => {
+        if (result.success && result.length === 1) {
+          KairosEvent('autoCheck', {
+            reservation: reservationId,
+            type: KAIROS.events.autoCheck[0],
+            technician: kevent.technician,
+            comment: '',
+            append: true
+          })
+          Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
+          this.RChannel.postMessage({op: 'touch', id: reservationId})
+        }
+      })
     })
   })
 }
@@ -333,93 +341,110 @@ Arrival.prototype.add = async function (retval) {
   dom.appendChild(this.html.label(retval._target.target))
 
   let locality = retval.locality ? retval.locality : retval._target.locality
-  if (locality) {
-    if (/^PC\/[0-9a-f]{32,32}$/.test(locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(locality)) {
-      let locQuery = await Artnum.Query.exec(Artnum.Path.url(`store/${locality}`))
-      if (locQuery.success && locQuery.length === 1) {
-        if (locQuery.data.np) {
-          locality = `${locQuery.data.np} ${locQuery.data.name} (${locQuery.data.state.toUpperCase()})`
-        } else {
-          locality = `Dépôt ${locQuery.data.name}`
-        }
-      }
-    }
-  } else {
-    locality = ''
-  }
-  dom.appendChild(this.html.label(locality))
-
-  dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
-  dom.appendChild(this.html.label(new Date(retval._target.end)))
-  if (retval._target.contacts && retval._target.contacts._client && retval._target.contacts._client[0]) {
-    var addr = new Address(retval._target.contacts._client[0])
-    dom.appendChild(this.html.label(addr.toArray()[0]))
-  } else {
-    dom.appendChild(this.html.label(''))
-  }
-  if (retval._target.contacts && retval._target.contacts._retour) {
-    addr = new Address(retval._target.contacts._retour[0])
-    dom.appendChild(this.html.label(addr.toArray()))
-  } else if (retval._target.contacts && retval._target.contacts._place) {
-    addr = new Address(retval._target.contacts._place[0])
-    dom.appendChild(this.html.label(addr.toArray()))
-  } else if (retval._target.contacts && retval._target.contacts._responsable) {
-    addr = new Address(retval._target.contacts._responsable[0])
-    dom.appendChild(this.html.label(addr.toArray()))
-  } else {
-    dom.appendChild(this.html.label(''))
-  }
-  dom.appendChild(this.html.label(retval.other))
-  var equipment = ''
-  if (retval._target.complements.length > 0) {
-    retval._target.complements.forEach(function (c) {
-      var duration = ''
-      if (c.follow === '1') {
-        duration = 'toute la réservation'
+  let locPromise = new Promise((resolve, reject) => {
+    if (locality) {
+      console.log(locality)
+      if (/^PC\/[0-9a-f]{32,32}$/.test(locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(locality)) {
+        let url = new URL(`${KAIROS.getBase()}/store/${locality}`)
+        fetch(url).then(response => {
+          if (!response.ok) { resolve(''); return}
+          response.json().then(result => {
+            if (result.length === 1) {
+              let data = Array.isArray(result.data) ? result.data[0] : result.data
+              if (data.np) {
+                locality = `${data.np} ${data.name} (${data.state.toUpperCase()})`
+              } else {
+                locality = `Dépôt ${data.name}`
+              }
+              resolve(locality)
+            } else {
+              resolve('')
+            }
+          })
+        })
       } else {
-        c.begin = new Date(c.begin)
-        c.end = new Date(c.end)
-        duration = 'du ' + c.begin.fullDate() + ' ' + c.begin.shortHour() + ' au ' + c.end.fullDate() + ' ' + c.end.shortHour()
+        resolve(locality)
       }
+    } else {
+      resolve('')
+    }
+  })
 
-      equipment += '— ' + c.number + ' ' + c.type.name + ' ' + duration + '\n'
-    })
-  }
-  if (retval._target.equipment) {
-    equipment += retval._target.equipment
-  }
-  dom.appendChild(this.html.label(equipment, 'wide'))
-  dom.appendChild(this.html.label(retval.comment, 'wide'))
+  locPromise.then(locality => {
+    dom.appendChild(this.html.label(locality))
 
-  createLinkFromPhone(dom)
+    dom.appendChild(this.html.label(retval.contact ? retval.contact : retval._target.address))
+    dom.appendChild(this.html.label(new Date(retval._target.end)))
+    if (retval._target.contacts && retval._target.contacts._client && retval._target.contacts._client[0]) {
+      var addr = new Address(retval._target.contacts._client[0])
+      dom.appendChild(this.html.label(addr.toArray()[0]))
+    } else {
+      dom.appendChild(this.html.label(''))
+    }
+    if (retval._target.contacts && retval._target.contacts._retour) {
+      addr = new Address(retval._target.contacts._retour[0])
+      dom.appendChild(this.html.label(addr.toArray()))
+    } else if (retval._target.contacts && retval._target.contacts._place) {
+      addr = new Address(retval._target.contacts._place[0])
+      dom.appendChild(this.html.label(addr.toArray()))
+    } else if (retval._target.contacts && retval._target.contacts._responsable) {
+      addr = new Address(retval._target.contacts._responsable[0])
+      dom.appendChild(this.html.label(addr.toArray()))
+    } else {
+      dom.appendChild(this.html.label(''))
+    }
+    dom.appendChild(this.html.label(retval.other))
+    var equipment = ''
+    if (retval._target.complements.length > 0) {
+      retval._target.complements.forEach(function (c) {
+        var duration = ''
+        if (c.follow === '1') {
+          duration = 'toute la réservation'
+        } else {
+          c.begin = new Date(c.begin)
+          c.end = new Date(c.end)
+          duration = 'du ' + c.begin.fullDate() + ' ' + c.begin.shortHour() + ' au ' + c.end.fullDate() + ' ' + c.end.shortHour()
+        }
 
-  if (retval.inprogress && !retval.done) {
-  } else if (!retval.inprogress && !retval.done) {
-  }
+        equipment += '— ' + c.number + ' ' + c.type.name + ' ' + duration + '\n'
+      })
+    }
+    if (retval._target.equipment) {
+      equipment += retval._target.equipment
+    }
+    dom.appendChild(this.html.label(equipment, 'wide'))
+    dom.appendChild(this.html.label(retval.comment, 'wide'))
 
-  let dBtn = document.createElement('BUTTON')
-  dBtn.innerHTML = '<i class="fab fa-fort-awesome" aria-hidden="true"></i> Ramenée'
-  let pBtn = document.createElement('BUTTON')
-  pBtn.innerHTML = '<i class="far fa-calendar-check" aria-hidden="true"></i> En cours'
-  let dcBtn = document.createElement('BUTTON')
-  dcBtn.innerHTML = '<i class="fas fa-church" aria-hidden="true"></i> Ramenée et contrôlée'
+    createLinkFromPhone(dom)
 
-  dom.appendChild(this.html.cell([pBtn, dBtn, dcBtn], magnitude))
-  let doneBtn = new MButton(dBtn, { set: () => (new Date()).toISOString(), unset: '' })
-  let progBtn = new MButton(pBtn, { set: () => (new Date()).toISOString(), unset: '' })
-  let doneAndCheckdBtn = new MButton(dcBtn, { set: () => (new Date()).toISOString(), unset: '' })
-  if (retval.inprogress) {
-    progBtn.setValue(true)
-  }
+    if (retval.inprogress && !retval.done) {
+    } else if (!retval.inprogress && !retval.done) {
+    }
 
-  retval.RChannel = this.RChannel
-  doneBtn.addEventListener('click', this.done.bind(retval))
-  progBtn.addEventListener('click', this.progress.bind(retval))
-  doneAndCheckdBtn.addEventListener('click', this.doneAndChecked.bind(retval))
-  dom.addEventListener('click', function () {
-    this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
-    this.bc.postMessage({what: 'window', type: 'close'})
-  }.bind(this))
+    let dBtn = document.createElement('BUTTON')
+    dBtn.innerHTML = '<i class="fab fa-fort-awesome" aria-hidden="true"></i> Ramenée'
+    let pBtn = document.createElement('BUTTON')
+    pBtn.innerHTML = '<i class="far fa-calendar-check" aria-hidden="true"></i> En cours'
+    let dcBtn = document.createElement('BUTTON')
+    dcBtn.innerHTML = '<i class="fas fa-church" aria-hidden="true"></i> Ramenée et contrôlée'
 
-  this.parent.appendChild(dom)
+    dom.appendChild(this.html.cell([pBtn, dBtn, dcBtn], magnitude))
+    let doneBtn = new MButton(dBtn, { set: () => (new Date()).toISOString(), unset: '' })
+    let progBtn = new MButton(pBtn, { set: () => (new Date()).toISOString(), unset: '' })
+    let doneAndCheckdBtn = new MButton(dcBtn, { set: () => (new Date()).toISOString(), unset: '' })
+    if (retval.inprogress) {
+      progBtn.setValue(true)
+    }
+
+    retval.RChannel = this.RChannel
+    doneBtn.addEventListener('click', this.done.bind(retval))
+    progBtn.addEventListener('click', this.progress.bind(retval))
+    doneAndCheckdBtn.addEventListener('click', this.doneAndChecked.bind(retval))
+    dom.addEventListener('click', function () {
+      this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
+      this.bc.postMessage({what: 'window', type: 'close'})
+    }.bind(this))
+
+    this.parent.appendChild(dom)
+  })
 }
