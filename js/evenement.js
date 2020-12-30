@@ -114,6 +114,7 @@ function KairosEvent(type, detail, place = null) {
 
                     whoDid.addEventListener('submit', event => {
                         event.preventDefault()
+                        this.technician = s.value
                         getBody(type, Object.assign(detail, {technician: s.value})).then(bodies => {
                             bodies.forEach(body => {
                                 promises.push(fetch(url, { method: 'POST', body: JSON.stringify(body) }))

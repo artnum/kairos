@@ -188,6 +188,38 @@ Arrival.prototype.done = function (event) {
   })
 }
 
+Arrival.prototype.doneAndChecked = function (event) {
+  event.stopPropagation()
+
+  var line = null
+  for (line = event.target; line.nodeName !== 'TR'; line = line.parentNode);
+  var reservationId = line.getAttribute('data-reservation')
+
+  var req = { id: this.id }
+  if (this.done) {
+    req.done = ''
+  } else {
+    var now = new Date()
+    req.done = now.toISOString()
+  }
+
+  KairosEvent('autoReturn', {reservation: reservationId, append: true}, event.target).then((kevent) => {
+    Artnum.Query.exec(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PATCH', body: req}).then((result) => {
+      if (result.success && result.length === 1) {
+        KairosEvent('autoCheck', {
+          reservation: reservationId,
+          type: KAIROS.events.autoCheck[0],
+          technician: kevent.technician,
+          comment: '',
+          append: true
+        })
+        Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
+        this.RChannel.postMessage({op: 'touch', id: reservationId})
+      }
+    })
+  })
+}
+
 Arrival.prototype.progress = function (event) {
   event.stopPropagation()
 
@@ -366,13 +398,16 @@ Arrival.prototype.add = async function (retval) {
   }
 
   let dBtn = document.createElement('BUTTON')
-  dBtn.innerHTML = '<i class="fab fa-fort-awesome" aria-hidden="true"></i> Retournée'
+  dBtn.innerHTML = '<i class="fab fa-fort-awesome" aria-hidden="true"></i> Ramenée'
   let pBtn = document.createElement('BUTTON')
   pBtn.innerHTML = '<i class="far fa-calendar-check" aria-hidden="true"></i> En cours'
-  
-  dom.appendChild(this.html.cell([pBtn, dBtn], magnitude))
+  let dcBtn = document.createElement('BUTTON')
+  dcBtn.innerHTML = '<i class="fas fa-church" aria-hidden="true"></i> Ramenée et contrôlée'
+
+  dom.appendChild(this.html.cell([pBtn, dBtn, dcBtn], magnitude))
   let doneBtn = new MButton(dBtn, { set: () => (new Date()).toISOString(), unset: '' })
   let progBtn = new MButton(pBtn, { set: () => (new Date()).toISOString(), unset: '' })
+  let doneAndCheckdBtn = new MButton(dcBtn, { set: () => (new Date()).toISOString(), unset: '' })
   if (retval.inprogress) {
     progBtn.setValue(true)
   }
@@ -380,7 +415,7 @@ Arrival.prototype.add = async function (retval) {
   retval.RChannel = this.RChannel
   doneBtn.addEventListener('click', this.done.bind(retval))
   progBtn.addEventListener('click', this.progress.bind(retval))
-
+  doneAndCheckdBtn.addEventListener('click', this.doneAndChecked.bind(retval))
   dom.addEventListener('click', function () {
     this.bc.postMessage({what: 'reservation', id: retval.target, type: 'open'})
     this.bc.postMessage({what: 'window', type: 'close'})

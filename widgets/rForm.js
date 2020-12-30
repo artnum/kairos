@@ -631,6 +631,7 @@ define([
         addControl: new MButton(this.nControl, {set:true, unset: false}),
         addEnd: new MButton(this.nConfirmed, { set: () => (new Date()).toISOString(), unset: '' }),
         addEndAndDone: new MButton(this.nConfirmedAndReturned),
+        addConfReturnAndChecked: new MButton(this.nConfReturnAndChecked),
         addFault: new MButton(this.nFault),
         addBreak: new MButton(this.nBreak),
         addDiesel: new MButton(this.nDiesel),
@@ -666,6 +667,22 @@ define([
         this.Buttons.addEnd.setValue(true)
         this.Buttons.addArrivalInProgress.setValue(true)
         this.Buttons.addArrivalDone.setValue(true)
+      })
+      this.Buttons.addConfReturnAndChecked.addEventListener('click', event => {
+        this.Buttons.addEnd.setValue(true)
+        this.Buttons.addArrivalInProgress.setValue(true)
+        this.Buttons.addArrivalDone.setValue(true)
+        UserStore.getCurrentUser().then(current => {
+          this.doSave().then(() => {
+            KairosEvent('autoCheck', {
+              reservation: this.reservation.id,
+              type: KAIROS.events.autoCheck[0],
+              technician: current.getUrl(),
+              comment: '',
+              append: true
+            }).then(() => { this.interventionReload() })
+          })
+        })
       })
 
       this.Buttons.addEnd.addEventListener('set', event => {
