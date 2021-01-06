@@ -121,10 +121,9 @@ define([
           if (!this.nControl) { return }
           if (!msgData.value) { return }
           if (!msgData.value.type) { return }
-          if (!msgData.value.type.severity) { return }
-   
+          if (msgData.value.type.severity === undefined || !Number.isInteger(parseInt(msgData.value.type.severity))) { return }
           let eventType = ''
-          switch(Math.trunc(msgData.value.type.severity / 1000)) {
+          switch(Math.trunc(parseInt(msgData.value.type.severity) / 1000)) {
             case 0: eventType = 'eventNone'; break
             case 1: eventType = 'eventCheck'; break
             case 2: eventType = 'eventError'; break
@@ -132,7 +131,7 @@ define([
           }
           window.requestAnimationFrame(() => {
             this.domNode.classList.remove('eventNone')
-            this.domNode.classList.remove('evenCheck')
+            this.domNode.classList.remove('eventCheck')
             this.domNode.classList.remove('eventError')
             this.domNode.classList.remove('eventFailure')
             this.domNode.classList.add(eventType)
