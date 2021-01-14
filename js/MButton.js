@@ -87,6 +87,10 @@ function MButton(button, choice = []) {
         get: this.getValue.bind(this),
         set: this.setValue.bind(this)
       })
+      Object.defineProperty(this.MButton, '_value', {
+        get: this.getValue.bind(this),
+        set: this._setValue.bind(this)
+      })
       new Proxy(button, {
         set: function(target, property, value, receiver) {
           if (property === 'value') {
@@ -233,15 +237,9 @@ MButton.prototype._setValue = function (value) {
   if (value === undefined || value === 'false' || !value) {
     this.state = 0
     window.requestAnimationFrame(() => this.Button.classList.remove('set'))
-    if (this.Events['unset'] !== undefined && this.Events['unset'] instanceof Function) {
-      this.Events['unset']()
-    }
   } else {
     this.state = 1
     window.requestAnimationFrame(() => this.Button.classList.add('set'))
-    if (this.Events['set'] !== undefined && this.Events['set'] instanceof Function) {
-      this.Events['set']()
-    }
   }
   this.setLinkedState(this.state)
   this._value = value
@@ -250,6 +248,15 @@ MButton.prototype._setValue = function (value) {
 
 MButton.prototype.setValue = function (value) {
   let v = this._setValue(value)
+  if (this.state) {
+    if (this.Events['set'] !== undefined && this.Events['set'] instanceof Function) {
+      this.Events['set']()
+    }
+  } else {
+    if (this.Events['unset'] !== undefined && this.Events['unset'] instanceof Function) {
+      this.Events['unset']()
+    }
+  }
   if (typeof value === 'boolean') {
     if (typeof v === 'function') {
       this._value = v()

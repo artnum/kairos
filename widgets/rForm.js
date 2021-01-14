@@ -704,10 +704,10 @@ define([
         Promise.all([fetchArrival, UserStore.getCurrentUser()]).then(([arrival, user]) => {
           if (arrival !== null) {
             if (arrival.inprogress) {
-              this.Buttons.addArrivalInProgress.setValue(true)
+              this.Buttons.addArrivalInProgress._setValue(true)
             }
             if (arrival.done) {
-              this.Buttons.addArrivalDone.setValue(true)
+              this.Buttons.addArrivalDone._setValue(true)
             }
             this.nArrivalDate.set('value', arrival.reported)
             this.nArrivalTime.set('value', arrival.reported)
@@ -1456,13 +1456,13 @@ define([
       /* if return is populated be deleted, we still populate the form as to allow to undelete with having the user needing to rewrite everything */
       if ((retval = this.reservation.get('_arrival'))) {
         if (retval.id && !retval.deleted) {
-          this.nConfirmed.value = true
+          this.nConfirmed._value = true
         }
 
         this.nArrivalInprogress.value = retval.inprogress
         if (this.nArrivalInprogress.value) {
           this.nArrivalDone.disabled = false
-          this.nArrivalDone.value = retval.done
+          this.nArrivalDone._value = retval.done
         } else {
           this.nArrivalDone.disabled = true
         }
