@@ -483,10 +483,17 @@ define([
               for (let i = 0; i < results.length; i++) {  
                 let entry = results.data[i]
                 if (types.indexOf(entry.type) === -1) {
-                  let query = fetch(new URL(entry.type, KAIROS.getBase()))
+
+                  /* complete url, use only two last parts relative to current server */
+                  if (/^https?\:\/\/.*/.test(entry.type)) {
+                    let type = entry.type.split('/')
+                    type.splice(0, type.length - 2)
+                    entry.type = type.join('/')
+                  }
+                  let query = fetch(new URL(`${KAIROS.getBase()}/store/${entry.type}`))
                   queries.push(new Promise((resolve, reject) => {
                     query.then (response => {
-                      if (!response.ok) { resolvedType[entry.type] = null; return }
+                      if (!response.ok) { resolve(null); return }
                       response.json().then(result => {
                         if (result.length !== 1) { resolve(null); return }
                         if (Array.isArray(result.data)) { resolve(result.data[0]) }
@@ -503,6 +510,7 @@ define([
                   let type = complements[i].type.split('/')
                   type = type[type.length - 1]
                   for (let j = 0; j < types.length; j++) {
+                    if (!types[j]) { continue }
                     if (types[j].id === type) {
                       complements[i].type = types[j]
                     }
