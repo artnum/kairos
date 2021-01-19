@@ -38,19 +38,29 @@ define([
             }
           } catch (error) { /* NOP */ }
         }
-        Query.exec(Path.url(`store/${id}`)).then((results) => {
-          entry = null
-          if (results.success && results.length === 1) {
-            entry = results.data
-            entry.label = this.getLabel(entry)
-            entry.printableLabel = entry.label
-            entry.value = id
+        if (/^PC\/[0-9a-f]{32,32}$/.test(id) || /^Warehouse\/[a-zA-Z0-9]*$/.test(id)) {
+          Query.exec(Path.url(`store/${id}`)).then((results) => {
+            entry = null
+            if (results.success && results.length === 1) {
+              entry = results.data
+              entry.label = this.getLabel(entry)
+              entry.printableLabel = entry.label
+              entry.value = id
 
-            entry.lastFetch = new Date().getTime()
-            window.localStorage.setItem(`location/locality/${id}`, JSON.stringify(entry))
-          }
-          resolve(entry)
-        }, (error) => { console.log(error); resolve(null) })
+              entry.lastFetch = new Date().getTime()
+              window.localStorage.setItem(`location/locality/${id}`, JSON.stringify(entry))
+            }
+            resolve(entry)
+          }, (error) => { console.log(error); resolve(null) })
+        } else {
+          /* manual entry */
+          resolve({
+            label: id,
+            printableLabel: id,
+            value: id,
+            lastFetch: new Date().getTime()
+          })
+        }
       })
     },
     query: function (txt) {
