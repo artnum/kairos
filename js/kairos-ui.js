@@ -116,3 +116,107 @@ document.addEventListener('keyup', event => {
         }
     }
 }, {capture: true})
+
+KAIROS.searchResults = function () {
+    let closeSearchResult = function () {
+        if (!KAIROS.searchResults.box) { return }
+        if (!KAIROS.searchResults.box.parentNode) { return }
+        if (KAIROS.searchResults.boxDelete) { return }
+        KAIROS.searchResults.boxDelete = 1
+        window.requestAnimationFrame(() => { 
+            KAIROS.searchResults.box.parentNode.removeChild(KAIROS.searchResults.box) 
+            delete KAIROS.searchResults.boxDelete
+        })
+    }
+    if (KAIROS.searchResults.box) {
+        closeSearchResult()
+        KAIROS.removeClosableFromStack(closeSearchResult)
+    }
+    
+    KAIROS.searchResults.box = document.createElement('DIV')
+    KAIROS.searchResults.box.classList.add('searchResult')
+    KAIROS.searchResults.box.style.setProperty('z-index', KAIROS.zMax())
+    KAIROS.stackClosable(closeSearchResult)
+    window.requestAnimationFrame(() => { document.body.appendChild(KAIROS.searchResults.box) })
+
+
+    return KAIROS.searchResults.box
+}
+
+KAIROS.zMax = function (node = null) {
+    if (node === null) {
+        let maxLevel = 0
+        let deepest = function (element, level = 0) {
+            for (let e = element.firstElementChild; e; e = e.nextElementChild) {
+                deepest(e, ++level)
+                if (level > maxLevel) {
+                    maxLevel = level
+                    node = e
+                    console.log(node, maxLevel)
+                }
+            }
+        }
+        deepest(document.body)
+    }
+    let zindex = 0
+    let level = 0
+    do {
+        let zx = parseInt(window.getComputedStyle(node).getPropertyValue('z-index'))
+        if (!Number.isNaN(zx) && zx > zindex) {
+            zindex = zx
+        }
+        level++;
+        node = node.parentNode
+    } while(node && node instanceof Element)
+    return zindex + level
+}
+
+KAIROS._domStack = []
+KAIROS.replace = function (parent, newNode, oldNode) {
+    KAIROS._domStack.push(['replace', parent, newNode, oldNode])
+    KAIROS._pstack()
+}
+
+KAIROS.remove = function (parent, node) {
+    KAIROS._domStack.push(['remove', parent, node, null])
+    KAIROS._pstack()
+}
+
+KAIROS.insert = function (parent, node, before = null) {
+    KAIROS._domStack.push(['insert', parent, node, before])
+    KAIROS._pstack()
+}
+
+KAIROS._pstack = function (force = false) {
+    if (!force && KAIROS._pstack.run) {
+        return
+    }
+    KAIROS._pstack.run = true
+    let p = new Promise((resolve, reject) => {
+        window.requestAnimationFrame((ts) => {
+            let start = performance.now()
+            let p 
+            while ((p = KAIROS._domStack.shift()) !== undefined && performance.now() - start < 10) {
+                switch(p[0]) {
+                    case 'insert': 
+                        p[1].insertBefore(p[2], p[3])
+                        break
+                    case 'remove':
+                        p[1].removeChild(p[2])
+                        break
+                    case 'replace':
+                        p[1].replaceChild(p[2], p[3]);
+                }
+            }
+            resolve()
+        })
+    })
+    p.then(() => {
+        if (KAIROS._domStack.length > 0) {
+            KAIROS._pstack(true)
+        } else {
+            KAIROS._pstack.run = false
+        }
+
+    })
+}

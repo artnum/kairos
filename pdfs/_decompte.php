@@ -1,9 +1,8 @@
 <?PHP
 include('base.php');
-include('../lib/format.php');
 
+$GEntry = new GetEntry();
 $JClient = new artnum\JRestClient(base_url('/store'));
-$Machine = new artnum\JRestClient('https://aircluster.local.airnace.ch/store', NULL, array('verifypeer' => false));
 
 $res = $JClient->get($_GET['id'], 'DeepReservation');
 if($res['type'] != 'results') {
@@ -15,13 +14,7 @@ if(!isset($res['data'][0]) && !isset($res['data']['id'])) {
 }
 $reservation = FReservation(isset($res['data'][0]) ? $res['data'][0] : $res['data']);
 
-$res = $Machine->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
-$machine = null;
-if($res['type'] == 'results') {
-   $machine = $res['data'][0];
-}
-
-
+$machine = $GEntry->getMachine($reservation['target']);
 $addrs = array('client' => null, 'responsable' => null, 'facturation' => null);
 foreach($addrs as $k => $v) {
    $res = $JClient->search(array('search.comment' => '_' . $k, 'search.reservation' => $reservation['id']), 'ReservationContact');

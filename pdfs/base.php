@@ -1,6 +1,7 @@
 <?PHP
 include('artnum/autoload.php');
-include('../lib/url.php');
+include('../lib/format.php');
+include('../lib/get-entry.php');
 
 header('Cache-Control: no-cache, max-age=0');
 

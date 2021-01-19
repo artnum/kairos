@@ -1,7 +1,7 @@
 <?PHP
 include('base.php');
-include('../lib/format.php');
 
+$GEntry = new GetEntry();
 $JClient = new artnum\JRestClient(base_url('/store'));
 
 $res = $JClient->get($_GET['id'], 'DeepReservation');
@@ -38,12 +38,7 @@ if (isset($reservation['technician']) && !empty($reservation['technician'])) {
 }
 
 
-$res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
-$machine = null;
-if($res['type'] == 'results') {
-   $machine = $res['data'][0];
-}
-
+$machine = $GEntry->getMachine($reservation['target']);
 
 $addrs = array('client' => null, 'responsable' => null, 'place' => null);
 foreach($addrs as $k => $v) {

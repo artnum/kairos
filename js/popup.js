@@ -44,19 +44,7 @@ KPopup.prototype.setReference = function (htmlNode) {
     } else if (htmlNode.domNode && htmlNode.domNode instanceof HTMLElement) {
         this.reference = htmlNode.domNode
     }
-    let zindex = 0
-    let level = 0;
-    let node = this.reference
-    do {
-        let zx = parseInt(window.getComputedStyle(node).getPropertyValue('z-index'))
-        if (!Number.isNaN(zx) && zx > zindex) {
-            zindex = zx
-        }
-        level++;
-        node = node.parentNode
-    } while(node && node instanceof Element)
-
-    this.popup.style.setProperty('z-index', level + zindex)
+    this.popup.style.setProperty('z-index', KAIROS.zMax(this.reference))
     this.popup.style.setProperty('position', 'fixed')
 }
 

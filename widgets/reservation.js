@@ -4,21 +4,16 @@ define([
   'dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/Evented',
-  'dojo/Deferred',
 
   'dijit/_WidgetBase',
 
-  'dojo/dom',
   'dojo/date',
   'dojo/date/stamp',
   'dojo/dom-construct',
   'dojo/on',
   'dojo/dom-style',
-  'dojo/dom-class',
-  'dojo/request/xhr',
-  'dojo/promise/all',
 
-  'dijit/Tooltip',
+
   'dijit/registry',
   'dijit/layout/ContentPane',
 
@@ -27,29 +22,21 @@ define([
   'location/lock',
   'location/Stores/Locality',
 
-  'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
 ], function (
   djDeclare,
   djLang,
   djEvented,
-  DjDeferred,
 
   dtWidgetBase,
 
-  djDom,
   djDate,
   djDateStamp,
   djDomConstruct,
   djOn,
   djDomStyle,
-  djDomClass,
 
-  djXhr,
-  djAll,
-
-  dtTooltip,
   dtRegistry,
   DtContentPane,
 
@@ -58,7 +45,6 @@ define([
   Lock,
   Locality,
 
-  Req,
   Path,
   Query
 ) {
@@ -76,7 +62,7 @@ define([
     hposition: 0,
     modifiedState: true,
 
-    constructor: function () {
+    constructor: function (options = {}) {
       this.destroyed = false
       this.detailsHtml = ''
       this.special = 0
@@ -87,8 +73,8 @@ define([
       this.overlap = {}
       this.dataHash = {}
       this.duration = 0
-      this.nodeGeneration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
+      this.uuid = options.uuid
       this._gui = {
         hidden: false
       }
@@ -98,7 +84,7 @@ define([
         Locality: new Locality()
       }
 
-      if (arguments && arguments[0] && arguments[0].create) {
+      if (options.create) {
         this.isNew = true
       } else {
         this.isNew = false
@@ -112,129 +98,140 @@ define([
     },
     
     fromJson: function (json) {
-      if (!json) { return }
-      this.modifiedState = true
-      if (this.get('_hash')) {
-        if (json._hash === this.get('_hash')) {
-          this.set('updated', false)
-          return
+      return new Promise((resolve, reject) => {
+        if (!json) { resolve(); return }
+        if (json.data) {
+          json = json.data
         }
-      }
-
-      this._target = json.target
-
-      if (this.sup && json.target !== this.get('target')) {
-        var oldEntry = window.App.getEntry(this.get('target'))
-        var newEntry = window.App.getEntry(json.target)
-        if (newEntry && oldEntry) {
-          this.set('sup', newEntry)
-          delete oldEntry.entries[this.uid]
-          newEntry.entries[this.uid] = this
-          oldEntry.overlap()
-          // oldEntry.resize()
+        this.modifiedState = true
+        if (this.get('_hash')) {
+          if (json._hash === this.get('_hash')) {
+            this.set('updated', false)
+            resolve()
+            return
+          }
         }
-      }
 
-      djLang.mixin(this, json)
-      this.dataOriginal = json
-      this.dataHash['target'] = crc32(this.get('target') ? this.get('target') : '__no_target__')
-      this.set('updated', true)
-      ;[ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ].forEach(djLang.hitch(this, (attr) => {
-        if (json[attr]) {
-          /* date and time are UTC on server but locale on the client, so store the client one */
-          this.dataHash[attr] = crc32(djDateStamp.toISOString(djDateStamp.fromISOString(json[attr])))
-          this.set(attr, djDateStamp.fromISOString(json[attr]))
+        this._target = json.target
+
+        if (this.sup && json.target !== this.get('target')) {
+          var oldEntry = window.App.getEntry(this.get('target'))
+          var newEntry = window.App.getEntry(json.target)
+          if (newEntry && oldEntry) {
+            this.set('sup', newEntry)
+            delete oldEntry.entries[this.uid]
+            newEntry.entries[this.uid] = this
+            oldEntry.overlap()
+            // oldEntry.resize()
+          }
+        }
+        if (json['id']) {
+          this.set('uid', json['id'])
+          this.set('id', json['id'])
+        }
+        djLang.mixin(this, json)
+        this.dataOriginal = json
+        this.dataHash['target'] = crc32(this.get('target') ? this.get('target') : '__no_target__')
+        this.set('updated', true)
+        for (let attr of [ 'begin', 'end', 'deliveryBegin', 'deliveryEnd' ]) {
+          let date = new Date(json[attr])
+          if (!Number.isNaN(date.getTime()) && json[attr]) {
+            /* date and time are UTC on server but locale on the client, so store the client one */
+            this.dataHash[attr] = crc32(date.toISOString())
+            this.set(attr, date)
+          } else {
+            this.set(attr, null)
+            this.dataHash[attr] = crc32('')
+          }
+        }
+
+        /* string value */
+        for (let attr of [
+          'visit',
+          'vreport',
+          'padlock',
+          'deliveryRemark'
+        ]) {
+          if (json[attr]) {
+            this.dataHash[attr] = crc32(json[attr])
+            this.set(attr, json[attr])
+          } else {
+            this.set(attr, '')
+            this.dataHash[attr] = crc32('')
+          }
+        }
+
+        /* nullifiable value */
+        for (let attr of [
+          'status',
+          'address',
+          'locality',
+          'comment',
+          'equipment',
+          'reference',
+          'gps',
+          'folder',
+          'title',
+          'previous',
+          'creator',
+          'technician',
+          'warehouse',
+          'note'
+        ]) {
+          if (json[attr]) {
+            this.dataHash[attr] = crc32(json[attr])
+            this.set(attr, json[attr])
+          } else {
+            this.dataHash[attr] = crc32('')
+          }
+        }
+
+        if (json['other']) {
+          this.dataHash['other'] = crc32(json['other'])
+          this.set('other', JSON.parse(json['other']))
         } else {
-          this.dataHash[attr] = crc32('')
+          this.dataHash['other'] = crc32('{\"critic\":\"\"}')
         }
-      }))
 
-      /* string value */
-      ;[
-        'visit',
-        'vreport',
-        'padlock',
-        'deliveryRemark'
-      ].forEach(djLang.hitch(this, (attr) => {
-        if (json[attr]) {
-          this.dataHash[attr] = crc32(json[attr])
-          this.set(attr, json[attr])
+        if (json['uuid']) {
+          this.dataHash['uuid'] = crc32(json['uuid'])
         } else {
-          this.set(attr, '')
-          this.dataHash[attr] = crc32('')
+          this.dataHash['uuid'] = crc32('')
         }
-      }))
 
-      /* nullifiable value */
-      ;[
-        'status',
-        'address',
-        'locality',
-        'comment',
-        'equipment',
-        'reference',
-        'gps',
-        'folder',
-        'title',
-        'previous',
-        'creator',
-        'technician',
-        'warehouse',
-        'note'
-      ].forEach(djLang.hitch(this, (attr) => {
-        if (json[attr]) {
-          this.dataHash[attr] = crc32(json[attr])
-          this.set(attr, json[attr])
+        if (this.contacts && this.contacts['_client']) {
+          if (this.contacts['_client'][0].target) {
+            this.dbContact = this.contacts['_client'][0].target
+          } else {
+            this.dbContact = { freeform: this.contacts['_client'][0].freeform }
+          }
         } else {
-          this.dataHash[attr] = crc32('')
+          this.dbContact = {}
         }
-      }))
+        if (!this.color) { this.color = 'FFF' }
+        if (!this.complements) { this.complements = [] }
 
-      if (json['other']) {
-        this.dataHash['other'] = crc32(json['other'])
-        this.set('other', JSON.parse(json['other']))
-      } else {
-        this.dataHash['other'] = crc32('{\"critic\":\"\"}')
-      }
-
-      if (json['uuid']) {
-        this.dataHash['uuid'] = crc32(json['uuid'])
-      } else {
-        this.dataHash['uuid'] = crc32('')
-      }
-
-      if (this.contacts && this.contacts['_client']) {
-        if (this.contacts['_client'][0].target) {
-          this.dbContact = this.contacts['_client'][0].target
+        if (json.arrival) {
+          this.set('_arrival', Object.assign({}, json.arrival))
         } else {
-          this.dbContact = { freeform: this.contacts['_client'][0].freeform }
+          json.arrival = {}
         }
-      } else {
-        this.dbContact = {}
-      }
-      if (!this.color) { this.color = 'FFF' }
-      if (!this.complements) { this.complements = [] }
-
-      if (json.arrival) {
-        this.set('_arrival', Object.assign({}, json.arrival))
-      } else {
-        json.arrival = {}
-      }
-      this.dataHash['_arrival'] = {}
-      ;['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator'].forEach((attrArr) => {
-        if (json.arrival[attrArr]) {
-          this.dataHash['_arrival'][attrArr] = crc32(json.arrival[attrArr])
-        } else {
-          this.dataHash['_arrival'][attrArr] = crc32('')
+        this.dataHash['_arrival'] = {}
+        for (let attrArr of ['reported', 'done', 'inprogress', 'contact', 'where', 'comment', 'other', 'locality', 'creator']) {
+          if (json.arrival[attrArr]) {
+            this.dataHash['_arrival'][attrArr] = crc32(json.arrival[attrArr])
+          } else {
+            this.dataHash['_arrival'][attrArr] = crc32('')
+          }
         }
+        this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
+        this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
+        if (this.sup) {
+          this.sup.overlap()
+          this.sup.resize()
+        }
+        resolve()
       })
-
-      this.range = new DateRange(this.get('trueBegin'), this.get('trueEnd'))
-      this.duration = this.get('trueEnd').getTime() - this.get('trueBegin').getTime()
-      if (this.sup) {
-        this.sup.overlap()
-        this.sup.resize()
-      }
     },
 
     toObject: function () {
@@ -242,7 +239,7 @@ define([
       return new Promise ((resolve, reject) => {
         var object = {}
 
-        ;['begin', 'end', 'deliveryBegin', 'deliveryEnd'].forEach(djLang.hitch(this, function (attr) {
+        for (let attr of ['begin', 'end', 'deliveryBegin', 'deliveryEnd']) {
           if (!this[attr]) {
             object[attr] = null
             if (dataHash) { dataHash[attr] = crc32('') }
@@ -250,15 +247,15 @@ define([
             object[attr] = djDateStamp.toISOString(this[attr])
             if (dataHash) { dataHash[attr] = crc32(object[attr]) }
           }
-        }))
+        }
 
         /* string value */
-        ;[
+        for (let attr of [
           'visit',
           'vreport',
           'padlock',
           'deliveryRemark'
-        ].forEach(djLang.hitch(this, function (attr) {
+        ]) {
           if (this[attr]) {
             object[attr] = this[attr]
             if (dataHash) { dataHash[attr] = crc32(this[attr]) }
@@ -266,10 +263,10 @@ define([
             object[attr] = ''
             if (dataHash) { dataHash[attr] = crc32('') }
           }
-        }))
+        }
 
         /* nullifiable value */
-        ;[
+        for (let attr of [
           'uuid',
           'status',
           'address',
@@ -285,7 +282,7 @@ define([
           'technician',
           'warehouse',
           'note'
-        ].forEach(djLang.hitch(this, function (attr) {
+        ]) {
           if (this[attr]) {
             object[attr] = this[attr]
             if (dataHash) { dataHash[attr] = crc32(this[attr]) }
@@ -293,7 +290,7 @@ define([
             object[attr] = null
             if (dataHash) { dataHash[attr] = crc32('') }
           }
-        }))
+        }
 
         if (this.get('other')) {
           object['other'] = JSON.stringify(this.get('other'))
@@ -341,6 +338,18 @@ define([
       }
     },
 
+    waitStart: function () {
+      window.requestAnimationFrame(() => {
+        this.domNode.classList.add('updating')
+      })
+    },
+
+    waitStop: function () {
+      window.requestAnimationFrame(() => {
+        this.domNode.classList.remove('updating')
+      })
+    },
+
     restore: function () {
       fetch(Path.url(`/store/Reservation/${this.uid}`), {
         method: 'PATCH',
@@ -358,6 +367,7 @@ define([
       window.App.info(txt, code)
     },
     postCreate: function () {
+      this.domNode.dataset.uuid = this.uuid
       if (this._json) {
         this.fromJson(this._json)
         delete this._json
@@ -1388,7 +1398,13 @@ define([
 
     save: function (object = null, duplicate = false) {
       this.modifiedState = true
-      return new Promise(function (resolve, reject) {
+      if (this.saveInProgress) { 
+        KAIROS.warn(`La réservation ${this.uid} est en cours de sauvegarde. Opération annulée.`)
+        return 
+      }
+      this.saveInProgress = true
+      this.waitStart()
+      let savePromise = new Promise((resolve, reject) => {
         this.toObject().then(obj => {
           let dataHash = obj[1]
           let reservation = object === null ? obj[0] : object
@@ -1412,52 +1428,75 @@ define([
           }
           let arrival = reservation.arrival
           delete reservation.arrival
-          Query.exec(Path.url(`/store/Reservation/${reservation.id ? reservation.id : ''}`), {method: reservation.id ? 'PUT' : 'POST', body: reservation}).then((result) => {
-            if (!result.success || result.length !== 1) {
-              this.error(`Erreur pour enregistrer ${reservation.id ? 'la réservation ' + reservation.id : 'la nouvelle réservation'}`, 1)
-              reject(new Error('Writing failed'))
+          fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${reservation.id ? reservation.id : ''}`), 
+              {method: reservation.id ? 'PUT' : 'POST', body: JSON.stringify(reservation)}).then(response => {
+            if (!response.ok) { 
+              if (reservation.id) {
+                KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
+              } else {
+                KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
+              }
               return
             }
-            let id = result.data[0].id
-            if (modifiedLog.attribute.length > 0 || duplicate) {
-              /* POST to mod log */
-              modifiedLog.object = id
-              Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
-            }
-            if (this.domNode) { this.domNode.dataset.id = id }
-            if (!arrival || Object.keys(arrival).length === 0) {
-              this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
-              resolve(id)
-            } else {
-              let query
-              if (arrival.deleted) {
-                this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
-                resolve(id)
+            response.json().then(result => {
+              if (result.length !== 1) {
+                if (reservation.id) {
+                  KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
+                } else {
+                  KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
+                }
                 return
               }
-              if (arrival._op && arrival._op.toLowerCase() === 'delete') {
-                this.set('_arrival', null)
-                query = Query.exec(Path.url(`/store/Arrival/${arrival.id}`), {method: 'DELETE', body: {id: arrival.id}})
-              } else {
-                arrival.target = id
-                query = Query.exec(Path.url(`/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: arrival})
+              let entry = Array.isArray(result.data) ? result.data[0] : result.data
+              let id = entry.id
+              this.id = id
+              this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
+              if (modifiedLog.attribute.length > 0 || duplicate) {
+                /* POST to mod log */
+                modifiedLog.object = id
+                Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
               }
-              query.then((result) => {
-                this.EventTarget.dispatchEvent(new CustomEvent('change', {detail: id}))
+              //if (this.domNode) { this.domNode.dataset.id = id }
+              if (!arrival || Object.keys(arrival).length === 0) {
                 resolve(id)
-              })
-            }
+              } else {
+                let query
+                if (arrival.deleted) {
+                  resolve(id)
+                  return
+                }
+                if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+                  this.set('_arrival', null)
+                  query = fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})})
+                } else {
+                  arrival.target = id
+                  query = fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)})
+                }
+                query.then(response => {
+                  resolve(id)
+                })
+              }
+            })
           })
         })
-      }.bind(this))
+      })
+
+      return new Promise((resolve, reject) => {
+        savePromise.then((id) => {
+          this.waitStop()
+          this.resize()
+          this.saveInProgress = false
+          resolve(id)
+        })
+      })
     },
 
-    copy: function () {
+    copy: function (exclude = []) {
       return new Promise((resolve, reject) => {
         this.toObject().then(obj => {
           let object = obj[0]
           let originalId = object['id']
-          delete object['uuid']
+          object['uuid'] = KAIROS.uuidV4()
           delete object['id']
           delete object['arrival']
           delete object['note']
@@ -1465,40 +1504,76 @@ define([
             if (creator) {
               object['creator'] = creator.getUrl()
             }
-              this.save(object, originalId).then((id) => {
-                let newId = id
-                let contacts = Query.exec(Path.url('/store/ReservationContact', {params: {'search.reservation': originalId}}))
-                let associations = Query.exec(Path.url('/store/Association', {params: {'search.reservation': originalId}}))
+            this.sup.createEntry(object).then(reservation => { reservation.save().then((id) => {
+              let newId = id
+              let promises = []
+              
+              reservation.set('id', id)
+              reservation.set('uid', id)
 
-                let all = []
-                Promise.all([contacts, associations]).then((results) => {
-                  let url = Path.url('/store/ReservationContact')
-                  results.forEach((result) => {
-                    if (!result.success) { return }
-                    if (result.length <= 0) { return }
-                    result.data.forEach((e) => {
-                      delete e['id']
-                      e['reservation'] = newId
-                      all.push(Query.exec(url, {method: 'POST', body: e}))
+              if (exclude.indexOf('contact') === -1) {
+                promises.push(new Promise((resolve, reject) => {
+                  let url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+                  url.searchParams.append('search.reservation', originalId)
+                  fetch(url).then(response => {
+                    if (!response.ok) { resolve(); return }
+                    response.json().then(result => {
+                      let p = []
+                      for (let i = 0; i < result.length; i++) {
+                        delete result.data[i].id
+                        result.data[i].reservation = newId
+                        p.push(new Promise((resolve, reject) => {
+                          fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact`), {
+                                method: 'POST', body: JSON.stringify(result.data[i])}).then(response => {
+                            resolve()
+                          })
+                        }))
+                      }
+                      Promise.all(p).then(() => { resolve() })
                     })
-                    url = Path.url('/store/Association')
                   })
+                }))
+              }
 
-                  new Promise((resolve, reject) => {
-                  Query.exec(Path.url('/store/Mission', {params: {'search.reservation': originalId}})).then((result) => {
+              if (exclude.indexOf('association') === -1) {
+                promises.push(new Promise((resolve, reject) => {
+                  let url = new URL(`${KAIROS.getBase()}/store/Association`)
+                  url.searchParams.append('search.reservation', originalId)
+                  fetch(url).then(response => {
+                    if (!response.ok) { resolve(); return }
+                    response.json().then(result => {
+                      let p = []
+                      for (let i = 0; i < result.length; i++) {
+                        delete result.data[i].id
+                        result.data[i].reservation = newId
+                        p.push(new Promise((resolve, reject) => {
+                          fetch(new URL(`${KAIROS.getBase()}/store/Association`), {method: 'POST', body: JSON.stringify(result.data[i])}).then(response => {
+                            resolve()
+                          })
+                        }))
+                      }
+                      Promise.all(p).then(() => { resolve() })
+                    })
+                  })
+                }))
+              }
+
+              if (exclude.indexOf('mission') === -1) {
+                promises.push(new Promise((resolve, reject) => {
+                  Query.exec(Path.url('/store/Mission', { params: { 'search.reservation': originalId } })).then((result) => {
                     if (result.success && result.length > 0) {
                       let oMId = result.data[0].uid
-                      Query.exec(Path.url('/store/Mission'), {method: 'POST', body: {reservation: newId}}).then((result) => {
+                      Query.exec(Path.url('/store/Mission'), { method: 'POST', body: { reservation: newId } }).then((result) => {
                         if (result.success && result.length === 1) {
                           let mId = result.data[0].id
-                          Query.exec(Path.url('/store/MissionFichier', {params: {'search.mission': oMId}})).then((results) => {
+                          Query.exec(Path.url('/store/MissionFichier', { params: { 'search.mission': oMId } })).then((results) => {
                             if (results.success && results.length > 0) {
                               (async function () {
                                 for (let i = 0; i < results.length; i++) {
                                   let entry = results.data[i]
                                   delete entry.uid
                                   entry.mission = mId
-                                  await Query.exec(Path.url('/store/MissionFichier'), {method: 'POST', body: entry})
+                                  await Query.exec(Path.url('/store/MissionFichier'), { method: 'POST', body: entry })
                                 }
                                 resolve()
                               })()
@@ -1514,14 +1589,13 @@ define([
                       resolve()
                     }
                   })
-                }).then(() => {
-                  Promise.all(all).then((results) => {
-                    resolve(newId)
-                  })
+                }))
+
+                Promise.all(promises).then(() => {
+                  resolve(reservation)
                 })
-                
-              })
-            })
+              }
+            })})
           })
         })
       })

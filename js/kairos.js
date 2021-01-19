@@ -1,5 +1,7 @@
 KAIROS.timeline = null
 
+KAIROS.dataVersion = 2
+
 KAIROS.getBase = function () {
   return `${window.location.origin}/${KAIROS.base}`
 }
@@ -8,14 +10,17 @@ KAIROS.getBaseName = function () {
   return KAIROS.base.replace(/\//g, '')
 }
 
+KAIROS.uuidV4 = function () {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
+}
+
 /* override fetch to add X-Request-Id automatically */
 const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch
 KAIROS.fetch = function (url, options = {}) {
   if (KAIROS.fetch.uuid === undefined) {
-    KAIROS.fetch.uuid = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    )
+    KAIROS.fetch.uuid = KAIROS.uuidV4()
   }
 
   if (KAIROS.fetch.count === undefined) {
@@ -67,4 +72,11 @@ KAIROS.fetch = function (url, options = {}) {
 
   return query
 }
+
+KAIROS.DateFromTS = function(ts) {
+  let d = new Date()
+  d.setTime(ts)
+  return d
+}
+
 fetch = KAIROS.fetch

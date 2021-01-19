@@ -10,6 +10,7 @@ importScripts('../stores/user.js')
 let LastMod = 0
 let Entries = {}
 let Channels = {}
+let Symlinks = {}
 let Range = null
 let PostPoned = {}
 self.onmessage = function (msg) {
@@ -26,6 +27,10 @@ self.onmessage = function (msg) {
           delete PostPoned[targetId]
         }
       }
+      break
+    case 'symlinkTarget':
+      if (msg.data.source === undefined || msg.data.destination === undefined) { return }
+      Symlinks[btoa(msg.data.source)] = btoa(msg.data.destination)
       break
     case 'move':
       if (Range === null) {
@@ -187,9 +192,14 @@ function cacheAndSend (data, vTimeLine) {
     Promise.all(promises).then(() => resolve(entries))
   }).then((entries) => {
     let processed = []
+    let channel
     for (let k in entries) {
-      if (Channels[k] && entries[k].length > 0) {
-        Channels[k].postMessage({op: 'entries', value: entries[k]})
+      channel = k
+      if (Symlinks[k]) {
+        channel = Symlinks[k]
+      }
+      if (Channels[channel] && entries[k].length > 0) {
+        Channels[channel].postMessage({op: 'entries', value: entries[k]})
         processed.push(k)
       } else if (entries[k].length > 0) {
         if (!PostPoned[k]) {
@@ -247,12 +257,16 @@ function checkMachineState () {
         response.json().then(result => {
           for (i = 0; i < result.length; i++) {
             let entry = result.data[i]
-            if (Channels[btoa(entry.resolvedTarget)]) {
+            let channel = btoa(entry.resolvedTarget)
+            if (Symlinks[channel]) {
+              channel = Symlinks[channel]
+            }
+            if (Channels[channel]) {
               if (entry.type === '') { continue }
               if (Status[btoa(entry.type)] !== undefined) {
                 if (Status[btoa(entry.type)] !== null) {
                   entry.type = Status[btoa(entry.type)]
-                  Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+                  Channels[channel].postMessage({op: 'state', value: entry})
                 }
               } else {
                   doFetch(getUrl(`store/${entry.type}`)).then(response => {
@@ -271,7 +285,7 @@ function checkMachineState () {
                           }
                           Status[btoa(entry.type)] = status.data
                           entry.type = Status[btoa(entry.type)]
-                          Channels[btoa(entry.resolvedTarget)].postMessage({op: 'state', value: entry})
+                          Channels[channel].postMessage({op: 'state', value: entry})
                           resolve()
                         }
                       })

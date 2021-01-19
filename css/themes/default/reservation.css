@@ -56,3 +56,41 @@
 .reservation .identity[data-critic] .fa-exclamation-triangle {
     display: inline-block;
 }
+
+.reservation.updating {
+    cursor: wait;
+    animation-name: updating;
+    animation-iteration-count: infinite;
+    animation-duration: 750ms;
+    animation-delay: 0;
+}
+
+@keyframes updating {
+    from {
+        background: repeating-linear-gradient(
+            -45deg,
+            rgba(255,255,255,0.5),
+            rgba(255,255,255,0.5) 5px,
+            rgba(127,127,127,0.5) 5px,
+            rgba(127,127,127,0.5) 10px
+        );   
+    }
+    50% {
+        background: repeating-linear-gradient(
+            -45deg,
+            rgba(127,127,127,0.5),
+            rgba(127,127,127,0.5) 5px,
+            rgba(255,255,255,0.5) 5px,
+            rgba(255,255,255,0.5) 10px
+        );   
+    }
+    to {
+        background: repeating-linear-gradient(
+            -45deg,
+            rgba(255,255,255,0.5),
+            rgba(255,255,255,0.5) 5px,
+            rgba(127,127,127,0.5) 5px,
+            rgba(127,127,127,0.5) 10px
+        );  
+    }
+}

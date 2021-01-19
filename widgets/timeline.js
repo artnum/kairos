@@ -20,7 +20,6 @@ define([
   'dojo/dom-class',
   'dojo/dom-style',
   'dojo/dom-geometry',
-  'dojo/promise/all',
   'dijit/registry',
   'dijit/form/DateTextBox',
   'dijit/MenuBar',
@@ -67,7 +66,6 @@ define([
   djDomClass,
   djDomStyle,
   djDomGeo,
-  djAll,
   dtRegistry,
   DtDateTextBox,
   dtMenuBar,
@@ -1455,9 +1453,9 @@ define([
                 target: entry.uid, 
                 label: entry.cn, 
                 url: `/store/Machine/${entry.uid}`, 
-                channel: new MessageChannel(), 
+                //channel: new MessageChannel(),
+                wwInstance: this.Updater,
                 details: entry})
-              this.Updater.postMessage({op: 'newTarget', target: entry.uid}, [e.port()])
               this.placeEntry(e)
 
               let families = []
@@ -1769,18 +1767,19 @@ define([
               this.update()
               let data = result.data
               if (this.Entries[data.target]) {
-                this.Entries[data.target].addOrUpdateReservation([data])
-                if (this.Entries[data.target].openReservation(data.id)) {
-                  if (!dontmove) {
-                    let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
-                    window.scroll(0, pos.y - (window.innerHeight / 3))
+                this.Entries[data.target].createEntry(data).then(() => {
+                  if (this.Entries[data.target].openReservation(data.id)) {
+                    if (!dontmove) {
+                      let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                      window.scroll(0, pos.y - (window.innerHeight / 3))
+                    }
+                    resolve()
+                  } else {
+                    reject()
                   }
-                  resolve()
-                } else {
-                  reject()
-                }
+                })
               } else {
-                let reservation = new Reservation({uid: data.id, sup: null, _json: data})
+                let reservation = new Reservation({uid: data.id, uuid: data.uuid, sup: null, _json: data})
                 reservation.popMeUp()
               }
               DoWait(false)

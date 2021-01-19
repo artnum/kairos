@@ -1,9 +1,8 @@
 <?PHP
 include('base.php');
-include('../lib/format.php');
 
+$GEntry = new GetEntry();
 $JClient = new artnum\JRestClient(base_url('/store'));
-$Machine = $JClient;
 
 $res = $JClient->get($_GET['id'], 'Count');
 if (!$res['success'] || $res['length'] != 1) {
@@ -69,9 +68,9 @@ $machines = array();
 $clientManager = null;
 foreach ($reservations as $k => $reservation) {
    if (!isset($machines[$reservations[$k]['target']])) {
-      $res = $Machine->search(array('search.description' => $reservations[$k]['target'], 'search.airaltref' => $reservations[$k]['target']), 'Machine');
-      if ($res['type'] == 'results') {
-         $machines[$reservations[$k]['target']] = $res['data'][0];
+      $machine = $GEntry->getMachine($reservations[$k]['target']);
+      foreach ($machine['_id'] as $id) {
+         $machines[$id] = $machine;
       }
    }
 

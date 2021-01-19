@@ -66,10 +66,27 @@ define([
       this.tags = []
       this.entries = {}
       this.currentLocation = ''
-      this.creating = {}
-      this.CommChannel = args.channel
 
-      this.CommChannel.port1.onmessage = this.channelMsg.bind(this)
+      KEntry.load(args.target).then(kentry => {
+        this.KEntry = kentry
+        kentry.addEventListener('state-change', this.stateChange.bind(this))
+        kentry.addEventListener('create-entry', (event) => {
+          if (event.detail && event.detail.entry) {
+            this.createEntry(event.detail.entry)
+          }
+        })
+        kentry.addEventListener('remove-entry', (event) => {
+          if (event.detail && event.detail.entry) {
+            this.removeEntry(event.detail.entry)
+          }
+        })
+        kentry.addEventListener('update-entry', (event) => {
+          if (event.detail && event.detail.entry) {
+            this.createEntry(event.detail.entry)
+          }
+        })
+        kentry.register(args.wwInstance)
+      })
 
       /* Interval zoom factor is [ Hour Begin, Hour End, Zoom Factor ] */
       this.intervalZoomFactors = new Array([ 7, 17, 70 ])
@@ -80,64 +97,47 @@ define([
       }
     },
     warn: function (txt, code) {
-      this.sup.warn(txt, code)
+      KAIROS.warn(txt, code)
     },
     error: function (txt, code) {
-      this.sup.error(txt, code)
+      KAIROS.error(txt, code)
     },
     info: function (txt, code) {
-      this.sup.info(txt, code)
+      KAIROS.info(txt, code)
     },
-    port: function () {
-      return this.CommChannel.port2
+    removeEntry: function (entry) {
+      return new Promise((resolve, reject) => {
+        let id = entry.uuid
+        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
+        this.destroyReservation(this.entries[id])
+        resolve()
+      })
     },
-    channelMsg: function (msg) {
-      let msgData = msg.data
-      switch (msgData.op) {
-        case 'entries':
-          msgData.value.forEach((entry) => {
-            if (entry.target !== this.get('target')) {
-              if (this.entries[entry.id]) {
-                this.destroyReservation(this.entries[entry.id])
-              }
-            } else {
-              for (let lid in this.creating) {
-                if (this.creating[lid].uid == entry.id) {                 
-                  this.entries[entry.id] = this.creating[lid]
-                  delete this.creating[lid]
-                }
-              }
-              if (!this.entries[entry.id]) {
-                this.entries[entry.id] = new Reservation({sup: this, uid: entry.id, _json: entry})
-                this.entries[entry.id].addEventListener('change', this.handleReservationEvent.bind(this))
-              } else {
-                this.entries[entry.id].fromJson(entry)
-              }
-            }
-          })
-          this.modified = true
-          break
-        case 'state':
-          if (!this.nControl) { return }
-          if (!msgData.value) { return }
-          if (!msgData.value.type) { return }
-          if (msgData.value.type.severity === undefined || !Number.isInteger(parseInt(msgData.value.type.severity))) { return }
-          let eventType = ''
-          switch(Math.trunc(parseInt(msgData.value.type.severity) / 1000)) {
-            case 0: eventType = 'eventNone'; break
-            case 1: eventType = 'eventCheck'; break
-            case 2: eventType = 'eventError'; break
-            case 3: eventType = 'eventFailure'; break
-          }
-          window.requestAnimationFrame(() => {
-            this.domNode.classList.remove('eventNone')
-            this.domNode.classList.remove('eventCheck')
-            this.domNode.classList.remove('eventError')
-            this.domNode.classList.remove('eventFailure')
-            this.domNode.classList.add(eventType)
-          })
-          break
+    createEntry: function (entry) {
+      return new Promise((resolve, reject) => {
+        let id = entry.uuid
+        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
+        if (this.entries[id] === undefined) {
+          this.entries[id] = new Reservation({sup: this, uuid: entry.uuid})
+        }
+        this.entries[id].fromJson(entry).then(() => {
+          this.entries[id].waitStop()
+          resolve(this.entries[id])
+        })
+      })
+    },
+    stateChange: function (event) {
+      let eventType = ''
+      switch(Math.trunc(event.detail.severity / 1000)) {
+        case 0: eventType = 'eventNone'; break
+        case 1: eventType = 'eventCheck'; break
+        case 2: eventType = 'eventError'; break
+        case 3: eventType = 'eventFailure'; break
       }
+      window.requestAnimationFrame(() => {
+        this.domNode.classList.remove('eventNone', 'eventCheck', 'eventError','eventFailure')
+        this.domNode.classList.add(eventType)
+      })
     },
     computeIntervalOffset: function (date) {
       var hour = date.getHours()
@@ -178,7 +178,9 @@ define([
 
       var a = document.createElement('A')
       a.setAttribute('name', 'entry_' + this.get('target'))
-      a.innerHTML = `<span class="reference">(${this.get('target')})</span><span class="commonName label">${this.get('label')}</span>${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
+      a.innerHTML = ` <span class="reference">(${this.get('target')})</span>
+                      <span class="commonName label">${this.get('label')}</span>
+                      ${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
 
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
@@ -232,76 +234,80 @@ define([
         closeEvPopUp()
         return
       }
-      let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
-      url.searchParams.append('machine', this.target)
-      fetch(url).then(response => {
-        if (!response.ok) {
-          KAIROS.error('Erreur lors de l\'interrogation des évènements')
+      this.KEntry.getEvents().then(evenements => {
+        if (evenements.length === 0) {
+          KAIROS.info(`Aucune chaîne d'évènements ouverte pour la machine ${this.target}`)
           return
         }
-        response.json().then(result => {
-          if (result.length <= 0) {
-            KAIROS.info(`Aucune chaîne d'évènements ouverte pour la machine ${this.target}`)
-          } else {
-            if (result.length === 1) {
-              KAIROS.info(`1 chaîne d'évènements ouverte pour la machine ${this.target}`)
-            } else {
-              KAIROS.info(`${result.length} chaînes d'évènements ouvertes pour la machine ${this.target}`)
+        if (evenements.length === 1) {
+          KAIROS.info(`1 chaîne d'évènements ouverte pour la machine ${this.target}`)
+        } else {
+          KAIROS.info(`${evenements.length} chaînes d'évènements ouvertes pour la machine ${this.target}`)
+        }
+        let chains = document.createElement('DIV')
+        chains.classList.add('evenement')
+        for (let i = 0; i < evenements.length; i++) {
+          let evenement = evenements[i]
+          let first = true
+          do {
+            let line = document.createElement('DIV')
+            if (evenement.reservation) {
+              line.dataset.reservationId = evenement.reservation
             }
-            let chains = document.createElement('DIV')
-            chains.classList.add('evenement')
-            for (let i = 0; i < result.length; i++) {
-              let entry = result.data[i]
-              let first = true
-              do {
-                let line = document.createElement('DIV')
-                if (entry.reservation) {
-                  line.dataset.reservationId = entry.reservation
-                }
-                line.classList.add((i % 2 ? 'odd' : 'even'))
-                line.classList.add(`s${Math.trunc(entry.severity / 1000)}`)
-                if (first) {
-                  line.classList.add('first')
-                }
-                line.innerHTML = `<span class="field date">${new Date(entry.date).fullDate()}</span><span class="field name">${entry.name}</span><span class="field technician">${entry.technician}</span><span clasS="field comment">${entry.comment}</span>`
-                chains.appendChild(line)
-                entry = entry.previous
-                first = false
-              } while (entry)
+            line.classList.add((i % 2 ? 'odd' : 'even'))
+            line.classList.add(`s${Math.trunc(evenement.severity / 1000)}`)
+            if (first) {
+              line.classList.add('first')
             }
-            document.body.appendChild(chains)
-            chains.addEventListener('click', (event) => {
-              event.stopPropagation()
-              let node = event.target
-              while (node && node.nodeName !== 'DIV') { node = node.parentNode }
-              if (node.dataset.reservationId) {
-                window.GEvent('reservation.open', {id: node.dataset.reservationId})
-              }
-            }, {capture: true})
-            if (this.EntryStateOpen === undefined || this.EntryStateOpen === null) {
-              this.EntryStateOpen = [Popper.createPopper(node, chains, {placement: 'right'}), chains]
-            }
+            line.innerHTML = `
+                <span class="field date">${new Date(evenement.date).fullDate()}</span>
+                <span class="field name">${evenement.name}</span>
+                <span class="field technician">${evenement.technician}</span>
+                <span class="field comment">${evenement.comment}</span>`
+            chains.appendChild(line)
+            evenement = evenement.previous
+            first = false
+          } while (evenement)
+        }
+        document.body.appendChild(chains)
+        chains.addEventListener('click', (event) => {
+          event.stopPropagation()
+          let node = event.target
+          while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+          if (node.dataset.reservationId) {
+            window.GEvent('reservation.open', {id: node.dataset.reservationId})
           }
-        })
+        }, {capture: true})
+        if (this.EntryStateOpen === undefined || this.EntryStateOpen === null) {
+          this.EntryStateOpen = [Popper.createPopper(node, chains, {placement: 'right'}), chains]
+        }
       })
     },
 
-    handleReservationEvent: function (event) {
-      switch (event.type) {
-        case 'change':
-          if (event.detail) {
-            this.CommChannel.port1.postMessage({op: 'reload', reservation: event.detail})
-          }
-          break
-      }
-    },
     genDetails: function () {
-      const texts = ['reference']
+      const texts = ['reference', 'uid']
       const weights = ['maxcapacity', 'weight']
       const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
       let x = {}
+      if (this.details.oldid !== undefined) {
+        if (Array.isArray(this.details.oldid)) {
+          let oldid = []
+          for (let i = 0; i < this.details.oldid.length; i++) {
+            if (this.details.oldid[i] !== this.detail.uid) {
+              oldid.push(this.details.oldid[i])
+            }
+          }
+          x['oldid'] = { raw: oldid, html: oldid.join(', ') }
+        } else {
+          if (this.details.oldid !== this.details.uid) {
+            x['oldid'] = { raw: this.details.oldid , html: this.details.oldid }
+          }
+        }
+      }
       for (let i = 0; i < texts.length; i++) {
-        x[texts[i]] = { raw: this.details[texts[i]], html: this.details[texts[i]] }
+        if (this.details[texts[i]] !== undefined) {
+          x[texts[i]] = { raw: this.details[texts[i]], html: this.details[texts[i]] }
+        }
       }
       for (let i = 0; i < weights.length; i++) {
         if (this.details[weights[i]] !== undefined) {
@@ -327,6 +333,7 @@ define([
       }
       const labels = {
         reference: 'Originale',
+        oldid: 'Ancien numéro',
         weight: 'Poids',
         maxcapacity: 'Charge max',
         workheight: 'Hauteur travail',
@@ -339,16 +346,16 @@ define([
       let txt = []
       for (let k in labels) {
         if (x[k]) {
-          txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
+            txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-      this.getDatasheet().then((url) => {
+     /* this.getDatasheet().then((url) => {
         if (url) {
           txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
-        }
+        }*/
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
-      })
+      //})
     },
 
     getDatasheet: function () {
@@ -441,7 +448,6 @@ define([
         fetch(url, {method: 'post', body: JSON.stringify(q)}).then (response => {
           if (!response.ok) { return }
           response.json().then(results => {
-            console.log(results)
             this.clearTags().then(() => { this.displayTags(tags) })
           })
         })
@@ -459,11 +465,11 @@ define([
     },
 
     focus: function () {
-      djDomClass.add(this.domNode, 'focus')
+      this.domNode.classList.add('focus')
     },
 
     blur: function () {
-      djDomClass.remove(this.domNode, 'focus')
+      this.domNode.classList.remove('focus')
     },
 
     displayLocation: function () {
@@ -580,12 +586,19 @@ define([
 
       this.defaultStatus().then((s) => {
         UserStore.getCurrentUser().then(currentUser => {
-          let newReservation = new Reservation({sup: this, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
-          this.creating[newReservation.localid] = newReservation
-          newReservation.addEventListener('change', this.handleReservationEvent.bind(this))
+          let uuid = KAIROS.uuidV4()
+          let newReservation = new Reservation({sup: this, uuid: uuid, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
+          this.entries[uuid] = newReservation
           newReservation.save().then((id) => {
-            newReservation.set('uid', id)
-            newReservation.popMeUp()
+            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`)).then(response => {
+              if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
+              response.json().then(reservation => {
+                newReservation.fromJson(reservation).then(() => {
+                  newReservation.waitStop()
+                  newReservation.popMeUp()
+                })
+              })
+            })
           })
         })
       })
@@ -631,7 +644,7 @@ define([
 
     _getTargetAttr: function () {
       var t = this._get('target')
-      if (djLang.isArray(t)) {
+      if (Array.isArray(t)) {
         return t[0]
       }
 
@@ -641,9 +654,7 @@ define([
     _getDateRangeAttr: function () {
       return this.sup.getDateRange()
     },
-
-    resizeChild: function () {
-    },
+  
     resize: function () {
       this.modified = true
       this.domNode.dataset.refresh = 'outdated'
@@ -658,30 +669,11 @@ define([
       if (!this.modified) {
         return
       }
-      for (let entry = this.data.firstElementChild; entry; entry = entry.nextElementSibling) {
-        let widget = dtRegistry.getEnclosingWidget(entry)
-        if (widget && widget.resize) {
-          if (!this.entries[widget.uid]) { this.entries[widget.uid] = widget }
-        }
-      }
       this.overlap()
       this.view.rectangle = getElementRect(this.domNode)
       this._resizeChild()
       this.modified = false
       this.domNode.dataset.refresh = 'fresh'
-    },
-
-    addOrUpdateReservation: function (reservations) {
-      for (var i = 0; i < reservations.length; i++) {
-        if (!this.entries[reservations[i].id]) {
-          this.entries[reservations[i].id] = new Reservation({uid: reservations[i].id, sup: this, _json: reservations[i]})
-          this.entries[reservations[i].id].addEventListener('change', this.handleReservationEvent.bind(this))
-        } else {
-          this.entries[reservations[i].id].fromJson(reservations[i])
-        }
-      }
-
-      this.show()
     },
 
     _setSupAttr: function (sup) {
@@ -787,6 +779,12 @@ define([
     },
 
     openReservation: function (id) {
+      for (let uuid in this.entries) {
+        if (this.entries[uuid].uid === id || this.entries[uuid].id === id) {
+          this.entries[uuid].popMeUp()
+          return true
+        }
+      }
       if (this.entries[id]) {
         this.entries[id].popMeUp()
         return true

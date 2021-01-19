@@ -52,6 +52,23 @@ define([
       this.func = null
       this.suggest = null
       this.commandLetters = [ 'j', 'm', 'r', 'd', 'c' ]
+
+      /*if (this.CommandOverlay) {
+        this.suggest = null
+        if (this.func) {
+          this.func = null
+          document.activeElement.blur()
+          if (this.resultBox && this.resultBox.parentNode) {
+            this.resultBox.parentNode.removeChild(this.resultBox)
+          }
+          for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
+            if (n.firstChild && n.firstChild.innerHTML) {
+              window.requestAnimationFrame(() => n.dataset.selected = '0')                      }
+          }
+        } else {
+          this.switchCommandMode()
+        }
+      }*/
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
@@ -88,8 +105,6 @@ define([
                       if (n.firstChild && n.firstChild.innerHTML) {
                         window.requestAnimationFrame(() => n.dataset.selected = '0')                      }
                     }
-                  } else {
-                    this.switchCommandMode()
                   }
                 }
                 break
@@ -138,12 +153,16 @@ define([
     },
 
     switchCommandMode: function (mouse = false) {
+      let closeCommandMode = () => {
+        this.CommandOverlay = null
+        window.requestAnimationFrame(() => { document.body.removeChild(document.getElementById('commandModeOverlay')) })
+      }
       return new Promise((resolve, reject) => {
         this.Mouse = mouse
         this.CommandMode = !this.CommandMode
         if (!this.CommandMode) {
-          this.CommandOverlay = null
-          window.requestAnimationFrame(() => { document.body.removeChild(document.getElementById('commandModeOverlay')); resolve() })
+          closeCommandMode()
+          KAIROS.removeClosableFromStack(closeCommandMode)
         } else {
           var o = document.createElement('DIV')
           o.setAttribute('id', 'commandModeOverlay')
@@ -154,6 +173,7 @@ define([
           o.addEventListener('click', this.mouseInteraction.bind(this))
           this.CommandOverlay = o
           window.requestAnimationFrame(() => { document.body.appendChild(o); resolve() })
+          KAIROS.stackClosable(closeCommandMode)
         }
       })
     },
@@ -195,7 +215,6 @@ define([
         case 'c':
           this.goToSearchBox()
           this.func = this.searchByClient
-          this.setResultBox()
           break
         case ':':
           this.goToSearchBox()
@@ -305,7 +324,7 @@ define([
 
     searchByClient: function (val) {
       return new Promise((resolve, reject) => {
-        let search = new ClientSearch(document.getElementById('commandModeOverlayList'))
+        let search = new ClientSearch()
         search.search(val)
         resolve(true)
       })

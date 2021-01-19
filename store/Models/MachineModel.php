@@ -1,7 +1,7 @@
 <?PHP
 class MachineModel extends artnum\LDAP {
   function __construct($db, $config) {
-    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height'), $config);
+    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'), $config);
   }
 
   function getEntryDetails ($ref) {
@@ -21,14 +21,23 @@ class MachineModel extends artnum\LDAP {
     return $ret;
   }
 
-  function processEntry ($conn, $ldapEntry, &$result) {
+  function processEntry ($conn, $ldapEntry, &$result, $idQuery = null) {
     $entry = parent::processEntry($conn, $ldapEntry, $result);
-    if (!isset($entry['description'])) { return NULL; }
-    $entry_ref = trim(strval($entry['description']));
+    /* either a reference (new numbering) or a description (old numbering) */
+    if (empty($entry['description']) && empty($entry['airref'])) { return NULL; }
+  
+    $idOld = !empty($entry['description']) ? trim(strval($entry['description'])) : '';
+    $idNew = !empty($entry['airref']) ? trim(strval($entry['airref'])) : '';
+    $entry_ref = !empty($idNew) ? $idNew : $idOld;
+    $entry['description'] = $entry_ref;
     $entry['uid'] = $entry_ref;
-    $entry['reference'] = $entry_ref;
+    $entry['airref'] = $entry_ref;
     $entry['parent'] = '';
     $details = $this->getEntryDetails($entry_ref);
+    if (!empty($idOld)) {
+      $entry['oldid'] = $idOld;
+      $details = array_merge($details, $this->getEntryDetails($idOld));
+    }
     return array_merge($entry, $details);
   }
 
@@ -37,14 +46,12 @@ class MachineModel extends artnum\LDAP {
     try {
       $conn = $this->DB->readable();
       $eId = ldap_escape($id);
-      $filter = sprintf('(|(description=%s)(airaltref=%s))', $eId, $eId);
+      $filter = sprintf('(|(description=%s)(airaltref=%s)(airref=%s))', $eId, $eId, $eId);
       $res = ldap_list($conn, $this->_dn(), $filter, $this->Attribute);
       if ($res && ldap_count_entries($conn, $res) === 1) {
         $entry = ldap_first_entry($conn, $res);
-        $entry = $this->processEntry($conn, $entry, $result);
+        $entry = $this->processEntry($conn, $entry, $result, $id);
         if (!is_null($entry)) {
-          $entry['uid'] = $id;
-          $entry['reference'] = $id;
           if (!empty($entry['airaltref'])) {
             if (is_array($entry['airaltref']) && in_array($id, $entry['airaltref'])) {
               $entry['parent'] = $entry['description'];

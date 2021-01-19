@@ -1754,12 +1754,8 @@ define([
     },
 
     doCopy: function (event) {
-      this.reservation.copy().then((id) => {
-        if (!this.reservation.sup.openReservation(id)) {
-          window.App.OpenAtCreation[id] = true
-        } else {
-          this.reservation.highlight()
-        }
+      this.reservation.copy().then((reservation) => {
+        reservation.popMeUp()
         this.hide()
       })
     },
@@ -1794,7 +1790,7 @@ define([
         let f = this.nForm.get('value')
         f.beginTime = this.beginTime.value
         f.endTime = this.endTime.value
-        var other = {}
+        let other = {}
         for (var k in f) {
           if (k.substr(0, 2) === 'o-') {
             other[k.substr(2)] = f[k]

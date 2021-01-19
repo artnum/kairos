@@ -1,9 +1,9 @@
 <?PHP
 include('base.php');
 include('FPDI/src/autoload.php');
-include('../lib/format.php');
 
 $JClient = new artnum\JRestClient(base_url('/store'));
+$GEntry = new GetEntry();
 
 $res = $JClient->get($_GET['id'], 'DeepReservation');
 if($res['type'] != 'results') {
@@ -45,12 +45,7 @@ if (isset($reservation['creator']) && !empty($reservation['creator'])) {
 }
 
 
-$res = $JClient->search(array('search.description' => $reservation['target'], 'search.airaltref' => $reservation['target']), 'Machine'); 
-$machine = null;
-if($res['type'] == 'results') {
-   $machine = $res['data'][0];
-}
-
+$machine = $GEntry->getMachine($reservation['target']);
 
 $addrs = array('client' => null, 'responsable' => null, 'place' => null);
 foreach($addrs as $k => $v) {
