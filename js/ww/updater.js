@@ -13,6 +13,7 @@ let Channels = {}
 let Symlinks = {}
 let Range = null
 let PostPoned = {}
+
 self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
@@ -152,7 +153,7 @@ function cacheAndSend (data, vTimeLine) {
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
       let end = dstamp(entry.end)
-
+      
       for (let i = 0; i < vTimeLine.length; i++) {
         if (end > vTimeLine[i].date - 86400000 && begin <= vTimeLine[i].date) {
           vTimeLine[i].entries.push(entry)
@@ -164,42 +165,43 @@ function cacheAndSend (data, vTimeLine) {
           if (parseInt(entry.modification) > LastMod) {
             LastMod = parseInt(entry.modification)
           }
-          if (!entries[btoa(entry.target)]) {
-            entries[btoa(entry.target)] = []
+          let channel = btoa(entry.target)
+          if (Symlinks[channel]) {
+            channel = Symlinks[channel]
+          }
+          if (!entries[channel]) {
+            entries[channel] = []
           }
           let hash = objectHash.sha1(entry)
           entry._hash = hash
           if (Entries[entry.id]) {
             if (hash !== Entries[entry.id][0]) {
-              if (Entries[entry.id][1] !== btoa(entry.target)) {
+              if (Entries[entry.id][1] !== channel) {
                 if (!entries[Entries[entry.id][1]]) {
                   entries[Entries[entry.id][1]] = []
                 }
                 entries[Entries[entry.id][1]].push(entry)
                 delete Entries[entry.id]
               }
-              Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-              entries[btoa(entry.target)].push(entry)
+              Entries[entry.id] = [hash, channel, new Date().getTime()]
+              entries[channel].push(entry)
             }
           } else {
-            Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-            entries[btoa(entry.target)].push(entry)
+            Entries[entry.id] = [hash, channel, new Date().getTime()]
+            entries[channel].push(entry)
           }
           resolve()
         })
       }))
     })
-    Promise.all(promises).then(() => resolve(entries))
+    Promise.all(promises).then(() => {
+      resolve(entries)
+    })
   }).then((entries) => {
     let processed = []
-    let channel
     for (let k in entries) {
-      channel = k
-      if (Symlinks[k]) {
-        channel = Symlinks[k]
-      }
-      if (Channels[channel] && entries[k].length > 0) {
-        Channels[channel].postMessage({op: 'entries', value: entries[k]})
+      if (Channels[k] && entries[k].length > 0) {
+        Channels[k].postMessage({op: 'entries', value: entries[k]})
         processed.push(k)
       } else if (entries[k].length > 0) {
         if (!PostPoned[k]) {
@@ -263,9 +265,9 @@ function checkMachineState () {
             }
             if (Channels[channel]) {
               if (entry.type === '') { continue }
-              if (Status[btoa(entry.type)] !== undefined) {
-                if (Status[btoa(entry.type)] !== null) {
-                  entry.type = Status[btoa(entry.type)]
+              if (Status[channel] !== undefined) {
+                if (Status[channel] !== null) {
+                  entry.type = Status[channel]
                   Channels[channel].postMessage({op: 'state', value: entry})
                 }
               } else {
@@ -283,14 +285,14 @@ function checkMachineState () {
                           } else {
                             status.data.color = 'red'
                           }
-                          Status[btoa(entry.type)] = status.data
-                          entry.type = Status[btoa(entry.type)]
+                          Status[channel] = status.data
+                          entry.type = Status[channel]
                           Channels[channel].postMessage({op: 'state', value: entry})
                           resolve()
                         }
                       })
                     } else {
-                      Status[btoa(entry.type)] = null
+                      Status[channel] = null
                     }
                   })
          
