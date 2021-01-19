@@ -287,7 +287,8 @@ define([
       return new Promise((resolve, reject) => {
         var top = -1
         for (var n = this.domEntries.firstChild; n; n = n.nextElementSibling) {
-          if (n.dataset.reference === val) {
+          let details = JSON.parse(n.dataset.details)
+          if (details.uid === val || (Array.isArray(details.oldid) ? details.oldid.indexOf(val) !== -1 : details.oldid === val)) {
             window.requestAnimationFrame(() => {
               n.classList.add('highlight')
             })
