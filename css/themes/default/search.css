@@ -1,0 +1,28 @@
+.searchResult {
+    background-color: white;
+    min-width: calc(100% - 680px);
+    max-width: calc(100% - 680px);
+    max-height: 100%;
+    min-height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 1ex 1ch 1ex 1ch;
+    font-size: 12pt;
+}
+
+.searchResult .result {
+    font-size: 16pt;
+    font-weight: bold;
+    margin: 1ex auto auto auto;
+}
+
+.searchResult .year {
+    margin: 1ex auto auto 1ch;
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+.searchResult .entry {
+    margin: auto auto auto 1ch;
+}
