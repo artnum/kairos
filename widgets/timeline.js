@@ -1539,16 +1539,32 @@ define([
         let a = this.Entries[ka]
         let b = this.Entries[kb]
 
-        let aT = Number.isNaN(parseInt(a.get('target'))) ? Infinity : parseInt(a.get('target'))
-        let bT = Number.isNaN(parseInt(b.get('target'))) ? Infinity : parseInt(b.get('target'))
+        let aT = a.get('target')
+        let bT = b.get('target')
+        if (aT.indexOf('.') !== -1) {
+          aT = parseInt(aT.substring(0, aT.indexOf('.')))
+        }  else {
+          aT = Number.isNaN(parseInt(aT)) ? Infinity : parseInt(aT)
+          if (aT !== Infinity) {
+            aT = Math.floor(aT / 100)
+          }
+        }
+        if (bT.indexOf('.') !== -1) {
+          bT = parseInt(bT.substring(0, bT.indexOf('.')))
+        } else {
+          bT = Number.isNaN(parseInt(bT)) ? Infinity : parseInt(bT)
+          if (bT !== Infinity) {
+            bT = Math.floor(bT / 100)
+          }
+        }
         
         let ida = aT
         let idb = bT
-        a.domNode.dataset.groupId = Math.floor(aT / 100)
-        b.domNode.dataset.groupId = Math.floor(bT / 100)
+        a.domNode.dataset.groupId = aT
+        b.domNode.dataset.groupId = bT
         if (aT === Infinity && bT !== Infinity) { a.domNode.dataset.pushToEnd = true; return 1 }
         if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
-        if (aT !== Infinity && bT !== Infinity && Math.floor(aT / 100) - Math.floor(bT / 100) !== 0) { return Math.floor(aT / 100) - Math.floor(bT / 100) }
+        if (aT !== Infinity && bT !== Infinity && aT - bT !== 0) { return aT - bT }
 
         const techData = [ 'float:workheight:r', 'float:floorheight:r', 'float:maxcapacity:r', 'float:sideoffset:r' ]
         for (let i = 0; i < techData.length; i++) {
