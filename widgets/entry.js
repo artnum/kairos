@@ -353,6 +353,7 @@ define([
         if (url) {
           txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
         }*/
+        txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
       //})
