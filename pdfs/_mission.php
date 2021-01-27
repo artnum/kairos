@@ -218,7 +218,13 @@ $PDF->printTaggedLn(array( '%c',
          $txt, '%cb', 
          $reservation['begin']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['begin']->format('H:i'), 
          '%c'),
-      array('break' => true));
+      array('break' => false));
+$PDF->SetX(120);
+$PDF->printTaggedLn(array( '%c', 
+    'Fin prévue : date : ', '%cb', 
+    $reservation['end']->format('d.m.Y'), '%c', ' / heure ', '%cb', $reservation['end']->format('H:i'), 
+    '%c'),
+array('break' => true));
 if (!empty($reservation['padlock'])) {
   $PDF->printTaggedLn(array('%c', 'Code du cadenas : ', '%cb', $reservation['padlock']));
 }
@@ -266,9 +272,9 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
       $startY = $PDF->GetY();
       $stopY = $startY;
       $first = true;
+      $PDF->block("b$i");
       foreach($v as $data) {
         $i++;
-        $PDF->block("b$i");
       
          if(!$first) {
             if($stopY == $startY) {
@@ -332,14 +338,15 @@ if( is_array($reservation['complements']) && count($reservation['complements']) 
          $PDF->printTaggedLn(array('%a', ''), array('break' => false));
 
          $first = false;
-         $PDF->close_block();
       }
       $PDF->SetY($stopY);
-      $PDF->br();
+      $PDF->close_block();
+
    }
 }
 
 if(isset($reservation['equipment'])) {
+  $noequ = false;
    $equipment = array();
    $eq = explode("\n", $reservation['equipment']);
    foreach($eq as $e) {
@@ -354,7 +361,8 @@ if(isset($reservation['equipment'])) {
    if(count($equipment) > 0) {
       $XPos = ceil($PDF->GetX() / 4) * 4;
       foreach($equipment as $e) {
-        if ($e === '%') { continue; }
+        if ($e === '%') { $noequ = true; continue; }
+        $noequ = false;
          $PDF->SetX($XPos);
          $PDF->printTaggedLn(array('%c', $e), array('break' => false));
 
@@ -366,12 +374,14 @@ if(isset($reservation['equipment'])) {
       }
       $PDF->br();
    }
-   $PDF->br();
-   $PDF->hr();
+   if (!$noequ) {
+    $PDF->br();
+   }
 }
 $PDF->resetFontSize();
 
 if($reservation['comment']) {
+  $PDF->hr();
   $PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline'=>true));
   
   foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
@@ -380,6 +390,8 @@ if($reservation['comment']) {
   $PDF->br();
   $PDF->hr();
   $PDF->br();
+} else {
+  $PDF->hr();
 }
 
 $PDF->printTaggedLn(array('%cb', 'À compléter'), array('underline'=>true));
