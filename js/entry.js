@@ -82,21 +82,19 @@ KEntry.prototype.getEvents = function () {
             let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
             url.searchParams.append('machine', this.data.uid)
             queries.push(fetch(url))
-            if (this.data.oldid !== undefined) {
-                if (Array.isArray(this.data.oldid)) {
-                    for (let i = 0; i < this.data.oldid.length; i++) {
-                        url = new URL(`${KAIROS.getBase()}/store/Evenement/.chain`)
-                        url.searchParams.append('machine', this.data.oldid[i])
-                        queries.push(fetch(url))
-                    }
-                } else {
+            if (this.data.oldid !== undefined) { 
+                let oldid = this.data.oldid
+                if (!Array.isArray(this.data.oldid)) {
+                    oldid = [this.data.oldid]
+                }
+                for (let i = 0; i < oldid.length; i++) {
+                    if (oldid[i] === this.data.uid) { continue; }
                     url = new URL(`${KAIROS.getBase()}/store/Evenement/.chain`)
-                    url.searchParams.append('machine', this.data.oldid)
+                    url.searchParams.append('machine', oldid[i])
                     queries.push(fetch(url))
                 }
             }
             Promise.all(queries).then(responses => {
-                let eventList = []
                 let waitJson = []
                 for (let i = 0; i < responses.length; i++) {
                     if (!responses[i].ok) { KAIROS.error('Erreur lors de l\'interrogation des évènements'); continue; }
@@ -104,15 +102,22 @@ KEntry.prototype.getEvents = function () {
                         responses[i].json().then(result => {
                             if (result.length > 0) {
                                 let data = Array.isArray(result.data) ? result.data : [result.data]
-                                eventList = [...eventList, ...data]
+                                resolve(data)
+                                return
                             }
-                            resolve()
+                            resolve([])
+                            return
                         })
                     })
                     waitJson.push(p)
                 }
-                Promise.all(waitJson).then(() => {
-                    resolve(eventList)
+                
+                Promise.all(waitJson).then((eventList) => {
+                    let results = []
+                    for (let i = 0; i < eventList.length; i++) {
+                        results = [...eventList[i], ...results]
+                    }
+                    resolve(results)
                 })
             })
         })
@@ -175,7 +180,6 @@ KEntry.prototype.handleMessage = function (msg) {
             if (!this.state) {
                 this.state = {id: -1, type: {severity: -1}}
             }
-
             if (msgData.value.id !== this.state.id) {
                 msgData.value.type.severity = parseInt(msgData.value.type.severity)
                 this.state = msgData.value

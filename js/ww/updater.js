@@ -252,59 +252,78 @@ function newVTimeLine () {
 
 var Status = {}
 function checkMachineState () {
-  let p = new Promise((resolve, reject) => {
-    let url = getUrl('store/Evenement/.machinestate')
-    doFetch(url).then(response => {
-      if (response.ok) {
-        response.json().then(result => {
-          for (i = 0; i < result.length; i++) {
+  let url = getUrl('store/Evenement/.machinestate')
+  doFetch(url).then(response => {
+    if (response.ok) {
+      response.json().then(result => {
+        let prmses = []
+        for (i = 0; i < result.length; i++) {
+          prmses.push(new Promise((resolve, reject) => {
             let entry = result.data[i]
             let channel = btoa(entry.resolvedTarget)
+
             if (Symlinks[channel]) {
               channel = Symlinks[channel]
             }
-            if (Channels[channel]) {
-              if (entry.type === '') { continue }
-              if (Status[channel] !== undefined) {
-                if (Status[channel] !== null) {
-                  entry.type = Status[channel]
-                  Channels[channel].postMessage({op: 'state', value: entry})
+
+            if (Status[entry.type] === undefined) {
+              if (entry.type === '') { resolve([]); return }
+              if (Status[entry.type] !== undefined) {
+                if (Status[entry.type] !== null) {
+                  entry.type = Status[entry.type]
                 }
+                resolve([channel, entry])
               } else {
-                  doFetch(getUrl(`store/${entry.type}`)).then(response => {
-                    if (response.ok) {
-                      response.json().then(status => {
-                        if (status.length === 1) {
-                          let severity = parseInt(status.data.severity)
-                          if (severity < 1000) {
-                            status.data.color = 'black'
-                          } else if (severity < 2000) {
-                            status.data.color = 'blue'
-                          } else if (severity < 3000) {
-                            status.data.color = 'darkorange'
-                          } else {
-                            status.data.color = 'red'
-                          }
-                          Status[channel] = status.data
-                          entry.type = Status[channel]
-                          Channels[channel].postMessage({op: 'state', value: entry})
-                          resolve()
-                        }
-                      })
-                    } else {
-                      Status[channel] = null
+                doFetch(getUrl(`store/${entry.type}`)).then(response => {
+                  if (!response.ok) { Status[channel] = null; resolve(); return }
+                  response.json().then(status => {
+                    if (status.length === 1) {
+                      let severity = parseInt(status.data.severity)
+                      if (severity < 1000) {
+                        status.data.color = 'black'
+                      } else if (severity < 2000) {
+                        status.data.color = 'blue'
+                      } else if (severity < 3000) {
+                        status.data.color = 'darkorange'
+                      } else {
+                        status.data.color = 'red'
+                      }
+                      Status[channel] = status.data
+                      entry.type = Status[channel]
+                      resolve([channel, entry])
                     }
-                  })
-         
+                  }, () => resolve([]))
+                })
+              }
+            }
+          }))
+        }
+        Promise.all(prmses).then((toSend) => {
+          let merged = {}
+          for (let i = 0; i < toSend.length; i++) {
+            if (toSend[i].length !== 2) { continue }
+            if (merged[toSend[i][0]] === undefined) {
+              merged[toSend[i][0]] = toSend[i][1]
+            } else {
+              if (merged[toSend[i][0]].severity === undefined) {
+                merged[toSend[i][0]] = toSend[i][1]
+              } else {
+                if (parseInt(merged[toSend[i][0]].severity) < parseInt(toSend[i][1].severity)) {
+                  merged[toSend[i][0]] = toSend[i][1]
+                }
               }
             }
           }
-          resolve()
+          for (let k in merged) {
+            if (Channels[k] !== undefined) {
+              Channels[k].postMessage({op: 'state', value: merged[k]})
+            }
+          }
+          setTimeout(checkMachineState, 5000)
         })
-      }
-    })
+      })
+    }
   })
-  p.then(() => setTimeout(checkMachineState, 5000))
 }
 
 function runUpdater () {
