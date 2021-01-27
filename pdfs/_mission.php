@@ -389,16 +389,53 @@ $PDF->br();
 $PDF->hr();
 $PDF->br();
 
-$PDF->printTaggedLn(array('%cb', 'Remarque'));
-$YPos = $PDF->GetY();
-$PDF->squaredFrame($PDF->h - ($YPos + 20), array('color' => '#DDD', 'line' => 0.2, 'line-type' => 'dotted', 'border' => false, 'lined' => true));
 if($reservation['comment']) {
-   $PDF->SetY($YPos + 1);
-
-   foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
-      $PDF->printTaggedLn(array('%c', $line), array('multiline' => true));
-   }
+  $PDF->printTaggedLn(array('%cb', 'Remarque'), array('underline'=>true));
+  
+  foreach(preg_split('/(\n|\r|\r\n|\n\r)/', $reservation['comment']) as $line) {
+    $PDF->printTaggedLn(array('%c', $line), array('multiline' => true));
+  }
 }
+
+$PDF->br();
+$PDF->hr();
+$PDF->br();
+
+
+$PDF->printTaggedLn(array('%cb', 'À compléter'), array('underline'=>true));
+
+$PDF->SetX(180);
+$PDF->printTaggedLn(['%c', 'Oui'], ['break' => false]);
+$PDF->SetX(190);
+$PDF->printTaggedLn(['%c', 'Non']);
+
+foreach([
+    '- Chargement complet (selon la liste)',
+    '- Pleins effectués (machine et véhicule)',
+    '- Machine en ordre'
+  ] as $line) {
+  $PDF->printTaggedLn(['%c', $line], ['break' => false]);
+  $PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.4, 180 - $PDF->GetX(), 0, 'dotted', array('color' => '#999') );
+  $PDF->SetX(182);
+  $PDF->printTaggedLn(array('%a', ''), ['break' => false]);
+  $PDF->SetX(192);
+  $PDF->printTaggedLn(array('%a', ''), ['break' => false]);
+  $PDF->br();
+}
+
+$PDF->br();
+$PDF->printTaggedLn(array('%c', '- Remarques particulières'));
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 180, 0, 'dotted', array('color' => '#999') );
+$PDF->br();
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 180, 0, 'dotted', array('color' => '#999') );
+$PDF->br();
+$PDF->br();
+$PDF->printTaggedLn(['%cb', 'Signature collaborateur : '], ['break' => false]);
+$PDF->drawLine($PDF->GetX() + 2, $PDF->GetY() + 3.8, 139, 0, 'dotted', array('color' => '#999') );
+$PDF->br();
+
+$YPos = $PDF->GetY();
+
 
 $ini_conf = parse_ini_file('../conf/location.ini', true);
 if (!isset($ini_conf['pictures'])) {
