@@ -150,6 +150,10 @@
     line-height: 1.3em;    
 }
 
+.entry .tooltip a {
+    color:#00e189;
+}
+
 .entry .parentMachine:before {
     content: ' (';
 }

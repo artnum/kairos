@@ -38,6 +38,7 @@
 <script src="../node_modules/artnum/DTable.js"></script>
 <script>
 function run () {
+   document.title = `[${window.location.hash.substring(1)}] Réservation par machine`
    var tables = document.getElementsByTagName('TABLE')
    let yesterday = new Date();
    yesterday.setHours(12, 00, 00)
