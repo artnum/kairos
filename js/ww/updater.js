@@ -266,36 +266,35 @@ function checkMachineState () {
               channel = Symlinks[channel]
             }
 
-            if (Status[entry.type] === undefined) {
-              if (entry.type === '') { resolve([]); return }
-              if (Status[entry.type] !== undefined) {
-                if (Status[entry.type] !== null) {
-                  entry.type = Status[entry.type]
-                }
-                resolve([channel, entry])
-              } else {
-                doFetch(getUrl(`store/${entry.type}`)).then(response => {
-                  if (!response.ok) { Status[entry.type] = null; resolve(); return }
-                  response.json().then(status => {
-                    if (status.length === 1) {
-                      let severity = parseInt(status.data.severity)
-                      if (severity < 1000) {
-                        status.data.color = 'black'
-                      } else if (severity < 2000) {
-                        status.data.color = 'blue'
-                      } else if (severity < 3000) {
-                        status.data.color = 'darkorange'
-                      } else {
-                        status.data.color = 'red'
-                      }
-                      Status[entry.type] = status.data
-                      entry.type = Status[entry.type]
-                      resolve([channel, entry])
-                    }
-                  }, () => resolve([]))
-                })
+            if (entry.type === '') { resolve([]); return }
+            if (Status[entry.type] !== undefined) {
+              if (Status[entry.type] !== null) {
+                entry.type = Status[entry.type]
               }
+              resolve([channel, entry])
+            } else {
+              doFetch(getUrl(`store/${entry.type}`)).then(response => {
+                if (!response.ok) { Status[entry.type] = null; resolve(); return }
+                response.json().then(status => {
+                  if (status.length === 1) {
+                    let severity = parseInt(status.data.severity)
+                    if (severity < 1000) {
+                      status.data.color = 'black'
+                    } else if (severity < 2000) {
+                      status.data.color = 'blue'
+                    } else if (severity < 3000) {
+                      status.data.color = 'darkorange'
+                    } else {
+                      status.data.color = 'red'
+                    }
+                    Status[entry.type] = status.data
+                    entry.type = Status[entry.type]
+                    resolve([channel, entry])
+                  }
+                }, () => resolve([]))
+              })
             }
+          
           }))
         }
         Promise.all(prmses).then((toSend) => {
