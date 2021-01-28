@@ -275,7 +275,7 @@ function checkMachineState () {
                 resolve([channel, entry])
               } else {
                 doFetch(getUrl(`store/${entry.type}`)).then(response => {
-                  if (!response.ok) { Status[channel] = null; resolve(); return }
+                  if (!response.ok) { Status[entry.type] = null; resolve(); return }
                   response.json().then(status => {
                     if (status.length === 1) {
                       let severity = parseInt(status.data.severity)
@@ -288,8 +288,8 @@ function checkMachineState () {
                       } else {
                         status.data.color = 'red'
                       }
-                      Status[channel] = status.data
-                      entry.type = Status[channel]
+                      Status[entry.type] = status.data
+                      entry.type = Status[entry.type]
                       resolve([channel, entry])
                     }
                   }, () => resolve([]))
