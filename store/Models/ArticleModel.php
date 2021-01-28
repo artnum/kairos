@@ -1,7 +1,9 @@
 <?PHP
 class ArticleModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'article', 'article_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'article', 'article_id', []);
       $this->conf('auto-increment', true);
       $this->conf('mtime', 'article_modified');
       $this->conf('mtime.ts', true);

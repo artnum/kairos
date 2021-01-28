@@ -1,7 +1,9 @@
 <?PHP
 class ContactsModel extends artnum\LDAP {
+  protected $kconf;
   function __construct($db, $config)  {
-    parent::__construct($db, 'ou=Contacts,o=airnace', array('givenname', 'sn', 'displayname', 'mail', 'telephonenumber', 'o', 'mobile', 'l', 'postalcode', 'c', 'postaladdress', 'uid'), $config);
+    $this->kconf = $config;
+    parent::__construct($db, $this->kconf->get('trees.contacts'), array('givenname', 'sn', 'displayname', 'mail', 'telephonenumber', 'o', 'mobile', 'l', 'postalcode', 'c', 'postaladdress', 'uid'), []);
   }
 
   function processEntry ($conn, $ldapEntry, &$result) {
@@ -22,6 +24,11 @@ class ContactsModel extends artnum\LDAP {
     }
 
     return $entry;
+  }
+
+  function getCacheOpts() {
+    /* 15min cache for contacts */
+    return ['age' => 900, 'public' => true];
   }
 }
 ?>

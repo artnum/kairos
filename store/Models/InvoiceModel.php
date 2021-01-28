@@ -1,7 +1,9 @@
 <?PHP
 class InvoiceModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'invoice', 'invoice_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'invoice', 'invoice_id', []);
       $this->conf('auto-increment', true);
       $this->conf('create', 'invoice_created');
       $this->conf('create.ts', true);

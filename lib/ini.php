@@ -1,23 +1,46 @@
 <?PHP
 
-$defaultConf = array(
-  'general' => array(
+$defaultConf = [
+  'general' => [
     'disable-locking' => 1
-  ),
-  'storage' => array(
+  ],
+  'storage' => [
     'pdo-string' => 'mysql:dbname=kairos;charset=utf8mb4;host=localhost',
     'user' => '',
-    'password' => ''),
-  'printing' => array(
+    'password' => ''],
+  'printing' => [
     'print-command' => 'cat __FILE__ > /dev/null'
-  ),
-  'pictures' => array(
+  ],
+  'pictures' => [
     'storage' => '/var/lib/kairos/'
-  ),
-  'files' => array(
+  ],
+  'files' => [
     'storage' => '/var/lib/kairos/'
-  )
-);
+  ],
+  'trees' => [
+    'contacts' => '',
+    'users' => '',
+    'machines' => ''
+  ]
+];
+
+class KConf {
+  protected $IniValue;
+  function __construct($ini) {
+    $this->IniValue = $ini;
+  }
+
+  function get($path) {
+    if (empty($path)) { return null; }
+    $frags = explode('.', $path);
+    $value = $this->IniValue;
+    for ($attr = array_shift($frags); $attr; $attr = array_shift($frags)) {
+      if (!isset($value[$attr]) || empty($value[$attr])) { return NULL; }
+      $value = $value[$attr];
+    }
+    return $value;
+  }
+}
 
 function load_ini_configuration() {
   global $defaultConf;

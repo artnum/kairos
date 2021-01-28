@@ -1,7 +1,9 @@
 <?PHP
 class MachineModel extends artnum\LDAP {
+  protected $kconf;
   function __construct($db, $config) {
-    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'), $config);
+    $this->kconf = $config;
+    parent::__construct($db, $this->kconf->get('trees.machines'), ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'], []);
   }
 
   function getEntryDetails ($ref) {
@@ -135,6 +137,11 @@ class MachineModel extends artnum\LDAP {
 
   function dbtype() {
     return array('sql', 'ldap');
+  }
+
+  function getCacheOpts() {
+    /* 15min cache for machine */
+    return ['age' => 900, 'public' => true];
   }
 }
 ?>

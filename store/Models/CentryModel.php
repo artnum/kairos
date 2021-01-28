@@ -1,7 +1,9 @@
 <?PHP
 class CentryModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'centry', 'centry_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'centry', 'centry_id', []);
       $this->conf('auto-increment', true);
       $this->conf('defaults', array(
          'description' => '',

@@ -1,13 +1,51 @@
 <?PHP
 class EvenementModel extends artnum\SQL {
+  protected $kconf;
   function __construct($db, $config) {
-    parent::__construct($db, 'evenement', 'evenement_id', $config);
+    $this->kconf = $config;
+    parent::__construct($db, 'evenement', 'evenement_id', []);
     $this->conf('auto-increment', true);
-    $this->conf('datetime', array('date'));
+    $this->conf('datetime', ['date']);
+  }
+
+  function mapMachineId ($id) {
+    $oldid = null;
+    $newid = null;
+    $conn = $this->LDAP->readable();
+    $filter = sprintf('(|(description=%s)(airref=%s))', $id, $id);
+    $res = ldap_list($conn, $this->kconf->get('trees.machines'), $filter, ['description', 'airref']);
+
+    /* handle altref : they don't have proper existence, so they can map to themselves only */
+    if (!$res) { return [[$id], $id]; }
+    if (ldap_count_entries($conn, $res) <= 0) { return [[$id], $id]; }
+    
+    $ids = [];
+    for ($entry = ldap_first_entry($conn, $res); $entry; $entry = ldap_next_entry($conn, $entry)) {
+      for ($attr = ldap_first_attribute($conn, $entry); $attr; $attr = ldap_next_attribute($conn, $entry)) {
+        $attr = strtolower($attr);
+        switch ($attr) {
+          case 'description':
+          case 'airref':
+            $values = ldap_get_values($conn, $entry, $attr);
+            if ($values['count'] > 0) {
+              unset($values['count']);
+              $ids = array_merge($ids, $values);
+              /* main id is id 0 of airref or description */
+              if ($attr === 'airref') {
+                $newid = $values[0];
+              } else {
+                $oldid = $values[0];
+              }
+            }
+            break;
+        }
+      }
+    }
+    return [$ids, $newid === null ? $oldid : $newid];
   }
 
   function getEvenement ($options) {
-    $result = new \artnum\JStore\Result();
+    $results = new \artnum\JStore\Result();
     $req = 'SELECT
               "evenement_id",
               "evenement_date",
@@ -26,22 +64,20 @@ class EvenementModel extends artnum\SQL {
     try {
       $st = $this->get_db(true)->prepare($req);
       if($st->execute()) {
-        $entries = array();
         while(($data = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-          $entries[] = $this->unprefix($data);
+          $entry = $this->unprefix($data);
+          $results->addItem($entry);
         }
-        return array($entries, count($entries));
       }
     } catch(\Exception $e) {
-      $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
-      return array(NULL, 0);
+      $results->addError($e->getMessage(), $e);
     }
 
-    return array(NULL, 0);
+    return $results;
   }
 
   function getChain ($options) {
-    $result = new \artnum\JStore\Result();
+    $results = new \artnum\JStore\Result();
     $req = 'SELECT
         "evenement_id",
         "evenement_date",
@@ -63,13 +99,18 @@ class EvenementModel extends artnum\SQL {
 
     $st = null;
     if (!empty($options['machine'])) {
-      $st = $this->get_db(true)->prepare($req . ' WHERE "reservation_target" = :target OR "evenement_target" = :target AND "reservation_deleted" IS NULL');
-      $st->bindParam(':target', $options['machine'], PDO::PARAM_STR);
+      $ids = $this->mapMachineId($options['machine']);
+      $in = str_repeat('?,', count($ids[0]) -1) . '?';
+      $st = $this->get_db(true)->prepare($req . ' WHERE "reservation_target" IN (' . $in . ') OR "evenement_target" IN (' . $in . ') AND "reservation_deleted" IS NULL');
+      foreach ($ids[0] as $k => $id) {
+        $st->bindValue($k + 1, $id, PDO::PARAM_STR);
+        $st->bindValue($k + count($ids[0]) + 1, $id, PDO::PARAM_STR);
+      }
     } else if (!empty($options['reservation'])) {
       $st = $this->get_db(true)->prepare($req . ' WHERE "evenement_reservation" = :id AND "reservation_deleted" IS NULL');
       $st->bindParam(':id', $options['reservation'], PDO::PARAM_STR);
     } else {
-      return $result;
+      return $results;
     }
 
     try {
@@ -108,17 +149,18 @@ class EvenementModel extends artnum\SQL {
             unset($root[$k]);
           }
         }
-
-        return array(array_values($root), count($root));
+        foreach ($root as $entry) {
+          $results->addItem($entry);
+        }
       }
     } catch (\Exception $e) {
-      $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
-      return array(NULL, 0);
+      $results->addError($e->getMessage(), $e);
     }
-    return array(NULL, 0);
+    return $results;
   }
 
   function getMachineState ($options) {
+    $results = new \artnum\JStore\Result();
     $req = 'SELECT "evenement".*, COALESCE(NULLIF("evenement_target", \'\'), "reservation_target") 
         AS "evenement_resolvedTarget", "status_severity" AS "evenement_severity"
           FROM "evenement" LEFT JOIN "status" ON "status_id" = idFromURL("evenement_type")
@@ -126,11 +168,20 @@ class EvenementModel extends artnum\SQL {
           WHERE "evenement_id" NOT IN (SELECT "evenement_previous" FROM "evenement" WHERE "evenement_previous" IS NOT NULL)
           AND "reservation"."reservation_deleted" IS NULL;';
     try {
+      $Maps = [];
       $st = $this->get_db(true)->prepare($req);
       if($st->execute()) {
-        $entries = array();
+        $entries = [];
         while(($data = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
           $entry = $this->unprefix($data);
+          if (empty($entry['resolvedTarget'])) { continue; }
+          if (!isset($Maps[$entry['resolvedTarget']])) {
+            $ids = $this->mapMachineId($entry['resolvedTarget']);
+            foreach ($ids[0] as $id) {
+              $Maps[$id] = $ids[1];
+            }
+          }
+          $entry['resolvedTarget'] = $Maps[$entry['resolvedTarget']];
           if (!isset($entries[$entry['resolvedTarget']])) {
             $entries[$entry['resolvedTarget']] = $entry;
           } else {
@@ -139,17 +190,19 @@ class EvenementModel extends artnum\SQL {
             }
           }
         }
-        return array(array_values($entries), count($entries));
+        foreach ($entries as $entry) {
+          $results->addItem($entry);
+        }
       }
     } catch(\Exception $e) {
-      $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
-      return array(NULL, 0);
+      $results->addError($e->getMessage(), $e);
     }
   
-    return array(NULL, 0);
+    return $results;
   }
 
   function getUnified ($options) {
+    $results = new \artnum\JStore\Result();
     $req = 'SELECT
               "evenement".*,
               COALESCE(NULLIF("evenement_target", \'\'), "reservation_target") AS "evenement_resolvedTarget",
@@ -194,19 +247,43 @@ class EvenementModel extends artnum\SQL {
     $req = join(' WHERE ', $parts);
     try {
       $st = $this->get_db(true)->prepare($req);
+      $Maps = [];
       if($st->execute()) {
         $entries = array();
         while(($data = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
-          $entries[] = $this->unprefix($data);
+          $entry = $this->unprefix($data);
+          if (empty($entry['resolvedTarget'])) { continue; }
+          if (!isset($Maps[$entry['resolvedTarget']])) {
+            $ids = $this->mapMachineId($entry['resolvedTarget']);
+            foreach ($ids[0] as $id) {
+              $Maps[$id] = $ids[1];
+            }
+          }
+          $entry['resolvedTarget'] = $Maps[$entry['resolvedTarget']];
+          $results->addItem($entry);
         }
-        return array($entries, count($entries));
       }
     } catch(\Exception $e) {
-      $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
-      return array(NULL, 0);
+      $results->addError($e->getMessage(), $e);
     }
 
-    return array(NULL, 0);
+    return $results;
+  }
+
+  function dbtype() {
+    return array('sql', 'ldap');
+  }
+
+  function get_db($none = true) {
+    return $this->SQL;
+  }
+
+  function set_db($dbs) {
+    if (!isset($dbs['sql']) || !isset($dbs['ldap'])) {
+      throw new Exception('Database not configured');
+    }
+    $this->LDAP = $dbs['ldap'];
+    $this->SQL = $dbs['sql'];
   }
 }
 ?>

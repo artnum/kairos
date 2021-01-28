@@ -1,7 +1,9 @@
 <?PHP
 class MissionFichierModel extends artnum\SQL {
+  protected $kconf;
   function __construct($db, $config) {
-    parent::__construct($db, 'missionFichier', 'missionFichier_fichier', $config);
+    $this->kconf = $config;
+    parent::__construct($db, 'missionFichier', 'missionFichier_fichier', []);
   }
 
   function _read ($id) {
