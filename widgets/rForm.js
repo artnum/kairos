@@ -1784,13 +1784,7 @@ define([
         }
         var changeMachine = false
         if (this.reservation.get('target') !== this.nMachineChange.value) {
-          var newEntry = window.App.getEntry(this.nMachineChange.value)
-          if (newEntry == null) {
-            alert('Déplacement vers machine inexistante')
-            reject(new Error('Target not found'))
-          }
           changeMachine = this.reservation.get('target')
-          this.reservation.set('sup', newEntry)
           this.reservation.set('previous', changeMachine)
           this.reservation.set('target', this.nMachineChange.value)
         }
@@ -1818,79 +1812,75 @@ define([
           deliveryEnd = ''
         }
 
-        Query.exec(Path.url('store/Arrival', {params: {'search.target': this.reservation.uid}})).then((res) => {
-          let arrival = {}
-          if (res.success && res.length > 0) {
-            arrival = Object.assign(arrival, res.data[0])
-          }
-
-          if (this.Buttons.addEnd.getValue()) {
-            arrival.deleted = null
-            arrival.target = this.reservation.uid
-            if (f.arrivalDate) {
-              if (f.arrivalTime) {
-                arrival.reported = f.arrivalDate.join(f.arrivalTime)
-              } else {
-                arrival.reported = f.arrivalDate
-              }
+        let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
+        url.searchParams.append('search.target', this.reservation.uid)
+        fetch(url).then(response => {
+          response.json().then(res => {
+            let arrival = {}
+            if(res.length > 0) {
+              arrival = Object.assign(arrival, res.data[0])
             }
-            arrival.creator = this.nArrivalCreator.value
-            arrival.comment = f.arrivalComment
-            arrival.contact = f.arrivalAddress
-            arrival.locality = this.nArrivalLocality.value
-            arrival.other = f.arrivalKeys
-            arrival.done = this.Buttons.addArrivalDone.getValue()
-            arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
 
-            this.reservation.set('_arrival', arrival)
-          } else {
-            if (arrival.id) {
-              this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
+            if (this.Buttons.addEnd.getValue()) {
+              arrival.deleted = null
+              arrival.target = this.reservation.uid
+              if (f.arrivalDate) {
+                if (f.arrivalTime) {
+                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
+                } else {
+                  arrival.reported = f.arrivalDate
+                }
+              }
+              arrival.creator = this.nArrivalCreator.value
+              arrival.comment = f.arrivalComment
+              arrival.contact = f.arrivalAddress
+              arrival.locality = this.nArrivalLocality.value
+              arrival.other = f.arrivalKeys
+              arrival.done = this.Buttons.addArrivalDone.getValue()
+              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+
+              this.reservation.set('_arrival', arrival)
             } else {
-              this.reservation.set('_arrival', {})
-            }
-          }
-
-          let status = this.nStatus.value
-          if (isNaN(parseInt(status))) {
-            status = status.split('/').pop()
-          }
-          this.reservation.set('status', `${status}`)
-          this.reservation.set('begin', begin)
-          this.reservation.set('end', end)
-          this.reservation.set('deliveryBegin', deliveryBegin)
-          this.reservation.set('deliveryEnd', deliveryEnd)
-          this.reservation.set('address', this.nAddress.value)
-          this.reservation.set('reference', f.reference)
-          this.reservation.set('equipment', f.equipment)
-          this.reservation.set('locality', this.nLocality.value)
-          this.reservation.set('comment', f.comments)
-          this.reservation.set('folder', f.folder)
-          this.reservation.set('gps', f.gps)
-          this.reservation.set('title', f.title)
-          this.reservation.set('creator', this.nCreator.value)
-          this.reservation.set('technician', this.nTechnician.value)
-          this.reservation.set('visit', this.nAddVisit.value)
-          this.reservation.set('vreport', this.nAddReport.value)
-          this.reservation.set('padlock', this.nPadlock.value)
-          this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
-
-          this.reservation.save().then((id) => {
-            this.resize()
-            var reservation = this.reservation
-            if (changeMachine) {
-              var entry = window.App.getEntry(reservation.get('target'))
-              var oldEntry = window.App.getEntry(changeMachine)
-              if (entry) {
-                KAIROS.info(`Réservation ${reservation.uid} correctement déplacée`)
-                delete oldEntry.entries[reservation.uid]
-                entry.entries[reservation.uid] = reservation
-                entry.resize()
-                oldEntry.resize()
+              if (arrival.id) {
+                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
+              } else {
+                this.reservation.set('_arrival', {})
               }
             }
-            this.domNode.removeAttribute('style')
-            resolve()
+
+            let status = this.nStatus.value
+            if (isNaN(parseInt(status))) {
+              status = status.split('/').pop()
+            }
+            this.reservation.set('status', `${status}`)
+            this.reservation.set('begin', begin)
+            this.reservation.set('end', end)
+            this.reservation.set('deliveryBegin', deliveryBegin)
+            this.reservation.set('deliveryEnd', deliveryEnd)
+            this.reservation.set('address', this.nAddress.value)
+            this.reservation.set('reference', f.reference)
+            this.reservation.set('equipment', f.equipment)
+            this.reservation.set('locality', this.nLocality.value)
+            this.reservation.set('comment', f.comments)
+            this.reservation.set('folder', f.folder)
+            this.reservation.set('gps', f.gps)
+            this.reservation.set('title', f.title)
+            this.reservation.set('creator', this.nCreator.value)
+            this.reservation.set('technician', this.nTechnician.value)
+            this.reservation.set('visit', this.nAddVisit.value)
+            this.reservation.set('vreport', this.nAddReport.value)
+            this.reservation.set('padlock', this.nPadlock.value)
+            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
+
+            this.reservation.save().then((id) => {
+              if (changeMachine) {
+                this.reservation.sup.removeEntry(this.reservation)
+                resolve()
+                return
+              }
+              this.resize()           
+              resolve()
+            })
           })
         })
       }.bind(this))

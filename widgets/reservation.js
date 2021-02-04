@@ -127,7 +127,6 @@ define([
         }
         if (json['id']) {
           this.set('uid', json['id'])
-          this.set('id', json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -251,6 +250,7 @@ define([
 
         /* string value */
         for (let attr of [
+          'target',
           'visit',
           'vreport',
           'padlock',
@@ -304,10 +304,6 @@ define([
             this.set('creator', object.creator)
             if (dataHash) { dataHash['creator'] = crc32(object.creator) }
           }
-        }
-        if (this.sup) {
-          object['target'] = this.sup.get('target')
-          if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
         }
 
         if (this.get('_arrival')) {
@@ -1406,6 +1402,7 @@ define([
       this.waitStart()
       let savePromise = new Promise((resolve, reject) => {
         this.toObject().then(obj => {
+          console.log(obj)
           let dataHash = obj[1]
           let reservation = object === null ? obj[0] : object
           let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}

@@ -108,6 +108,12 @@ define([
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
         let id = entry.uuid
+        for (let k in this.entries) {
+          if (this.entries[k].uuid === entry.uuid) {
+            delete this.entries[k]
+          }
+        }
+        this.KEntry.delete(id)
         if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
         this.destroyReservation(this.entries[id])
         resolve()

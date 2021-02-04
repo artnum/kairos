@@ -25,6 +25,12 @@ KEntry.load = function (id) {
     return entry._loaded
 }
 
+KEntry.prototype.delete = function (id) {
+    if (this.entries[id] !== undefined) {
+        delete this.entries[id]
+    }
+}
+
 KEntry.prototype.addEventListener = function (type, callback, options = {}) {
     this.evtTarget.addEventListener(type, callback, options)
 }
