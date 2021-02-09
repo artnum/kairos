@@ -43,6 +43,24 @@ self.onmessage = function (msg) {
       }
       runUpdater()
       break
+    case 'moveEntry':
+      if (msg.data.reservation === undefined) {
+        return
+      }
+      let entry = JSON.parse(msg.data.reservation)
+      if (!Entries[entry.id]) { return }
+      let oldChannel = Channels[btoa(entry.previous)] 
+      if (oldChannel === undefined) {
+        oldChannel = Symlinks[btoa(entry.previous)]
+      }
+      let newChannel = Channels[btoa(entry.target)]
+      if (newChannel === undefined) {
+        newChannel = Symlinks[btoa(entry.target)]
+      }
+      oldChannel.postMessage({op: 'remove', reservation: entry})
+      Entries[entry.id][1] = newChannel
+      newChannel.postMessage({op: 'add', reservation: entry})
+      break
   }
 }
 

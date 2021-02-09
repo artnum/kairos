@@ -26,13 +26,14 @@ KEntry.load = function (id) {
     return entry._loaded
 }
 
-KEntry.prototype.delete = function (id) {
-    console.log(id)
-    console.log(this.entries[id])
+KEntry.prototype.delete = function (entry) {
+    let id = entry
+    if (typeof entry === 'object') {
+        id = entry.id
+    }
     if (this.entries[id] !== undefined) {
         delete this.entries[id]
         this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
-        this.unregister()
     }
 }
 
@@ -53,6 +54,10 @@ KEntry.prototype.addEventListener = function (type, callback, options = {}) {
 
 KEntry.prototype.removeEventListener = function (type, callback, options = {}) {
     this.evtTarget.removeEventListener(type, callback, options)
+}
+
+KEntry.prototype.move = function (entry) {
+    this.wwInstance.postMessage({op: 'moveEntry', reservation: JSON.stringify(entry)})
 }
 
 KEntry.prototype.is = function (id) {
@@ -105,18 +110,6 @@ KEntry.prototype.getEvents = function () {
             let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
             url.searchParams.append('machine', this.data.uid)
             queries.push(fetch(url))
-            /*if (this.data.oldid !== undefined) { 
-                let oldid = this.data.oldid
-                if (!Array.isArray(this.data.oldid)) {
-                    oldid = [this.data.oldid]
-                }
-                for (let i = 0; i < oldid.length; i++) {
-                    if (oldid[i] === this.data.uid) { continue; }
-                    url = new URL(`${KAIROS.getBase()}/store/Evenement/.chain`)
-                    url.searchParams.append('machine', oldid[i])
-                    queries.push(fetch(url))
-                }
-            }*/
             Promise.all(queries).then(responses => {
                 let waitJson = []
                 for (let i = 0; i < responses.length; i++) {
@@ -150,6 +143,16 @@ KEntry.prototype.getEvents = function () {
 KEntry.prototype.handleMessage = function (msg) {
     let msgData = msg.data
     switch (msgData.op) {
+      case 'remove':
+        if (msgData.reservation) {
+            this.delete(msgData.reservation)
+        }
+        break
+      case 'add':
+        if (msgData.reservation) {
+            this.add(msgData.reservation)
+        }
+        break
       case 'entries':
         let process = (deadline, origin = 0) => {
             let i = origin;

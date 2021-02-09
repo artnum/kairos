@@ -335,13 +335,17 @@ define([
     },
 
     waitStart: function () {
+      if (this.destroyed) { return }
       window.requestAnimationFrame(() => {
+        if (!this.domNode) { return }
         this.domNode.classList.add('updating')
       })
     },
 
     waitStop: function () {
+      if (this.destroyed) { return }
       window.requestAnimationFrame(() => {
+        if (!this.domNode) { return }
         this.domNode.classList.remove('updating')
       })
     },
@@ -447,7 +451,6 @@ define([
     _setDisableAttr: function () {
       this.set('active', false)
     },
-
     _setActiveAttr: function (value) {
       this._set('active', value)
       this._gui.hidden = value
@@ -1085,20 +1088,13 @@ define([
     },
 
     destroy: function () {
-      window.requestAnimationFrame(() => {
-        if (this.domNode) {
-          if (this.domNode.parentNode) {
-            this.domNode.parentNode.removeChild(this.domNode)
-          }
-          delete this.domNode
-        }
+      return new Promise((resolve, reject) => {
+        this.hide().then(() => {
+          this.destroyed = true
+          this.inherited(arguments)
+          resolve()
+        })
       })
-      this.destroyed = true
-      this.hide()
-      this.inherited(arguments)
-      if (this.sup) {
-        this.sup.overlap()
-      }
     },
 
     show: function () {
@@ -1122,15 +1118,19 @@ define([
     },
 
     hide: function () {
-      window.requestAnimationFrame(() => {
-        if (this.domNode && this.domNode.parentNode) {
-          this.domNode.parentNode.removeChild(this.domNode)
-        }
+      return new Promise((resolve, reject) => {
+        window.requestAnimationFrame(() => {
+          if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
+          resolve()
+        })
+        this._gui.hidden = true
       })
-      this._gui.hidden = true
     },
 
     resize: async function (fromEntry = false) {
+      if (this.destroyed) { return }
       let moving = false
       if (!this.modifiedState) { return }
       if (this.deleted) {
@@ -1394,8 +1394,7 @@ define([
 
     move: function (newTarget, oldTarget) {
       this.set('target', newTarget)
-      this.set('previous', oldTarget)
-      this.Move = true
+      this.previous = oldTarget
     },
 
     save: function (object = null, duplicate = false) {
@@ -1488,9 +1487,6 @@ define([
           this.waitStop()
           this.resize()
           this.saveInProgress = false
-          if(this.Move) {
-            this.sup.KEntry.delete(this.uuid)
-          }
           resolve(id)
         })
       })

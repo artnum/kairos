@@ -77,10 +77,6 @@ define([
         }
         let remove = (event) => {
           if (event.detail && event.detail.entry) {
-            kentry.removeEventListener('update-entry', update)
-            kentry.removeEventListener('remove-entry', remove)
-            kentry.removeEventListener('create-entry', create)
-            kentry.removeEventListener('state-entry', change)
             this.removeEntry(event.detail.entry)
           }
         }
@@ -115,15 +111,17 @@ define([
     },
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        let id = entry.uuid
         for (let k in this.entries) {
           if (this.entries[k].uuid === entry.uuid) {
-            delete this.entries[k]
+            this.destroyReservation(this.entries[k]).then(() => {
+              delete this.entries[k]
+              this.resize()
+              resolve()
+              return
+            })
+            break
           }
         }
-        this.KEntry.delete(id)
-        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
-        this.destroyReservation(this.entries[id])
         resolve()
       })
     },
@@ -139,6 +137,7 @@ define([
         }
         this.entries[id].fromJson(entry).then(() => {
           this.entries[id].waitStop()
+          this.resize()
           resolve(this.entries[id])
         })
       })
@@ -818,10 +817,11 @@ define([
     },
 
     destroyReservation: function (reservation) {
-      if (reservation) {
-        reservation.destroy()
+      return new Promise((resolve, reject) => {
+        if (!reservation) { resolve(); return }
         delete this.entries[reservation.id]
-      }
+        reservation.destroy().then(() => resolve())
+      })
     },
 
     _getActiveReservationsAttr: function () {
