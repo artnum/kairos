@@ -1392,6 +1392,12 @@ define([
       return {uuid: uuidv4, timestamp: Date.now()}
     },
 
+    move: function (newTarget, oldTarget) {
+      this.set('target', newTarget)
+      this.set('previous', oldTarget)
+      this.Move = true
+    },
+
     save: function (object = null, duplicate = false) {
       this.modifiedState = true
       if (this.saveInProgress) { 
@@ -1402,7 +1408,6 @@ define([
       this.waitStart()
       let savePromise = new Promise((resolve, reject) => {
         this.toObject().then(obj => {
-          console.log(obj)
           let dataHash = obj[1]
           let reservation = object === null ? obj[0] : object
           let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
@@ -1483,6 +1488,9 @@ define([
           this.waitStop()
           this.resize()
           this.saveInProgress = false
+          if(this.Move) {
+            this.sup.KEntry.delete(this.uuid)
+          }
           resolve(id)
         })
       })

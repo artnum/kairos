@@ -1782,11 +1782,8 @@ define([
           window.App.error(err[0])
           reject(new Error('Not valid'))
         }
-        var changeMachine = false
         if (this.reservation.get('target') !== this.nMachineChange.value) {
-          changeMachine = this.reservation.get('target')
-          this.reservation.set('previous', changeMachine)
-          this.reservation.set('target', this.nMachineChange.value)
+          this.reservation.move(this.nMachineChange.value, this.get('target'))
         }
 
         let f = this.nForm.get('value')
@@ -1873,11 +1870,6 @@ define([
             this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
             this.reservation.save().then((id) => {
-              if (changeMachine) {
-                this.reservation.sup.removeEntry(this.reservation)
-                resolve()
-                return
-              }
               this.resize()           
               resolve()
             })

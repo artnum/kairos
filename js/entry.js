@@ -6,6 +6,7 @@ function KEntry (id) {
     this.channel.port1.onmessage = this.handleMessage.bind(this)
     this.evtTarget = new EventTarget()
     this.entries = {}
+    this.wwInstance
     this._loaded
 }
 
@@ -26,9 +27,24 @@ KEntry.load = function (id) {
 }
 
 KEntry.prototype.delete = function (id) {
+    console.log(id)
+    console.log(this.entries[id])
     if (this.entries[id] !== undefined) {
         delete this.entries[id]
+        this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
+        this.unregister()
     }
+}
+
+KEntry.prototype.add = function (entry) {
+    this.entries[entry.id] = entry
+    this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry}}))
+}
+
+KEntry.prototype.update = function (entry) {
+    this.entries[entry.id] = entry
+    this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry}}))
+
 }
 
 KEntry.prototype.addEventListener = function (type, callback, options = {}) {
@@ -65,6 +81,7 @@ KEntry.prototype.is = function (id) {
 }
 
 KEntry.prototype.register = function (wwInstance) {
+    this.wwInstance = wwInstance
     wwInstance.postMessage({op: 'newTarget', target: this.data.uid}, [this.channel.port2])
     if (this.data.oldid) {
         if (Array.isArray(this.data.oldid)) {
@@ -88,7 +105,7 @@ KEntry.prototype.getEvents = function () {
             let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
             url.searchParams.append('machine', this.data.uid)
             queries.push(fetch(url))
-            if (this.data.oldid !== undefined) { 
+            /*if (this.data.oldid !== undefined) { 
                 let oldid = this.data.oldid
                 if (!Array.isArray(this.data.oldid)) {
                     oldid = [this.data.oldid]
@@ -99,7 +116,7 @@ KEntry.prototype.getEvents = function () {
                     url.searchParams.append('machine', oldid[i])
                     queries.push(fetch(url))
                 }
-            }
+            }*/
             Promise.all(queries).then(responses => {
                 let waitJson = []
                 for (let i = 0; i < responses.length; i++) {
@@ -150,19 +167,15 @@ KEntry.prototype.handleMessage = function (msg) {
                     id = entry.id
                 }
                 if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
-                    let update = false
                     if (this.entries[id]) {
                         /* no change recorder, so don't bother any further */
                         if (this.entries[id].modification === entry.modification) { continue; }
-                        update = true
+                        this.update(entry)
+                    } else {
+                        this.add(entry)
                     }
-                    this.entries[entry.id] = entry
-                    this.evtTarget.dispatchEvent(new CustomEvent(update ? 'update-entry' : 'create-entry', {detail: {entry: entry}}))
                 } else {
-                    if (this.entries[id]) {
-                        delete this.entries[id]
-                        this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
-                    }
+                    this.delete(id)
                 }
                 i++
             }

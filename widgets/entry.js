@@ -69,22 +69,30 @@ define([
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
-        kentry.addEventListener('state-change', this.stateChange.bind(this))
-        kentry.addEventListener('create-entry', (event) => {
+        let change = this.stateChange.bind(this)
+        let create = (event) => {
           if (event.detail && event.detail.entry) {
             this.createEntry(event.detail.entry)
           }
-        })
-        kentry.addEventListener('remove-entry', (event) => {
+        }
+        let remove = (event) => {
           if (event.detail && event.detail.entry) {
+            kentry.removeEventListener('update-entry', update)
+            kentry.removeEventListener('remove-entry', remove)
+            kentry.removeEventListener('create-entry', create)
+            kentry.removeEventListener('state-entry', change)
             this.removeEntry(event.detail.entry)
           }
-        })
-        kentry.addEventListener('update-entry', (event) => {
+        }
+        let update = (event) => {
           if (event.detail && event.detail.entry) {
             this.createEntry(event.detail.entry)
           }
-        })
+        }
+        kentry.addEventListener('update-entry', update)
+        kentry.addEventListener('remove-entry', remove)
+        kentry.addEventListener('create-entry', create)
+        kentry.addEventListener('state-change', change)
         kentry.register(args.wwInstance)
       })
 
@@ -124,7 +132,10 @@ define([
         let id = entry.uuid
         if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
         if (this.entries[id] === undefined) {
-          this.entries[id] = new Reservation({sup: this, uuid: entry.uuid})
+          this.entries[id] = new Reservation({
+            sup: this,
+            uuid: entry.uuid
+          })
         }
         this.entries[id].fromJson(entry).then(() => {
           this.entries[id].waitStop()
@@ -594,7 +605,14 @@ define([
       this.defaultStatus().then((s) => {
         UserStore.getCurrentUser().then(currentUser => {
           let uuid = KAIROS.uuidV4()
-          let newReservation = new Reservation({sup: this, uuid: uuid, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
+          let newReservation = new Reservation({
+            sup: this,
+            uuid: uuid,
+            begin: day,
+            end: end,
+            status: s,
+            creator: currentUser !== null ? currentUser.getUrl() : null, create: true
+          })
           this.entries[uuid] = newReservation
           newReservation.save().then((id) => {
             fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`)).then(response => {
