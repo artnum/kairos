@@ -30,8 +30,13 @@ self.onmessage = function (msg) {
       }
       break
     case 'symlinkTarget':
+      let targetId = btoa(msg.data.source)
       if (msg.data.source === undefined || msg.data.destination === undefined) { return }
-      Symlinks[btoa(msg.data.source)] = btoa(msg.data.destination)
+      Symlinks[targetId] = btoa(msg.data.destination)
+      if (PostPoned[targetId]) {
+        Channels[Symlinks[targetId]].postMessage({op: 'entries', value: PostPoned[targetId]})
+        delete PostPoned[targetId]
+      }
       break
     case 'move':
       if (Range === null) {
