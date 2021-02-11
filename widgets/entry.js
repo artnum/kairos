@@ -136,7 +136,7 @@ define([
           })
         }
         this.entries[id].fromJson(entry).then(() => {
-          this.entries[id].waitStop()
+          if (this.entries[id]) { this.entries[id].waitStop() }
           this.resize()
           resolve(this.entries[id])
         })

@@ -83,6 +83,7 @@ define([
       this.Stores = {
         Locality: new Locality()
       }
+      this.target = options.sup.get('target')
 
       if (options.create) {
         this.isNew = true
