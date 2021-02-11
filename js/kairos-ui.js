@@ -220,3 +220,11 @@ KAIROS._pstack = function (force = false) {
 
     })
 }
+
+KAIROS.openWindow = function (title) {
+    return new Promise((resolve, reject) => {
+        let blob = new Blob([`<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>${title}</title></head><body></body></html>`], {type: 'text/html'})
+        let ref = window.open(URL.createObjectURL(blob), 'x', 'menubar=no,location=no,resizable=yes,scrollbars=yes,status=no')
+        resolve(ref)
+    })
+}

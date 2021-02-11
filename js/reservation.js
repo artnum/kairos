@@ -68,6 +68,7 @@ KReservation.prototype.loadMachine = function () {
       response.json().then(result => {
         if (result.length !== 1) { resolve(); return }
         this.data.machine = Array.isArray(result.data) ? result.data[0] : result.data
+        console.log(this.data.machine)
         resolve(this.data.machine)
       })
     })
@@ -181,11 +182,11 @@ KReservation.prototype.oneLine = function () {
       div.innerHTML = `
         <span class="ident">${this.data.reservation.id}</span>
         ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
-        <span class="mnumber">${this.data.machine.reference}</span>
+        <span class="mnumber">${this.data.machine.uid}</span>
         <span class="machine">${this.data.machine.cn}</span>
         <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
-        <span class="address">${this.data.reservation.address}</span>
-        <span class="locality">${this.data.locality.label}</span>
+        <span class="address">${this.data.reservation.address ?? ''}</span>
+        <span class="locality">${this.data.locality.label ?? ''}</span>
       `
       resolve(div)
     })

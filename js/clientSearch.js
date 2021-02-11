@@ -1,5 +1,4 @@
 function ClientSearch() {
-    this.domNode = KAIROS.searchResults()
     this.addresses = {}
 }
 
@@ -31,6 +30,7 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
             }
         
             for (let i = 0; i < result.length; i++) {
+                if (result.data[i].reservation <= 0 || result.data[i].reservation == null) { continue }
                 KReservation.load(result.data[i].reservation).then(r => {
                     if(!addr) {
                         addr = new Address(result.data[i])
@@ -38,9 +38,9 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
                     let addrNode
                     if (this.addresses[addr.id] === undefined) {
                         addrNode = document.createElement('DIV')
-                        this.domNode.appendChild(addrNode)
+                        this.window.document.body.appendChild(addrNode)
                         addrNode.innerHTML = `<span class="result">${addr.toString()} ${addr.getType()}</span>`
-                        KAIROS.insert(addrNode, document.createElement('DIV'))
+                        this.window.document.body.appendChild(document.createElement('DIV'))
                         addrNode = {node: addrNode, years: {}, entries: {}}
                         this.addresses[addr.id] = addrNode
                     } else {
@@ -67,10 +67,10 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
                                 }
                             }
                             addrNode.years[r.getYear()] = domNode
-                            KAIROS.insert(addrNode.node, domNode, node)
+                            this.window.document.body.insertBefore(domNode, node)
                         }
                         node.classList.add('entry')
-                        KAIROS.insert(domNode, node)
+                        this.window.document.body.appendChild(node)
                     })
                 })
             }
@@ -85,7 +85,8 @@ ClientSearch.prototype.search = function (val) {
     }
     let params = val.split(' ')
 
-    this.cleanup().then(() => {
+    KAIROS.openWindow(`Recherche client "${val}"`).then(win => {
+        this.window = win
         let url = new URL(`${KAIROS.getBase()}/store/Contacts`)
         let url2 = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
         if (params.length > 0) {
