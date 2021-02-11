@@ -13,6 +13,7 @@ let Channels = {}
 let Symlinks = {}
 let Range = null
 let PostPoned = {}
+
 self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
@@ -29,8 +30,13 @@ self.onmessage = function (msg) {
       }
       break
     case 'symlinkTarget':
+      let targetId = btoa(msg.data.source)
       if (msg.data.source === undefined || msg.data.destination === undefined) { return }
-      Symlinks[btoa(msg.data.source)] = btoa(msg.data.destination)
+      Symlinks[targetId] = btoa(msg.data.destination)
+      if (PostPoned[targetId]) {
+        Channels[Symlinks[targetId]].postMessage({op: 'entries', value: PostPoned[targetId]})
+        delete PostPoned[targetId]
+      }
       break
     case 'move':
       if (Range === null) {
@@ -41,6 +47,24 @@ self.onmessage = function (msg) {
         Range.end = msg.data.end
       }
       runUpdater()
+      break
+    case 'moveEntry':
+      if (msg.data.reservation === undefined) {
+        return
+      }
+      let entry = JSON.parse(msg.data.reservation)
+      if (!Entries[entry.id]) { return }
+      let oldChannel = Channels[btoa(entry.previous)] 
+      if (oldChannel === undefined) {
+        oldChannel = Symlinks[btoa(entry.previous)]
+      }
+      let newChannel = Channels[btoa(entry.target)]
+      if (newChannel === undefined) {
+        newChannel = Symlinks[btoa(entry.target)]
+      }
+      oldChannel.postMessage({op: 'remove', reservation: entry})
+      Entries[entry.id][1] = newChannel
+      newChannel.postMessage({op: 'add', reservation: entry})
       break
   }
 }
@@ -152,7 +176,7 @@ function cacheAndSend (data, vTimeLine) {
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
       let end = dstamp(entry.end)
-
+      
       for (let i = 0; i < vTimeLine.length; i++) {
         if (end > vTimeLine[i].date - 86400000 && begin <= vTimeLine[i].date) {
           vTimeLine[i].entries.push(entry)
@@ -164,42 +188,43 @@ function cacheAndSend (data, vTimeLine) {
           if (parseInt(entry.modification) > LastMod) {
             LastMod = parseInt(entry.modification)
           }
-          if (!entries[btoa(entry.target)]) {
-            entries[btoa(entry.target)] = []
+          let channel = btoa(entry.target)
+          if (Symlinks[channel]) {
+            channel = Symlinks[channel]
+          }
+          if (!entries[channel]) {
+            entries[channel] = []
           }
           let hash = objectHash.sha1(entry)
           entry._hash = hash
           if (Entries[entry.id]) {
             if (hash !== Entries[entry.id][0]) {
-              if (Entries[entry.id][1] !== btoa(entry.target)) {
+              if (Entries[entry.id][1] !== channel) {
                 if (!entries[Entries[entry.id][1]]) {
                   entries[Entries[entry.id][1]] = []
                 }
                 entries[Entries[entry.id][1]].push(entry)
                 delete Entries[entry.id]
               }
-              Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-              entries[btoa(entry.target)].push(entry)
+              Entries[entry.id] = [hash, channel, new Date().getTime()]
+              entries[channel].push(entry)
             }
           } else {
-            Entries[entry.id] = [hash, btoa(entry.target), new Date().getTime()]
-            entries[btoa(entry.target)].push(entry)
+            Entries[entry.id] = [hash, channel, new Date().getTime()]
+            entries[channel].push(entry)
           }
           resolve()
         })
       }))
     })
-    Promise.all(promises).then(() => resolve(entries))
+    Promise.all(promises).then(() => {
+      resolve(entries)
+    })
   }).then((entries) => {
     let processed = []
-    let channel
     for (let k in entries) {
-      channel = k
-      if (Symlinks[k]) {
-        channel = Symlinks[k]
-      }
-      if (Channels[channel] && entries[k].length > 0) {
-        Channels[channel].postMessage({op: 'entries', value: entries[k]})
+      if (Channels[k] && entries[k].length > 0) {
+        Channels[k].postMessage({op: 'entries', value: entries[k]})
         processed.push(k)
       } else if (entries[k].length > 0) {
         if (!PostPoned[k]) {
@@ -250,59 +275,77 @@ function newVTimeLine () {
 
 var Status = {}
 function checkMachineState () {
-  let p = new Promise((resolve, reject) => {
-    let url = getUrl('store/Evenement/.machinestate')
-    doFetch(url).then(response => {
-      if (response.ok) {
-        response.json().then(result => {
-          for (i = 0; i < result.length; i++) {
+  let url = getUrl('store/Evenement/.machinestate')
+  doFetch(url).then(response => {
+    if (response.ok) {
+      response.json().then(result => {
+        let prmses = []
+        for (i = 0; i < result.length; i++) {
+          prmses.push(new Promise((resolve, reject) => {
             let entry = result.data[i]
             let channel = btoa(entry.resolvedTarget)
+
             if (Symlinks[channel]) {
               channel = Symlinks[channel]
             }
-            if (Channels[channel]) {
-              if (entry.type === '') { continue }
-              if (Status[btoa(entry.type)] !== undefined) {
-                if (Status[btoa(entry.type)] !== null) {
-                  entry.type = Status[btoa(entry.type)]
-                  Channels[channel].postMessage({op: 'state', value: entry})
-                }
-              } else {
-                  doFetch(getUrl(`store/${entry.type}`)).then(response => {
-                    if (response.ok) {
-                      response.json().then(status => {
-                        if (status.length === 1) {
-                          let severity = parseInt(status.data.severity)
-                          if (severity < 1000) {
-                            status.data.color = 'black'
-                          } else if (severity < 2000) {
-                            status.data.color = 'blue'
-                          } else if (severity < 3000) {
-                            status.data.color = 'darkorange'
-                          } else {
-                            status.data.color = 'red'
-                          }
-                          Status[btoa(entry.type)] = status.data
-                          entry.type = Status[btoa(entry.type)]
-                          Channels[channel].postMessage({op: 'state', value: entry})
-                          resolve()
-                        }
-                      })
+
+            if (entry.type === '') { resolve([]); return }
+            if (Status[entry.type] !== undefined) {
+              if (Status[entry.type] !== null) {
+                entry.type = Status[entry.type]
+              }
+              resolve([channel, entry])
+            } else {
+              doFetch(getUrl(`store/${entry.type}`)).then(response => {
+                if (!response.ok) { Status[entry.type] = null; resolve(); return }
+                response.json().then(status => {
+                  if (status.length === 1) {
+                    let severity = parseInt(status.data.severity)
+                    if (severity < 1000) {
+                      status.data.color = 'black'
+                    } else if (severity < 2000) {
+                      status.data.color = 'blue'
+                    } else if (severity < 3000) {
+                      status.data.color = 'darkorange'
                     } else {
-                      Status[btoa(entry.type)] = null
+                      status.data.color = 'red'
                     }
-                  })
-         
+                    Status[entry.type] = status.data
+                    entry.type = Status[entry.type]
+                    resolve([channel, entry])
+                  }
+                }, () => resolve([]))
+              })
+            }
+          
+          }))
+        }
+        Promise.all(prmses).then((toSend) => {
+          let merged = {}
+          for (let i = 0; i < toSend.length; i++) {
+            if (toSend[i].length !== 2) { continue }
+            if (merged[toSend[i][0]] === undefined) {
+              merged[toSend[i][0]] = toSend[i][1]
+            } else {
+              if (merged[toSend[i][0]].severity === undefined) {
+                merged[toSend[i][0]] = toSend[i][1]
+              } else {
+                if (parseInt(merged[toSend[i][0]].severity) < parseInt(toSend[i][1].severity)) {
+                  merged[toSend[i][0]] = toSend[i][1]
+                }
               }
             }
           }
-          resolve()
+          for (let k in merged) {
+            if (Channels[k] !== undefined) {
+              Channels[k].postMessage({op: 'state', value: merged[k]})
+            }
+          }
+          setTimeout(checkMachineState, 5000)
         })
-      }
-    })
+      })
+    }
   })
-  p.then(() => setTimeout(checkMachineState, 5000))
 }
 
 function runUpdater () {

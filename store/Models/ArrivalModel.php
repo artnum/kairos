@@ -1,7 +1,9 @@
 <?PHP
 class ArrivalModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'arrival', 'arrival_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'arrival', 'arrival_id', []);
       $this->conf('auto-increment', true);
       $this->conf('mtime', 'arrival_modification');
       $this->conf('mtime.ts', true);

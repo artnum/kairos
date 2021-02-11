@@ -83,6 +83,7 @@ define([
       this.Stores = {
         Locality: new Locality()
       }
+      this.target = options.sup.get('target')
 
       if (options.create) {
         this.isNew = true
@@ -127,7 +128,6 @@ define([
         }
         if (json['id']) {
           this.set('uid', json['id'])
-          this.set('id', json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -251,6 +251,7 @@ define([
 
         /* string value */
         for (let attr of [
+          'target',
           'visit',
           'vreport',
           'padlock',
@@ -305,10 +306,6 @@ define([
             if (dataHash) { dataHash['creator'] = crc32(object.creator) }
           }
         }
-        if (this.sup) {
-          object['target'] = this.sup.get('target')
-          if (dataHash) { dataHash['target'] = crc32(this.sup.get('target')) }
-        }
 
         if (this.get('_arrival')) {
           object.arrival = Object.assign({}, this.get('_arrival'))
@@ -339,13 +336,17 @@ define([
     },
 
     waitStart: function () {
+      if (this.destroyed) { return }
       window.requestAnimationFrame(() => {
+        if (!this.domNode) { return }
         this.domNode.classList.add('updating')
       })
     },
 
     waitStop: function () {
+      if (this.destroyed) { return }
       window.requestAnimationFrame(() => {
+        if (!this.domNode) { return }
         this.domNode.classList.remove('updating')
       })
     },
@@ -451,7 +452,6 @@ define([
     _setDisableAttr: function () {
       this.set('active', false)
     },
-
     _setActiveAttr: function (value) {
       this._set('active', value)
       this._gui.hidden = value
@@ -1089,20 +1089,13 @@ define([
     },
 
     destroy: function () {
-      window.requestAnimationFrame(() => {
-        if (this.domNode) {
-          if (this.domNode.parentNode) {
-            this.domNode.parentNode.removeChild(this.domNode)
-          }
-          delete this.domNode
-        }
+      return new Promise((resolve, reject) => {
+        this.hide().then(() => {
+          this.destroyed = true
+          this.inherited(arguments)
+          resolve()
+        })
       })
-      this.destroyed = true
-      this.hide()
-      this.inherited(arguments)
-      if (this.sup) {
-        this.sup.overlap()
-      }
     },
 
     show: function () {
@@ -1126,15 +1119,19 @@ define([
     },
 
     hide: function () {
-      window.requestAnimationFrame(() => {
-        if (this.domNode && this.domNode.parentNode) {
-          this.domNode.parentNode.removeChild(this.domNode)
-        }
+      return new Promise((resolve, reject) => {
+        window.requestAnimationFrame(() => {
+          if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
+          resolve()
+        })
+        this._gui.hidden = true
       })
-      this._gui.hidden = true
     },
 
     resize: async function (fromEntry = false) {
+      if (this.destroyed) { return }
       let moving = false
       if (!this.modifiedState) { return }
       if (this.deleted) {
@@ -1394,6 +1391,11 @@ define([
     _newCookie: function () {
       let uuidv4 = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
       return {uuid: uuidv4, timestamp: Date.now()}
+    },
+
+    move: function (newTarget, oldTarget) {
+      this.set('target', newTarget)
+      this.previous = oldTarget
     },
 
     save: function (object = null, duplicate = false) {

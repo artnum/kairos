@@ -1,8 +1,10 @@
 <?PHP
 
 class ReservationModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'reservation', 'reservation_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'reservation', 'reservation_id', []);
       $this->conf('auto-increment', true);
       $this->conf('create', 'reservation_created');
       $this->conf('create.ts', true);

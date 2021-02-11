@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Réservations par machine</title>
+<link href="../css/unify.css" rel="stylesheet" />
+</head>
+<body>
+<table
+    data-source="store/DeepReservation" data-entry-id="id">
+    <thead><tr>
+      <th data-attribute="id:integer" class="size1" data-class="clickable">N°</th>
+      <th data-attribute="target:integer" class="size1">Machine</th>
+      <th data-attribute="@store/Status/$status name" class="size3">Status</th>
+      <th data-attribute="begin:date" class="size3" >Début</th>
+      <th data-attribute="end:date" class="size3">Fin</th>
+      <th data-attribute="_creator.name" class="size4">Responsable Airnace</th>
+      <th data-attribute="client_" class="size7">Client</th>
+      <th data-attribute="responsable_" class="size7">Responsable client</th>      
+      <th data-attribute="place_" class="size7">Contact sur place</th>
+      <th data-attribute="reference" class="size5">Référence</th>
+      <th data-attribute="address" class="size5">Adresse</th>
+      <th data-attribute="@store/$locality displayname|%%" class="size6">Localité</th>
+      <th data-attribute="equipment" class="size8">Équipement</th>
+      <th data-attribute="comment" class="size8">Commentaire</th>
+    </tr></thead>
+  </table>
+</body>
+<script src="../conf/app.js"></script>
+<script src="../js/kairos.js"></script>
+<script src="../js/stores/user.js"></script>
+<script src="../node_modules/sjcl/sjcl.js"></script>
+<script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
+<script src="../js/gevent.js"></script>
+<script src="../js/tel.js"></script>
+<script src="../node_modules/artnum/Query.js"></script>
+<script src="../node_modules/artnum/Path.js"></script>
+<script src="../node_modules/artnum/Date.js"></script>
+<script src="../node_modules/artnum/DTable.js"></script>
+<script>
+function run () {
+   document.title = `[${window.location.hash.substring(1)}] Réservation par machine`
+   var tables = document.getElementsByTagName('TABLE')
+   let yesterday = new Date();
+   yesterday.setHours(12, 00, 00)
+   yesterday.setDate((new Date()).getDate() - 1)
+   let options = `{parameters: {'search.target': '=${window.location.hash.substring(1)}', 'search.deleted': '-', 'sort.id': 'DESC'}}`
+   tables[0].setAttribute('data-options', options)
+   
+   for (var i = 0; i < tables.length; i++) {
+    console.log(tables[i])
+    let tbodies = tables[i].getElementsByTagName('TBODY')
+    tbodies.forEach(tbody => { tbody.innerHTML = '' })
+    var dtable = new Artnum.DTable({table: tables[i], postprocess: createLinkFromPhone})
+     if (transliterate) {
+       dtable.transliterate = transliterate
+     }
+     dtable.URLPrefix = KAIROS.getBase()
+     dtable.addEventListener('click', function (event) {
+       let details = event.detail
+       switch (details.attribute) {
+         case 'id':
+           window.GEvent('reservation.attribute-click', {attribute: 'id', value: details.value})
+           break;
+       }
+     })
+   }
+ }
+ window.addEventListener('load', run)
+ window.addEventListener('hashchange', run)
+</script>
+</html>

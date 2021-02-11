@@ -1,7 +1,9 @@
 <?PHP
 class CountModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'count', 'count_id', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'count', 'count_id', []);
       $this->conf('auto-increment', true);
       $this->conf('create', 'count_created');
       $this->conf('create.ts', true);

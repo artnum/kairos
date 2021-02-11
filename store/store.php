@@ -6,6 +6,7 @@ require('../lib/ini.php');
 require('../lib/cacheid.php');
 
 $ini_conf = load_ini_configuration();
+$KConf = new KConf($ini_conf);
 
 $http_request = new \artnum\HTTP\JsonRequest();
 $store = new \artnum\JStore\Generic(
@@ -72,5 +73,5 @@ if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
   }
 }
 
-$store->run();
+$store->run($KConf);
 ?>

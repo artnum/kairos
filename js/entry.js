@@ -6,6 +6,7 @@ function KEntry (id) {
     this.channel.port1.onmessage = this.handleMessage.bind(this)
     this.evtTarget = new EventTarget()
     this.entries = {}
+    this.wwInstance
     this._loaded
 }
 
@@ -25,12 +26,38 @@ KEntry.load = function (id) {
     return entry._loaded
 }
 
+KEntry.prototype.delete = function (entry) {
+    let id = entry
+    if (typeof entry === 'object') {
+        id = entry.id
+    }
+    if (this.entries[id] !== undefined) {
+        delete this.entries[id]
+        this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
+    }
+}
+
+KEntry.prototype.add = function (entry) {
+    this.entries[entry.id] = entry
+    this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry}}))
+}
+
+KEntry.prototype.update = function (entry) {
+    this.entries[entry.id] = entry
+    this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry}}))
+
+}
+
 KEntry.prototype.addEventListener = function (type, callback, options = {}) {
     this.evtTarget.addEventListener(type, callback, options)
 }
 
 KEntry.prototype.removeEventListener = function (type, callback, options = {}) {
     this.evtTarget.removeEventListener(type, callback, options)
+}
+
+KEntry.prototype.move = function (entry) {
+    this.wwInstance.postMessage({op: 'moveEntry', reservation: JSON.stringify(entry)})
 }
 
 KEntry.prototype.is = function (id) {
@@ -59,6 +86,7 @@ KEntry.prototype.is = function (id) {
 }
 
 KEntry.prototype.register = function (wwInstance) {
+    this.wwInstance = wwInstance
     wwInstance.postMessage({op: 'newTarget', target: this.data.uid}, [this.channel.port2])
     if (this.data.oldid) {
         if (Array.isArray(this.data.oldid)) {
@@ -82,21 +110,7 @@ KEntry.prototype.getEvents = function () {
             let url = new URL(`store/Evenement/.chain`, KAIROS.getBase())
             url.searchParams.append('machine', this.data.uid)
             queries.push(fetch(url))
-            if (this.data.oldid !== undefined) {
-                if (Array.isArray(this.data.oldid)) {
-                    for (let i = 0; i < this.data.oldid.length; i++) {
-                        url = new URL(`${KAIROS.getBase()}/store/Evenement/.chain`)
-                        url.searchParams.append('machine', this.data.oldid[i])
-                        queries.push(fetch(url))
-                    }
-                } else {
-                    url = new URL(`${KAIROS.getBase()}/store/Evenement/.chain`)
-                    url.searchParams.append('machine', this.data.oldid)
-                    queries.push(fetch(url))
-                }
-            }
             Promise.all(queries).then(responses => {
-                let eventList = []
                 let waitJson = []
                 for (let i = 0; i < responses.length; i++) {
                     if (!responses[i].ok) { KAIROS.error('Erreur lors de l\'interrogation des évènements'); continue; }
@@ -104,15 +118,22 @@ KEntry.prototype.getEvents = function () {
                         responses[i].json().then(result => {
                             if (result.length > 0) {
                                 let data = Array.isArray(result.data) ? result.data : [result.data]
-                                eventList = [...eventList, ...data]
+                                resolve(data)
+                                return
                             }
-                            resolve()
+                            resolve([])
+                            return
                         })
                     })
                     waitJson.push(p)
                 }
-                Promise.all(waitJson).then(() => {
-                    resolve(eventList)
+                
+                Promise.all(waitJson).then((eventList) => {
+                    let results = []
+                    for (let i = 0; i < eventList.length; i++) {
+                        results = [...eventList[i], ...results]
+                    }
+                    resolve(results)
                 })
             })
         })
@@ -122,6 +143,16 @@ KEntry.prototype.getEvents = function () {
 KEntry.prototype.handleMessage = function (msg) {
     let msgData = msg.data
     switch (msgData.op) {
+      case 'remove':
+        if (msgData.reservation) {
+            this.delete(msgData.reservation)
+        }
+        break
+      case 'add':
+        if (msgData.reservation) {
+            this.add(msgData.reservation)
+        }
+        break
       case 'entries':
         let process = (deadline, origin = 0) => {
             let i = origin;
@@ -139,19 +170,15 @@ KEntry.prototype.handleMessage = function (msg) {
                     id = entry.id
                 }
                 if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
-                    let update = false
                     if (this.entries[id]) {
                         /* no change recorder, so don't bother any further */
                         if (this.entries[id].modification === entry.modification) { continue; }
-                        update = true
+                        this.update(entry)
+                    } else {
+                        this.add(entry)
                     }
-                    this.entries[entry.id] = entry
-                    this.evtTarget.dispatchEvent(new CustomEvent(update ? 'update-entry' : 'create-entry', {detail: {entry: entry}}))
                 } else {
-                    if (this.entries[id]) {
-                        delete this.entries[id]
-                        this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
-                    }
+                    this.delete(id)
                 }
                 i++
             }
@@ -175,7 +202,6 @@ KEntry.prototype.handleMessage = function (msg) {
             if (!this.state) {
                 this.state = {id: -1, type: {severity: -1}}
             }
-
             if (msgData.value.id !== this.state.id) {
                 msgData.value.type.severity = parseInt(msgData.value.type.severity)
                 this.state = msgData.value

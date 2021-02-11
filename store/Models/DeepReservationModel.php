@@ -1,7 +1,6 @@
 <?PHP
 /* Extract all information needed for frontpage, read-only */ 
 class DeepReservationModel extends ReservationModel {
-
   function __construct($dbs, $config) {
     parent::__construct($dbs['sql'], $config);
     $this->dbs = $dbs;
@@ -261,7 +260,7 @@ class DeepReservationModel extends ReservationModel {
         $st = $this->DB->prepare('SELECT * FROM `contacts` WHERE `contacts_reservation` = :reservation');
         $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
         $st->execute();
-        $CModel = new ContactsModel($this->dbs['ldap'], null);
+        $CModel = new ContactsModel($this->dbs['ldap'], $this->kconf);
         $contacts = array();
         foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
           $contact = $this->unprefix($contact, 'contacts');

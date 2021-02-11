@@ -1,7 +1,9 @@
 <?PHP
 class PCModel extends artnum\SQL {
+  protected $kconf;
   function __construct($db, $config) {
-      parent::__construct($db, 'localite', 'localite_uid', $config);
+    $this->kconf = $config;
+    parent::__construct($db, 'localite', 'localite_uid', []);
    }
 
   function extendEntry ($entry, &$result) {

@@ -69,22 +69,26 @@ define([
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
-        kentry.addEventListener('state-change', this.stateChange.bind(this))
-        kentry.addEventListener('create-entry', (event) => {
+        let change = this.stateChange.bind(this)
+        let create = (event) => {
           if (event.detail && event.detail.entry) {
             this.createEntry(event.detail.entry)
           }
-        })
-        kentry.addEventListener('remove-entry', (event) => {
+        }
+        let remove = (event) => {
           if (event.detail && event.detail.entry) {
             this.removeEntry(event.detail.entry)
           }
-        })
-        kentry.addEventListener('update-entry', (event) => {
+        }
+        let update = (event) => {
           if (event.detail && event.detail.entry) {
             this.createEntry(event.detail.entry)
           }
-        })
+        }
+        kentry.addEventListener('update-entry', update)
+        kentry.addEventListener('remove-entry', remove)
+        kentry.addEventListener('create-entry', create)
+        kentry.addEventListener('state-change', change)
         kentry.register(args.wwInstance)
       })
 
@@ -107,9 +111,17 @@ define([
     },
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        let id = entry.uuid
-        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
-        this.destroyReservation(this.entries[id])
+        for (let k in this.entries) {
+          if (this.entries[k].uuid === entry.uuid) {
+            this.destroyReservation(this.entries[k]).then(() => {
+              delete this.entries[k]
+              this.resize()
+              resolve()
+              return
+            })
+            break
+          }
+        }
         resolve()
       })
     },
@@ -118,10 +130,14 @@ define([
         let id = entry.uuid
         if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
         if (this.entries[id] === undefined) {
-          this.entries[id] = new Reservation({sup: this, uuid: entry.uuid})
+          this.entries[id] = new Reservation({
+            sup: this,
+            uuid: entry.uuid
+          })
         }
         this.entries[id].fromJson(entry).then(() => {
-          this.entries[id].waitStop()
+          if (this.entries[id]) { this.entries[id].waitStop() }
+          this.resize()
           resolve(this.entries[id])
         })
       })
@@ -353,6 +369,7 @@ define([
         if (url) {
           txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
         }*/
+        txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
         this.htmlDetails = txt.join('')
         this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
       //})
@@ -587,7 +604,14 @@ define([
       this.defaultStatus().then((s) => {
         UserStore.getCurrentUser().then(currentUser => {
           let uuid = KAIROS.uuidV4()
-          let newReservation = new Reservation({sup: this, uuid: uuid, begin: day, end: end, status: s, creator: currentUser !== null ? currentUser.getUrl() : null, create: true})
+          let newReservation = new Reservation({
+            sup: this,
+            uuid: uuid,
+            begin: day,
+            end: end,
+            status: s,
+            creator: currentUser !== null ? currentUser.getUrl() : null, create: true
+          })
           this.entries[uuid] = newReservation
           newReservation.save().then((id) => {
             fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`)).then(response => {
@@ -793,10 +817,11 @@ define([
     },
 
     destroyReservation: function (reservation) {
-      if (reservation) {
-        reservation.destroy()
+      return new Promise((resolve, reject) => {
+        if (!reservation) { resolve(); return }
         delete this.entries[reservation.id]
-      }
+        reservation.destroy().then(() => resolve())
+      })
     },
 
     _getActiveReservationsAttr: function () {

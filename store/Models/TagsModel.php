@@ -1,7 +1,9 @@
 <?PHP
 class TagsModel extends artnum\SQL {
+   protected $kconf;
    function __construct($db, $config) {
-      parent::__construct($db, 'tags', '', $config);
+      $this->kconf = $config;
+      parent::__construct($db, 'tags', '', []);
       $this->conf('auto-increment', true);
    }
 

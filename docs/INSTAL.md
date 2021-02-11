@@ -1,7 +1,7 @@
 Prérequis
 =========
 
-Programme : apache2 php mysql php-ldap php-mysql php-curl php-mbstring php-gd
+Programme : apache2 php mysql php-ldap php-mysql php-curl php-mbstring php-gd imagemagick poppler-utils
 
 Clone dépôts :
 

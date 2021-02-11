@@ -1,7 +1,9 @@
 <?PHP
 class MachineModel extends artnum\LDAP {
+  protected $kconf;
   function __construct($db, $config) {
-    parent::__construct($db, 'ou=Machines,ou=Catalog,o=airnace', array('description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'), $config);
+    $this->kconf = $config;
+    parent::__construct($db, $this->kconf->get('trees.machines'), ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'], []);
   }
 
   function getEntryDetails ($ref) {
@@ -54,9 +56,19 @@ class MachineModel extends artnum\LDAP {
         if (!is_null($entry)) {
           if (!empty($entry['airaltref'])) {
             if (is_array($entry['airaltref']) && in_array($id, $entry['airaltref'])) {
+              unset($entry['airaltref']);
+              $entry['uid'] = $id;
               $entry['parent'] = $entry['description'];
+              $entry['description'] = $entry['uid'];
+              $entry['airref'] = $entry['uid'];
+              $entry['oldid'] = $entry['uid'];
             } else if (!is_array($entry['airaltref']) && strval($entry['airaltref']) === strval($id)) {
+              unset($entry['airaltref']);
+              $entry['uid'] = $id;
               $entry['parent'] = $entry['description'];
+              $entry['description'] = $entry['uid'];
+              $entry['airref'] = $entry['uid'];
+              $entry['oldid'] = $entry['uid'];
             }
           }
           $result->setItems($entry);
@@ -89,24 +101,16 @@ class MachineModel extends artnum\LDAP {
           $result->addItem($entry);
           if (isset($entry['airaltref'])) {
             $altref = $entry['airaltref'];
-            if (!is_array($altref)) { $altref = array($altref); }
+            if (!is_array($altref)) { $altref = [$altref]; }
             foreach ($altref as $idemEntry) {
-              $x = array_merge(array(), $entry);
+              $x = array_merge([], $entry);
+              unset($entry['airaltref']);
               $x['description'] = $idemEntry;
               $x['uid'] = $idemEntry;
               $x['reference'] = $idemEntry;
+              $x['airref'] = $idemEntry;
+              $x['oldid'] = $idemEntry;
               $x['parent'] = $entry['uid'];
-              if (isset($x['airaltref'])) {
-                if (is_array($x['airaltref'])) {
-                  foreach ($x['airaltref'] as &$v) {
-                    if ($v === $x['uid']) {
-                      $v = $entry['uid'];
-                    }
-                  }
-                } else {
-                  $x['airaltref'] = $entry['uid'];
-                }
-              }
               $details = $this->getEntryDetails($x['uid']);
               if ($details) {
                 $x = array_merge($x, $details);
@@ -133,6 +137,11 @@ class MachineModel extends artnum\LDAP {
 
   function dbtype() {
     return array('sql', 'ldap');
+  }
+
+  function getCacheOpts() {
+    /* 15min cache for machine */
+    return ['age' => 900, 'public' => true];
   }
 }
 ?>
