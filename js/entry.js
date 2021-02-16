@@ -85,6 +85,19 @@ KEntry.prototype.is = function (id) {
     })
 }
 
+KEntry.prototype.fixReservation = function (reservationJson) {
+    return new Promise((resovle, reject) => {
+        this.is(reservationJson.target).then(is => {
+            if (is) {
+                reservationJson.target = this.data.uid
+                resovle(reservationJson)
+                return
+            }
+            resolve(null)
+        }, _ => resolve(null))
+    })
+}
+
 KEntry.prototype.register = function (wwInstance) {
     this.wwInstance = wwInstance
     wwInstance.postMessage({op: 'newTarget', target: this.data.uid}, [this.channel.port2])
