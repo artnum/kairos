@@ -821,7 +821,7 @@ define([
           }
         }
         that.searchMenu.addChild(new DtMenuSeparator())
-
+        
         /* */
         let userStore = new UserStore()
         UserStore.getCurrentUser().then(currentUser => {
@@ -994,20 +994,31 @@ define([
     },
 
     filterApply: function (entries) {
+      let p = []
       for (let k in this.entries) {
-        if (entries.indexOf(this.entries[k].get('target')) === -1) {
-          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '0' })
-        } else {
-          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1' })
-        }
+        p.push(new Promise((resolve, reject) => {
+          if (entries.indexOf(this.entries[k].get('target')) === -1) {
+            window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '0'; resolve() })
+          } else {
+            window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1'; resolve() })
+          }
+        }))
       }
-      this.resize()
+      Promise.all(p).then(() => {
+        this.update()
+      })
     },
 
     filterReset: function (prefilter = false) {
+      let p = []
       for (let k in this.entries) {
-        window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1' })
+        p.push(new Promise((resolve, reject) => {
+          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1'; resolve() })
+        }))
       }
+      Promise.all(p).then(() => {
+        this.update()
+      })
     },
 
     mouseUpDown: function (event) {
