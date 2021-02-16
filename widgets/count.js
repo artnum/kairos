@@ -828,19 +828,53 @@ define([
               if (this.Days[rid] !== undefined) {
                 let b = this.Days[rid].effectiveBegin
                 let e = this.Days[rid].effectiveEnd
-                if (this.Days[rid].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin }
-                if (this.Days[rid].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd}
-
-                tooltip.push(`Réservation ${rid}: ${this.Days[rid].days} jours ouvrés<br>Pour la durée du décompte : ${H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')} jours ouvrés`)
+                let beginHalf = false
+                let endHalf = false
+                let isMorning = false
+                let isAfternoon = false
+                if (b.getHours() >= 12) {
+                  beginHalf = true
+                  isAfternoon = true
+                }
+                if (e.getHours() <= 12) {
+                  endHalf = true
+                  isMorning = true
+                }
+                if (this.Days[rid].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin; beginHalf = false }
+                if (this.Days[rid].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd; endHalf = false }
+                let days = H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')
+                let offset = 0
+                if (beginHalf) { days -= 0.5; offset += 0.5 }
+                if (endHalf) { days -= 0.5; offset += 0.5 }
+                if (event.target.value === '') {
+                  event.target.value = days
+                }
+                tooltip.push(`Réservation ${rid} du ${this.Days[rid].effectiveBegin.fullDate()}${isAfternoon ? ' après-midi' : ''} au ${this.Days[rid].effectiveEnd.fullDate()}${isMorning ? ' matin' : ''} : ${this.Days[rid].days - offset} jours ouvrés<br>Pour le décompte du ${b.fullDate()} au ${e.fullDate()}: ${days} jours ouvrés`)
               }
             } else {
               for (let r in this.Days) {
                 if (this.Days[r].days !== -1) {
                   let b = this.Days[r].effectiveBegin
                   let e = this.Days[r].effectiveEnd
-                  if (this.Days[r].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin }
-                  if (this.Days[r].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd}
-                  tooltip.push(`Réservation ${r}: ${this.Days[r].days} jours ouvrés / pour durée décompte : ${H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')} jours ouvrés`)
+                  let beginHalf = false
+                  let endHalf = false
+                  let isMorning = false
+                  let isAfternoon = false
+                  let offset = 0
+                  if (b.getHours() >= 12) {
+                    beginHalf = true
+                    isAfternoon = true
+                  }
+                  if (e.getHours() <= 12) {
+                    endHalf = true
+                    isMorning = true
+                  }
+                  if (this.Days[r].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin; beginHalf = false }
+                  if (this.Days[r].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd; endHalf = false }
+                  let days = H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')
+                  if (beginHalf) { days -= 0.5; offset += 0.5 }
+                  if (endHalf) { days -= 0.5; offsest += 0.5 }
+                  tooltip.push(`Réservation ${r} du ${this.Days[r].effectiveBegin.fullDate()}${isAfternoon ? ' après-midi' : ''} au ${this.Days[r].effectiveEnd.fullDate()}${isMorning ? ' matin' : ''}: ${this.Days[r].days - offset} jours ouvrés / pour le décompte du ${b.fullDate()} au ${e.fullDate()}: ${days} jours ouvrés`)
                 }
               }
             }
