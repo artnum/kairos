@@ -528,46 +528,6 @@ define([
         <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
         <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
 
-      div.addEventListener('change', (event) => {
-        switch (event.target.name) {
-          case 'begin':
-          case 'end':
-          case 'canton':
-            let begin = event.target.parentNode.querySelector('input[name="begin"]')
-            let end = event.target.parentNode.querySelector('input[name="end"]')
-            let canton = event.target.parentNode.querySelector('select[name="canton"]')
-
-            if (begin && begin.value) {
-              this.Current.begin = new Date(begin.value)
-              for (let k in this.Days) {
-                if (compareDate(this.Days[k].begin, this.Current.begin) <= 0) {
-                  this.Days[k].effectiveBegin = this.Current.begin
-                } else {
-                  this.Days[k].days = -1
-                }
-              }
-            }
-            if (end && end.value) {
-              this.Current.end = new Date(end.value)
-              for (let k in this.Days) {
-                if (compareDate(this.Days[k].end, this.Current.end) >= 0) {
-                  this.Days[k].effectiveEnd = this.Current.end
-                } else {
-                  this.Days[k].days = -1
-                }
-              }
-            }
-            this.Current.canton = canton.value
-            let H = new Holiday()
-            for (let k in this.Days) {
-              if (this.Days[k].days !== -1) {
-                this.Days[k].days = H.bdays(this.Days[k].effectiveBegin, this.Days[k].effectiveEnd, this.Current.canton)
-              }
-            }
-            break
-        }
-      })
-
       let selects = div.getElementsByTagName('select')
       for (let i = 0; i < selects.length; i++) {
         if (selects[i].name === 'canton') {
@@ -783,7 +743,7 @@ define([
             String(value.reference ? value.reference : '').html() + '</td><td>' + desc.html() + '</td><td>' +
             String(value.quantity ? value.quantity : '-').html() + '</td><td>' +
             String(unit).html() + '</td><td>' + String(value.price ? String(value.price).toMoney() : '').html() + '</td><td>' +
-          String(value.discount ? value.discount + '%' : '').html() + '</td><td>' +
+            String(value.discount ? value.discount + '%' : '').html() + '</td><td>' +
             String(value.total ? String(value.total).toMoney() : '').html() + '</td><td><i class="far fa-trash-alt action" data-op="delete"></i></td>'
         tr.addEventListener('focus', this.edit.bind(this))
         tr.addEventListener('blur', (event) => {
@@ -838,6 +798,18 @@ define([
         }.bind(this))
         tr.setAttribute('data-edit', '1')
         tr.addEventListener('focus', (event) => {
+          let H = new Holiday()
+          let formElement = document.getElementsByTagName('FORM')
+          for (let i = 0; i < formElement.length; i++) {
+            if (formElement[i].getAttribute('name') === 'details') {
+              formElement = formElement[i]
+              break
+            }
+          }
+          let form = new FormData(formElement)
+          let countBegin = new Date(form.get('begin'))
+          let countEnd = new Date(form.get('end'))
+
           if (event.target.name === 'quantity') {
             let tr = event.target
             while (tr && tr.nodeName !== 'TR') { tr = tr.parentNode }
@@ -853,11 +825,56 @@ define([
 
             let tooltip = []
             if (rid !== '') {
-              tooltip.push(`Réservation ${rid}: ${this.Days[rid].days} jours ouvré`)
+              if (this.Days[rid] !== undefined) {
+                let b = this.Days[rid].effectiveBegin
+                let e = this.Days[rid].effectiveEnd
+                let beginHalf = false
+                let endHalf = false
+                let isMorning = false
+                let isAfternoon = false
+                if (b.getHours() >= 12) {
+                  beginHalf = true
+                  isAfternoon = true
+                }
+                if (e.getHours() <= 12) {
+                  endHalf = true
+                  isMorning = true
+                }
+                if (this.Days[rid].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin; beginHalf = false }
+                if (this.Days[rid].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd; endHalf = false }
+                let days = H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')
+                let offset = 0
+                if (beginHalf) { days -= 0.5; offset += 0.5 }
+                if (endHalf) { days -= 0.5; offset += 0.5 }
+                if (event.target.value === '') {
+                  event.target.value = days
+                }
+                tooltip.push(`Réservation ${rid} du ${this.Days[rid].effectiveBegin.fullDate()}${isAfternoon ? ' après-midi' : ''} au ${this.Days[rid].effectiveEnd.fullDate()}${isMorning ? ' matin' : ''} : ${this.Days[rid].days - offset} jours ouvrés<br>Pour le décompte du ${b.fullDate()} au ${e.fullDate()}: ${days} jours ouvrés`)
+              }
             } else {
               for (let r in this.Days) {
                 if (this.Days[r].days !== -1) {
-                  tooltip.push(`Réservation ${r}: ${this.Days[r].days} jours ouvrés`)
+                  let b = this.Days[r].effectiveBegin
+                  let e = this.Days[r].effectiveEnd
+                  let beginHalf = false
+                  let endHalf = false
+                  let isMorning = false
+                  let isAfternoon = false
+                  let offset = 0
+                  if (b.getHours() >= 12) {
+                    beginHalf = true
+                    isAfternoon = true
+                  }
+                  if (e.getHours() <= 12) {
+                    endHalf = true
+                    isMorning = true
+                  }
+                  if (this.Days[r].effectiveBegin.getTime() < countBegin.getTime()) { b = countBegin; beginHalf = false }
+                  if (this.Days[r].effectiveEnd.getTime() > countEnd.getTime()) { e = countEnd; endHalf = false }
+                  let days = H.bdays(b, e, form.get('canton') ? form.get('canton') : 'vs')
+                  if (beginHalf) { days -= 0.5; offset += 0.5 }
+                  if (endHalf) { days -= 0.5; offsest += 0.5 }
+                  tooltip.push(`Réservation ${r} du ${this.Days[r].effectiveBegin.fullDate()}${isAfternoon ? ' après-midi' : ''} au ${this.Days[r].effectiveEnd.fullDate()}${isMorning ? ' matin' : ''}: ${this.Days[r].days - offset} jours ouvrés / pour le décompte du ${b.fullDate()} au ${e.fullDate()}: ${days} jours ouvrés`)
                 }
               }
             }

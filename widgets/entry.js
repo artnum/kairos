@@ -72,7 +72,9 @@ define([
         let change = this.stateChange.bind(this)
         let create = (event) => {
           if (event.detail && event.detail.entry) {
-            this.createEntry(event.detail.entry)
+            this.KEntry.fixReservation(event.detail.entry).then (json => {
+              if (json) { this.createEntry(json) }
+            })
           }
         }
         let remove = (event) => {
@@ -82,7 +84,9 @@ define([
         }
         let update = (event) => {
           if (event.detail && event.detail.entry) {
-            this.createEntry(event.detail.entry)
+            this.KEntry.fixReservation(event.detail.entry).then (json => {
+              if (json) { this.createEntry(json) }
+            })
           }
         }
         kentry.addEventListener('update-entry', update)
