@@ -62,7 +62,7 @@ Arrival.prototype.query = function (retval) {
       if (response.ok) {
         response.json().then(function (reservation) {
           if (reservation.type === 'results' && reservation.data !== null) {
-            fetch(Artnum.Path.url('/store/Machine/', {params: {'search.description': reservation.data.target,'search.airaltref': reservation.data.target}})).then(function (response) {
+            fetch(Artnum.Path.url('/store/Machine/', {params: {'search.description': reservation.data.target,'search.airref': reservation.data.target}})).then(function (response) {
               if (response.ok) {
                 response.json().then(function (machine) {
                   retval._target = reservation.data
@@ -338,7 +338,7 @@ Arrival.prototype.add = async function (retval) {
   var rep = retval.reported ? new Date(retval.reported) : ''
   if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }
   dom.appendChild(this.html.label(retval._target._target.cn + rep))
-  dom.appendChild(this.html.label(retval._target.target))
+  dom.appendChild(this.html.label(retval._target._target.uid))
 
   let locality = retval.locality ? retval.locality : retval._target.locality
   let locPromise = new Promise((resolve, reject) => {
