@@ -20,6 +20,7 @@ class DeepReservationModel extends ReservationModel {
                 LEFT JOIN status ON reservation_status = status_id
                ');
     $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
+    $this->Machine = new LDAPGetEntry($this->kconf);
   }
 
   function get_db($x = false) {
@@ -29,6 +30,7 @@ class DeepReservationModel extends ReservationModel {
   function set_db($dbs) {
     $this->DB = $dbs['sql'];
     $this->dbs = $dbs;
+    $this->Machine->setLdap($this->dbs['ldap']->readable());
   }
 
   function dbtype() {
@@ -157,6 +159,8 @@ class DeepReservationModel extends ReservationModel {
 
       if ($st->execute()) {
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $newId = $this->Machine->getMachine($row['reservation_target']);
+          if ($newId) { $row['reservation_target'] = $newId; }
           $result->addItem($this->unprefix($row));
         }
       }
@@ -193,7 +197,6 @@ class DeepReservationModel extends ReservationModel {
       }
       if (isset($options['search']['status']) && is_numeric($options['search']['status'])){
         $status = $options['search']['status'];
-        
       }
     } 
 

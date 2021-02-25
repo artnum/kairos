@@ -4,6 +4,7 @@ require('../lib/url.php');
 require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
+require('../lib/get-entry.php');
 
 $ini_conf = load_ini_configuration();
 $KConf = new KConf($ini_conf);
