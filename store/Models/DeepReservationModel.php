@@ -134,8 +134,7 @@ class DeepReservationModel extends ReservationModel {
               (association_id IS NOT NULL AND IdFromURL(association_type) = :status
                 AND LEFT(COALESCE(NULLIF(association_begin,\'\'), reservation_deliveryBegin, reservation_begin), 10) <= :day
                 AND LEFT(COALESCE(NULLIF(association_end,\'\'), reservation_deliveryEnd, reservation_end), 10) >= :day)
-              OR (LEFT(COALESCE(reservation_deliveryBegin, reservation_begin), 10) = :day)
-              OR (LEFT(COALESCE(reservation_deliveryEnd, reservation_end), 10) = :day))
+              OR (LEFT(COALESCE(reservation_deliveryBegin, reservation_begin), 10) = :day))
               AND reservation_deleted IS NULL
             GROUP BY reservation_target;';
     $status= 4;
