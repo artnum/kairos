@@ -68,7 +68,6 @@ KReservation.prototype.loadMachine = function () {
       response.json().then(result => {
         if (result.length !== 1) { resolve(); return }
         this.data.machine = Array.isArray(result.data) ? result.data[0] : result.data
-        console.log(this.data.machine)
         resolve(this.data.machine)
       })
     })

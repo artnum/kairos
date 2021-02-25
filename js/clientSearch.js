@@ -20,61 +20,41 @@ ClientSearch.prototype.cleanup = function () {
 }
 
 ClientSearch.prototype.doSearch = function (url, address = null) {
-    fetch(url).then(response => {
-        if (!response.ok) { return }
-        response.json().then(result => {
-            if (result.length < 1) { return }
-            let addr
-            if (address) {
-                addr = new Address(address)
-            }
-        
-            for (let i = 0; i < result.length; i++) {
-                if (result.data[i].reservation <= 0 || result.data[i].reservation == null) { continue }
-                KReservation.load(result.data[i].reservation).then(r => {
-                    if(!addr) {
-                        addr = new Address(result.data[i])
-                    }
-                    let addrNode
-                    if (this.addresses[addr.id] === undefined) {
-                        addrNode = document.createElement('DIV')
-                        this.window.document.body.appendChild(addrNode)
-                        addrNode.innerHTML = `<span class="result">${addr.toString()} ${addr.getType()}</span>`
-                        this.window.document.body.appendChild(document.createElement('DIV'))
-                        addrNode = {node: addrNode, years: {}, entries: {}}
-                        this.addresses[addr.id] = addrNode
-                    } else {
-                        addrNode = this.addresses[addr.id]
-                    }
-
-                    if (addrNode.entries[r.getId()]) {
-                        return;
-                    }
-                    addrNode.entries[r.getId()] = r
-
-                    r.oneLine().then(node => {
-                        let domNode
-                        if (addrNode.years[r.getYear()]) {
-                            domNode = addrNode.years[r.getYear()]
-                        } else {
-                            domNode = document.createElement('DIV')
-                            domNode.innerHTML = `<span class="year">${r.getYear()}</span>`
-                            domNode.dataset.sort = r.getYear()
-                            let node = null
-                            for (let year of Object.keys(addrNode.years)) {
-                                if (parseInt(year) < r.getYear()) {
-                                    node = addrNode.years[year]
-                                }
+    return new Promise((resolve, reject) => {
+        fetch(url).then(response => {
+            if (!response.ok) { resolve(null); return }
+            let searchResults = {}
+            response.json().then(result => {
+                if (result.length < 1) { resolve(null); return }
+                let addr
+                if (address) {
+                    addr = new Address(address)
+                }
+                let promises = []
+                for (let i = 0; i < result.length; i++) {
+                    if (result.data[i].reservation <= 0 || result.data[i].reservation == null) { continue }
+                    promises.push(new Promise((resolve, reject) => {
+                        KReservation.load(result.data[i].reservation).then(r => {
+                            if(!addr) {
+                                addr = new Address(result.data[i])
                             }
-                            addrNode.years[r.getYear()] = domNode
-                            this.window.document.body.insertBefore(domNode, node)
-                        }
-                        node.classList.add('entry')
-                        this.window.document.body.appendChild(node)
-                    })
+                            if (searchResults[addr.id] === undefined) {
+                                searchResults[addr.id] = {address: addr, years: {}}
+                            }
+
+                            if (searchResults[addr.id].years[r.getYear()] === undefined) {
+                                searchResults[addr.id].years[r.getYear()] = []
+                            }
+                            searchResults[addr.id].years[r.getYear()].push(r)
+                            resolve()
+                        })
+                    }))
+                }
+                Promise.all(promises).then(_ => {
+                    resolve(searchResults)
                 })
-            }
-        })
+            }, () => resolve(null))
+        }, () => resolve(null))
     })
 }
 
@@ -84,29 +64,42 @@ ClientSearch.prototype.search = function (val) {
         return
     }
     let params = val.split(' ')
+    let url = new URL(`${KAIROS.getBase()}/store/Contacts`)
+    let url2 = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+    let p = []
 
-    KAIROS.openWindow(`Recherche client "${val}"`).then(win => {
-        this.window = win
-        let url = new URL(`${KAIROS.getBase()}/store/Contacts`)
-        let url2 = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
-        if (params.length > 0) {
-            for (let i = 0; i < params.length; i++) {
-                if (params[i] !== '') {
-                    url.searchParams.append('search.name', `*${params[i]}*`)
-                    url2.searchParams.append('search.freeform', `~%${params[i]}%`)
-                }
+    if (params.length > 0) {
+        for (let i = 0; i < params.length; i++) {
+            if (params[i] !== '') {
+                url.searchParams.append('search.name', `*${params[i]}*`)
+                url2.searchParams.append('search.freeform', `~%${params[i]}%`)
             }
+        }
+        p.push(this.doSearch(url2))
+        new Promise((resolve, reject) => { 
+            console.log('---- ----- -----')
             fetch(url).then(response => {
-                if (!response.ok) { return }
+                if (!response.ok) { resolve(); return }
                 response.json().then(result => {
                     for (let i = 0; i < result.length; i++) {
                         let url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
                         url.searchParams.append('search.target', `/Contacts/${result.data[i].IDent}`)
-                        this.doSearch(url, result.data[i])
+                        p.push(this.doSearch(url, result.data[i]))
                     }
+                    resolve()
+                }, () => resolve())
+            }, () => resolve())
+        }).then(() => {
+            console.log(p)
+            if (p.length > 0) {
+                Promise.all(p).then(results => {
+                   KAIROS.openWindow(`Recherche client "${val}"`).then(win => {
+                       for (let i = 0; i < results.length; i++) {
+                           
+                       }
+                   })
                 })
-            })
-            this.doSearch(url2)
-        }
-    })
+            }
+        })
+    }
 }
