@@ -55,6 +55,31 @@ class LDAPGetEntry {
         if (!isset($content['airRef']) || $content['airRef']['count'] <= 0) { return NULL; }
         return $content['airRef'][0];
     }
+
+    function getAllId($id) {
+        $search = ldap_search(
+            $this->ldap,
+            $this->kconf->get('trees.machines'), 
+            sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id),
+            ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref']);
+        if (!$search) { return NULL; }
+        if (ldap_count_entries($this->ldap, $search) === 0) { return NULL; }
+        $entry = ldap_first_entry($this->ldap, $search);
+        if (!$entry) { return NULL; }
+        $content = ldap_get_attributes($this->ldap, $entry);
+        $ids = [];
+        if (isset($content['airRef'])) {
+            for ($i = 0; $i < $content['airRef']['count']; $i++) {
+                $ids[] = $content['airRef'][$i];
+            }
+        }
+        if (isset($content['description'])) {
+            for ($i = 0; $i < $content['description']['count']; $i++) {
+                $ids[] = $content['description'][$i];
+            }
+        }
+        return $ids;
+    }
 }
 
 ?>

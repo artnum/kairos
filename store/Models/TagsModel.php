@@ -3,6 +3,8 @@ class TagsModel extends artnum\SQL {
    protected $kconf;
    function __construct($db, $config) {
       $this->kconf = $config;
+      $this->Machine = new LDAPGetEntry($this->kconf);
+      $this->Machine->setLdap($this->kconf->getDB('ldap', true));
       parent::__construct($db, 'tags', '', []);
       $this->conf('auto-increment', true);
    }
@@ -52,24 +54,49 @@ class TagsModel extends artnum\SQL {
 
    function get($id) {
       $results = [];
-      $pre_statement = 'SELECT * FROM %s WHERE %s = :where';
+      $pre_statement = 'SELECT * FROM ' . $this->Table . ' WHERE %s = :w1';
+      $whereClause = [];
       if(substr($id, 0, 1) == '.') {
-         $where = substr($id, 1);
-         $pre_statement = sprintf($pre_statement, $this->Table, 'tags_value');
+         $whereClause['w1'] = substr($id, 1);
       } else {
-         $where = $id;
-         $pre_statement = sprintf($pre_statement, $this->Table, 'tags_target');
+         $whereClause['w1'] = $id;
+         $sId = explode('/', $id);
+         $allId = $this->Machine->getAllId($sId[count($sId) - 1]);
+         if ($allId === null) {
+            return $results;
+         }
+
+         $where = [];
+         $i = 1;
+         foreach ($allId as $id) {
+            $sId[count($sId) - 1] = $id;
+            $where[] = "tags_target = :w$i";
+            $whereClause["w$i"] = join('/', $sId);
+            $i++;
+         }
+         
+         $pre_statement = 'SELECT * FROM ' . $this->Table . ' WHERE ' . join(' OR ', $where);
+         $whereClause['w2'] = join('/', $sId);
       }
 
       try {
          $st = $this->get_db()->prepare($pre_statement);
-         $st->bindParam(':where', $where, \PDO::PARAM_STR);
+         foreach ($whereClause as $k => $v) {
+            $st->bindParam(':' . $k, $v, \PDO::PARAM_STR);
+         }
          $st->execute();
          while($row = $st->fetch()) {
-            if(! isset($results[$row['tags_target']])) {
-               $results[$row['tags_target']] = array();
+            $sId = explode('/', $row['tags_target']);
+            $newId = $this->Machine->getMachine($sId[count($sId) - 1]);
+            $id = $row['tags_target'];
+            if ($newId) {
+               $sId[count($sId) - 1] = $newId;
+               $id = join('/', $sId);
             }
-            array_push($results[$row['tags_target']], $row['tags_value']);
+            if(! isset($results[$id])) {
+               $results[$id] = array();
+            }
+            array_push($results[$id], $row['tags_value']);
          }
       } catch(\Exception $e) {
          
