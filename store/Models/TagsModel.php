@@ -76,13 +76,12 @@ class TagsModel extends artnum\SQL {
          }
          
          $pre_statement = 'SELECT * FROM ' . $this->Table . ' WHERE ' . join(' OR ', $where);
-         $whereClause['w2'] = join('/', $sId);
       }
 
       try {
          $st = $this->get_db()->prepare($pre_statement);
          foreach ($whereClause as $k => $v) {
-            $st->bindParam(':' . $k, $v, \PDO::PARAM_STR);
+            $st->bindValue(':' . $k, $v, \PDO::PARAM_STR);
          }
          $st->execute();
          while($row = $st->fetch()) {
@@ -93,13 +92,12 @@ class TagsModel extends artnum\SQL {
                $sId[count($sId) - 1] = $newId;
                $id = join('/', $sId);
             }
-            if(! isset($results[$id])) {
-               $results[$id] = array();
+            if(! isset($results[$newId])) {
+               $results[$newId] = array();
             }
-            array_push($results[$id], $row['tags_value']);
+            array_push($results[$newId], $row['tags_value']);
          }
       } catch(\Exception $e) {
-         
       }
       
       return $results;
@@ -113,22 +111,44 @@ class TagsModel extends artnum\SQL {
 
    function write($data, $id = NULL) {
       $retVal = new \artnum\JStore\Result();
-      $insert = array();
-      $delete = array();
+      $insert = [];
+      $deletes = [];
+      $delete = [];
+      $deleteClause = [];
       foreach($data as $k => $v) {
-         $_k = $this->get_db()->quote($k);
-         array_push($delete, $_k);
-         if(!is_array($v)) { $v = array($v); }
-         foreach($v as $_v) {
-            if(empty($_v)) { continue; }
-            array_push($insert, sprintf('( %s, %s )',$this->get_db()->quote($_v), $_k));
+         $sId = explode('/', $k);
+         $newId = $this->Machine->getMachine($sId[count($sId) - 1]);
+         $ids = $this->Machine->getAllId($sId[count($sId) - 1]);
+         if ($ids === null) { return $retVal; }
+         $i = 0;
+         foreach ($ids as $id) {
+            $sId[count($sId) - 1] = $id;
+            $delete["t$i"] = join('/', $sId);
+            $deleteClause[] = 'tags_target = :t' . $i;
+            $i++;
+         }
+         $deletes[$k] = [$delete, $deleteClause];
+         
+         if ($newId !== null) {
+            $sId[count($sId) - 1] = $newId;
+            $newId = join('/', $sId);
+            if(!is_array($v)) { $v = array($v); }
+            foreach($v as $_v) {
+               if(empty($_v)) { continue; }
+               array_push($insert, sprintf('( %s, %s  )',$this->get_db()->quote($_v), $this->get_db()->quote($newId)));
+            }
          }
       }
 
-      if(count($delete) > 0) {
+      if(count($deletes) > 0) {
          try {
-            foreach($delete as $d) {
-               $this->get_db()->query(sprintf('DELETE FROM %s WHERE tags_target = %s', $this->Table, $d));
+            foreach($deletes as $d) {
+               $query = 'DELETE FROM ' . $this->Table . ' WHERE ' . join(' OR ', $d[1]);
+               $stmt = $this->get_db()->prepare($query);
+               foreach ($d[0] as $k => $v) {
+                  $stmt->bindValue(':' . $k, $v, \PDO::PARAM_STR);
+               }
+               $stmt->execute();
             } 
          } catch(\Exception $e) {
             $retVal->addError($e->getMessage());
@@ -136,7 +156,8 @@ class TagsModel extends artnum\SQL {
       }
       if(count($insert) > 0) {
          try {
-            $st = $this->get_db()->prepare(sprintf('INSERT INTO %s VALUES %s', $this->Table, join(',', $insert)));
+            $query = sprintf('INSERT INTO %s VALUES %s', $this->Table, join(',', $insert));
+            $st = $this->get_db()->prepare($query);
             $retVal->addItem($st->execute());
          } catch(\Exception $e) {
             $retVal->addError($e->getMessage());
