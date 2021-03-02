@@ -3,7 +3,11 @@ class MachineModel extends artnum\LDAP {
   protected $kconf;
   function __construct($db, $config) {
     $this->kconf = $config;
-    parent::__construct($db, $this->kconf->get('trees.machines'), ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref'], []);
+    parent::__construct(
+      $db,
+      $this->kconf->get('trees.machines'),
+      null, // all attribute
+      []);
   }
 
   function getEntryDetails ($ref) {
@@ -49,7 +53,7 @@ class MachineModel extends artnum\LDAP {
       $conn = $this->DB->readable();
       $eId = ldap_escape($id);
       $filter = sprintf('(|(description=%s)(airaltref=%s)(airref=%s))', $eId, $eId, $eId);
-      $res = ldap_list($conn, $this->_dn(), $filter, $this->Attribute);
+      $res = ldap_list($conn, $this->_dn(), $filter, $this->Attribute ?? [ '*' ]);
       if ($res && ldap_count_entries($conn, $res) === 1) {
         $entry = ldap_first_entry($conn, $res);
         $entry = $this->processEntry($conn, $entry, $result, $id);
@@ -93,7 +97,7 @@ class MachineModel extends artnum\LDAP {
       } else {
         $filter = '(objectclass=*)';
       }
-      $res = ldap_list($c, $this->_dn(), $filter, $this->Attribute);
+      $res = ldap_list($c, $this->_dn(), $filter, $this->Attribute ?? [ '*' ]);
       if($res) {
         for($e = ldap_first_entry($c, $res); $e; $e = ldap_next_entry($c, $e)) {
           $entry = $this->processEntry($c, $e, $result);

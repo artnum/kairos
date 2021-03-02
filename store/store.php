@@ -4,6 +4,7 @@ require('../lib/url.php');
 require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
+require('../lib/get-entry.php');
 
 $ini_conf = load_ini_configuration();
 $KConf = new KConf($ini_conf);
@@ -23,6 +24,7 @@ if (is_null($pdo)) {
   exit(0);
 }
 $store->add_db('sql', $pdo);
+$KConf->setDB($pdo, 'sql');
 
 if (empty($ini_conf['addressbook']) || empty($ini_conf['addressbook']['servers'])) {
   throw new Exception('Addressbook not configured');
@@ -52,6 +54,8 @@ if (count($ldapServers) <= 0) {
   exit(0);
 }
 $ldap_db = new artnum\LDAPDB($ldapServers);
+$KConf->setDB($ldap_db->writable(), 'ldap');
+$KConf->setDB($ldap_db->readable(), 'ldap', true);
 $store->add_db('ldap', $ldap_db);
 
 if (!$ini_conf['general']['disable-locking']) {

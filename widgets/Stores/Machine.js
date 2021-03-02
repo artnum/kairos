@@ -21,22 +21,26 @@ define([
         if (entry) {
           try {
             entry = JSON.parse(entry)
-            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge) {
+            if (entry.lastFetch >= new Date().getTime() - KAIROS.cache.maxAge) {
               resolve(entry)
               return
             }
           } catch (error) { /* NOP */ }
         }
-        Query.exec(Path.url(`store/Machine/${id}`)).then((results) => {
-          if (results.success && results.length === 1) {
-            entry = Array.isArray(results.data) ? results.data[0] : results.data
-            entry.label = `${id} ${entry.cn}`
-            entry.value = id
+        let url = new URL(`${KAIROS.getBase()}/store/Machine/${id}`)
+        fetch(url).then(response => {
+          if (!response.ok) { resolve(null); return }
+          response.json().then(result => {
+            if (result.length === 1) {
+              entry = Array.isArray(result.data) ? result.data[0] : result.data
+              entry.label = `${id} ${entry.cn}`
+              entry.value = id
 
-            entry.lastFetch = new Date().getTime()
-            window.localStorage.setItem(`kairos/Machine/${id}`, JSON.stringify(entry))
-          }
-          resolve(entry)
+              entry.lastFetch = new Date().getTime()
+              window.localStorage.setItem(`kairos/Machine/${id}`, JSON.stringify(entry))
+            }
+            resolve(entry)
+          })
         })
       })
     },
@@ -67,37 +71,49 @@ define([
           }
           return txt
         }
-        Query.exec(Path.url('store/Machine', {params: {'search.cn': `${searchName}*`, 'search.description': `${searchId}*`, 'search.airaltref': `${searchId}*`}})).then((result) => {
-          if (result.success && result.length > 0) {
-            result.data.forEach((entry) => {
-              let name = highlight(searchName, entry.cn)
+        let url = new URL(`${KAIROS.getBase()}/store/Machine`)
+        url.searchParams.append('search.cn', `${searchName}*`)
+        url.searchParams.append('search.description', `${searchName}*`)
+        url.searchParams.append('search.airref', `*${searchName}*`)
+        fetch(url).then(response => {
+          const p = new Promise((resolve, reject) => {
+            if (!response.ok) { resolve([]); return }
+            response.json().then(result => {
+              for (let i = 0; i < result.length; i++) {
+                const entry = result.data[i]
 
-              let id = highlight(searchId, entry.uid)
-              entry.label = `${id} ${name}`
-              entry.value = entry.uid
-              entry.sortInteger = parseInt(entry.uid)
-              if (isNaN(entry.sortInteger)) { entry.sortInteger = Infinity }
-              entries.push(entry)
-            })
-          }
+                const name = highlight(searchName, entry.cn)
+                const id = highlight(searchId, entry.uid)
 
-          entries.sort((a, b) => {
-            let v = a.sortInteger - b.sortInteger
-            if (v === 0) {
-              v = a.cn.localeCompare(b.cn)
-              if (v === 0) {
-                if (!isNaN(parseInt(a.description)) && !isNaN(parseInt(b.description))) {
-                  v = parseInt(a.description) - parseInt(b.description)
-                } else {
-                  v = a.description.localeCompare(b.description)
-                }
+                entry.label = `${id} ${name}`
+                entry.value = entry.uid
+                entry.sortInteger = parseInt(entry.uid)
+                if (isNaN(entry.sortInteger)) { entry.sortInteger = Infinity }
+                entries.push(entry)
               }
-            }
-            return v
+              resolve(entries)
+            })
           })
 
-          this.entries = entries
-          resolve(this.entries)
+          p.then(entries => {
+            entries.sort((a, b) => {
+              let v = a.sortInteger - b.sortInteger
+              if (v === 0) {
+                v = a.cn.localeCompare(b.cn)
+                if (v === 0) {
+                  if (!isNaN(parseInt(a.description)) && !isNaN(parseInt(b.description))) {
+                    v = parseInt(a.description) - parseInt(b.description)
+                  } else {
+                    v = a.description.localeCompare(b.description)
+                  }
+                }
+              }
+              return v
+            })
+
+            this.entries = entries
+            resolve(this.entries)
+          })
         })
       })
     },

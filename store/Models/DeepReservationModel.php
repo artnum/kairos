@@ -20,6 +20,7 @@ class DeepReservationModel extends ReservationModel {
                 LEFT JOIN status ON reservation_status = status_id
                ');
     $this->conf('datetime', array('begin', 'end', 'deliveryBegin', 'deliveryEnd', 'reported', 'done', 'inprogress'));
+    $this->Machine = new LDAPGetEntry($this->kconf);
   }
 
   function get_db($x = false) {
@@ -29,6 +30,7 @@ class DeepReservationModel extends ReservationModel {
   function set_db($dbs) {
     $this->DB = $dbs['sql'];
     $this->dbs = $dbs;
+    $this->Machine->setLdap($this->dbs['ldap']->readable());
   }
 
   function dbtype() {
@@ -95,7 +97,7 @@ class DeepReservationModel extends ReservationModel {
     LEFT JOIN user AS creator ON creator.user_id =
          IDFromUrl(reservation.reservation_creator)
     LEFT JOIN status ON reservation_status = status_id
-    WHERE ((arrival_reported is null and arrival_done is null) and reservation.reservation_end <= :day) and reservation.reservation_deleted is null
+    WHERE ((arrival_deleted IS NOT NULL or (COALESCE(arrival_reported, \'\') = \'\' AND COALESCE(arrival_done, \'\') = \'\')) and reservation.reservation_end <= :day) and reservation.reservation_deleted is null
    ;';
     $day = new DateTime();
     if (isset($options['search'])) {
@@ -113,6 +115,8 @@ class DeepReservationModel extends ReservationModel {
       $st->bindValue(':day', $day->format('Y-m-d'), PDO::PARAM_STR);
       if ($st->execute()) {
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $newId = $this->Machine->getMachine($row['reservation_target']);
+          if ($newId) { $row['reservation_target'] = $newId; }
           $result->addItem($this->unprefix($row));
         }
       }     
@@ -130,8 +134,7 @@ class DeepReservationModel extends ReservationModel {
               (association_id IS NOT NULL AND IdFromURL(association_type) = :status
                 AND LEFT(COALESCE(NULLIF(association_begin,\'\'), reservation_deliveryBegin, reservation_begin), 10) <= :day
                 AND LEFT(COALESCE(NULLIF(association_end,\'\'), reservation_deliveryEnd, reservation_end), 10) >= :day)
-              OR (LEFT(COALESCE(reservation_deliveryBegin, reservation_begin), 10) = :day)
-              OR (LEFT(COALESCE(reservation_deliveryEnd, reservation_end), 10) = :day))
+              OR (LEFT(COALESCE(reservation_deliveryBegin, reservation_begin), 10) = :day))
               AND reservation_deleted IS NULL
             GROUP BY reservation_target;';
     $status= 4;
@@ -157,6 +160,8 @@ class DeepReservationModel extends ReservationModel {
 
       if ($st->execute()) {
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $newId = $this->Machine->getMachine($row['reservation_target']);
+          if ($newId) { $row['reservation_target'] = $newId; }
           $result->addItem($this->unprefix($row));
         }
       }
@@ -193,7 +198,6 @@ class DeepReservationModel extends ReservationModel {
       }
       if (isset($options['search']['status']) && is_numeric($options['search']['status'])){
         $status = $options['search']['status'];
-        
       }
     } 
 
@@ -217,6 +221,9 @@ class DeepReservationModel extends ReservationModel {
       $st->bindValue(':status', $status, PDO::PARAM_INT);
       if ($st->execute()) {
         while (($row = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
+          $newId = $this->Machine->getMachine($row['reservation_target']);
+          if ($newId) { $row['reservation_target'] = $newId; }
+          if (isset($row['user_key'])) { unset($row['user_key']); }
           $result->addItem($this->unprefix($row));
         }
       }     
