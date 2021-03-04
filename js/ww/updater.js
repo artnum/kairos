@@ -203,6 +203,11 @@ function cacheAndSend (data, vTimeLine) {
                 if (!entries[Entries[entry.id][1]]) {
                   entries[Entries[entry.id][1]] = []
                 }
+                let remChannel = Entries[entry.id][1] 
+                if (Symlinks[remChannel]) {
+                  remChannel = Symlinks[remChannel]
+                }
+                Channels[remChannel]?.postMessage({op: 'remove', reservation: entry})
                 entries[Entries[entry.id][1]].push(entry)
                 delete Entries[entry.id]
               }
