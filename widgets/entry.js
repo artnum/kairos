@@ -201,7 +201,9 @@ define([
       a.innerHTML = ` <span class="reference">(${this.get('target')})</span>
                       <span class="commonName label">${this.get('label')}</span>
                       ${this.details.parent !== '' ? '<span class="parentMachine">' + this.details.parent + '</span>' : ''}`
-
+      if (this.details.kmodel || this.details.brand) {
+        a.innerHTML += `<br><span class="brand">${this.details.brand ?? ''}</span> <span class="kmodel">${this.details.kmodel ?? ''}</span>`
+      }
       frag.appendChild(a)
       window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
       this.domNode.dataset.reference = this.target
@@ -305,7 +307,7 @@ define([
     },
 
     genDetails: function () {
-      const texts = ['reference', 'uid']
+      const texts = ['reference', 'uid', 'kmodel', 'brand']
       const weights = ['maxcapacity', 'weight']
       const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
       let x = {}
@@ -353,6 +355,8 @@ define([
       }
       const labels = {
         reference: 'Originale',
+        brand: 'Marque',
+        kmodel: 'Modèle',
         oldid: 'Ancien numéro',
         weight: 'Poids',
         maxcapacity: 'Charge max',

@@ -73,7 +73,7 @@
     min-height: 92px;
 }
 
-.entry .tags, .entry .location, .entry .tags a {
+.entry .tags, .entry .location, .entry .brand, .entry .kmodel, .entry .tags a {
     width: 100%;
     color: hsla(var(--default-color-base), 0.2);
     text-decoration: none !important;
