@@ -39,11 +39,13 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
                                 addr = new Address(result.data[i])
                             }
                             if (searchResults[addr.id] === undefined) {
-                                searchResults[addr.id] = {address: addr, years: {}}
+                                searchResults[addr.id] = {address: addr, years: {}, yearList: []}
                             }
 
                             if (searchResults[addr.id].years[r.getYear()] === undefined) {
                                 searchResults[addr.id].years[r.getYear()] = []
+                                searchResults[addr.id].yearList.push(r.getYear())
+                                searchResults[addr.id].yearList.sort((a, b) => { return parseInt(b) - parseInt(a) })
                             }
                             searchResults[addr.id].years[r.getYear()].push(r)
                             resolve()
@@ -75,31 +77,58 @@ ClientSearch.prototype.search = function (val) {
                 url2.searchParams.append('search.freeform', `~%${params[i]}%`)
             }
         }
-        p.push(this.doSearch(url2))
-        new Promise((resolve, reject) => { 
-            console.log('---- ----- -----')
-            fetch(url).then(response => {
-                if (!response.ok) { resolve(); return }
-                response.json().then(result => {
-                    for (let i = 0; i < result.length; i++) {
-                        let url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
-                        url.searchParams.append('search.target', `/Contacts/${result.data[i].IDent}`)
-                        p.push(this.doSearch(url, result.data[i]))
-                    }
-                    resolve()
+        KAIROS.openWindow(`Recherche client "${val}"`).then(([win, doc]) => {
+            p.push(this.doSearch(url2))
+            new Promise((resolve, reject) => { 
+                fetch(url).then(response => {
+                    if (!response.ok) { resolve(); return }
+                    response.json().then(result => {
+                        for (let i = 0; i < result.length; i++) {
+                            let url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+                            url.searchParams.append('search.target', `/Contacts/${result.data[i].IDent}`)
+                            p.push(this.doSearch(url, result.data[i]))
+                        }
+                        resolve()
+                    }, () => resolve())
                 }, () => resolve())
-            }, () => resolve())
-        }).then(() => {
-            console.log(p)
-            if (p.length > 0) {
-                Promise.all(p).then(results => {
-                   KAIROS.openWindow(`Recherche client "${val}"`).then(win => {
-                       for (let i = 0; i < results.length; i++) {
-                           
-                       }
-                   })
-                })
-            }
+            }).then(() => {
+                if (p.length > 0) {
+                    Promise.all(p).then(results => {
+                        for (let i = 0; i < results.length; i++) {
+                            if (results[i] === null) { continue }
+                            const addr = results[i][Object.keys(results[i])[0]]
+                            const div = doc.createElement('DIV')
+                            div.classList.add('searchResult')
+                            div.innerHTML = `<h1>${addr.address.toString()}</h1>`
+                            console.log(results)
+                            div.addEventListener('click', event => {
+                                const node = event.target
+                                let entryCount = 0
+                                for (const y of addr.yearList) {
+                                    if (addr.years[y].length <= 0) { continue }
+                                    node.innerHTML += `<h2>${y}</h2>`
+                                    for (let i = 0; i < addr.years[y].length; i++) {
+                                        let entry = addr.years[y][i]
+                                        entryCount++
+                                        node.innerHTML += `
+                                            <p class="result"><span class="uid entry">${entry.data.machine.uid}</span>
+                                            <span class="name entry">${entry.data.machine.cn ?? ''}</span>
+                                            <span class="reservation entry">${entry.data.reservation.id}</span>
+                                            du <span class="begin entry">${entry.data.reservation.begin.shortDate()}</span>
+                                            au <span class="begin entry">${entry.data.reservation.end.shortDate()}</span>
+                                            <span class="reference entry">${entry.data.reservation.reference ?? ''}</span>
+                                            <span class="locality entry">${entry.data.reservation.locality ?? ''}</span>
+                                            </p>`
+                                        if (entryCount > 20) { break }
+                                    }
+                                    if (entryCount > 20) { break }
+                                }
+                            })
+                            win.appendChild(div)
+                        }
+                    })
+                }
+            })
         })
     }
 }

@@ -144,15 +144,22 @@ KAIROS.searchResults = function () {
 }
 
 KAIROS.zMax = function (node = null) {
-    if (node === null) {
+    let max = 0
+    let start = performance.now()
+    document.body.getElementsByTagName('*').forEach(element => {
+        let zx = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'))
+        if (zx > max) { max = zx }
+    })
+    console.log('TIME : ', performance.now() - start)
+    /*if (node === null || node === document.body) {
         let maxLevel = 0
         let deepest = function (element, level = 0) {
             for (let e = element.firstElementChild; e; e = e.nextElementChild) {
                 deepest(e, ++level)
+                console.log(e)
                 if (level > maxLevel) {
                     maxLevel = level
                     node = e
-                    console.log(node, maxLevel)
                 }
             }
         }
@@ -167,8 +174,8 @@ KAIROS.zMax = function (node = null) {
         }
         level++;
         node = node.parentNode
-    } while(node && node instanceof Element)
-    return zindex + level
+    } while(node && node instanceof Element)*/
+    return max + 1
 }
 
 KAIROS._domStack = []
@@ -223,8 +230,19 @@ KAIROS._pstack = function (force = false) {
 
 KAIROS.openWindow = function (title) {
     return new Promise((resolve, reject) => {
+        /*const win = document.createElement('DIV')
+        win.classList.add('kpopup')
+        win.innerHTML = `<div class="title">${title}</div><div class="content"></div>`
+        document.body.appendChild(win) */
+        const win = new KPopup(title, {closable: true, isWindow: true})
+        win.open().then(domNode => {
+            resolve([domNode, document])
+        })
+        /*
         let blob = new Blob([`<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>${title}</title></head><body></body></html>`], {type: 'text/html'})
         let ref = window.open(URL.createObjectURL(blob), 'x', 'menubar=no,location=no,resizable=yes,scrollbars=yes,status=no')
-        resolve(ref)
+        ref.addEventListener('load', event => {
+            resolve(ref)
+        })*/
     })
 }
