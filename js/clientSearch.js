@@ -35,20 +35,22 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
                     if (result.data[i].reservation <= 0 || result.data[i].reservation == null) { continue }
                     promises.push(new Promise((resolve, reject) => {
                         KReservation.load(result.data[i].reservation).then(r => {
-                            if(!addr) {
-                                addr = new Address(result.data[i])
-                            }
-                            if (searchResults[addr.id] === undefined) {
-                                searchResults[addr.id] = {address: addr, years: {}, yearList: []}
-                            }
+                            r.loaded().then(r => {
+                                if(!addr) {
+                                    addr = new Address(result.data[i])
+                                }
+                                if (searchResults[addr.id] === undefined) {
+                                    searchResults[addr.id] = {address: addr, years: {}, yearList: []}
+                                }
 
-                            if (searchResults[addr.id].years[r.getYear()] === undefined) {
-                                searchResults[addr.id].years[r.getYear()] = []
-                                searchResults[addr.id].yearList.push(r.getYear())
-                                searchResults[addr.id].yearList.sort((a, b) => { return parseInt(b) - parseInt(a) })
-                            }
-                            searchResults[addr.id].years[r.getYear()].push(r)
-                            resolve()
+                                if (searchResults[addr.id].years[r.getYear()] === undefined) {
+                                    searchResults[addr.id].years[r.getYear()] = []
+                                    searchResults[addr.id].yearList.push(r.getYear())
+                                    searchResults[addr.id].yearList.sort((a, b) => { return parseInt(b) - parseInt(a) })
+                                }
+                                searchResults[addr.id].years[r.getYear()].push(r)
+                                resolve()
+                            })
                         })
                     }))
                 }
@@ -78,6 +80,7 @@ ClientSearch.prototype.search = function (val) {
             }
         }
         KAIROS.openWindow(`Recherche client "${val}"`).then(([win, doc]) => {
+            win.startLoading()
             p.push(this.doSearch(url2))
             new Promise((resolve, reject) => { 
                 fetch(url).then(response => {
@@ -100,32 +103,50 @@ ClientSearch.prototype.search = function (val) {
                             const div = doc.createElement('DIV')
                             div.classList.add('searchResult')
                             div.innerHTML = `<h1>${addr.address.toString()}</h1>`
-                            console.log(results)
                             div.addEventListener('click', event => {
-                                const node = event.target
-                                let entryCount = 0
-                                for (const y of addr.yearList) {
-                                    if (addr.years[y].length <= 0) { continue }
-                                    node.innerHTML += `<h2>${y}</h2>`
-                                    for (let i = 0; i < addr.years[y].length; i++) {
-                                        let entry = addr.years[y][i]
-                                        entryCount++
-                                        node.innerHTML += `
-                                            <p class="result"><span class="uid entry">${entry.data.machine.uid}</span>
-                                            <span class="name entry">${entry.data.machine.cn ?? ''}</span>
-                                            <span class="reservation entry">${entry.data.reservation.id}</span>
-                                            du <span class="begin entry">${entry.data.reservation.begin.shortDate()}</span>
-                                            au <span class="begin entry">${entry.data.reservation.end.shortDate()}</span>
-                                            <span class="reference entry">${entry.data.reservation.reference ?? ''}</span>
-                                            <span class="locality entry">${entry.data.reservation.locality ?? ''}</span>
-                                            </p>`
+                                if (event.target.dataset.reservation) {
+                                    event.target.classList.add('wait')
+                                    KAIROS.timeline.gotoReservation(event.target.dataset.reservation).then(opened => {
+                                        console.log(opened)
+                                        if (opened) {
+                                            event.target.classList.remove('wait')
+                                        } else {
+                                            KAIROS.error(`Échec d'ouverture de la réservation`)
+                                        }
+                                    })
+                                    return;
+                                }
+                                const node = event.target.parentNode
+                                if (node.dataset.open === '1') {
+                                    node.innerHTML = ''
+                                    node.dataset.open = '0'
+                                } else {
+                                    node.dataset.open = '1'
+                                    let entryCount = 0
+                                    for (const y of addr.yearList) {
+                                        if (addr.years[y].length <= 0) { continue }
+                                        node.innerHTML += `<h2>${y}</h2>`
+                                        for (let i = 0; i < addr.years[y].length; i++) {
+                                            let entry = addr.years[y][i]
+                                            entryCount++
+                                            node.innerHTML += `
+                                                <p class="result"><span class="uid entry">${entry.data.machine?.uid ?? ''}</span>
+                                                <span class="name entry">${entry.data.machine?.cn ?? ''}</span>
+                                                <span class="reservation entry" data-reservation="${entry.data.reservation?.id}">${entry.data.reservation?.id}</span>
+                                                du <span class="begin entry">${entry.data.reservation?.begin.shortDate()}</span>
+                                                au <span class="begin entry">${entry.data.reservation?.end.shortDate()}</span>
+                                                <span class="reference entry">${entry.data.reservation?.reference ?? ''}</span>
+                                                <span class="locality entry">${entry.data.reservation?.locality ?? ''}</span>
+                                                </p>`
+                                            if (entryCount > 20) { break }
+                                        }
                                         if (entryCount > 20) { break }
                                     }
-                                    if (entryCount > 20) { break }
                                 }
                             })
                             win.appendChild(div)
                         }
+                        win.stopLoading()
                     })
                 }
             })

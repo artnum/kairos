@@ -15,6 +15,51 @@ KAIROS.uuidV4 = function () {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
 }
 
+KAIROS.events = new EventTarget()
+
+KAIROS.addEventListener = function (type, callback, options) {
+  KAIROS.events.addEventListener(type, callback, options)
+}
+
+KAIROS.removeEventListener = function (type, callabck, options) {
+  KAIROS.events.removeEventListener(type, callback, options) 
+}
+
+KAIROS.register = function (resource, object) {
+  if (KAIROS.register.table === undefined) { KAIROS.register.table = {} }
+  if (KAIROS.register.table[resource]) {
+    if (typeof KAIROS.register.table[resource].update === 'function' ) {
+      KAIROS.register.table[resource].update(object)
+    } else {
+      KAIROS.register.table[resource] = object
+    }
+  } else {
+    KAIROS.register.table[resource] = object
+  }
+  KAIROS.events.dispatchEvent(new CustomEvent('resource-add', {detail: object}))
+}
+
+KAIROS.unregister = function (resource) {
+  let object
+  if (KAIROS.register.table === undefined) { return }
+  if (KAIROS.register.table[resource]) {
+    object = KAIROS.register.table[resource]
+    if (typeof KAIROS.register.table[resource].remove === 'function' ) {
+      KAIROS.register.table[resource].remove(object)
+      delete KAIROS.register.table[resource]
+    } else {
+      delete KAIROS.register.table[resource]
+    }
+  }
+  KAIROS.events.dispatchEvent(new CustomEvent('resource-delete', {detail: object}))
+}
+
+KAIROS.get = function (resource) {
+  if (KAIROS.register.table === undefined) { return null } 
+  if (KAIROS.register.table[resource] === undefined) { return null }
+  return KAIROS.register.table[resource];
+}
+
 /* override fetch to add X-Request-Id automatically */
 const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch

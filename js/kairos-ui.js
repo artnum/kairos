@@ -1,4 +1,10 @@
 
+KAIROS.mouse = {}
+window.addEventListener('mousemove', event => {
+    KAIROS.mouse.clientX = event.clientX
+    KAIROS.mouse.clientY = event.clientY
+})
+
 KAIROS.info = function (txt, code = 0) {
     this.log('info', txt, code)
 }
@@ -150,31 +156,6 @@ KAIROS.zMax = function (node = null) {
         let zx = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'))
         if (zx > max) { max = zx }
     })
-    console.log('TIME : ', performance.now() - start)
-    /*if (node === null || node === document.body) {
-        let maxLevel = 0
-        let deepest = function (element, level = 0) {
-            for (let e = element.firstElementChild; e; e = e.nextElementChild) {
-                deepest(e, ++level)
-                console.log(e)
-                if (level > maxLevel) {
-                    maxLevel = level
-                    node = e
-                }
-            }
-        }
-        deepest(document.body)
-    }
-    let zindex = 0
-    let level = 0
-    do {
-        let zx = parseInt(window.getComputedStyle(node).getPropertyValue('z-index'))
-        if (!Number.isNaN(zx) && zx > zindex) {
-            zindex = zx
-        }
-        level++;
-        node = node.parentNode
-    } while(node && node instanceof Element)*/
     return max + 1
 }
 
@@ -230,19 +211,9 @@ KAIROS._pstack = function (force = false) {
 
 KAIROS.openWindow = function (title) {
     return new Promise((resolve, reject) => {
-        /*const win = document.createElement('DIV')
-        win.classList.add('kpopup')
-        win.innerHTML = `<div class="title">${title}</div><div class="content"></div>`
-        document.body.appendChild(win) */
         const win = new KPopup(title, {closable: true, isWindow: true})
         win.open().then(domNode => {
             resolve([domNode, document])
         })
-        /*
-        let blob = new Blob([`<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>${title}</title></head><body></body></html>`], {type: 'text/html'})
-        let ref = window.open(URL.createObjectURL(blob), 'x', 'menubar=no,location=no,resizable=yes,scrollbars=yes,status=no')
-        ref.addEventListener('load', event => {
-            resolve(ref)
-        })*/
     })
 }

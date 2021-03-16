@@ -56,7 +56,7 @@ KReservation.prototype.loaded = function () {
       this.promise.creator,
       this.promise.technician,
       this.promise.addresses
-    ]).then(() => { resolve() })
+    ]).then(() => { resolve(this) })
   })
 }
 

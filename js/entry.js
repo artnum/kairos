@@ -31,6 +31,7 @@ KEntry.prototype.delete = function (entry) {
     if (typeof entry === 'object') {
         id = entry.id
     }
+    KAIROS.unregister(`reservation/${id}`)
     if (this.entries[id] !== undefined) {
         delete this.entries[id]
         this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
@@ -39,11 +40,13 @@ KEntry.prototype.delete = function (entry) {
 
 KEntry.prototype.add = function (entry) {
     this.entries[entry.id] = entry
+    KAIROS.register(`reservation/${entry.id}`, entry)
     this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry}}))
 }
 
 KEntry.prototype.update = function (entry) {
     this.entries[entry.id] = entry
+    KAIROS.register(`reservation/${entry.id}`, entry)
     this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry}}))
 
 }
@@ -86,11 +89,11 @@ KEntry.prototype.is = function (id) {
 }
 
 KEntry.prototype.fixReservation = function (reservationJson) {
-    return new Promise((resovle, reject) => {
+    return new Promise((resolve, reject) => {
         this.is(reservationJson.target).then(is => {
             if (is) {
                 reservationJson.target = this.data.uid
-                resovle(reservationJson)
+                resolve(reservationJson)
                 return
             }
             resolve(null)

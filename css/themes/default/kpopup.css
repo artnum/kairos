@@ -37,14 +37,28 @@
 }
 
 .kpopup .content {
+    font-family: 'Roboto', sans-serif;
+    position: absolute;
+    top: 38px;
+    min-height: calc(100% - 48px);
+    max-height: calc(100% - 48px);
+    min-width: calc(100% - 16px);
+    max-width: calc(100% - 16px);
     display: flex;
     flex-direction: column;
     margin: 0;
     padding: 4px;
-    min-width: calc(100% - 8px);
     font-size: initial;
     overflow-y: auto;
-    max-height: 96vh;
+}
+
+.kpopup .entry {
+    font-family: 'B612 Mono', monospace;
+}
+
+.kpopup .reservation {
+    box-shadow: none !important;
+    border-bottom: 4px solid rgba(255,0,0,0.2);
 }
 
 .kpopup.win {
@@ -67,4 +81,9 @@
     min-height: 40px;
     background-color: black;
     color: white;
+}
+
+.kpopup .reservation.wait {
+    cursor: wait;   
+    border-bottom: 4px solid rgba(255,0,0,1);
 }

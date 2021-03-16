@@ -155,7 +155,11 @@ define([
     switchCommandMode: function (mouse = false) {
       let closeCommandMode = () => {
         this.CommandOverlay = null
-        window.requestAnimationFrame(() => { document.body.removeChild(document.getElementById('commandModeOverlay')) })
+        window.requestAnimationFrame(() => { 
+          if (document.getElementById('commandModeOverlay')) {
+            document.body.removeChild(document.getElementById('commandModeOverlay'))
+          }
+        })
       }
       return new Promise((resolve, reject) => {
         this.Mouse = mouse
@@ -319,7 +323,7 @@ define([
     },
     gotoReservation: function (val) {
       return new Promise((resolve, reject) => {
-        this.doSearchLocation(val, true).then(() => { resolve(true) }, () => { resolve(false) })
+        this.doSearchLocation(val, true).then(r => { resolve(r) }, () => { resolve(false) })
       })
     },
 
