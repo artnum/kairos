@@ -9,6 +9,44 @@
 
   global.Holiday = (function () {
     const DAY_LENGTH_MS = 86400000
+    const Names = {
+      shroveTuesday: 'Mardi gras',
+      passionSunday: 'Dimanche de la passion',
+      palmSunday: 'Dimanche des Rameaux',
+      maundyThursday: 'Jeudi Saint',
+      goodFriday: 'Vendredi Saint',
+      easter: 'Pâques',
+      easterMonday: 'Lundi de Pâques',
+      ascensionDay: 'Ascension',
+      pentecost: 'Pentecôte',
+      pentecostMonday: 'Lundi de Pentecôte',
+      trinitySunday: 'Sainte Trinité',
+      corpusChristi: 'Fête-Dieux',
+      fahrtsfest: 'Bataille, Glaris',
+      jeuneGenevois: 'Jeûne Genevois',
+      jeuneFederal: 'Jeûne Fédéral',
+      lundiDuJeune: 'Lundi du jeûne Fédéral',
+      newYear: 'Nouvel-An',
+      berchtoldsTag: 'St-Berchtoldstag',
+      epiphany: 'Épiphanie',
+      instaurationRepublique: 'Instauration de la République de Neuchâtel',
+      saintJoseph: 'St-Joseph',
+      labourDay: 'Fête du travail',
+      victoireAllie: 'Victoire des Alliés',
+      nationalFRDay: 'Fête nationale Française',
+      nationalCHDay: 'Fête nationale Suisse',
+      commemorationPlebiscite: 'Commémoration du Plébiscite',
+      assumption: 'Assomption',
+      saintNicolas: 'St-Nicolas',
+      saintEtienne: 'St-Etienne',
+      allSaintsDay: 'Toussaint',
+      armistice: 'Armistice',
+      immaculateConception: 'Immaculée Conception',
+      christmas: 'Noël',
+      christmasEve: 'Veille de Noël',
+      restaurationRepublique: 'Restauration de la République de Genève',
+      newYearEve: 'Veille de Nouvel-an'
+    }
     var EasterRelative = {
       'shroveTuesday': -47, // Mardi gras, fin de Carnaval
       'passionSunday': -14, // Dimanche de la passion
@@ -246,7 +284,7 @@
       if (days) {
         days = [...days]
         let details = days.shift()
-        return {day: details, c: days}
+        return {day: details, c: days, name: Names[details.name] ?? ''}
       }
 
       return false

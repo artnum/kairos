@@ -511,9 +511,9 @@ define([
         holiday.c.forEach((c) => {
           cantons.push(this._trCantonName(c))
         })
-        let text = `Férié ${cantons[0]}`
+        let text = `Férié ${holiday.name}: ${cantons[0]}`
         if (holiday.c.length > 1) {
-          text = `Férié ${cantons.join(', ')}`
+          text = `Férié ${holiday.name}: ${cantons.join(', ')}`
         }
         if (this.Tooltips[newDay.toISOString().split('T')[0]]) {
           this.Tooltips[newDay.toISOString().split('T')[0]].dispose()
@@ -696,7 +696,7 @@ define([
       djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      djOn(this.domNode, 'mousemove, touchmove', djLang.hitch(this, this.mouseOver))
+      djOn(this.domNode, 'mousemove, touchmove', this.mouseOver.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1784,7 +1784,7 @@ define([
           if (!response.ok) { reject(); return }
           response.json().then(result=> {
             if (result && result.length === 0) {
-              reject()
+              resolve(false)
             } else {
               var reservation = result.data
               if (reservation.deleted) {
@@ -1800,20 +1800,21 @@ define([
                       let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
                       window.scroll(0, pos.y - (window.innerHeight / 3))
                     }
-                    resolve()
+                    resolve(true)
                   } else {
-                    reject()
+                    resolve(false)
                   }
                 })
               } else {
                 let reservation = new Reservation({uid: data.id, uuid: data.uuid, sup: null, _json: data})
                 reservation.popMeUp()
+                resolve(true)
               }
               DoWait(false)
             }
           })
-        }, () => DoWait(false))
-      }, () => DoWait(false))
+        }, () => { resolve(false); DoWait(false) })
+      }, () => { resolve(false); DoWait(false) })
     },
 
     print: function (url) {
