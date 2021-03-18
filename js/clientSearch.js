@@ -119,7 +119,7 @@ ClientSearch.prototype.clickHandler = function (event) {
                     du <span class="begin entry">${entry.data.reservation?.begin.shortDate()}</span>
                     au <span class="begin entry">${entry.data.reservation?.end.shortDate()}</span>
                     <span class="reference entry">${entry.data.reservation?.reference ?? ''}</span>
-                    <span class="locality entry">${entry.data.reservation?.locality ?? ''}</span>
+                    <span class="locality entry">${entry.data.locality?.label ?? ''}</span>
                     </p>`
                 if (entryCount >= 20 && !all) {
                     hasMoreShown = true
