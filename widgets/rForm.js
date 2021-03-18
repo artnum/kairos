@@ -1906,6 +1906,16 @@ define([
               this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
               this.reservation.save().then((id) => {
+                fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`)).then(response => {
+                  if (!response.ok) { return }
+                  response.json().then(result => {
+                    let data = Array.isArray(result.data) ? result.data[0] : result.data
+                    if (data.modification) {
+                      this.lastModified = parseInt(data.modification)
+                      this.reservation.lastModified = parseInt(data.modification)
+                    }
+                  })
+                })
                 this.domNode.removeAttribute('style')
                 if (!move) {
                   this.resize()
