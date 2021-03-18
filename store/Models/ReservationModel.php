@@ -59,7 +59,7 @@ class ReservationModel extends artnum\SQL {
                   MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
                   (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0) AS "reservation_total"
                   FROM "reservation"  
-                  WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 __USER__
+                  WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_status" <> 3 __USER__
                   GROUP BY idFromUrl(reservation_creator)
                   ORDER BY "reservation_totUser" DESC';
 
