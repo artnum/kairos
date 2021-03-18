@@ -126,7 +126,7 @@ KReservation.prototype.loadTechnician = function () {
 KReservation.prototype.loadLocality = function () {
   this.promise.locality = new Promise((resolve, reject) => {
     if (!this.ok) { resolve(); return }
-    if (/^PC\/[0-9a-f]{32,32}$/.test(this.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(this.data.reservation.locality)) {
+    if (/^PC\/[0-9a-f]{32,32}$/.test(this.data.reservation.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(this.data.reservation.locality)) {
       fetch(new URL(`${KAIROS.getBase()}/store/${this.data.reservation.locality}`)).then(response => {
         if (!response.ok) { resolve(); return }
         response.json().then(result => {
