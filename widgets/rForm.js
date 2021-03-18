@@ -1554,7 +1554,6 @@ define([
             var url = Path.url('store/ReservationContact/' + this.contactLinkId)
             Query.exec(url, {method: 'delete'}).then(function () {
               event.removeChild(this)
-              this.contactSup.reservation.modified()
               for (var i in sup.contacts) {
                 if (sup.contacts[i].contactLinkId === this.contactLinkId) {
                   sup.contacts[i].destroy()
@@ -1604,7 +1603,6 @@ define([
                   var e = c.data[0]
                   e.linkId = result.data[0].id
                   that.createContact(e, type, true)
-                  that.reservation.modified()
                 }
               }))
             }))
@@ -1621,7 +1619,6 @@ define([
               if (result.success && result.length === 1) {
                 options.linkId = result.data[0].id
                 that.createContact(options, type, true)
-                that.reservation.modified()
               }
             })
           }
