@@ -669,6 +669,8 @@ define([
         })
       }.bind(this))
 
+      this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
+
       var tContainer = dtRegistry.byId('tContainer')
       this.bc = new BroadcastChannel(Path.bcname('artnum/location'))
       this.view = {}
@@ -1948,6 +1950,24 @@ define([
       iframe.setAttribute('src', 'uncounted.html')
       iframe.setAttribute('style', 'border: none; width: 100%; height: 100%')
       uncounted.content(iframe)
+    },
+
+    searchMachineLive: function (event) {
+      let val = event.target.value
+      for (let i in this.Entries) {
+        let entry = this.Entries[i]
+        if (val === '') {
+          entry.domNode.dataset.active = '1'; 
+          continue
+        }
+        const regexp = new RegExp(`^${val}.*`)
+        if (!regexp.test(entry.label) && !regexp.test(entry.target)) {
+          entry.domNode.dataset.active = '0';
+        } else {
+          entry.domNode.dataset.active = '1'; 
+        }
+      }
     }
+
   })
 })
