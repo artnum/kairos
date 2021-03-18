@@ -1960,7 +1960,7 @@ define([
           entry.domNode.dataset.active = '1'; 
           continue
         }
-        const regexp = new RegExp(`^${val}.*`)
+        const regexp = new RegExp(`^.*${val}.*`, 'i')
         if (!regexp.test(entry.label) && !regexp.test(entry.target)) {
           entry.domNode.dataset.active = '0';
         } else {
