@@ -1963,10 +1963,15 @@ define([
         const regexp = new RegExp(`^.*${val}.*`, 'i')
         if (!regexp.test(entry.label) && !regexp.test(entry.target)) {
           let found = '0'
-          for (let i = 0; i < entry.tags.length; i++) {
-            if (regexp.test(entry.tags[i])) {
-              found = '1'
-              break
+          if (regexp.test(entry.KEntry?.data?.brand)) {
+            found = '1'
+          }
+          if (found !== '1') {
+            for (let i = 0; i < entry.tags.length; i++) {
+              if (regexp.test(entry.tags[i])) {
+                found = '1'
+                break
+              }
             }
           }
           entry.domNode.dataset.active = found
