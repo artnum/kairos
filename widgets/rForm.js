@@ -1728,10 +1728,12 @@ define([
         this.endDate.set('state', 'Error')
         return ['La fin de réservation est avant le début', false]
       }
-
+      console.log(f)
       if (!/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
-        this.nDeliveryRemark.set('state', 'Error')
-        return [ 'Livraison la veille doit être renseignée', false]
+        if (!this.nLocality.value.startsWith('Warehouse/')) {
+          this.nDeliveryRemark.set('state', 'Error')
+          return [ 'Livraison la veille doit être renseignée', false]
+        }
       }
 
       if (this.nDelivery.get('checked')) {
@@ -1790,6 +1792,7 @@ define([
       return new Promise(function (resolve, reject) {
         var err = this.validate()
         if (!err[1]) {
+          this.domNode.removeAttribute('style')
           KAIROS.error(err[0])
           reject(new Error('Not valid'))
           return
