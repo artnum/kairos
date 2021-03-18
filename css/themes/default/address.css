@@ -1,0 +1,7 @@
+address .organization {
+    font-weight: bold;
+}
+
+address a {
+    text-decoration: none;
+}

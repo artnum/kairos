@@ -18,3 +18,77 @@
 .searchResult .entry {
     margin: auto auto auto 1ch;
 }
+
+.searchResult .result.more {
+    cursor: pointer;
+    font-size: 0.8em;
+    color: white;
+    background-color: black;
+    max-width: 50%;
+    padding: 2px;
+    margin: auto;
+    margin-bottom: 4ex;
+    text-align: center;
+}
+
+.searchResult .reservation, .searchResult .uid {
+    font-family: 'B612 Mono', monospace;
+}
+
+.searchResult .folded {
+    display: none;
+}
+
+.searchResult .result {
+    margin-left: 2ch;
+}
+
+.searchResult h2 {
+	font-family: 'Roboto', sans-serif;
+    font-weight: bold;
+    border-bottom: 1px solid black;
+    padding: none;
+    margin: none;
+}
+
+.searchResult h1 {
+    padding: 5px;
+    padding-bottom: 0px;
+}
+
+.searchResult .result {
+    font-family: 'Roboto', sans-serif;
+
+}
+
+.searchResult .reservation {
+    box-shadow: none !important;
+    border-bottom: 4px solid rgba(255,0,0,0.2);
+    min-width: 7ch;
+    text-align: right;
+}
+
+.searchResult .entry {
+    display: inline-block;
+    min-width: 5ch;
+}
+
+.searchResult .reference {
+    min-width: 48ch;
+    max-width: 48ch;
+    text-overflow: ellipsis;
+}
+
+.searchResult .name {
+    min-width: 34ch;
+    max-width: 34ch;
+    text-overflow: ellipsis;
+}
+
+.searchResult .entry:hover {
+    background-color: transparent !important;
+}
+
+.searchResult .reservation:hover {
+    background-color: lightgray !important;
+}

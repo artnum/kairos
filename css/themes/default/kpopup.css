@@ -52,15 +52,6 @@
     overflow-y: auto;
 }
 
-.kpopup .entry {
-    font-family: 'B612 Mono', monospace;
-}
-
-.kpopup .reservation {
-    box-shadow: none !important;
-    border-bottom: 4px solid rgba(255,0,0,0.2);
-}
-
 .kpopup.win {
     position: fixed;
     top: 10;
@@ -81,9 +72,28 @@
     min-height: 40px;
     background-color: black;
     color: white;
+
+}
+
+.kpopupMin .title {
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.kpopupMin .title span {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
 }
 
 .kpopup .reservation.wait {
     cursor: wait;   
     border-bottom: 4px solid rgba(255,0,0,1);
+}
+
+.kpopupMin .close, .kpopupMin .minimize {
+    display: none;
+    text-overflow: ellipsis;
 }

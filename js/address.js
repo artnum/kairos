@@ -17,23 +17,27 @@ function Address (addr) {
     let a = addr.target === undefined ? addr : addr.target
     this.id = a.IDent
     if (a.o) {
-      this.address.push(a.o)
+      this.address.push(`<span class="organization">${a.o}</span>`)
       this.fields.push('organization')
     }
     if (a.sn || a.givenname) {
-      this.address.push((a.sn ? a.sn + ' ' : '') + (a.givenname ? a.givenname : ''))
+      this.address.push(`<span class="names">${(a.sn ? `<span class="familyname">${a.sn}</span> ` : '') +
+        (a.givenname ? `<span class="givenname">${a.givenname}</span>` : '')}</span>`)
       this.fields.push('name')
     }
     if (a.c || a.postalcode || a.l) {
-      this.address.push((a.c ? a.c + ' ' : '') + (a.postalcode ? a.postalcode + ' ' : '') + (a.l ? a.l : ''))
+      this.address.push(`<span class="address">${(a.postalcode ?  `<span class="postalcode">${a.postalcode}</span> ` : '') +
+        (a.l ? `<span class="locality">${a.l}</span> ` : '') +
+        (a.c ? `<span class="country">${a.c}</span> `: '')
+        }</span>`)
       this.fields.push('locality')
     }
     if (a.mail) {
-      this.address.push(a.mail)
+      this.address.push(`<a href="mailto:${a.mail}">${a.mail}</a>`)
       this.fields.push('mail')
     }
     if (a.telephonenumber) {
-      this.address.push(a.telephonenumber)
+      this.address.push(`<a class="telephone" href="tel:${a.telephonenumber}">${a.telephonenumber}</a>`)
       this.fields.push('phone')
     }
   }
@@ -58,7 +62,7 @@ Address.load = function (dbContactEntry) {
 }
 
 Address.prototype.toHtml = function () {
-  return this.address.join('<br />')
+  return `<address>${this.address.join('<br />')}</address>`
 }
 
 Address.prototype.toArray = function () {
@@ -66,7 +70,7 @@ Address.prototype.toArray = function () {
 }
 
 Address.prototype.toString = function () {
-  return this.address.join(', ')
+  return `<address>${this.address.join(' ')}</address>`
 }
 
 Address.prototype.getType = function () {
