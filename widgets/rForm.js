@@ -1707,7 +1707,7 @@ define([
     },
 
     validate: function () {
-      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate ].forEach(function (c) {
+      [ this.nDeliveryBeginDate, this.nDeliveryEndDate, this.beginDate, this.endDate, this.nDeliveryRemark ].forEach(function (c) {
         c.set('state', 'Normal')
       })
 
@@ -1727,6 +1727,11 @@ define([
         this.beginDate.set('state', 'Error')
         this.endDate.set('state', 'Error')
         return ['La fin de réservation est avant le début', false]
+      }
+
+      if (!/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
+        this.nDeliveryRemark.set('state', 'Error')
+        return [ 'Livraison la veille doit être renseignée', false]
       }
 
       if (this.nDelivery.get('checked')) {
@@ -1779,7 +1784,7 @@ define([
       return new Promise(function (resolve, reject) {
         var err = this.validate()
         if (!err[1]) {
-          window.App.error(err[0])
+          KAIROS.error(err[0])
           reject(new Error('Not valid'))
         }
         let move = false
