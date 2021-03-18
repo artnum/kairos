@@ -1725,7 +1725,6 @@ define([
         this.endDate.set('state', 'Error')
         return ['La fin de réservation est avant le début', false]
       }
-      console.log(f)
       if (!/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
         if (!this.nLocality.value.startsWith('Warehouse/')) {
           this.nDeliveryRemark.set('state', 'Error')
