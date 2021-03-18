@@ -1781,11 +1781,18 @@ define([
     doSave: function (event) {
       this.doNumbering()
       this.domNode.setAttribute('style', 'opacity: 0.2')
+      let lastModificationTest
+      if (this.reservation.id) {
+        lastModificationTest = fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`))
+      } else {
+        lastModificationTest = Promise.resolve()
+      }
       return new Promise(function (resolve, reject) {
         var err = this.validate()
         if (!err[1]) {
           KAIROS.error(err[0])
           reject(new Error('Not valid'))
+          return
         }
         let move = false
         if (this.reservation.get('target') !== this.nMachineChange.value) {
@@ -1817,76 +1824,99 @@ define([
           deliveryEnd = ''
         }
 
-        let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
-        url.searchParams.append('search.target', this.reservation.uid)
-        fetch(url).then(response => {
-          response.json().then(res => {
-            let arrival = {}
-            if(res.length > 0) {
-              arrival = Object.assign(arrival, res.data[0])
-            }
+        (new Promise((resolve, reject) => {
+          lastModificationTest.then(response => {
+            if (!response.ok) { 
+              this.domNode.removeAttribute('style')
+              KAIROS.error('Serveur indisponible pour la sauvegarde'); resolve(false); return }
+            response.json().then(result => {
+              let data = Array.isArray(result.data) ? result.data[0] : result.data
+              if (data === undefined || data.modification === undefined) { 
+                this.domNode.removeAttribute('style')
+                KAIROS.error('Serveur indisponible pour la sauvegarde'); resolve(false); return }
+              if (parseInt(data.modification) !== this.lastModified) {
+                this.domNode.removeAttribute('style')
+                KAIROS.error('La réservation a été modifiée sur un autre poste, sauvegarde non-autorisée.');
+                resolve(false); 
+              } else {
+                resolve(true)
+              }
+            })
+          })
+        }))
+        .then(carryon => {
+          if (!carryon) { return; }
+          let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
+          url.searchParams.append('search.target', this.reservation.uid)
+          fetch(url).then(response => {
+            response.json().then(res => {
+              let arrival = {}
+              if(res.length > 0) {
+                arrival = Object.assign(arrival, res.data[0])
+              }
 
-            if (this.Buttons.addEnd.getValue()) {
-              arrival.deleted = null
-              arrival.target = this.reservation.uid
-              if (f.arrivalDate) {
-                if (f.arrivalTime) {
-                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
+              if (this.Buttons.addEnd.getValue()) {
+                arrival.deleted = null
+                arrival.target = this.reservation.uid
+                if (f.arrivalDate) {
+                  if (f.arrivalTime) {
+                    arrival.reported = f.arrivalDate.join(f.arrivalTime)
+                  } else {
+                    arrival.reported = f.arrivalDate
+                  }
+                }
+                arrival.creator = this.nArrivalCreator.value
+                arrival.comment = f.arrivalComment
+                arrival.contact = f.arrivalAddress
+                arrival.locality = this.nArrivalLocality.value
+                arrival.other = f.arrivalKeys
+                arrival.done = this.Buttons.addArrivalDone.getValue()
+                arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+
+                this.reservation.set('_arrival', arrival)
+              } else {
+                if (arrival.id) {
+                  this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
                 } else {
-                  arrival.reported = f.arrivalDate
+                  this.reservation.set('_arrival', {})
                 }
               }
-              arrival.creator = this.nArrivalCreator.value
-              arrival.comment = f.arrivalComment
-              arrival.contact = f.arrivalAddress
-              arrival.locality = this.nArrivalLocality.value
-              arrival.other = f.arrivalKeys
-              arrival.done = this.Buttons.addArrivalDone.getValue()
-              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
 
-              this.reservation.set('_arrival', arrival)
-            } else {
-              if (arrival.id) {
-                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-              } else {
-                this.reservation.set('_arrival', {})
+              let status = this.nStatus.value
+              if (isNaN(parseInt(status))) {
+                status = status.split('/').pop()
               }
-            }
+              this.reservation.set('status', `${status}`)
+              this.reservation.set('begin', begin)
+              this.reservation.set('end', end)
+              this.reservation.set('deliveryBegin', deliveryBegin)
+              this.reservation.set('deliveryEnd', deliveryEnd)
+              this.reservation.set('address', this.nAddress.value)
+              this.reservation.set('reference', f.reference)
+              this.reservation.set('equipment', f.equipment)
+              this.reservation.set('locality', this.nLocality.value)
+              this.reservation.set('comment', f.comments)
+              this.reservation.set('folder', f.folder)
+              this.reservation.set('gps', f.gps)
+              this.reservation.set('title', f.title)
+              this.reservation.set('creator', this.nCreator.value)
+              this.reservation.set('technician', this.nTechnician.value)
+              this.reservation.set('visit', this.nAddVisit.value)
+              this.reservation.set('vreport', this.nAddReport.value)
+              this.reservation.set('padlock', this.nPadlock.value)
+              this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
-            let status = this.nStatus.value
-            if (isNaN(parseInt(status))) {
-              status = status.split('/').pop()
-            }
-            this.reservation.set('status', `${status}`)
-            this.reservation.set('begin', begin)
-            this.reservation.set('end', end)
-            this.reservation.set('deliveryBegin', deliveryBegin)
-            this.reservation.set('deliveryEnd', deliveryEnd)
-            this.reservation.set('address', this.nAddress.value)
-            this.reservation.set('reference', f.reference)
-            this.reservation.set('equipment', f.equipment)
-            this.reservation.set('locality', this.nLocality.value)
-            this.reservation.set('comment', f.comments)
-            this.reservation.set('folder', f.folder)
-            this.reservation.set('gps', f.gps)
-            this.reservation.set('title', f.title)
-            this.reservation.set('creator', this.nCreator.value)
-            this.reservation.set('technician', this.nTechnician.value)
-            this.reservation.set('visit', this.nAddVisit.value)
-            this.reservation.set('vreport', this.nAddReport.value)
-            this.reservation.set('padlock', this.nPadlock.value)
-            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
-
-            this.reservation.save().then((id) => {
-              this.domNode.removeAttribute('style')
-              if (!move) {
-                this.resize()
-              } else {
-                this.reservation.toObject().then((reservation) => {
-                  this.reservation.sup.KEntry.move(reservation[0])
-                })
-              }
-              resolve()
+              this.reservation.save().then((id) => {
+                this.domNode.removeAttribute('style')
+                if (!move) {
+                  this.resize()
+                } else {
+                  this.reservation.toObject().then((reservation) => {
+                    this.reservation.sup.KEntry.move(reservation[0])
+                  })
+                }
+                resolve()
+              })
             })
           })
         })

@@ -128,6 +128,11 @@ define([
             // oldEntry.resize()
           }
         }
+
+        if (json['modification']) {
+          this.lastModified = parseInt(json['modification'])
+        }
+
         if (json['id']) {
           this.set('uid', json['id'])
         }
@@ -908,6 +913,7 @@ define([
          ].forEach(djLang.hitch(this, function (e) {
           this.myForm.set(e, this.get(e))
         }))
+        this.myForm.lastModified = this.lastModified
         this.myForm.load()
       }
 
