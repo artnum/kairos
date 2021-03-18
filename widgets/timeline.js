@@ -1962,7 +1962,14 @@ define([
         }
         const regexp = new RegExp(`^.*${val}.*`, 'i')
         if (!regexp.test(entry.label) && !regexp.test(entry.target)) {
-          entry.domNode.dataset.active = '0';
+          let found = '0'
+          for (let i = 0; i < entry.tags.length; i++) {
+            if (regexp.test(entry.tags[i])) {
+              found = '1'
+              break
+            }
+          }
+          entry.domNode.dataset.active = found
         } else {
           entry.domNode.dataset.active = '1'; 
         }
