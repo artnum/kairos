@@ -1460,32 +1460,40 @@ define([
               let entry = Array.isArray(result.data) ? result.data[0] : result.data
               let id = entry.id
               this.id = id
+              let subQueries = []
               this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
               if (modifiedLog.attribute.length > 0 || duplicate) {
                 /* POST to mod log */
                 modifiedLog.object = id
                 Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
               }
-              //if (this.domNode) { this.domNode.dataset.id = id }
-              if (!arrival || Object.keys(arrival).length === 0) {
-                resolve(id)
-              } else {
-                let query
-                if (arrival.deleted) {
-                  resolve(id)
-                  return
-                }
+              subQueries.push(new Promise((resolve, reject) => {
+                fetch(`${KAIROS.getBase()}/store/Reservation/${id}`)
+                .then(response => {
+                  if (!response.ok) { resolve(); return }
+                  response.json()
+                  .then(result => {
+                    let data = Array.isArray(result.data) ? result.data[0] : result.data
+                    this.lastModified = parseInt(data.modification)
+                    resolve()
+                  })
+                })
+              }))
+           
+              if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
                 if (arrival._op && arrival._op.toLowerCase() === 'delete') {
                   this.set('_arrival', null)
-                  query = fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})})
+                  subQueris.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
                 } else {
                   arrival.target = id
-                  query = fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)})
+                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))
                 }
-                query.then(response => {
-                  resolve(id)
-                })
               }
+
+              Promise.all(subQueries)
+              .then(_ => {
+                resolve(id)
+              })
             })
           })
         })
