@@ -15,14 +15,14 @@ KAIROS.uuidV4 = function () {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
 }
 
-KAIROS.events = new EventTarget()
+KAIROS.eventTarget = new EventTarget()
 
 KAIROS.addEventListener = function (type, callback, options) {
-  KAIROS.events.addEventListener(type, callback, options)
+  KAIROS.eventTarget.addEventListener(type, callback, options)
 }
 
 KAIROS.removeEventListener = function (type, callabck, options) {
-  KAIROS.events.removeEventListener(type, callback, options) 
+  KAIROS.eventTarget.removeEventListener(type, callback, options) 
 }
 
 KAIROS.register = function (resource, object) {
@@ -36,7 +36,7 @@ KAIROS.register = function (resource, object) {
   } else {
     KAIROS.register.table[resource] = object
   }
-  KAIROS.events.dispatchEvent(new CustomEvent('resource-add', {detail: object}))
+  KAIROS.eventTarget.dispatchEvent(new CustomEvent('resource-add', {detail: object}))
 }
 
 KAIROS.unregister = function (resource) {
@@ -51,7 +51,7 @@ KAIROS.unregister = function (resource) {
       delete KAIROS.register.table[resource]
     }
   }
-  KAIROS.events.dispatchEvent(new CustomEvent('resource-delete', {detail: object}))
+  KAIROS.eventTarget.dispatchEvent(new CustomEvent('resource-delete', {detail: object}))
 }
 
 KAIROS.get = function (resource) {
