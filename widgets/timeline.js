@@ -1966,6 +1966,9 @@ define([
           if (regexp.test(entry.KEntry?.data?.brand)) {
             found = '1'
           }
+          if (regexp.test(entry.KEntry?.data?.kmodel)) {
+            found = '1'
+          }
           if (found !== '1') {
             for (let i = 0; i < entry.tags.length; i++) {
               if (regexp.test(entry.tags[i])) {

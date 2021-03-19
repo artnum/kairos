@@ -1725,7 +1725,16 @@ define([
         this.endDate.set('state', 'Error')
         return ['La fin de réservation est avant le début', false]
       }
-      if (!/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
+      let mustCheckDeliveryRemark = true
+      if (begin.getTime() < (new Date()).getTime()) { mustCheckDeliveryRemark = false }
+      for (let i = 0; i < this.reservation.complements.length; i++) {
+        if (this.reservation?.complements[i]?.type?.id == 4) {
+          mustCheckDeliveryRemark = false;
+          break
+        }
+      }
+      if (mustCheckDeliveryRemark && !/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
+        
         if (!this.nLocality.value.startsWith('Warehouse/')) {
           this.nDeliveryRemark.set('state', 'Error')
           return [ 'Livraison la veille doit être renseignée', false]
