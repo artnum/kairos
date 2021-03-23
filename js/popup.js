@@ -13,11 +13,8 @@ function KPopup (title, opts = {}) {
     this.closeIcon = document.createElement('DIV')
     this.closeIcon.classList.add('close')
     this.closeIcon.innerHTML = `<i class="fas fa-window-close" aria-hidden="true"> </i>`
-    
-
-    
+        
     this.title.appendChild(this.closeIcon)
-
     
     this.minimizedTab
     this.domNode.startLoading = this.startLoading.bind(this)

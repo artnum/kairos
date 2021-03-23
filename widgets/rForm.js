@@ -832,7 +832,7 @@ define([
       Quantité [lt]: <input type="text" name="comment" value="" /><br>
       <input type="submit" value="Valider">
       </form>
-    `
+      `
       const AddEventFunction = (formNode, type, popup) => {
         let form = new FormData(formNode)
         UserStore.getCurrentUser().then(current => {

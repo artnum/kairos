@@ -280,6 +280,9 @@
       if (typeof day === 'object') {
         day = day.toISOString().split('T')[0]
       }
+      if (!this.holidays[(new Date(day)).getFullYear()]) {
+        this.addYear((new Date(day)).getFullYear())
+      }
       let days = this.rHolidays[day]
       if (days) {
         days = [...days]
