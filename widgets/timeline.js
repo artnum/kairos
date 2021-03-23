@@ -1973,7 +1973,7 @@ define([
           if (regexp.test(entry.KEntry?.data?.brand)) {
             found = '1'
           }
-          if (regexp.test(entry.KEntry?.data?.kmodel)) {
+          if (found !== '1' && regexp.test(entry.KEntry?.data?.kmodel)) {
             found = '1'
           }
           if (found !== '1') {
@@ -1982,6 +1982,11 @@ define([
                 found = '1'
                 break
               }
+            }
+          }
+          if (found !== '1') {
+            if (regexp.test(entry.KEntry?.data?.currentLocation?.value)) {
+              found = '1'
             }
           }
           entry.domNode.dataset.active = found
