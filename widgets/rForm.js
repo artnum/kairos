@@ -402,14 +402,14 @@ define([
         if (!Number(c.follow)) {
           this.nMFollow.set('value', false)
           this.nMBeginDate.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'date'}))
-          this.nMBeginTime.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'time'}))
+          this.MBeginTime.value = djDateStamp.toISOString(c.range.begin)
           this.nMEndDate.set('value', djDateStamp.toISOString(c.range.end, {selector: 'date'}))
-          this.nMEndTime.set('value', djDateStamp.toISOString(c.range.end, {selector: 'time'}))
+          this.MEndTime.value = djDateStamp.toISOString(c.range.end)
         } else {
           this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-          this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'time'}))
+          this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
           this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-          this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
+          this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
           this.nMFollow.set('value', 'on')
         }
 
@@ -444,9 +444,9 @@ define([
       this.nNumber.set('value', 1)
       this.nMFollow.set('value', true)
       this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-      this.nMBeginTime.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'time'}))
+      this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
       this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-      this.nMEndTime.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'time'}))
+      this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
       this.nMComment.set('value', '')
       this.associationRefresh().then (() => {}, () => {KAIROS.error('Reject de l\'opération') })
     },
@@ -535,9 +535,10 @@ define([
     },
 
     doAddEditComplement: function () {
-      var query = {}
-      var f = djDomForm.toObject(this.nComplementsForm)
-
+      const query = {}
+      const f = djDomForm.toObject(this.nComplementsForm)
+      f.nMEndTime = this.MEndTime.value
+      f.nMBeginTime = this.MBeginTime.value
       if (!f.nMFollow) {
         ;['nMBeginDate', 'nMBeginTime', 'nMEndDate', 'nMEndTime'].forEach(i => {
           if (f[i] === '') {
@@ -545,8 +546,8 @@ define([
           }
         })
 
-        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMBeginDate + f.nMBeginTime), {zulu: true})
-        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(f.nMEndDate + f.nMEndTime), {zulu: true})
+        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMBeginDate}T${f.nMBeginTime.toISOString().split('T')[1]}`), {zulu: true})
+        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMEndDate}T${f.nMEndTime.toISOString().split('T')[1]}`), {zulu: true})
         query['follow'] = 0
       } else {
         query['begin'] = ''
@@ -1240,9 +1241,12 @@ define([
         this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), { capture: true })
 
         this.nMBeginDate.set('value', this.beginDate.get('value'))
-        this.nMBeginTime.set('value', this.beginTime.value)
+        this.MBeginTime = new HourBox(this.nMBeginTime)
+        this.MBeginTime.value = this.beginTime.value
         this.nMEndDate.set('value', this.endDate.get('value'))
-        this.nMEndTime.set('value', this.endTime.value)
+        this.MEndTime = new HourBox(this.nMEndTime)
+        this.MEndTime.value = this.endTime.value
+
         this.dtable = new Artnum.DTable({ table: this.nCountTable, sortOnly: true })
         djOn(this.nForm, 'click', this.clickForm.bind(this))
 
