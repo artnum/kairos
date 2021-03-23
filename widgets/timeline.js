@@ -1782,13 +1782,13 @@ define([
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
       return new Promise((resolve, reject) => {
-        fetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+        let query = fetch(Path.url('store/DeepReservation/' + loc)).then(response => {
           if (!response.ok) { reject(); return }
           response.json().then(result=> {
             if (result && result.length === 0) {
               resolve(false)
             } else {
-              var reservation = result.data
+              const reservation = result.data
               if (reservation.deleted) {
                 dontmove = true
               }
@@ -1808,8 +1808,15 @@ define([
                   }
                 })
               } else {
-                let reservation = new Reservation({uid: data.id, uuid: data.uuid, sup: null, _json: data})
-                reservation.popMeUp()
+                let entry = null
+                for (let k in this.Entries) {
+                  if (this.Entries[k].KEntry.is(reservation.target)) {
+                    entry = this.Entries[k]
+                    break
+                  }
+                }
+                const r = new Reservation({uid: data.id, uuid: data.uuid, sup: entry, _json: data})
+                r.popMeUp()
                 resolve(true)
               }
               DoWait(false)

@@ -245,6 +245,7 @@ define([
       let dataHash = {}
       return new Promise ((resolve, reject) => {
         var object = {}
+        const p = []
 
         for (let attr of ['begin', 'end', 'deliveryBegin', 'deliveryEnd']) {
           if (!this[attr]) {
@@ -306,12 +307,17 @@ define([
         }
 
         if (!object.creator) {
-          let currentUser = UserStore.getCurrentUser()
-          if (currentUser) {
-            object.creator = creator.getUrl()
-            this.set('creator', object.creator)
-            if (dataHash) { dataHash['creator'] = crc32(object.creator) }
-          }
+          p.push(new Promise((resolve, reject) => {
+            UserStore.getCurrentUser()
+            .then(currentUser => {
+              if (currentUser) {
+                object.creator = currentUser.getUrl()
+                this.set('creator', object.creator)
+                if (dataHash) { dataHash['creator'] = crc32(object.creator) }
+              }
+              resolve()
+            })
+          }))
         }
 
         if (this.get('_arrival')) {
@@ -329,7 +335,10 @@ define([
           }
         })
         object.id = this.uid
-        resolve([object, dataHash])
+        Promise.all(p)
+        .then(_ => {
+          resolve([object, dataHash])
+        })
       })
     },
 
