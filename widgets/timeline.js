@@ -1994,7 +1994,7 @@ define([
           entry.domNode.dataset.active = '1'; 
         }
       }
+      this.resize()
     }
-
   })
 })
