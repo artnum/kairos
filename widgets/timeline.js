@@ -695,10 +695,10 @@ define([
       }, true)
 
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
-      djOn(this.domNode, 'mouseup, mousedown', djLang.hitch(this, this.mouseUpDown))
+      djOn(this.domNode, 'mouseup, mousedown, touchstart, touchend', djLang.hitch(this, this.mouseUpDown))
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
-      djOn(this.domNode, 'mousemove, touchmove', this.mouseOver.bind(this))
+      window.addEventListener('mousemove', this.showSight.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1024,10 +1024,22 @@ define([
     },
 
     mouseUpDown: function (event) {
-      if (event.type === 'mouseup') {
+      if (event.type === 'mouseup' || event.type === 'touchstart') {
         this.eventStarted = null
+        this.followMouse.stop = true
       } else {
         this.eventStarted = event
+        if (KAIROS.mouse.clientX >= 200) {
+          this.followMouse.multiplicator = 1
+          if (event.target.classList.contains('weekNumber')) {
+            this.followMouse.multiplicator = 7
+          }
+          if (event.target.classList.contains('monthName')) {
+            this.followMouse.multiplicator = 30
+          }
+          this.followMouse.stop = false
+          this.followMouse()
+        }
       }
       window.requestAnimationFrame(function () {
         var domNode = document.getElementsByTagName('body')[0]
@@ -1046,75 +1058,43 @@ define([
       }.bind(this))
     },
 
-    mouseOver: function (event) {
-      if (this._mask) { return }
-      if (event.type === 'touchmove') {
-        if (window.App.touchTimeout) {
-          clearInterval(window.App.touchTimeout)
+    followMouse: function () {
+      KAIROS.clearSelection()
+      if (!this.followMouse.multiplicator) { this.followMouse.multiplicator = 1 }
+      if (!this.followMouse.accumulator) { this.followMouse.accumulator = {x: 0, y: 0} }
+      this.toolTip_hide()
+      this.followMouse.accumulator.x += KAIROS.mouse.clientX - KAIROS.mouse.lastX
+      this.followMouse.accumulator.y += KAIROS.mouse.clientY - KAIROS.mouse.lastY
+      if (Math.abs(this.followMouse.accumulator.x) > this.get('blockSize') * 0.75) {
+        if (this.followMouse.accumulator.x < 0) {
+          this.moveXRight(1 * this.followMouse.multiplicator)
+        } else {
+          this.moveXLeft(1 * this.followMouse.multiplicator)
         }
-      }
-      var nodeBox = djDomGeo.getContentBox(this.domNode)
-      var sight = this.sight
-      var days = this.days
-
-      if (document.selection && document.selection.empty) {
-        document.selection.empty()
-      } else if (window.getSelection) {
-        var sel = window.getSelection()
-        sel.removeAllRanges()
+        this.followMouse.accumulator.x = 0 
       }
 
-      if (event.clientX <= 200 || (this.eventStarted != null && this.eventStarted.clientX <= 200)) { return }
-      /* Move, following mouse, timeline left/right and up/down when left button is held */
-      if (event.buttons === 1 || event.type === 'touchmove') {
-        this.toolTip_hide()
-        this.timelineMoving = true
-        if (!this.originalTarget) {
-          this.originalTarget = event.target
-        }
-        var multiplicator = 1
-        var targetClass = this.originalTarget.getAttribute('class')
-        if (targetClass && targetClass.includes('weekNumber')) {
-          multiplicator = 7
-        } else if (targetClass && targetClass.includes('monthName')) {
-          multiplicator = 30
-        }
-        var xDiff = Math.abs(this.lastClientXY[0] - event.clientX)
-        var yDiff = Math.abs(this.lastClientXY[1] - event.clientY)
-
-        if ((Math.abs(xDiff - yDiff) > 40 && xDiff <= yDiff) || xDiff > yDiff) {
-          if (this.lastClientXY[0] - event.clientX > 0) {
-            this.xDiff += xDiff
-          } else if (this.lastClientXY[0] - event.clientX < 0) {
-            this.xDiff += -xDiff
-          }
-          var move = 1
-          if (this.xDiff < 0) {
-            this.moveXLeft(Math.round(move * multiplicator))
-          } else {
-            this.moveXRight(Math.round(move * multiplicator))
-          }
-          this.xDiff = 0
-        }
-
-        if ((Math.abs(yDiff - xDiff) > 40 && yDiff <= xDiff) || yDiff > xDiff) {
-          var top = (window.pageYOffset || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0)
-          if (this.lastClientXY[1] - event.clientY > 0) {
-            window.scrollTo(0, top + (yDiff * 1.25))
-          } else if (this.lastClientXY[1] - event.clientY < 0) {
-            window.scrollTo(0, top - (yDiff * 1.25))
-          }
-        }
+      let top = (window.pageYOffset || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0)
+      if (this.followMouse.accumulator.y < 0) {
+        window.scrollTo(0, top + Math.abs(this.followMouse.accumulator.y))
       } else {
-        this.originalTarget = null
+        window.scrollTo(0, top - Math.abs(this.followMouse.accumulator.y))
       }
-      
-      var none = true
-      for (var i = 0; i < days.length; i++) {
-        var pos = djDomGeo.position(days[i].domNode, days[i].computedStyle)
-        if (event.clientX >= pos.x && event.clientX <= (pos.x + pos.w)) {
+      this.followMouse.accumulator.y = 0
+     
+      if (!this.followMouse.stop) {
+        setTimeout(_ => { this.followMouse() }, 15)
+      }
+    },
+
+    showSight: function (event) {
+      let none = true
+      let nodeBox = djDomGeo.getContentBox(this.domNode)
+      for (let i = 0; i < this.days.length; i++) {
+        var pos = djDomGeo.position(this.days[i].domNode, this.days[i].computedStyle)
+        if (KAIROS.mouse.clientX >= pos.x && KAIROS.mouse.clientX <= (pos.x + pos.w)) {
           window.requestAnimationFrame(() => {
-            sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
+            this.sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
           })
           none = false
           break
@@ -1122,13 +1102,14 @@ define([
       }
 
       if (none) {
-        window.requestAnimationFrame(() => {
-          sight.removeAttribute('style')
-        })
+        this.showSight.timeout = setTimeout(() => {
+          window.requestAnimationFrame(() => {
+            this.sight.removeAttribute('style')
+          })
+        }, 350)
+      } else {
+        if (this.showSight.timeout) { clearTimeout(this.showSight.timeout) }
       }
-
-      this.lastClientXY[0] = event.clientX
-      this.lastClientXY[1] = event.clientY
     },
 
     eWheel: function (event) {

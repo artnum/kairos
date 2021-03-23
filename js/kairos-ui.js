@@ -1,9 +1,25 @@
 
 KAIROS.mouse = {}
-window.addEventListener('mousemove', event => {
+const kMouseFollow = event => {
+    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
+    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? event.clientY
     KAIROS.mouse.clientX = event.clientX
     KAIROS.mouse.clientY = event.clientY
-})
+}
+
+window.addEventListener('mousemove', kMouseFollow)
+window.addEventListener('touchmove', kMouseFollow)
+
+KAIROS.clearSelection = function () {
+    if (document.selection && document.selection.empty) {
+        document.selection.empty()
+        return;
+    }
+    if (window.getSelection) {
+        window.getSelection().removeAllRanges()
+        return
+    }
+}
 
 KAIROS.info = function (txt, code = 0) {
     this.log('info', txt, code)

@@ -76,6 +76,7 @@ KPopup.prototype.focus = function () {
 
 KPopup.prototype.followMouse = function () {
     if (!this.follow) { return }
+    KAIROS.clearSelection()
     const left = KAIROS.mouse.clientX - this.deltaX
     const top = KAIROS.mouse.clientY - this.deltaY
     window.requestAnimationFrame(() => {
