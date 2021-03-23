@@ -1,6 +1,8 @@
 .kpopup {
-    display: block;
+    display: flex;
+    flex-direction: column;
     min-width: 240px;
+    overflow: auto;
     max-height: calc(100vh - 60px);
     padding: 3px;
     border: 2px solid black;
@@ -38,7 +40,6 @@
 
 .kpopup .content {
     font-family: 'Roboto', sans-serif;
-    position: absolute;
     top: 38px;
     min-height: calc(100% - 48px);
     max-height: calc(100% - 48px);

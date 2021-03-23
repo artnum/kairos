@@ -14,12 +14,10 @@ function KPopup (title, opts = {}) {
     this.closeIcon.classList.add('close')
     this.closeIcon.innerHTML = `<i class="fas fa-window-close" aria-hidden="true"> </i>`
     
-    this.minimizeIcon = document.createElement('DIV')
-    this.minimizeIcon.classList.add('minimize')
-    this.minimizeIcon.innerHTML = `<i class="fas fa-window-minimize" aria-hidden="true"> </i>`
+
     
     this.title.appendChild(this.closeIcon)
-    this.title.appendChild(this.minimizeIcon)
+
     
     this.minimizedTab
     this.domNode.startLoading = this.startLoading.bind(this)
@@ -32,6 +30,14 @@ function KPopup (title, opts = {}) {
     if (opts.isWindow) {
         this.isWindow = true
         this.setReference(document.body)
+        
+        this.minimizeIcon = document.createElement('DIV')
+        this.minimizeIcon.classList.add('minimize')
+        this.minimizeIcon.innerHTML = `<i class="fas fa-window-minimize" aria-hidden="true"> </i>`
+        this.title.appendChild(this.minimizeIcon)
+        this.minimizeIcon.addEventListener('click', event => {
+            this.minimize()
+        })
     } else {
         if (opts.reference) {
             this.setReference(opts.reference)
@@ -46,9 +52,7 @@ function KPopup (title, opts = {}) {
     this.closeIcon.addEventListener('click', event => {
         this.close()
     })
-    this.minimizeIcon.addEventListener('click', event => {
-        this.minimize()
-    })
+
 
     this.popup.addEventListener('mousedown', this.focus.bind(this))
 
