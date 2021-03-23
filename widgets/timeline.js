@@ -1994,7 +1994,14 @@ define([
           entry.domNode.dataset.active = '1'; 
         }
       }
-      this.resize()
+      /* don't trigger whole resize right now, wait for end of typing.
+       * According to my research, typing is between 70 cpm and 200 cpm (so 20ms-60ms),
+       * wait for twice that time and some more
+       */
+      if (this.searchMachineLive.timeout) { clearTimeout(this.searchMachineLive.timeout)}
+      this.searchMachineLive.timeout = setTimeout(() => {
+        this.resize()
+      }, 150)
     }
   })
 })
