@@ -1024,6 +1024,10 @@ define([
     },
 
     mouseUpDown: function (event) {
+      for (let n = event.target; n; n = n.parentNode) {
+        if (n?.dataset?.stopFollowMouse) { this.followMouse.stop = true; return; }
+      }
+      
       if (event.type === 'mouseup' || event.type === 'touchstart') {
         this.eventStarted = null
         this.followMouse.stop = true
