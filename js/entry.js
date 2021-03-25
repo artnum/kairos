@@ -175,12 +175,6 @@ KEntry.prototype.handleMessage = function (msg) {
             while(deadline.timeRemaining() > 5 && i < msgData.value.length) {
                 let entry = msgData.value[i]
                 entry.modification = parseInt(entry.modification)
-                if (entry._arrival) {
-                    entry._arrival.modification = parseInt(entry._arrival.modification)
-                    if (entry.modification < entry._arrival.modification) {
-                        entry.modification = entry._arrival.modification
-                    }
-                }
                 let id = entry.uuid
                 if (entry.uuid === undefined || entry.uuid === null) {
                     id = entry.id
