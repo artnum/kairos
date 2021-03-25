@@ -35,23 +35,21 @@ ClientSearch.prototype.doSearch = function (url, address = null) {
                     if (result.data[i].reservation <= 0 || result.data[i].reservation == null) { continue }
                     promises.push(new Promise((resolve, reject) => {
                         KReservation.load(result.data[i].reservation).then(r => {
-                            r.loaded().then(r => {
-                                if (!r.ok) { resolve(); return }
-                                if(!addr) {
-                                    addr = new Address(result.data[i])
-                                }
-                                if (searchResults[addr.id] === undefined) {
-                                    searchResults[addr.id] = {address: addr, years: {}, yearList: []}
-                                }
+                            if (!r.ok) { resolve(); return }
+                            if(!addr) {
+                                addr = new Address(result.data[i])
+                            }
+                            if (searchResults[addr.id] === undefined) {
+                                searchResults[addr.id] = {address: addr, years: {}, yearList: []}
+                            }
 
-                                if (searchResults[addr.id].years[r.getYear()] === undefined) {
-                                    searchResults[addr.id].years[r.getYear()] = []
-                                    searchResults[addr.id].yearList.push(r.getYear())
-                                    searchResults[addr.id].yearList.sort((a, b) => { return parseInt(b) - parseInt(a) })
-                                }
-                                searchResults[addr.id].years[r.getYear()].push(r)
-                                resolve()
-                            })
+                            if (searchResults[addr.id].years[r.getYear()] === undefined) {
+                                searchResults[addr.id].years[r.getYear()] = []
+                                searchResults[addr.id].yearList.push(r.getYear())
+                                searchResults[addr.id].yearList.sort((a, b) => { return parseInt(b) - parseInt(a) })
+                            }
+                            searchResults[addr.id].years[r.getYear()].push(r)
+                            resolve()
                         })
                     }))
                 }

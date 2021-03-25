@@ -18,7 +18,7 @@ function KReservation (id) {
 }
 
 KReservation.load = function (id) {
-  let r = new KReservation(id)
+  const r = new KReservation(id)
   return new Promise((resolve, reject) => {
     fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
       if (!response.ok) { r.ok = false; resolve(r); return }
@@ -36,27 +36,18 @@ KReservation.load = function (id) {
           r.data.reservation.modification = KAIROS.DateFromTS(r.data.reservation.modification)
           r.data.reservation.reference = r.data.reservation.reference ? r.data.reservation.reference : ''
           r.ok = true
-
-          r.loadMachine()
-          r.loadCreator()
-          r.loadTechnician()
-          r.loadLocality()
-          r.loadContact()
-          resolve(r)
+          Promise.all([
+            r.loadMachine(),
+            r.loadCreator(),
+            r.loadTechnician(),
+            r.loadLocality(),
+            r.loadContact(),
+          ])
+          .then(_ => { 
+            resolve(r)
+          })
       })
     })
-  })
-}
-
-KReservation.prototype.loaded = function () {
-  return new Promise((resolve, reject) => {
-    Promise.all([
-      this.promise.locality,
-      this.promise.machine,
-      this.promise.creator,
-      this.promise.technician,
-      this.promise.addresses
-    ]).then(() => { resolve(this) })
   })
 }
 
