@@ -1068,7 +1068,7 @@ define([
       if (!this.followMouse.accumulator) { this.followMouse.accumulator = {x: 0, y: 0} }
       this.toolTip_hide()
       this.followMouse.accumulator.x += KAIROS.mouse.clientX - KAIROS.mouse.lastX
-      this.followMouse.accumulator.y += KAIROS.mouse.clientY - KAIROS.mouse.lastY
+      this.followMouse.accumulator.y += (KAIROS.mouse.clientY - KAIROS.mouse.lastY) * 0.25
       if (Math.abs(this.followMouse.accumulator.x) > this.get('blockSize') * 0.75) {
         if (this.followMouse.accumulator.x < 0) {
           this.moveXRight(1 * this.followMouse.multiplicator)
