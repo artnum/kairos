@@ -11,7 +11,21 @@
     <thead><tr>
       <th data-attribute="@store/$creator name">Personne</th>
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
-      <th data-attribute="total">Total réservations</th>
+      <th data-attribute="totalMachinist:integer">avec machiniste</th>
+      <th data-attribute="total:integer">Total réservations</th>
+      <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
+      <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
+      <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
+    </tr></thead>
+  </table>
+  <h2>Par personne les 7 derniers jours</h2>
+  <table data-source="store/Reservation/.stats" data-seven="1" data-options="{}" >
+    <thead><tr>
+      <th data-attribute="@store/$creator name">Personne</th>
+      <th data-attribute="totUser:integer">Réservations utilisateur</th>
+      <th data-attribute="totalMachinist:integer">avec machiniste</th>
+      <th data-attribute="total:integer">Total réservations</th>
       <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
       <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
       <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
@@ -77,6 +91,14 @@
          d.setTime(parseInt(value) * 1000)
          return [`${d.fullDate()} ${d.shortHour()}`, d.getTime()]
      })
+
+     if (tables[i].dataset.seven) {
+        let to = new Date()
+        let from = new Date()
+        from.setTime(to.getTime() - (86400000 * 7))
+        tables[i].dataset.source = `${tables[i].dataset.source}?from=${from.toISOString()}&to=${to.toISOString()}` 
+     }
+
      dtable.run()
    }
  }

@@ -44,6 +44,8 @@ class ReservationModel extends artnum\SQL {
          $to = new DateTime($options['to']);
          $options['to'] = $to->format('U');
       }
+
+      $options['fromSeven'] = $options['to'] - (86400 * 7);
       
       /* SELECT "reservation_creator",
              COUNT("reservation_id") AS "reservation_totUser",
@@ -57,7 +59,8 @@ class ReservationModel extends artnum\SQL {
        */
       $query = 'SELECT idFromUrl("reservation_creator") AS "reservation_id", "reservation_creator", COUNT("reservation_id") AS "reservation_totUser",
                   MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
-                  (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0) AS "reservation_total"
+                  (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_status" <> 3) AS "reservation_total",
+                  (SELECT COUNT("reservation_id") FROM "reservation" LEFT JOIN "association" ON "association_reservation" = "reservation_id" WHERE idFromUrl("association_type") = 4 AND "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_status" <> 3) AS "reservation_totalMachinist"
                   FROM "reservation"  
                   WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_status" <> 3 __USER__
                   GROUP BY idFromUrl(reservation_creator)
@@ -81,6 +84,7 @@ class ReservationModel extends artnum\SQL {
             $result->addItem($this->unprefix($row));
          }
       }
+
       return $result;
    }
 
