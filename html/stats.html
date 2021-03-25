@@ -11,7 +11,7 @@
     <thead><tr>
       <th data-attribute="@store/$creator name">Personne</th>
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
-      <th data-attribute="totalMachinist:integer">avec machiniste</th>
+      <th data-attribute="totalMachinist:integer">Total avec machiniste</th>
       <th data-attribute="total:integer">Total réservations</th>
       <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
       <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
@@ -21,6 +21,33 @@
   </table>
   <h2>Par personne les 7 derniers jours</h2>
   <table data-source="store/Reservation/.stats" data-seven="1" data-options="{}" >
+    <thead><tr>
+      <th data-attribute="@store/$creator name">Personne</th>
+      <th data-attribute="totUser:integer">Réservations utilisateur</th>
+      <th data-attribute="totalMachinist:integer">avec machiniste</th>
+      <th data-attribute="total:integer">Total réservations</th>
+      <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
+      <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
+      <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
+    </tr></thead>
+  </table>
+  <h2>L'an passé</h2>
+  <h3>Par personne</h3>
+  <table data-source="store/Reservation/.stats" data-lastyear="1" data-options="{}" >
+    <thead><tr>
+      <th data-attribute="@store/$creator name">Personne</th>
+      <th data-attribute="totUser:integer">Réservations utilisateur</th>
+      <th data-attribute="totalMachinist:integer">Total avec machiniste</th>
+      <th data-attribute="total:integer">Total réservations</th>
+      <th data-process="calcPercent" data-sort-type="float">Pourcentage</th>
+      <th data-process="calcPerDay" data-sort-type="float">Moyenne journalière</th>
+      <th data-attribute="first" data-process="tsToStr" data-sort-type="integer">Première</th>
+      <th data-attribute="last" data-process="tsToStr" data-sort-type="integer">Dernière</th>
+    </tr></thead>
+  </table>
+  <h3>Par personne les 7 derniers jours</h3>
+  <table data-source="store/Reservation/.stats" data-seven="1"  data-lastyear="1" data-options="{}" >
     <thead><tr>
       <th data-attribute="@store/$creator name">Personne</th>
       <th data-attribute="totUser:integer">Réservations utilisateur</th>
@@ -94,11 +121,24 @@
 
      if (tables[i].dataset.seven) {
         let to = new Date()
+        if (tables[i].dataset.lastyear) {
+          to.setFullYear(to.getFullYear() - 1)
+        }
         let from = new Date()
         from.setTime(to.getTime() - (86400000 * 7))
         tables[i].dataset.source = `${tables[i].dataset.source}?from=${from.toISOString()}&to=${to.toISOString()}` 
      }
-
+     if (tables[i].dataset.lastyear && !tables[i].dataset.seven) {
+        let from = new Date()
+        from.setMonth(0, 1)
+        from.setFullYear(from.getFullYear() - 1)
+        from.setHours(0, 0, 0, 0)
+        let to = new Date()
+        to.setHours(0, 0, 0, 0)
+        to.setFullYear(to.getFullYear() - 1)
+        console.log(to, from)
+        tables[i].dataset.source = `${tables[i].dataset.source}?from=${from.toISOString()}&to=${to.toISOString()}` 
+     }
      dtable.run()
    }
  }
