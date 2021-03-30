@@ -394,7 +394,7 @@ define([
         }
 
         this.nMComment.set('value', c.comment)
-        this.nAssociationType.set('value', String(Path.url('store/Status/' + c.type.id)))
+        this.nAssociationType.value = c.type.id
 
         for (let i = event.target; i; i = i.parentNode) {
           if (i.hasAttribute('class')) {
@@ -419,7 +419,7 @@ define([
     doResetComplement: function (event) {
       this.nComplementId.value = ''
       this.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')
-      this.nAssociationType.set('value', '')
+      this.nAssociationType.value = ''
       this.nNumber.set('value', 1)
       this.nMFollow.set('value', true)
       this.nMBeginDate.set('value', this.reservation.get('trueBegin').toISOString())
@@ -541,7 +541,7 @@ define([
       query['number'] = f.number ? f.number : 1
       query['target'] = null
       query['comment'] = f.nMComment ? f.nMComment : ''
-      query['type'] = f.associationType
+      query['type'] = this.nAssociationType.value
       query['reservation'] = this.reservation.uid
 
       if (this.nComplementId.value !== '') {
@@ -1150,10 +1150,10 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
-        let L = new Locality()
-        let U = new UserStore()
-        let M = new Machine()
-        let S = new Status({type: '0'})
+        const L = new Locality()
+        const U = new UserStore()
+        const M = new Machine()
+        const S = new Status({type: '0'})
         this.Stores = {
           Locality: L,
           User: new UserStore(),
@@ -1175,6 +1175,7 @@ define([
         this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
         this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: false })
         this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
+        this.nAssociationType = new Select(this.nAssociationType, new Status({type: 1}), { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()
 
@@ -1373,20 +1374,7 @@ define([
           }
         }
 
-        if (!this.loaded.association) {
-          let url = Path.url('store/Status')
-          url.searchParams.set('search.type', 1)
-          results = await Query.exec(url)
-          if (results.type === 'results') {
-            results.data.forEach((d) => {
-              this.nAssociationType.addOption({
-                label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-                value: String(Path.url('store/Status/' + d.id))
-              })
-            })
-          }
-          this.loaded.association = true
-        }
+        this.loaded.association = true
         this.set('warehouse', this.reservation.get('warehouse'))
 
         if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
