@@ -1795,14 +1795,16 @@ define([
               } else {
                 let entry = null
                 for (let k in this.Entries) {
-                  if (this.Entries[k].KEntry.is(reservation.target)) {
-                    entry = this.Entries[k]
-                    break
-                  }
+                  this.Entries[k].KEntry.is(reservation.target).then(is => {
+                    if (!entry && is) {
+                      entry = this.Entries[k]
+                      const r = new Reservation({uid: data.id, uuid: data.uuid, sup: entry, _json: data})
+                      r.popMeUp()
+                      resolve(true)
+                      return
+                    }
+                  })
                 }
-                const r = new Reservation({uid: data.id, uuid: data.uuid, sup: entry, _json: data})
-                r.popMeUp()
-                resolve(true)
               }
               DoWait(false)
             }

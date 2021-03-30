@@ -16,7 +16,6 @@ define([
     get: function (id) {
       return new Promise((resolve, reject) => {
         let entry = null
-
         entry = window.localStorage.getItem(`kairos/Machine/${id}`)
         if (entry) {
           try {
