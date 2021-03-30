@@ -120,7 +120,7 @@ KAIROS.fetch = function (url, options = {}) {
 
 KAIROS.DateFromTS = function(ts) {
   let d = new Date()
-  d.setTime(ts)
+  d.setTime(parseInt(ts) * 1000)
   return d
 }
 

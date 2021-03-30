@@ -8,6 +8,15 @@ function KReservation (id) {
     addresses: {}
   }
 
+  this.hash = {
+    reservation: {},
+    locality: {},
+    machine: {},
+    creator: {},
+    technician: {},
+    address : {}
+  }
+
   this.promise = {
     locality: null,
     machine: null,
@@ -25,6 +34,9 @@ KReservation.load = function (id) {
       response.json().then(result => {
           if (result.length !== 1) { r.ok = false; resolve(r);  return }
           r.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
+          
+          r.hash.reservation._complete = r.hashJsonS(r.data.reservation, [ 'modification' ])
+
           r.data.reservation.begin = new Date(r.data.reservation.begin)
           r.data.reservation.end = new Date(r.data.reservation.end)
           r.data.reservation.duration = r.data.reservation.end.getTime() - r.data.reservation.begin.getTime()
@@ -51,6 +63,65 @@ KReservation.load = function (id) {
   })
 }
 
+KReservation.prototype.hashJsonS = function (json, skip = [], topHash) {
+  if (!json) { return null }
+  const keys = Object.keys(json)
+  keys.sort()
+  const h = topHash || new MurmurHash3()
+  keys.forEach(k => {
+    if (skip.indexOf(k) !== -1) { return }
+    if (typeof json[k] === 'array' || typeof json[k] === 'object') {
+      this.hashJson(json[k], [], h)
+      return
+    }
+    h.hash(this.data.reservation[k] ?? '')
+  })
+  return h.result()
+}
+
+KReservation.prototype.hashJson = function (json, only = [], topHash) {
+  if (!json) { return null }
+  const keys = only.length === 0 ? Object.keys(json) : only
+  keys.sort()
+  const h = topHash || new MurmurHash3()
+  keys.forEach(k => {
+    if (typeof json[k] === 'array' || typeof json[k] === 'object') {
+      this.hashJson(json[k], [], h)
+      return
+    }
+    h.hash(this.data.reservation[k] ?? '')
+  })
+  return h.result()
+}
+
+/* some json data obtained elsewhere are available */
+KReservation.prototype.extUpdate = function (json) {
+
+}
+
+KReservation.prototype.serverCompare = function () {
+  return new Promise((resolve, reject) => {
+    KReservation.load(this.data.reservation.id)
+    .then(srvVersion => {
+      const fieldDiff = {
+        _parts: [],
+        reservation: [],
+        locality: [],
+        creator: [],
+        technician: []
+      }
+      const cmpVal = ['reservation', 'locality', 'creator', 'technician']
+      for (let i = 0; i < cmpVal.length; i++) {
+        if (this.hash[cmpVal[i]]._complete !== srvVersion.hash[cmpVal[i]]._complete) {
+          if (fieldDiff._parts.indexOf(cmpVal[i]) === -1) { fieldDiff._parts.push(cmpVal[i]) }
+          fieldDiff[cmpVal[i]].push(k)
+        }
+      }
+      resolve(fieldDiff)
+    })
+  })
+}
+
 KReservation.prototype.loadMachine = function () {
   this.promise.machine = new Promise((resolve, reject) => {
     if (!this.ok) { resolve(); return }
@@ -59,6 +130,7 @@ KReservation.prototype.loadMachine = function () {
       response.json().then(result => {
         if (result.length !== 1) { resolve(); return }
         this.data.machine = Array.isArray(result.data) ? result.data[0] : result.data
+        this.hash.machine._complete = this.hashJson(this.data.machine, [ 'airref' ])
         resolve(this.data.machine)
       })
     })
@@ -84,11 +156,12 @@ KReservation.prototype.loadCreator = function () {
     if (this.data.reservation.creator === null) {
       resolve(); return
     }
-    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator}`)).then(response => {
+    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator.split('/').pop()}`)).then(response => {
       if (!response.ok) { resolve(); return }
       response.json().then(result => {
         if (result.length !== 1) { resolve(); return }
         this.data.creator = Array.isArray(result.data) ? result.data[0] : result.data
+        this.hash.creator._complete = this.hashJson(this.data.creator, [ 'id' ])
         resolve(this.data.creator)
       })
     })
@@ -102,11 +175,12 @@ KReservation.prototype.loadTechnician = function () {
     if (this.data.reservation.technician === null) {
       resolve(); return
     }
-    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.technician}`)).then(response => {
+    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.technician.split('/').pop()}`)).then(response => {
       if (!response.ok) { resolve(); return }
       response.json().then(result => {
         if (result.length !== 1) { resolve(); return }
         this.data.technician = Array.isArray(result.data) ? result.data[0] : result.data
+        this.hash.technician = this.hashJson(this.data.technician, [ 'id' ])
         resolve(this.data.technician)
       })
     })
@@ -123,6 +197,7 @@ KReservation.prototype.loadLocality = function () {
         response.json().then(result => {
           if (result.length !== 1) { resolve(); return }
           this.data.locality = Array.isArray(result.data) ? result.data[0] : result.data
+          this.hash.locality._complete = this.hashJson(this.data.locality, [ 'np', 'npext', 'state', 'tsid', 'name', 'id' ])
           resolve(this.data.locality)
         })
       })
@@ -132,6 +207,7 @@ KReservation.prototype.loadLocality = function () {
         label: this.data.reservation.locality,
         color: 'black'
       }
+      this.hash.locality._complete = this.hashJson(this.data.locality, [ 'name' ])
       resolve(this.data.locality)
     }
   })

@@ -1794,9 +1794,9 @@ define([
       this.domNode.setAttribute('style', 'opacity: 0.2')
       let lastModificationTest
       if (this.reservation.id) {
-        lastModificationTest = fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`))
+        lastModificationTest = this.reservation.KReservation.serverCompare()
       } else {
-        lastModificationTest = Promise.resolve()
+        lastModificationTest = Promise.resolve(true)
       }
       return new Promise(function (resolve, reject) {
         var err = this.validate()
@@ -1837,26 +1837,16 @@ define([
         }
 
         (new Promise((resolve, reject) => {
-          lastModificationTest.then(response => {
-            if (!response.ok) { 
-              this.domNode.removeAttribute('style')
-              KAIROS.error('Serveur indisponible pour la sauvegarde'); resolve(false); return }
-            response.json().then(result => {
-              let data = Array.isArray(result.data) ? result.data[0] : result.data
-              if (data === undefined || data.modification === undefined) { 
-                this.domNode.removeAttribute('style')
-                KAIROS.error('Serveur indisponible pour la sauvegarde'); resolve(false); return }
-              if (parseInt(data.modification) !== this.lastModified) {
-                this.domNode.removeAttribute('style')
-                KAIROS.error('La réservation a été modifiée sur un autre poste, sauvegarde non-autorisée.');
-                resolve(false); 
-              } else {
-                resolve(true)
-              }
-            })
+          lastModificationTest.then(diff => {
+            if (diff._parts.length > 0) {
+              KAIROS.error('La réservation a été modifiée sur un autre poste, sauvegarde non-autorisée.');
+              resolve(false)
+              return
+            }
+            resolve(true)
           })
         }))
-        .then(carryon => {
+        lastModificationTest.then(carryon => {
           if (!carryon) { return; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)

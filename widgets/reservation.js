@@ -135,6 +135,13 @@ define([
 
         if (json['id']) {
           this.set('uid', json['id'])
+          if (!this.KReservation) {
+            KReservation.load(json['id']).then(kres => {
+              this.KReservation = kres
+            })
+          } else {
+            this.KReservation.extUpdate(json)
+          }
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -927,7 +934,7 @@ define([
       }
 
       if (this.myContentPane) {
-        this.myContentPane.set('title', 'Réservation ' + this.uid)
+        this.myContentPane.set('title', `Réservation ${this.uid}`)
       }
     },
 
@@ -969,7 +976,7 @@ define([
 
     remove: function () {
       return new Promise(function (resolve, reject) {
-        if (confirm('Vraiment supprimer la réservation ' + this.uid)) {
+        if (confirm(`Vraiment supprimer la réservation ${this.uid}`)) {
           if (this.domNode && this.domNode.parentNode) {
             this.domNode.parentNode.removeChild(this.domNode)
           }
