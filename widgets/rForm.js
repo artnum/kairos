@@ -1702,6 +1702,7 @@ define([
         return ['La fin de réservation est avant le début', false]
       }
       let mustCheckDeliveryRemark = true
+      if(this.nStatus.value === 'Status/3') { mustCheckDeliveryRemark = false }
       if (begin.getTime() < (new Date()).getTime()) { mustCheckDeliveryRemark = false }
       for (let i = 0; i < this.reservation.complements.length; i++) {
         if (this.reservation?.complements[i]?.type?.id == 4) {
@@ -1710,7 +1711,6 @@ define([
         }
       }
       if (mustCheckDeliveryRemark && !/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
-        
         if (!this.nLocality.value.startsWith('Warehouse/')) {
           this.nDeliveryRemark.set('state', 'Error')
           return [ 'Livraison la veille doit être renseignée', false]
