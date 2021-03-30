@@ -4,7 +4,6 @@ define([
   'dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/Evented',
-  'dojo/Deferred',
 
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
@@ -12,16 +11,10 @@ define([
 
   'dojo/text!./templates/rForm.html',
 
-  'dojo/dom',
   'dojo/date',
-  'dojo/date/stamp',
-  'dojo/dom-construct',
   'dojo/on',
   'dojo/dom-style',
-  'dojo/dom-class',
   'dojo/dom-form',
-  'dojo/request/xhr',
-  'dojo/store/Memory',
   'dojo/promise/all',
 
   'dijit/form/Form',
@@ -42,8 +35,7 @@ define([
 
   'location/contacts',
   'location/card',
-  'location/bitsfield',
-  'location/dateentry',
+
   'location/count',
   'location/countList',
   'location/Stores/Locality',
@@ -53,14 +45,12 @@ define([
   'location/rform/handler',
   'location/rform/section',
   
-  'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
 ], function (
   djDeclare,
   djLang,
   djEvented,
-  DjDeferred,
 
   dtWidgetBase,
   dtTemplatedMixin,
@@ -68,16 +58,10 @@ define([
 
   _template,
 
-  djDom,
   djDate,
-  djDateStamp,
-  djDomConstruct,
   djOn,
   djDomStyle,
-  djDomClass,
   djDomForm,
-  djXhr,
-  DjMemory,
   djAll,
 
   dtForm,
@@ -98,8 +82,7 @@ define([
 
   Contacts,
   Card,
-  bitsfield,
-  dateentry,
+
   Count,
   CountList,
   Locality,
@@ -109,7 +92,6 @@ define([
   RFormHandler,
   RFormSection,
   
-  Req,
   Path,
   Query
 ) {
@@ -278,7 +260,7 @@ define([
       var frag = document.createDocumentFragment()
       var byType = {}
 
-      for (var i = 0; i < entries.length; i++) {
+      for (let i = 0; i < entries.length; i++) {
         if (!byType[entries[i].type.id]) {
           byType[entries[i].type.id] = []
         }
@@ -300,13 +282,12 @@ define([
         divType.lastChild.setAttribute('class', 'name')
         divType.lastChild.appendChild(document.createTextNode(name))
 
-        for (i = 0; i < byType[k].length; i++) {
-          var divLine = document.createElement('DIV')
+        for (let i = 0; i < byType[k].length; i++) {
+          let divLine = document.createElement('DIV')
           divLine.setAttribute('class', 'item')
 
-          var begin = djDateStamp.fromISOString(byType[k][i].begin)
-          var end = djDateStamp.fromISOString(byType[k][i].end)
-
+          let begin = new Date(byType[k][i].begin)
+          let end = new Date(byType[k][i].end)
           var line = document.createElement('DIV')
           line.setAttribute('class', 'description')
 
@@ -401,15 +382,15 @@ define([
         this.nNumber.set('value', c.number)
         if (!Number(c.follow)) {
           this.nMFollow.set('value', false)
-          this.nMBeginDate.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'date'}))
-          this.MBeginTime.value = djDateStamp.toISOString(c.range.begin)
-          this.nMEndDate.set('value', djDateStamp.toISOString(c.range.end, {selector: 'date'}))
-          this.MEndTime.value = djDateStamp.toISOString(c.range.end)
+          this.nMBeginDate.set('value', new Date(c.range.begin))
+          this.MBeginTime.value = new Date(c.range.begin)
+          this.nMEndDate.set('value', new Date(c.range.end))
+          this.MEndTime.value = new Date(c.range.end)
         } else {
-          this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-          this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
-          this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-          this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
+          this.nMBeginDate.set('value', new Date(this.reservation.get('trueBegin')))
+          this.MBeginTime.value = new Date(this.reservation.get('trueBegin'))
+          this.nMEndDate.set('value', new Date(this.reservation.get('trueEnd')))
+          this.MEndTime.value = new Date(this.reservation.get('trueEnd'))
           this.nMFollow.set('value', 'on')
         }
 
@@ -443,10 +424,10 @@ define([
       this.nAssociationType.set('value', '')
       this.nNumber.set('value', 1)
       this.nMFollow.set('value', true)
-      this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-      this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
-      this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-      this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
+      this.nMBeginDate.set('value', this.reservation.get('trueBegin').toISOString())
+      this.MBeginTime.value = this.reservation.get('trueBegin').toISOString()
+      this.nMEndDate.set('value', this.reservation.get('trueEnd').toISOString())
+      this.MEndTime.value = this.reservation.get('trueEnd').toISOString()
       this.nMComment.set('value', '')
       this.associationRefresh().then (() => {}, () => {KAIROS.error('Reject de l\'opération') })
     },
@@ -546,8 +527,14 @@ define([
           }
         })
 
-        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMBeginDate}T${f.nMBeginTime.toISOString().split('T')[1]}`), {zulu: true})
-        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMEndDate}T${f.nMEndTime.toISOString().split('T')[1]}`), {zulu: true})
+        console.log(f)
+        let begin = new Date(f.nMBeginDate)
+        let end = new Date(f.nMEndDate)
+        begin.setHours(f.nMBeginTime.getHours(), f.nMBeginTime.getMinutes(), f.nMBeginTime.getSeconds(), f.nMBeginTime.getMilliseconds())
+        end.setHours(f.nMEndTime.getHours(), f.nMEndTime.getMinutes(), f.nMEndTime.getSeconds(), f.nMEndTime.getMilliseconds())
+
+        query['begin'] = begin.toISOString()
+        query['end'] = end.toISOString()
         query['follow'] = 0
       } else {
         query['begin'] = ''
