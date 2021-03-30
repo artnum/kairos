@@ -359,10 +359,10 @@ define([
 
     doEditComplement: function (event) {
       if (this.Disabled) { return }
-      var id = null
-      var node
-      var c
-      for (var i = event.target; i; i = i.parentNode) {
+      let id = null
+      let node
+      let c
+      for (let i = event.target; i; i = i.parentNode) {
         if (i.hasAttribute('data-artnum-id')) {
           id = i.getAttribute('data-artnum-id')
           break
@@ -376,16 +376,15 @@ define([
             break
           }
         }
-
         this.nComplementId.value = id
         this.nAddEditComplementButton.set('label', '<i class="fas fa-edit"> </i> Éditer')
         this.nNumber.set('value', c.number)
         if (!Number(c.follow)) {
           this.nMFollow.set('value', false)
-          this.nMBeginDate.set('value', new Date(c.range.begin))
-          this.MBeginTime.value = new Date(c.range.begin)
-          this.nMEndDate.set('value', new Date(c.range.end))
-          this.MEndTime.value = new Date(c.range.end)
+          this.nMBeginDate.set('value', new Date(c.begin))
+          this.MBeginTime.value = new Date(c.begin)
+          this.nMEndDate.set('value', new Date(c.end))
+          this.MEndTime.value = new Date(c.end)
         } else {
           this.nMBeginDate.set('value', new Date(this.reservation.get('trueBegin')))
           this.MBeginTime.value = new Date(this.reservation.get('trueBegin'))
@@ -397,7 +396,7 @@ define([
         this.nMComment.set('value', c.comment)
         this.nAssociationType.set('value', String(Path.url('store/Status/' + c.type.id)))
 
-        for (i = event.target; i; i = i.parentNode) {
+        for (let i = event.target; i; i = i.parentNode) {
           if (i.hasAttribute('class')) {
             if (i.getAttribute('class') === 'item') {
               node = i; break
@@ -406,15 +405,14 @@ define([
         }
 
         /* reset selection display */
-        for (i = this.complements.firstChild; i; i = i.nextSibling) {
+        for (let i = this.complements.firstChild; i; i = i.nextSibling) {
           for (var j = i.firstChild; j; j = j.nextSibling) {
             if (j.hasAttribute('class') && j.getAttribute('class') === 'item') {
-              djDomStyle.set(j, 'color', '')
+              j.style.color = ''
             }
           }
         }
-
-        djDomStyle.set(node, 'color', 'grey')
+        node.style.color = 'grey'
       }
     },
 
@@ -527,7 +525,6 @@ define([
           }
         })
 
-        console.log(f)
         let begin = new Date(f.nMBeginDate)
         let end = new Date(f.nMEndDate)
         begin.setHours(f.nMBeginTime.getHours(), f.nMBeginTime.getMinutes(), f.nMBeginTime.getSeconds(), f.nMBeginTime.getMilliseconds())
