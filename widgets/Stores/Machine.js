@@ -72,9 +72,11 @@ define([
           return txt
         }
         let url = new URL(`${KAIROS.getBase()}/store/Machine`)
-        url.searchParams.append('search.cn', `${searchName}*`)
-        url.searchParams.append('search.description', `${searchName}*`)
-        url.searchParams.append('search.airref', `*${searchName}*`)
+        if (searchName) {
+          url.searchParams.append('search.cn', `${searchName}*`)
+          url.searchParams.append('search.description', `${searchName}*`)
+          url.searchParams.append('search.airref', `*${searchName}*`)
+        }
         fetch(url).then(response => {
           const p = new Promise((resolve, reject) => {
             if (!response.ok) { resolve([]); return }

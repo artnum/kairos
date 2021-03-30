@@ -98,7 +98,7 @@ define([
   return djDeclare('location.rForm', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
                                       RFormHandler, RFormSection], {
     baseClass: 'rForm',
-    templateString: _template,
+    templateString: _template,  
     contacts: {},
     isLayoutContainer: true,
 
@@ -1173,7 +1173,7 @@ define([
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
         this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
         this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: false })
+        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: true })
         this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
         this.nAssociationType = new Select(this.nAssociationType, new Status({type: 1}), { allowFreeText: false, realSelect: true })
 
