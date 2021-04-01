@@ -389,3 +389,7 @@
     padding: initial;
     border: none !important;
 }
+
+.rForm.outofsync {
+    background-color: var(--outofsyncform);
+}

@@ -244,9 +244,9 @@ KAIROS.confirm = function(title, message, opts) {
         const no = document.createElement('BUTTON')
         no.innerHTML = 'Non'
 
-        win.addEventListener('close', event => { console.log(event); resolve(false) })
-        yes.addEventListener('click', event => { win.close(); console.log(event); resolve(true) })
-        no.addEventListener('click', event => { win.close(); console.log(event); resolve(false) })
+        win.addEventListener('close', event => { resolve(false) })
+        yes.addEventListener('click', event => { win.close(); resolve(true) })
+        no.addEventListener('click', event => { win.close();resolve(false) })
 
         content.appendChild(yes)
         content.appendChild(no)

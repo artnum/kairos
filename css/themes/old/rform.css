@@ -368,5 +368,9 @@ s.rForm .dualEntry .dijitTextBox {
     border: none !important;
 }
 
+.rForm.outofsync {
+    background-color: var(--outofsyncform);
+}
+
 @import '../default/rformInputLine.css';
 @import '../default/rformTable.css';

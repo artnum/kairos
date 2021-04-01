@@ -183,7 +183,6 @@ KPopup.prototype.close = function () {
     return new Promise((resolve, reject) => {
         if (!this.opened) { resolve(); return }
         if (this.popper) { this.popper.destroy() }
-        console.trace()
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
         this.evttarget.dispatchEvent(new CustomEvent('close'))

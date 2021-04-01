@@ -115,8 +115,9 @@ define([
           }
         }
 
+        const hash = new MurmurHash3()
         this._target = json.target
-
+        hash.hash(json.target)
         if (this.sup && json.target !== this.get('target')) {
           var oldEntry = window.App.getEntry(this.get('target'))
           var newEntry = window.App.getEntry(json.target)
@@ -133,15 +134,11 @@ define([
           this.lastModified = parseInt(json['modification'])
         }
 
+        let krLoad = Promise.resolve()
+        hash.hash(json.id)
         if (json['id']) {
           this.set('uid', json['id'])
-          if (!this.KReservation) {
-            KReservation.load(json['id']).then(kres => {
-              this.KReservation = kres
-            })
-          } else {
-            this.KReservation.extUpdate(json)
-          }
+          krLoad = KReservation.load(json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -167,6 +164,7 @@ define([
           'deliveryRemark'
         ]) {
           if (json[attr]) {
+            hash.hash(json[attr])
             this.dataHash[attr] = crc32(json[attr])
             this.set(attr, json[attr])
           } else {
@@ -193,6 +191,7 @@ define([
           'note'
         ]) {
           if (json[attr]) {
+            hash.hash(json[attr])
             this.dataHash[attr] = crc32(json[attr])
             this.set(attr, json[attr])
           } else {
@@ -201,6 +200,7 @@ define([
         }
 
         if (json['other']) {
+          hash.hash(json.other)
           this.dataHash['other'] = crc32(json['other'])
           this.set('other', JSON.parse(json['other']))
         } else {
@@ -208,6 +208,7 @@ define([
         }
 
         if (json['uuid']) {
+          hash.hash(json.uuid)
           this.dataHash['uuid'] = crc32(json['uuid'])
         } else {
           this.dataHash['uuid'] = crc32('')
@@ -244,7 +245,18 @@ define([
           this.sup.overlap()
           this.sup.resize()
         }
-        resolve()
+        this.modifiedState = true
+        this.resize()
+        krLoad.then(kres => {
+          delete this.KReservation
+          this.KReservation = kres
+          let state = hash.result()
+          if (this.stateHash && this.stateHash !== state) {
+            this.EventTarget.dispatchEvent(new CustomEvent('synced'))
+          }
+          this.stateHash = state
+          resolve()
+        })
       })
     },
 
@@ -689,9 +701,13 @@ define([
 
       if (this.get('folder') !== '' && this.get('folder') != null) {
         ident.dataset.folder = this.get('folder')
+      } else {
+        delete ident.dataset.folder
       }
       if (this.get('equipment') !== '' && this.get('equipment') != null && this.get('equipment') !== '%') {
         ident.dataset.equipment = this.get('equipment')
+      } else {
+        delete ident.dataset.equipment
       }
       if (this.get('_creator')) {
         let creator = this.get('_creator')
@@ -713,10 +729,14 @@ define([
       }
       if (this.get('title') !== '' && this.get('title') != null) {
         ident.dataset.exchange = this.get('title')
+      } else {
+        delete ident.dataset.exchange
       }
 
       if (this.get('other') && this.get('other').critic) {
         ident.dataset.critic = this.get('other').critic
+      } else {
+        delete ident.dataset.critic
       }
 
       frag.lastChild.appendChild(ident)
@@ -1499,7 +1519,7 @@ define([
               if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
                 if (arrival._op && arrival._op.toLowerCase() === 'delete') {
                   this.set('_arrival', null)
-                  subQueris.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
+                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
                 } else {
                   arrival.target = id
                   subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))

@@ -139,6 +139,12 @@ define([
         this.Defaults = null
         this.isNew = false
       }
+      args.reservation.addEventListener('synced', this.outOfSync.bind(this))
+    },
+
+    outOfSync: function() {
+      this.domNode.classList.add('outofsync')
+      this.Buttons.resync.setDisabled(false)
     },
 
     _setDescriptionAttr: function (value) {
@@ -616,6 +622,7 @@ define([
         addCount: new MButton(this.nAddCount, [
           {label: 'Ajouter à un décompte', events: {click: () => this.openAddCount()}}
         ]),
+        resync: new MButton(this.nResync),
         del: new MButton(this.nDelete),
         addVisit: new MButton(this.nAddVisit, { set: () => (new Date()).toISOString(), unset: '' }),
         addVReport: new MButton(this.nAddReport, { set: () => (new Date()).toISOString(), unset: '' }),
@@ -631,6 +638,11 @@ define([
         addDiesel2: new MButton(this.nDiesel2)
       }
 
+      this.Buttons.resync.addEventListener('click', _ => {
+        this.reservation.syncForm()
+        this.domNode.classList.remove('outofsync')
+        this.Buttons.resync.setDisabled(true)
+      })
       this.Buttons.del.addEventListener('click', () => {
         this.doDelete()
       })
@@ -1808,7 +1820,7 @@ define([
 
         (new Promise((resolve, reject) => {
           lastModificationTest.then(same => {
-            if (!same) {
+            if (!same || this.domNode.classList.contains('outofsync')) {
               KAIROS.confirm(
                 `Réservation modifiée`,
                 `La réservation a été modifiée sur un autre poste, forcer l'enrgistrement`, {reference: this.Buttons.save, placement: 'top'})
@@ -1819,7 +1831,6 @@ define([
           })
         }))
         .then(carryon => {
-          console.log(carryon)
           if (!carryon) { return; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
@@ -1882,10 +1893,14 @@ define([
               this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
               this.reservation.save().then((id) => {
-                fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`)).then(response => {
+                fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`)).then(response => {
                   if (!response.ok) { return }
                   response.json().then(result => {
                     let data = Array.isArray(result.data) ? result.data[0] : result.data
+                    this.reservation.fromJson(data).then(_ => {
+                      this.domNode.classList.remove('outofsync')
+                      this.Buttons.resync.setDisabled(true)
+                    })
                     if (data.modification) {
                       this.lastModified = parseInt(data.modification)
                       this.reservation.lastModified = parseInt(data.modification)
