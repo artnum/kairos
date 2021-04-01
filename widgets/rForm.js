@@ -1763,7 +1763,6 @@ define([
     },
     doSave: function (event) {
       this.doNumbering()
-      this.domNode.setAttribute('style', 'opacity: 0.2')
       let lastModificationTest
       if (this.reservation.id) {
         lastModificationTest = this.reservation.KReservation.serverCompare()
@@ -1773,7 +1772,6 @@ define([
       return new Promise(function (resolve, reject) {
         var err = this.validate()
         if (!err[1]) {
-          this.domNode.removeAttribute('style')
           KAIROS.error(err[0])
           reject(new Error('Not valid'))
           return
@@ -1809,16 +1807,19 @@ define([
         }
 
         (new Promise((resolve, reject) => {
-          lastModificationTest.then(diff => {
-            if (diff._parts.length > 0) {
-              KAIROS.error('La réservation a été modifiée sur un autre poste, sauvegarde non-autorisée.');
-              resolve(false)
+          lastModificationTest.then(same => {
+            if (!same) {
+              KAIROS.confirm(
+                `Réservation modifiée`,
+                `La réservation a été modifiée sur un autre poste, forcer l'enrgistrement`, {reference: this.Buttons.save, placement: 'top'})
+              .then(confirmed => resolve(confirmed))
               return
             }
             resolve(true)
           })
         }))
-        lastModificationTest.then(carryon => {
+        .then(carryon => {
+          console.log(carryon)
           if (!carryon) { return; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
@@ -1891,7 +1892,6 @@ define([
                     }
                   })
                 })
-                this.domNode.removeAttribute('style')
                 if (!move) {
                   this.resize()
                 } else {

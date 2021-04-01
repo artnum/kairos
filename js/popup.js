@@ -1,4 +1,5 @@
 function KPopup (title, opts = {}) {
+    this.evttarget = new EventTarget()
     this.popup = document.createElement('DIV')
     this.popup.classList.add('kpopup')
     this.title = document.createElement('DIV')
@@ -71,6 +72,14 @@ function KPopup (title, opts = {}) {
     this.opened = null
 }
 
+KPopup.prototype.addEventListener = function (type, callback, options = {}) {
+    this.evttarget.addEventListener(type, callback, options)
+}
+
+KPopup.prototype.removeEventListener = function (type, callback, options = {}) {
+    this.evttarget.removeEventListener(type, callback, options)
+}
+
 KPopup.prototype.focus = function () {
     const zmax = KAIROS.zMax()
     window.requestAnimationFrame(() => {
@@ -134,7 +143,7 @@ KPopup.prototype.setReference = function (htmlNode) {
     } else if (htmlNode.domNode && htmlNode.domNode instanceof HTMLElement) {
         this.reference = htmlNode.domNode
     }
-    this.popup.style.setProperty('z-index', KAIROS.zMax(this.reference))
+    this.popup.style.setProperty('z-index', KAIROS.zMax())
     this.popup.style.setProperty('position', 'fixed')
 }
 
@@ -158,7 +167,11 @@ KPopup.prototype.open = function () {
         this.opened = KAIROS.stackClosable(this.close.bind(this))
         window.requestAnimationFrame(() => {
             if (!this.popup.parentNode) {
-                document.body.appendChild(this.popup)
+                if (this.reference) {
+                    this.reference.parentNode.appendChild(this.popup)
+                } else {
+                    document.body.appendChild(this.popup)
+                }
             }
             this.place()
             resolve(this.domNode)
@@ -170,8 +183,10 @@ KPopup.prototype.close = function () {
     return new Promise((resolve, reject) => {
         if (!this.opened) { resolve(); return }
         if (this.popper) { this.popper.destroy() }
+        console.trace()
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
+        this.evttarget.dispatchEvent(new CustomEvent('close'))
         window.requestAnimationFrame(() => {
             if (this.popup.parentNode) {
                 this.popup.parentNode.removeChild(this.popup)

@@ -233,3 +233,24 @@ KAIROS.openWindow = function (title) {
         })
     })
 }
+
+KAIROS.confirm = function(title, message, opts) {
+    return new Promise((resolve, reject) => {
+        const win = new KPopup(title, opts)
+        const content = document.createElement('P')
+        content.innerHTML = message
+        const yes = document.createElement('BUTTON')
+        yes.innerHTML = 'Oui'
+        const no = document.createElement('BUTTON')
+        no.innerHTML = 'Non'
+
+        win.addEventListener('close', event => { console.log(event); resolve(false) })
+        yes.addEventListener('click', event => { win.close(); console.log(event); resolve(true) })
+        no.addEventListener('click', event => { win.close(); console.log(event); resolve(false) })
+
+        content.appendChild(yes)
+        content.appendChild(no)
+        win.setContentDiv(content)
+        win.open()
+    })
+}

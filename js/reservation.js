@@ -103,21 +103,14 @@ KReservation.prototype.serverCompare = function () {
   return new Promise((resolve, reject) => {
     KReservation.load(this.data.reservation.id)
     .then(srvVersion => {
-      const fieldDiff = {
-        _parts: [],
-        reservation: [],
-        locality: [],
-        creator: [],
-        technician: []
-      }
       const cmpVal = ['reservation', 'locality', 'creator', 'technician']
       for (let i = 0; i < cmpVal.length; i++) {
         if (this.hash[cmpVal[i]]._complete !== srvVersion.hash[cmpVal[i]]._complete) {
-          if (fieldDiff._parts.indexOf(cmpVal[i]) === -1) { fieldDiff._parts.push(cmpVal[i]) }
-          fieldDiff[cmpVal[i]].push(k)
+          resolve(false)
+          return
         }
       }
-      resolve(fieldDiff)
+      resolve(true)
     })
   })
 }
