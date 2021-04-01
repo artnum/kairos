@@ -51,19 +51,23 @@ function KPopup (title, opts = {}) {
     })
 
 
-    this.popup.addEventListener('mousedown', this.focus.bind(this))
-
-    this.title.addEventListener('mousedown', event => {
-        const bounding = this.popup.getClientRects()
-        this.deltaX =  event.clientX - bounding[0].x
-        this.deltaY = event.clientY - bounding[0].y
-        this.follow = true
-        this.followMouse()
-        window.addEventListener('mouseup', event => {
-            this.follow = false
-        })
+    this.popup.addEventListener('mousedown', event => {
+        this.focus.bind(this)
     })
 
+    /* if placed at special position, don't move window */
+    if (!opts.reference) {
+            this.title.addEventListener('mousedown', event => {
+            const bounding = this.popup.getClientRects()
+            this.deltaX =  event.clientX - bounding[0].x
+            this.deltaY = event.clientY - bounding[0].y
+            this.follow = true
+            this.followMouse()
+            window.addEventListener('mouseup', event => {
+                this.follow = false
+            })
+        })
+    }
     this.opened = null
 }
 
@@ -163,10 +167,10 @@ KPopup.prototype.open = function () {
 }
 
 KPopup.prototype.close = function () {
-    window.removeEventListener('mousemove', this.followMouse, {capture: true})
     return new Promise((resolve, reject) => {
         if (!this.opened) { resolve(); return }
-        KAIROS.removeClosableByIdx(this.opened)
+        if (this.popper) { this.popper.destroy() }
+        KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
         window.requestAnimationFrame(() => {
             if (this.popup.parentNode) {

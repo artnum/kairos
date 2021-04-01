@@ -5,7 +5,11 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
+  this.allowFreeText = options.allowFreeText
   this.input = input
+  if (options.realSelect) {
+    this.realSelectUI()
+  }
   input.setAttribute('autocomplete', 'off')
   let originalValue = input.value
   let obj = new Proxy(this, {
@@ -28,23 +32,24 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         case 'value':
           if (!value) { break }
           input.dataset.loading = '1'
-          store.get(value).then((entry) => {
+          store.get(value)
+          .then((entry) => {
             if (entry) {
-              this.lastEntry = entry
+              obj.lastEntry = entry
               input.value = entry.label
-              this.value = input.value
+              obj.value = input.value
               colorize(entry.color)
               input.dataset.value = entry.value
             } else {
-              if (options.allowFreeText) {
+              if (obj.allowFreeText) {
                 input.value = value
               } else {
-                if (!this.lastEntry) {
-                  this.value = ''
+                if (!obj.lastEntry) {
+                  obj.value = ''
                   input.value = ''
                 } else {
-                  this.value = this.lastEntry.value
-                  input.value = this.lastEntry.label
+                  obj.value = obj.lastEntry.value
+                  input.value = obj.lastEntry.label
                 }
               }
             }
@@ -62,13 +67,15 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   var popper = null
 
   var colorize = (color) => {
+    let element = this.input
+    if (this.container) { element = this.container }
     window.requestAnimationFrame(() => {
       if (color === undefined || color === null || color === false) {
-        input.classList.remove('colored')
-        input.style.removeProperty('--colored-color')
+        element.classList.remove('colored')
+        element.style.removeProperty('--colored-color')
       } else {
-        input.classList.add('colored')
-        input.style.setProperty('--colored-color', color)
+        element.classList.add('colored')
+        element.style.setProperty('--colored-color', color)
       }
     })
   }
@@ -164,6 +171,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   }
 
   var degenerate = () => {
+    KAIROS.removeClosableFromStack(degenerate)
     if (popper) { popper.destroy(); popper = null }
     if (list.parentNode) {
       list.parentNode.removeChild(list)
@@ -209,9 +217,9 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       case 'PageDown':
         event.preventDefault()
         return move(event.key)
+      case 'Escape':
       case 'ArrowLeft':
       case 'ArrowRight':
-      case 'Escape':
       case 'Alt':
       case 'AltGraph':
         return
@@ -221,6 +229,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
           return degenerate() 
         }
     }
+    this.closableIdx = KAIROS.stackClosable(degenerate)
     window.requestAnimationFrame((event) => {
       if (!list.parentNode) {
         input.parentNode.insertBefore(list, input.nextSiblingElement)
@@ -262,7 +271,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
             s.innerHTML = entry.label
           }
           s.dataset.label = entry.printableLabel ? entry.printableLabel : s.textContent
-          if (entry.selected) {
+          if (entry.selected || entry.value === currentValue || (!this.allowFreeText && data.length === 1)) {
             selected = s
           }
           s.addEventListener('mouseover', (event) => {
@@ -321,7 +330,30 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
 
 
 Select.prototype.clear = function () {
-  this.input.classList.remove('colored')
+  let element = this.input
+  if (this.container) { element = this.container }
+  element.classList.remove('colored')
   this.input.value = ''
   this.input.dataset.value = ''
+}
+
+Select.prototype.realSelectUI = function () {
+  let arrow = document.createElement('SPAN')
+  let container = document.createElement('DIV')
+  this.container = container
+  window.requestAnimationFrame(() => {
+    String(this.input.classList).split(' ')
+    .forEach(token => {
+      if (token === '') { return; }
+      container.classList.add(token)
+      this.input.classList.remove(token)
+    })
+    container.classList.add('kselect')
+    this.input.parentNode.insertBefore(container, this.input)
+    this.input.parentNode.removeChild(this.input)
+    container.appendChild(this.input)
+    arrow.classList.add('arrow')
+    arrow.innerHTML = '<i class="fas fa-caret-down"> </i> '
+    container.appendChild(arrow)
+  })
 }

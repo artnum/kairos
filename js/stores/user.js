@@ -67,15 +67,16 @@ UserStore.prototype.cleanUrl = function (id) {
 
 UserStore.prototype.get = function (relUrl) {
     return new Promise((resolve, reject) => {
-        if (!relUrl) { resolve({label: '', value: ''}); return }
+        if (!relUrl) { resolve(null); return }
         let entry = null
         relUrl = this.cleanUrl(relUrl)
-
+        if (relUrl.split('/').length < 2) { resolve(null); return }
+        
         let url = new URL(`store/${relUrl}`, KAIROS.getBase())
         fetch(url, {headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then(response => {
-            if (!response.ok) { reject(`HTTP Error code ${response.status} - ${response.statusText}`); return }
+            if (!response.ok) { resolve(null); return }
             response.json().then(result => {
-                if (result.length !== 1) { reject('Result count invalid'); return }
+                if (result.length !== 1) { resolve(null); return }
                 resolve(new KairosUser(result.data))
             }, reason => reject(reason))
         }, reason => reject(reason))
@@ -92,7 +93,7 @@ UserStore.prototype.query = function (txt, currentValue = undefined) {
             url.searchParams(k, this.params[k])
         })
         fetch(url, {headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then(response => {
-            if (!response.ok) { reject(`HTTP Error code ${response.status} - ${response.statusText}`); return }
+            if (!response.ok) { resolve([]); return }
             response.json().then(result => {
                 for (let i = 0; i < result.length; i++) {
                     let entry = result.data[i]

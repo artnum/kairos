@@ -176,7 +176,7 @@
     min-width: 200px !important;
 }
 
-.rForm input.ui, .rForm .dijitTextBox, .rForm .dijitSelect, .rForm textarea.ui, .rForm span.value {
+.rForm input.ui, .rForm .dijitTextBox, .rForm .dijitSelect, .rForm textarea.ui, .rForm span.value, .rForm .kselect.ui {
     font-family: 'B612 Mono', monospace;
     min-width: calc(100% - 130px);
     max-width: calc(100% - 130px);

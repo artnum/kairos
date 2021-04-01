@@ -4,7 +4,6 @@ define([
   'dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/Evented',
-  'dojo/Deferred',
 
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
@@ -12,16 +11,10 @@ define([
 
   'dojo/text!./templates/rForm.html',
 
-  'dojo/dom',
   'dojo/date',
-  'dojo/date/stamp',
-  'dojo/dom-construct',
   'dojo/on',
   'dojo/dom-style',
-  'dojo/dom-class',
   'dojo/dom-form',
-  'dojo/request/xhr',
-  'dojo/store/Memory',
   'dojo/promise/all',
 
   'dijit/form/Form',
@@ -42,8 +35,7 @@ define([
 
   'location/contacts',
   'location/card',
-  'location/bitsfield',
-  'location/dateentry',
+
   'location/count',
   'location/countList',
   'location/Stores/Locality',
@@ -53,14 +45,12 @@ define([
   'location/rform/handler',
   'location/rform/section',
   
-  'artnum/dojo/Request',
   'artnum/Path',
   'artnum/Query'
 ], function (
   djDeclare,
   djLang,
   djEvented,
-  DjDeferred,
 
   dtWidgetBase,
   dtTemplatedMixin,
@@ -68,16 +58,10 @@ define([
 
   _template,
 
-  djDom,
   djDate,
-  djDateStamp,
-  djDomConstruct,
   djOn,
   djDomStyle,
-  djDomClass,
   djDomForm,
-  djXhr,
-  DjMemory,
   djAll,
 
   dtForm,
@@ -98,8 +82,7 @@ define([
 
   Contacts,
   Card,
-  bitsfield,
-  dateentry,
+
   Count,
   CountList,
   Locality,
@@ -109,14 +92,13 @@ define([
   RFormHandler,
   RFormSection,
   
-  Req,
   Path,
   Query
 ) {
   return djDeclare('location.rForm', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
                                       RFormHandler, RFormSection], {
     baseClass: 'rForm',
-    templateString: _template,
+    templateString: _template,  
     contacts: {},
     isLayoutContainer: true,
 
@@ -278,7 +260,7 @@ define([
       var frag = document.createDocumentFragment()
       var byType = {}
 
-      for (var i = 0; i < entries.length; i++) {
+      for (let i = 0; i < entries.length; i++) {
         if (!byType[entries[i].type.id]) {
           byType[entries[i].type.id] = []
         }
@@ -300,13 +282,12 @@ define([
         divType.lastChild.setAttribute('class', 'name')
         divType.lastChild.appendChild(document.createTextNode(name))
 
-        for (i = 0; i < byType[k].length; i++) {
-          var divLine = document.createElement('DIV')
+        for (let i = 0; i < byType[k].length; i++) {
+          let divLine = document.createElement('DIV')
           divLine.setAttribute('class', 'item')
 
-          var begin = djDateStamp.fromISOString(byType[k][i].begin)
-          var end = djDateStamp.fromISOString(byType[k][i].end)
-
+          let begin = new Date(byType[k][i].begin)
+          let end = new Date(byType[k][i].end)
           var line = document.createElement('DIV')
           line.setAttribute('class', 'description')
 
@@ -378,10 +359,10 @@ define([
 
     doEditComplement: function (event) {
       if (this.Disabled) { return }
-      var id = null
-      var node
-      var c
-      for (var i = event.target; i; i = i.parentNode) {
+      let id = null
+      let node
+      let c
+      for (let i = event.target; i; i = i.parentNode) {
         if (i.hasAttribute('data-artnum-id')) {
           id = i.getAttribute('data-artnum-id')
           break
@@ -395,28 +376,27 @@ define([
             break
           }
         }
-
         this.nComplementId.value = id
         this.nAddEditComplementButton.set('label', '<i class="fas fa-edit"> </i> Éditer')
         this.nNumber.set('value', c.number)
         if (!Number(c.follow)) {
           this.nMFollow.set('value', false)
-          this.nMBeginDate.set('value', djDateStamp.toISOString(c.range.begin, {selector: 'date'}))
-          this.MBeginTime.value = djDateStamp.toISOString(c.range.begin)
-          this.nMEndDate.set('value', djDateStamp.toISOString(c.range.end, {selector: 'date'}))
-          this.MEndTime.value = djDateStamp.toISOString(c.range.end)
+          this.nMBeginDate.set('value', new Date(c.begin))
+          this.MBeginTime.value = new Date(c.begin)
+          this.nMEndDate.set('value', new Date(c.end))
+          this.MEndTime.value = new Date(c.end)
         } else {
-          this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-          this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
-          this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-          this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
+          this.nMBeginDate.set('value', new Date(this.reservation.get('trueBegin')))
+          this.MBeginTime.value = new Date(this.reservation.get('trueBegin'))
+          this.nMEndDate.set('value', new Date(this.reservation.get('trueEnd')))
+          this.MEndTime.value = new Date(this.reservation.get('trueEnd'))
           this.nMFollow.set('value', 'on')
         }
 
         this.nMComment.set('value', c.comment)
-        this.nAssociationType.set('value', String(Path.url('store/Status/' + c.type.id)))
+        this.nAssociationType.value = c.type.id
 
-        for (i = event.target; i; i = i.parentNode) {
+        for (let i = event.target; i; i = i.parentNode) {
           if (i.hasAttribute('class')) {
             if (i.getAttribute('class') === 'item') {
               node = i; break
@@ -425,28 +405,27 @@ define([
         }
 
         /* reset selection display */
-        for (i = this.complements.firstChild; i; i = i.nextSibling) {
+        for (let i = this.complements.firstChild; i; i = i.nextSibling) {
           for (var j = i.firstChild; j; j = j.nextSibling) {
             if (j.hasAttribute('class') && j.getAttribute('class') === 'item') {
-              djDomStyle.set(j, 'color', '')
+              j.style.color = ''
             }
           }
         }
-
-        djDomStyle.set(node, 'color', 'grey')
+        node.style.color = 'grey'
       }
     },
 
     doResetComplement: function (event) {
       this.nComplementId.value = ''
       this.nAddEditComplementButton.set('label', '<i class="fa fa-plus"> </i> Ajouter')
-      this.nAssociationType.set('value', '')
+      this.nAssociationType.value = ''
       this.nNumber.set('value', 1)
       this.nMFollow.set('value', true)
-      this.nMBeginDate.set('value', djDateStamp.toISOString(this.reservation.get('trueBegin'), {selector: 'date'}))
-      this.MBeginTime.value = djDateStamp.toISOString(this.reservation.get('trueBegin'))
-      this.nMEndDate.set('value', djDateStamp.toISOString(this.reservation.get('trueEnd'), {selector: 'date'}))
-      this.MEndTime.value = djDateStamp.toISOString(this.reservation.get('trueEnd'))
+      this.nMBeginDate.set('value', this.reservation.get('trueBegin').toISOString())
+      this.MBeginTime.value = this.reservation.get('trueBegin').toISOString()
+      this.nMEndDate.set('value', this.reservation.get('trueEnd').toISOString())
+      this.MEndTime.value = this.reservation.get('trueEnd').toISOString()
       this.nMComment.set('value', '')
       this.associationRefresh().then (() => {}, () => {KAIROS.error('Reject de l\'opération') })
     },
@@ -546,8 +525,13 @@ define([
           }
         })
 
-        query['begin'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMBeginDate}T${f.nMBeginTime.toISOString().split('T')[1]}`), {zulu: true})
-        query['end'] = djDateStamp.toISOString(djDateStamp.fromISOString(`${f.nMEndDate}T${f.nMEndTime.toISOString().split('T')[1]}`), {zulu: true})
+        let begin = new Date(f.nMBeginDate)
+        let end = new Date(f.nMEndDate)
+        begin.setHours(f.nMBeginTime.getHours(), f.nMBeginTime.getMinutes(), f.nMBeginTime.getSeconds(), f.nMBeginTime.getMilliseconds())
+        end.setHours(f.nMEndTime.getHours(), f.nMEndTime.getMinutes(), f.nMEndTime.getSeconds(), f.nMEndTime.getMilliseconds())
+
+        query['begin'] = begin.toISOString()
+        query['end'] = end.toISOString()
         query['follow'] = 0
       } else {
         query['begin'] = ''
@@ -557,7 +541,7 @@ define([
       query['number'] = f.number ? f.number : 1
       query['target'] = null
       query['comment'] = f.nMComment ? f.nMComment : ''
-      query['type'] = f.associationType
+      query['type'] = this.nAssociationType.value
       query['reservation'] = this.reservation.uid
 
       if (this.nComplementId.value !== '') {
@@ -1166,10 +1150,10 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
-        let L = new Locality()
-        let U = new UserStore()
-        let M = new Machine()
-        let S = new Status({type: '0'})
+        const L = new Locality()
+        const U = new UserStore()
+        const M = new Machine()
+        const S = new Status({type: '0'})
         this.Stores = {
           Locality: L,
           User: new UserStore(),
@@ -1189,8 +1173,9 @@ define([
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
         this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
         this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: false })
+        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: true })
         this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
+        this.nAssociationType = new Select(this.nAssociationType, new Status({type: 1}), { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()
 
@@ -1389,20 +1374,7 @@ define([
           }
         }
 
-        if (!this.loaded.association) {
-          let url = Path.url('store/Status')
-          url.searchParams.set('search.type', 1)
-          results = await Query.exec(url)
-          if (results.type === 'results') {
-            results.data.forEach((d) => {
-              this.nAssociationType.addOption({
-                label: '<i aria-hidden="true" class="fa fa-square" style="color: #' + d.color + ';"></i> ' + d.name,
-                value: String(Path.url('store/Status/' + d.id))
-              })
-            })
-          }
-          this.loaded.association = true
-        }
+        this.loaded.association = true
         this.set('warehouse', this.reservation.get('warehouse'))
 
         if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
@@ -1730,6 +1702,7 @@ define([
         return ['La fin de réservation est avant le début', false]
       }
       let mustCheckDeliveryRemark = true
+      if(this.nStatus.value === 'Status/3') { mustCheckDeliveryRemark = false }
       if (begin.getTime() < (new Date()).getTime()) { mustCheckDeliveryRemark = false }
       for (let i = 0; i < this.reservation.complements.length; i++) {
         if (this.reservation?.complements[i]?.type?.id == 4) {
@@ -1738,7 +1711,6 @@ define([
         }
       }
       if (mustCheckDeliveryRemark && !/[a-zA-Z0-9]{3}.*/.test(f.deliveryRemark)) {
-        
         if (!this.nLocality.value.startsWith('Warehouse/')) {
           this.nDeliveryRemark.set('state', 'Error')
           return [ 'Livraison la veille doit être renseignée', false]
