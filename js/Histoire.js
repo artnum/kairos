@@ -2,7 +2,7 @@
 /* global APPConf */
 class Histoire {
   static List (params) {
-    let url = new URL(`${window.origin}/${APPConf.history}`)
+    let url = new URL(`${KAIROS.getBase()}/${KAIROS.history}`)
     url.searchParams.append('sort.date', 'DESC')
     url.searchParams.append('search.hide', 0)
     if (params) {
@@ -36,7 +36,7 @@ class Histoire {
 
   static Get (id) {
     return new Promise((resolve, reject) => {
-      let url = new URL(`${window.origin}/${APPConf.history}/${id}`)
+      let url = new URL(`${KAIROS.getBase()}/${KAIROS.history}/${id}`)
       fetch(url).then((response) => {
         if (!response.ok) { reject(new Error('Erreur serveur')); return }
         response.json().then((result) => {
@@ -52,7 +52,7 @@ class Histoire {
   }
   static LOG (type, object, attribute, original, details = {}) {
     return new Promise((resolve, reject) => {
-      let url = new URL(`${window.origin}/${APPConf.history}`)
+      let url = new URL(`${KAIROS.getBase()}/${KAIROS.history}`)
       UserStore.getCurrentUser().then(creator => {
         creator = creator.getId()
         let modLog = {
@@ -88,7 +88,7 @@ class Histoire {
 
   static NOTE (type, object, text) {
     return new Promise((resolve, reject) => {
-      let url = new URL(`${window.origin}/${KAIROS.history}`)
+      let url = new URL(`${KAIROS.getBase()}/${KAIROS.history}`)
       UserStore.getCurrentUser().then(creator => {
         creator = creator.getId()
         let modLog = {
