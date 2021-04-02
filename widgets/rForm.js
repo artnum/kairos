@@ -1777,7 +1777,7 @@ define([
       this.doNumbering()
       let lastModificationTest
       if (this.reservation.id) {
-        lastModificationTest = this.reservation.KReservation.serverCompare()
+        lastModificationTest = this.reservation.KReservation?.serverCompare() ?? Promise.resolve(true)
       } else {
         lastModificationTest = Promise.resolve(true)
       }

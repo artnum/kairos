@@ -135,8 +135,8 @@ define([
         }
 
         let krLoad = Promise.resolve()
-        hash.hash(json.id)
         if (json['id']) {
+          hash.hash(json.id)
           this.set('uid', json['id'])
           krLoad = KReservation.load(json['id'])
         }
@@ -248,10 +248,11 @@ define([
         this.modifiedState = true
         this.resize()
         krLoad.then(kres => {
+          let hasKReservation = this.KReservation
           delete this.KReservation
           this.KReservation = kres
           let state = hash.result()
-          if (this.stateHash && this.stateHash !== state) {
+          if (this.stateHash && this.stateHash !== state && hasKReservation) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
           }
           this.stateHash = state
