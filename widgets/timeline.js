@@ -696,6 +696,7 @@ define([
 
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       djOn(this.domNode, 'mouseup, mousedown, touchstart, touchend', djLang.hitch(this, this.mouseUpDown))
+      document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
       window.addEventListener('mousemove', this.showSight.bind(this))
