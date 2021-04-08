@@ -181,6 +181,7 @@ class EvenementModel extends artnum\SQL {
               $Maps[$id] = $ids[1];
             }
           }
+          if (!isset($Maps[$entry['resolvedTarget']])) { continue; }
           $entry['resolvedTarget'] = $Maps[$entry['resolvedTarget']];
           if (!isset($entries[$entry['resolvedTarget']])) {
             $entries[$entry['resolvedTarget']] = $entry;
