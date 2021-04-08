@@ -41,13 +41,19 @@ class LDAPGetEntry {
         $this->ldap = $ldap;
     }
 
+    function ldapFail ($func, $conn, $msg = '') {
+        error_log(sprintf('LDAPGetEntry::%s <%s> "%s"', $func, ldap_error($conn), $msg));
+    }
+
     function getMachine($id) {
-        $search = ldap_search(
+        if (empty($id)) { return NULL; }
+        $sfilter = sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id);
+        $search = @ldap_search(
             $this->ldap,
             $this->kconf->get('trees.machines'), 
-            sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id),
+            $sfilter,
             ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref']);
-        if (!$search) { return NULL; }
+        if (!$search) { $this->ldapFail(__FUNCTION__, $this->ldap, $sfilter); return NULL; }
         if (ldap_count_entries($this->ldap, $search) === 0) { return NULL; }
         $entry = ldap_first_entry($this->ldap, $search);
         if (!$entry) { return NULL; }
@@ -57,12 +63,14 @@ class LDAPGetEntry {
     }
 
     function getAllId($id) {
-        $search = ldap_search(
+        if (empty($id)) { return NULL; }
+        $sfilter = sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id);
+        $search = @ldap_search(
             $this->ldap,
             $this->kconf->get('trees.machines'), 
-            sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id),
+            $sfilter,
             ['description', 'cn', 'family', 'airaltref', 'type', 'state', 'floorheight', 'workheight', 'height', 'airref']);
-        if (!$search) { return NULL; }
+        if (!$search) { $this->ldapFail(__FUNCTION__, $this->ldap, $sfilter); return NULL; }
         if (ldap_count_entries($this->ldap, $search) === 0) { return NULL; }
         $entry = ldap_first_entry($this->ldap, $search);
         if (!$entry) { return NULL; }
