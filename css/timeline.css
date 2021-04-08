@@ -8,7 +8,6 @@ body, html { margin: 0; padding: 0; }
 .timeline {
 	font-family: 'Roboto', sans-serif;
 	font-size: 16px !important;
-	cursor: grab;
 	margin-bottom: 60px;
 }
 

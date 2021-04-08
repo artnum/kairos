@@ -1029,37 +1029,34 @@ define([
       }
       
       if (event.type === 'mouseup' || event.type === 'touchstart') {
+        window.requestAnimationFrame(() => {
+          document.body.classList.remove('kmove')
+        })
+        if (this.mouseUpDown.timeout) {
+          clearInterval(this.mouseUpDown.timeout)
+          this.mouseUpDown.timeout = null
+        }
         this.eventStarted = null
         this.followMouse.stop = true
       } else {
-        this.eventStarted = event
-        if (KAIROS.mouse.clientX >= 200) {
-          this.followMouse.multiplicator = 1
-          if (event.target.classList.contains('weekNumber')) {
-            this.followMouse.multiplicator = 7
+        this.mouseUpDown.timeout = setTimeout(() => {
+          window.requestAnimationFrame(() => {
+            document.body.classList.add('kmove')
+          })
+          this.eventStarted = event
+          if (KAIROS.mouse.clientX >= 200) {
+            this.followMouse.multiplicator = 1
+            if (event.target.classList.contains('weekNumber')) {
+              this.followMouse.multiplicator = 7
+            }
+            if (event.target.classList.contains('monthName')) {
+              this.followMouse.multiplicator = 30
+            }
+            this.followMouse.stop = false
+            this.followMouse()
           }
-          if (event.target.classList.contains('monthName')) {
-            this.followMouse.multiplicator = 30
-          }
-          this.followMouse.stop = false
-          this.followMouse()
-        }
+        }, 100)
       }
-      window.requestAnimationFrame(function () {
-        var domNode = document.getElementsByTagName('body')[0]
-        if (event.type === 'mouseup') {
-          domNode.setAttribute('style', 'cursor: grab; cursor: -webkit-grab;')
-          if (this.timelineMoving) {
-            this.timelineMoving = false
-            this.refresh()
-          }
-        } else {
-          domNode.setAttribute('style', 'cursor: grabbing !important; cursor: -webkit-grabbing !important;')
-          for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
-            node.dataset.refresh = 'outdated'
-          }
-        }
-      }.bind(this))
     },
 
     followMouse: function () {
