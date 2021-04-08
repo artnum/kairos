@@ -548,8 +548,10 @@ define([
       this._set('sup', sup)
       if (this.domNode && this.domNode.parentNode) {
         window.requestAnimationFrame(() => {
-          this.domNode.parentNode.removeChild(this.domNode)
-          sup.data.appendChild(this.domNode)
+          if (this.domNode?.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
+          if (this.domNode) { sup.data.appendChild(this.domNode) }
         })
       }
     },
@@ -1157,7 +1159,6 @@ define([
       if (!this.domNode.parentNode) {
         window.requestAnimationFrame(() => {
           if (this.sup && this.sup.data) { this.sup.data.appendChild(this.domNode) }
-          if (!this.originalTop) { this.originalTop = djDomStyle.get(this.domNode, 'top') }
         })
       }
     },
