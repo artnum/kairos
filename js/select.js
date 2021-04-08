@@ -282,7 +282,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
             }
             event.target.dataset.hover = '1'
           })
-          s.addEventListener('mousedown', (event) => { select(event.target); degenerate() })
+          s.addEventListener('mousedown', (event) => { event.stopPropagation(); select(event.target); degenerate() })
           frag.appendChild(s)
         })
         window.requestAnimationFrame(() => {
