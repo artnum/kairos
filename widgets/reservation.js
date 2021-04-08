@@ -75,6 +75,7 @@ define([
       this.duration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this.uuid = options.uuid
+      this.KReservation = new KReservation()
       this._gui = {
         hidden: false
       }
@@ -138,7 +139,7 @@ define([
         if (json['id']) {
           hash.hash(json.id)
           this.set('uid', json['id'])
-          krLoad = KReservation.load(json['id'])
+          krLoad = this.KReservation.init(json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -247,12 +248,9 @@ define([
         }
         this.modifiedState = true
         this.resize()
-        krLoad.then(kres => {
-          let hasKReservation = this.KReservation
-          delete this.KReservation
-          this.KReservation = kres
+        this.KReservation.inited.then(_ => {
           let state = hash.result()
-          if (this.stateHash && this.stateHash !== state && hasKReservation) {
+          if (this.stateHash && this.stateHash !== state) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
           }
           this.stateHash = state
@@ -412,6 +410,12 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
+      this.KReservation.inited.then(kres => {
+        const affaireId = kres.getAffaire()
+        if (affaireId) {
+          this.domNode.dataset.affaire = affaireId
+        }
+      })
       // this.resize()
     },
 
@@ -546,12 +550,12 @@ define([
     _setSupAttr: function (sup) {
       if (this.sup === sup) { return }
       this._set('sup', sup)
-      if (this.domNode && this.domNode.parentNode) {
-        window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (this.domNode && this.domNode.parentNode) {
           this.domNode.parentNode.removeChild(this.domNode)
           sup.data.appendChild(this.domNode)
-        })
-      }
+        }
+      })
     },
     _getDeliveryBeginAttr: function () {
       if (this.deliveryBegin) {
@@ -1510,6 +1514,7 @@ define([
                   if (!response.ok) { resolve(); return }
                   response.json()
                   .then(result => {
+                    if (result.length < 1) { resolve(); return }
                     let data = Array.isArray(result.data) ? result.data[0] : result.data
                     this.lastModified = parseInt(data.modification)
                     resolve()

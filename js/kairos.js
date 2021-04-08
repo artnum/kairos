@@ -124,4 +124,9 @@ KAIROS.DateFromTS = function(ts) {
   return d
 }
 
+/* must push data to server to have log */
+KAIROS.ioError = function (responseOrReason) {
+  console.log(responseOrReason)
+}
+
 fetch = KAIROS.fetch

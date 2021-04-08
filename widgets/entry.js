@@ -622,10 +622,13 @@ define([
           })
           this.entries[uuid] = newReservation
           newReservation.save().then((id) => {
-            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`)).then(response => {
+            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`))
+            .then(response => {
               if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
-              response.json().then(reservation => {
-                newReservation.fromJson(reservation).then(() => {
+              response.json()
+              .then(result => {
+                if (result.length < 1)  { return ;}
+                newReservation.fromJson(Array.isArray(result.data) ? result.data[0] : result.data).then(() => {
                   newReservation.waitStop()
                   newReservation.popMeUp()
                 })
