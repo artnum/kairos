@@ -47,6 +47,7 @@ class LDAPGetEntry {
 
     function getMachine($id) {
         if (empty($id)) { return NULL; }
+        $id = ldap_escape($id, '', LDAP_ESCAPE_FILTER);
         $sfilter = sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id);
         $search = @ldap_search(
             $this->ldap,
@@ -64,6 +65,7 @@ class LDAPGetEntry {
 
     function getAllId($id) {
         if (empty($id)) { return NULL; }
+        $id = ldap_escape($id, '', LDAP_ESCAPE_FILTER);
         $sfilter = sprintf('(&(objectclass=machine)(|(airref=%s)(description=%s)))', $id, $id);
         $search = @ldap_search(
             $this->ldap,
