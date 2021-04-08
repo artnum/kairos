@@ -694,7 +694,6 @@ define([
 
       if (!this.htmlIdentity) {
         this.htmlIdentity = document.createElement('SPAN')
-        this.htmlIdentity.addEventListener('mouseover', this.tooltipShow.bind(this))
       }
       let ident = this.htmlIdentity
       ident.classList.add('identity')
