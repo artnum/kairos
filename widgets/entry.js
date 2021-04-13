@@ -64,13 +64,18 @@ define([
       this.stores = {}
       this.originalHeight = 0
       this.tags = []
-      this.entries = {}
+      this.entries = new Map()
       this.currentLocation = ''
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
         let change = this.stateChange.bind(this)
         let create = (event) => {
+          for (const value of this.entries) {
+            if (value.uuid === event.detail.entry.uuid) {
+              return
+            }
+          }
           if (event.detail && event.detail.entry) {
             this.KEntry.fixReservation(event.detail.entry).then (json => {
               if (json) { this.createEntry(json) }
@@ -115,10 +120,10 @@ define([
     },
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        for (let k in this.entries) {
-          if (this.entries[k].uuid === entry.uuid) {
-            this.destroyReservation(this.entries[k]).then(() => {
-              delete this.entries[k]
+        for (const [kEntry, currentEntry] of this.entries) {
+          if (currentEntry.uuid === entry.uuid) {
+            this.destroyReservation(currentEntry).then(() => {
+              this.entries.delete(kEntry)
               this.resize()
               resolve()
               return
@@ -131,18 +136,17 @@ define([
     },
     createEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        let id = entry.uuid
-        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
-        if (this.entries[id] === undefined) {
-          this.entries[id] = new Reservation({
+        const id = entry.uuid || entry.id
+        if (!this.entries.has(id)) {
+          this.entries.set(id, new Reservation({
             sup: this,
             uuid: entry.uuid
-          })
+          }))
         }
-        this.entries[id].fromJson(entry).then(() => {
+        this.entries.get(id).fromJson(entry).then(() => {
           if (this.entries[id]) { this.entries[id].waitStop() }
           this.resize()
-          resolve(this.entries[id])
+          resolve(this.entries.get(id))
         })
       })
     },
@@ -609,31 +613,39 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      this.defaultStatus().then((s) => {
-        UserStore.getCurrentUser().then(currentUser => {
-          let uuid = KAIROS.uuidV4()
-          let newReservation = new Reservation({
-            sup: this,
-            uuid: uuid,
-            begin: day,
-            end: end,
-            status: s,
-            creator: currentUser !== null ? currentUser.getUrl() : null, create: true
-          })
-          this.entries[uuid] = newReservation
-          newReservation.save().then((id) => {
-            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`)).then(response => {
-              if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
-              response.json().then(reservation => {
-                newReservation.fromJson(reservation).then(() => {
-                  newReservation.waitStop()
-                  newReservation.popMeUp()
-                })
-              })
-            })
-          })
+      Promise.all([this.defaultStatus(), UserStore.getCurrentUser()])
+      .then(([defaultStatus, currentUser]) => {
+        const uuid = KAIROS.uuidV4()
+        const newReservation = new Reservation({
+          sup: this,
+          uuid: uuid,
+          begin: day,
+          end: end,
+          status: defaultStatus,
+          creator: currentUser !== null ? currentUser.getUrl() : null, create: true
         })
+        this.entries.set(uuid, newReservation)
+        newReservation.save()
+        .then((id) => {
+          fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`))
+          .then(response => {
+            if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
+            response.json()
+            .then(reservation => {
+              newReservation.fromJson(reservation)
+              .then(() => {
+                newReservation.waitStop()
+                newReservation.popMeUp()
+              })
+              .catch(reason => KAIROS.catch(reason))
+            })
+            .catch(reason => KAIROS.catch(reason))
+          })
+          .catch (reason => KAIROS.catch(reason))
+        })
+        .catch(reason => KAIROS.catch(reason))
       })
+      .catch(reason => KAIROS.catch(reason, 'Erreur de création de la réservation'))
     },
 
     _getOffsetAttr: function () {
@@ -692,9 +704,9 @@ define([
       this.domNode.dataset.refresh = 'outdated'
     },
     _resizeChild: function () {
-      for (let e in this.entries) {
-        this.entries[e].resize()
-      }
+      this.entries.forEach(e => {
+        e.resize()
+      })
     },
 
     _resize: function () {
@@ -727,48 +739,23 @@ define([
       window.requestAnimationFrame(function () { djDomClass.remove(e, 'error') })
     },
 
-    show: function () {
-      var frag = document.createDocumentFragment()
-      var entries = []
-
-      for (var k in this.entries) {
-        if (!this.entries[k].get('displayed')) {
-          if (this.entries[k].domNode) {
-            frag.appendChild(this.entries[k].domNode)
-          }
-          this.entries[k].set('displayed', true)
-        }
-        this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
-        entries.push(this.entries[k])
-      }
-
-      this.overlap(entries)
-      window.requestAnimationFrame(function () {
-        this.data.appendChild(frag)
-        this.resize()
-      }.bind(this))
-    },
-
     overlap: function () {
-      var entries
+      let entries
       if (arguments[0]) { entries = arguments[0] } else {
         entries = []
-        for (var k in this.entries) {
-          if (!this.entries[k]) { delete this.entries[k]; continue }
-          if (this.entries[k].deleted) {
-            this.entries[k].hide()
-            delete this.entries[k]
-            continue
+        this.entries.forEach(entry =>{
+          if (entry.deleted) {
+            this.removeEntry(entry)
+            return
           }
-          Object.assign(this.entries[k].overlap, { elements: [], level: 0, order: 0, do: false })
-          entries.push(this.entries[k])
-        }
+          Object.assign(entry.overlap, { elements: [], level: 0, order: 0, do: false })
+          entries.push(entry)
+        })
       }
 
       /* Overlap entries, good enough for now */
       var overlapRoot = []
       for (var i = 0; i < entries.length; i++) {
-        if (entries[i].deleted) { continue }
         var root = true
         entries[i].overlap.order = i
         for (var j = 0; j < overlapRoot.length; j++) {
@@ -811,15 +798,15 @@ define([
     },
 
     openReservation: function (id) {
-      for (let uuid in this.entries) {
-        if (this.entries[uuid].uid === id || this.entries[uuid].id === id) {
-          this.entries[uuid].popMeUp()
+      if (this.entries.has(id)) {
+        this.entries.get(id).popMeUp()
+        return true
+      }
+      for (const entry of this.entries) {
+        if (entry.uid === id || entry.id === id || entry.uuid === id) {
+          entry.popMeUp()
           return true
         }
-      }
-      if (this.entries[id]) {
-        this.entries[id].popMeUp()
-        return true
       }
       return false
     },
@@ -827,16 +814,17 @@ define([
     destroyReservation: function (reservation) {
       return new Promise((resolve, reject) => {
         if (!reservation) { resolve(); return }
-        delete this.entries[reservation.id]
+        const id = reservation.uuid || reservation.uid || reservation.id
+        this.entries.delete(id)
         reservation.destroy().then(() => resolve())
       })
     },
 
     _getActiveReservationsAttr: function () {
       var active = []
-      for (var k in this.entries) {
-        if (this.entries[k].get('active')) {
-          active.push(this.entries[k])
+      for (const entry of this.entries) {
+        if (entry.get('active')) {
+          active.push(entry)
         }
       }
 

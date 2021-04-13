@@ -31,7 +31,8 @@ KReservation.load = function (id) {
   return new Promise((resolve, reject) => {
     fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
       if (!response.ok) { r.ok = false; resolve(r); return }
-      response.json().then(result => {
+      response.json()
+      .then(result => {
           if (result.length !== 1) { r.ok = false; resolve(r);  return }
           r.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
           
