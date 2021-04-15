@@ -730,8 +730,8 @@ define([
 
       this.Buttons.addEnd.addEventListener('unset', event => {
         UserStore.getCurrentUser().then(user => {
-          this.nArrivalDone = false
-          this.nArrivalInprogress = false
+          this.Buttons.addArrivalDone.setValue(false)
+          this.Buttons.addArrivalInProgress.setValue(false)
 
           window.requestAnimationFrame(() => {
             this.nBack.style.setProperty('display', 'none')
@@ -769,6 +769,7 @@ define([
         if (event.target.value) {
           this.nArrivalDone.disabled = false
         } else {
+          this.Buttons.addArrivalDone.setValue(false)
           this.nArrivalDone.disabled = true
         }
       })
@@ -1858,7 +1859,6 @@ define([
                 arrival.other = f.arrivalKeys
                 arrival.done = this.Buttons.addArrivalDone.getValue()
                 arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
-
                 this.reservation.set('_arrival', arrival)
               } else {
                 if (arrival.id) {

@@ -226,7 +226,11 @@ MButton.prototype.setColorFlavor = function (flavor) {
 
 MButton.prototype.getValue = function () {
   if (this._disabled) {
-
+    if (typeof this.values[0] === 'function') {
+      return this.values[0]()
+    } else {
+      return this.values[0] ?? ''
+    }
   } else {
     return this._value
   }
