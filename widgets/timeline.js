@@ -1779,8 +1779,9 @@ define([
               this.update()
               let data = result.data
               if (this.Entries[data.target]) {
-                this.Entries[data.target].createEntry(data).then(() => {
-                  if (this.Entries[data.target].openReservation(data.id)) {
+                this.Entries[data.target].createEntry(data)
+                .then(() => {
+                  if (this.Entries[data.target].openReservation(data.uuid || data.id)) {
                     if (!dontmove) {
                       let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
                       window.scroll(0, pos.y - (window.innerHeight / 3))
