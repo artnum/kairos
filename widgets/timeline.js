@@ -933,8 +933,8 @@ define([
       }
 
       for (var i = 0; i < entries.length; i++) {
-        for (var k in entries[i].entries) {
-          if (djDate.compare(entries[i].entries[k].get(what), date, 'date') === 0) {
+        for (let [id, reservation] of entries[i].entries) {
+          if (djDate.compare(reservation.get(what), date, 'date') === 0) {
             out.push(entries[i].get('target')); break
           }
         }
