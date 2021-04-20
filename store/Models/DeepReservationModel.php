@@ -2,7 +2,7 @@
 /* Extract all information needed for frontpage, read-only */ 
 class DeepReservationModel extends ReservationModel {
   function __construct($dbs, $config) {
-    parent::__construct($dbs['sql'], $config);
+    parent::__construct($dbs, $config);
     $this->dbs = $dbs;
     $this->set_req('get', '
          SELECT warehouse.*, reservation.*, arrival.*, creator.user_name AS creator_name,
