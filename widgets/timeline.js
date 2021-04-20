@@ -38,7 +38,6 @@ define([
   'location/timeline/popup',
   'location/timeline/keys',
   'location/timeline/filters',
-  'location/update',
   'location/count',
   'location/countList',
   'location/reservation',
@@ -82,7 +81,7 @@ define([
 
   Entry,
 
-  tlPopup, tlKeys, update, Filters,
+  tlPopup, tlKeys, Filters,
   Count,
   CountList,
   Reservation,
@@ -94,7 +93,7 @@ define([
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
-    tlPopup, tlKeys, update, Filters, GEvent ], {
+    tlPopup, tlKeys, Filters, GEvent ], {
     center: null,
     offset: 260,
     blockSize: 42,
@@ -117,8 +116,7 @@ define([
       this.verticals = []
       this.days = []
       this.weekNumber = []
-      this.entries = []
-      this.Entries = {}
+      this.Entries = new Map()
       this.todayOffset = -1
       this.months = []
       this.timeout = null
@@ -420,8 +418,7 @@ define([
     },
 
     _setFilterAttr: function (value) {
-      for (var i = 0; i < this.entries.length; i++) {
-        var entry = this.entries[i]
+      this.Entries.forEach(entry => {
         if (entry.tags.length > 0) {
           if (entry.tags.find((element) => {
             if (element.toLowerCase() === value.toLowerCase()) {
@@ -436,7 +433,7 @@ define([
         } else {
           entry.set('active', false)
         }
-      }
+      })
     },
 
     _getZoomAttr: function () {
@@ -546,32 +543,23 @@ define([
       }
     },
 
-    resize: function () {
+    resizeEntries: function (iter = null) {
+      const currentIter = iter || this.Entries.entries()
+
+      window.requestIdleCallback(deadline => {
+          let response = currentIter.next()
+          while (!response.done) {
+            response.value[1].resize()
+            if (deadline.timeRemaining() <= 0) { this.resizeEntries(currentIter); return}
+            response = currentIter.next()
+          }
+        })
+    },
+
+    resize: function () { 
       this.drawTimeline()
       this.drawVerticalLine()
-
-      if (this.resizeTimeout) {
-        window.clearTimeout(this.resizeTimeout)
-        this.resizeTimeout = null
-      }
-
-      this.resizeTimeout = window.setTimeout(() => {
-        for (let i = 0; i < this.entries.length; i++) {
-          this.entries[i].resize()
-        }
-        this.resizeTimeout = null
-      }, 250)
-
-      let i = Math.floor(window.scrollY / 76) - 1
-      let height = Math.floor(window.innerHeight / 76) + 1 + i
-      if (i < 0) { i = 0 }
-      if (height > this.entries.length) { height = this.entries.length }
-      if (height <= 0) { height = 1 }
-      for (; i < height; i++) {
-        if (this.entries[i]) {
-          this.entries[i].resize()
-        }
-      }
+      this.resizeEntries()
     },
 
     createMonthName: function (month, year, days, frag) {
@@ -662,8 +650,9 @@ define([
         return new Promise((resolve, reject) => {
           let o = runId % 2
           let s = o + 1
-          for (let i = o; i < this.entries.length; i += s) {
-            this.entries[i]._resize()
+          const keys = Array.from(this.Entries.keys())
+          for (let i = o; i < keys.length; i += s) {
+            this.Entries.get(keys[i])._resize()
           }
           resolve()
         })
@@ -731,12 +720,12 @@ define([
       }.bind(this), 5000)
 
       document.addEventListener('click', (event) => {
-        for (let i in this.Entries) {
-          let entry = this.Entries[i]
+        for (let [key, entry] of this.Entries) {
           if (entry.EntryStateOpen !== undefined && entry.EntryStateOpen !== null) {
             entry.EntryStateOpen[0].destroy()
             entry.EntryStateOpen[1].parentNode.removeChild(entry.EntryStateOpen[1])
             entry.EntryStateOpen = null
+            this.Entries.set(key, entry)
           }
         }
       }, {capture: true})
@@ -782,53 +771,17 @@ define([
       }
     },
 
-    buildMenu: async function () {
-      var that = this
-      var item = new DtMenuItem({label: 'Tout', disabled: true})
-      djOn(item, 'click', djLang.hitch(that, that.filterNone))
+    buildMenu: function () {
+      const menuLoaded = []
+      let item = new DtMenuItem({label: 'Tout', disabled: true})
+      djOn(item, 'click', this.filterNone.bind(this))
 
-      that.searchMenu.addChild(item)
-      that.searchMenu.filterNone = item
-      that.searchMenu.addChild(new DtMenuSeparator())
-
-      Req.get('https://airserve01.local.airnace.ch/store/Category').then((response) => {
-        if (response && response.data && response.data.length > 0) {
-          var names = {}
-          for (var i = 0; i < response.data.length; i++) {
-            names[response.data[i]['uniqueidentifier']] = response.data[i]['cn;lang-fr']
-          }
-
-          for (var key in that.categories) {
-            if (names[key]) {
-              var item = new DtPopupMenuItem({label: names[key], popup: new DtDropDownMenu()})
-              that.searchMenu.addChild(item)
-
-              var all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
-              djOn(all, 'click', function (event) {
-                this.filterApply(this.filterFamily(event))
-              }.bind(this))
-              item.popup.addChild(all)
-              item.popup.addChild(new DtMenuSeparator())
-
-              for (var subkey in that.categories[key]) {
-                if (names[subkey]) {
-                  var subitem = new DtMenuItem({ label: names[subkey], value: {name: subkey, content: that.categories[key][subkey]} })
-                  djOn(subitem, 'click', function (event) {
-                    this.filterApply(this.filterFamily(event))
-                  }.bind(this))
-                  all.value.content = all.value.content.concat(that.categories[key][subkey])
-                  item.popup.addChild(subitem)
-                }
-              }
-            }
-          }
-        }
-        that.searchMenu.addChild(new DtMenuSeparator())
-        
-        /* */
+      menuLoaded.push(new Promise((resolve, reject) => {
         let userStore = new UserStore()
-        UserStore.getCurrentUser().then(currentUser => {
-          userStore.search({'function': 'admin', 'disabled': 0}).then(users => {
+        UserStore.getCurrentUser()
+        .then(currentUser => {
+          userStore.search({'function': 'admin', 'disabled': 0})
+          .then(users => {
             users.forEach((user) => {
               var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
               radio.domNode.dataset.user = JSON.stringify(user)
@@ -843,49 +796,102 @@ define([
                 }
               })
             })
+            resolve()
           })
+          .catch(_ => resolve())
         })
+        .catch(_ => resolve())
+      }))
 
-        var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
+      this.searchMenu.addChild(item)
+      this.searchMenu.filterNone = item
+      this.searchMenu.addChild(new DtMenuSeparator())
 
-        item = new DtMenuItem({label: 'Commence le '})
-        var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
-        item.containerNode.appendChild(x.domNode)
-        item.own(x)
-        djOn(item, 'click', djLang.hitch(that, (e) => {
-          this.filterReset()
-          var date = dtRegistry.byId('menuStartDay').get('value')
-          this.center = date
-          this.filterApply(this.filterDate(this.entries, date))
-        }))
-        that.searchMenu.addChild(item)
+      menuLoaded.push(new Promise((resolve, reject) => {
+        fetch(`${KAIROS.getBase()}/store/Category`)
+        .then(response => {
+          if (!response.ok) { KAIROS.warn('Problème à charger les catégories'); return }
+          response.json()
+          .then(result => {
+            if (result.length <= 0) { resolve() }
+            const names = new Map()
+            for (let i = 0; i < result.length; i++) {
+              names.set(result.data[i]['uniqueidentifier'], result.data[i]['cn;lang-fr'])
+            }
 
-        item = new DtMenuItem({label: 'Termine le '})
-        djOn(item, 'click', djLang.hitch(that, () => {
-          this.filterReset()
-          var date = dtRegistry.byId('menuEndDay').get('value')
-          this.center = date
-          that.filterApply(this.filterDate(this.entries, date, 'trueEnd'))
-        }))
-        x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
-        item.containerNode.appendChild(x.domNode)
-        item.own(x)
-        that.searchMenu.addChild(item)
+            for (let key in this.categories) {
+              if (names.has(key)) {
+                const item = new DtPopupMenuItem({label: names.get(key), popup: new DtDropDownMenu()})
+                this.searchMenu.addChild(item)
 
-        that.searchMenu.addChild(new DtMenuSeparator())
+                const all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
+                djOn(all, 'click', function (event) {
+                  this.filterApply(this.filterFamily(event))
+                }.bind(this))
+                item.popup.addChild(all)
+                item.popup.addChild(new DtMenuSeparator())
 
-        item = new DtMenuItem({label: 'À faire le '})
-        djOn(item, 'click', djLang.hitch(that, () => {
-          var date = dtRegistry.byId('menuTodoDay').get('value')
-          this.filters.todo(date).then((entries) => {
-            this.filterApply(entries)
+                for (let subkey in this.categories[key]) {
+                  if (names.has(subkey)) {
+                    const subitem = new DtMenuItem({ label: names.get(subkey), value: {name: subkey, content: this.categories[key][subkey]} })
+                    djOn(subitem, 'click', function (event) {
+                      this.filterApply(this.filterFamily(event))
+                    }.bind(this))
+                    all.value.content = all.value.content.concat(this.categories[key][subkey])
+                    item.popup.addChild(subitem)
+                  }
+                }
+              }
+            }
+            this.searchMenu.addChild(new DtMenuSeparator())
+            
+            /* */
+
+            var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
+
+            item = new DtMenuItem({label: 'Commence le '})
+            var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
+            item.containerNode.appendChild(x.domNode)
+            item.own(x)
+            djOn(item, 'click', e => {
+              this.filterReset()
+              this.center = dtRegistry.byId('menuStartDay').get('value')
+              this.filterApply(this.filterDate(this.center))
+            })
+            this.searchMenu.addChild(item)
+
+            item = new DtMenuItem({label: 'Termine le '})
+            djOn(item, 'click', _ => {
+              this.filterReset()
+              this.center = dtRegistry.byId('menuEndDay').get('value')
+              this.filterApply(this.filterDate(this.center, 'trueEnd'))
+            })
+            x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
+            item.containerNode.appendChild(x.domNode)
+            item.own(x)
+            this.searchMenu.addChild(item)
+
+            this.searchMenu.addChild(new DtMenuSeparator())
+
+            item = new DtMenuItem({label: 'À faire le '})
+            djOn(item, 'click', _ => {
+              var date = dtRegistry.byId('menuTodoDay').get('value')
+              this.filters.todo(date).then((entries) => {
+                this.filterApply(entries)
+              })
+            })
+            x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
+            item.containerNode.appendChild(x.domNode)
+            item.own(x)
+            this.searchMenu.addChild(item)
+            resolve()
           })
-        }))
-        x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
-        item.containerNode.appendChild(x.domNode)
-        item.own(x)
-        that.searchMenu.addChild(item)
-      }).then(() => { that.menu.startup() })
+          .catch(_ => resolve())
+        })
+        .catch(_ => resolve())
+      }))
+
+      Promise.all(menuLoaded).then(_ => { this.menu.startup() })
     },
 
     filters: {
@@ -919,77 +925,15 @@ define([
       return node.value.content
     },
 
-    filterDate: function (entries) {
+    filterDate: function (date = new Date(), what = 'trueBegin') {
       this.filterReset()
-      var out = []
-      var date = new Date()
-      var what = 'trueBegin'
+      const out = []
+     
       this.searchMenu.filterNone.set('disabled', false)
-      if (arguments[1]) {
-        date = arguments[1]
-      }
-      if (arguments[2]) {
-        what = arguments[2]
-      }
-
-      for (var i = 0; i < entries.length; i++) {
-        for (let [id, reservation] of entries[i].entries) {
+      for (const [_, entry] of this.Entries) {
+        for (const [_, reservation] of entry.entries) {
           if (djDate.compare(reservation.get(what), date, 'date') === 0) {
-            out.push(entries[i].get('target')); break
-          }
-        }
-      }
-      return out
-    },
-
-    filterComplementDate: function (date, complement) {
-      this.Filters.init()
-      this.Filters.beginDay(date).then(function () {
-        var result = this.Filters.entries.splice(0)
-        this.Filters.init()
-        this.Filters.find((val) => {
-          for (var i = 0; i < val.complements.length; i++) {
-            if (val.complements[i].type.id === complement) {
-              return true
-            }
-          }
-          return false
-        }).then(function () {
-          var set = this.Filters.entries.splice(0)
-          this.Filters.init()
-          this.Filters.dateRange(date, set, 'complement').then(function () {
-            this.searchMenu.filterNone.set('disabled', false)
-            result = result.concat(this.Filters.entries)
-            for (var i = 0; i < this.entries.length; i++) {
-              if (result.indexOf(this.entries[i].get('target')) === -1) {
-                this.entries[i].set('active', false)
-              } else {
-                this.entries[i].set('active', true)
-              }
-            }
-            this.unwait()
-          }.bind(this))
-        }.bind(this))
-      }.bind(this))
-      this.filterReset()
-    },
-
-    filterComplement: function (entries, value) {
-      this.filterReset()
-      var out = []
-      for (var i = 0; i < entries.length; i++) {
-        var found = false
-        var active = entries[i].get('activeReservations')
-        if (active.length > 0) {
-          for (var j = 0; j < active.length; j++) {
-            for (var k = 0; k < active[j].complements.length; k++) {
-              if (active[j].complements[k].type.id === value) {
-                out.push(entries[i].get('id'))
-                found = true
-                break
-              }
-            }
-            if (found) { break }
+            out.push(entry.get('target')); break
           }
         }
       }
@@ -997,13 +941,13 @@ define([
     },
 
     filterApply: function (entries) {
-      let p = []
-      for (let k in this.entries) {
+      const p = []
+      for (const [_, entry] of this.Entries) {
         p.push(new Promise((resolve, reject) => {
-          if (entries.indexOf(this.entries[k].get('target')) === -1) {
-            window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '0'; resolve() })
+          if (entries.indexOf(entry.get('target')) === -1) {
+            window.requestAnimationFrame(() => { entry.domNode.dataset.active = '0'; resolve() })
           } else {
-            window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1'; resolve() })
+            window.requestAnimationFrame(() => { entry.domNode.dataset.active = '1'; resolve() })
           }
         }))
       }
@@ -1014,9 +958,9 @@ define([
 
     filterReset: function (prefilter = false) {
       let p = []
-      for (let k in this.entries) {
+      for (const [_, entry] of this.Entries) {
         p.push(new Promise((resolve, reject) => {
-          window.requestAnimationFrame(() => { this.entries[k].domNode.dataset.active = '1'; resolve() })
+          window.requestAnimationFrame(() => { entry.domNode.dataset.active = '1'; resolve() })
         }))
       }
       Promise.all(p).then(() => {
@@ -1210,8 +1154,7 @@ define([
     },
 
     placeEntry: function (entry) {
-      this.Entries[entry.target] = entry
-      this.entries.push(entry)
+      this.Entries.set(entry.target, entry)
     },
 
     _getCompactAttr: function () {
@@ -1435,7 +1378,7 @@ define([
               let entry = results.data[i]
 
               if (!entry|| !entry.cn || !entry.uid) { continue }
-              if (this.Entries[entry.uid]) { 
+              if (this.Entries.get(entry.uid) !== undefined) { 
                 entriesLoaded.push(entry.uid)
                 continue 
               }
@@ -1476,10 +1419,10 @@ define([
               }
             }
             this.categories = category
-            for (let k in this.Entries) {
-              if (entriesLoaded.indexOf(k) === -1) {
-                this.Entries[k].destroy()
-                delete this.Entries[k]
+            for (const [key, entry] of this.Entries) {
+              if (entriesLoaded.indexOf(key) === -1) {
+                entry.destroy()
+                this.Entries.delete(key)
               }
             }
             resolve()
@@ -1495,7 +1438,6 @@ define([
         this.sortAndDisplayEntries()
         this.buildMenu()
         this.update()
-        window.setInterval(function () { console.log('Update child'); this.updateChild() }.bind(this), 300000)
         window.setInterval(function () { this.refresh() }.bind(this), 10000)
       })
     },
@@ -1507,7 +1449,7 @@ define([
 
       sortedEntries.forEach(k => {
         let set = false
-        let loc = this.Entries[k].get('currentLocation')
+        const loc = this.Entries.get(k).get('currentLocation')
         if (loc) {
           if (loc.value) {
             if (loc.value !== '') {
@@ -1520,8 +1462,8 @@ define([
       })
  
       warehouse.sort((a, b) => {
-        let locA = this.Entries[a].get('currentLocation')
-        let locB = this.Entries[b].get('currentLocation')
+        const locA = this.Entries.get(a).get('currentLocation')
+        const locB = this.Entries.get(b).get('currentLocation')
 
         return locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
       })
@@ -1530,10 +1472,10 @@ define([
     },
 
     _sort_default: function () {
-      let sortedEntries = Object.keys(this.Entries)
+      const sortedEntries = Array.from(this.Entries.keys())
       sortedEntries.sort((ka, kb) => {
-        let a = this.Entries[ka]
-        let b = this.Entries[kb]
+        const a = this.Entries.get(ka)
+        const b = this.Entries.get(kb)
 
         let aT = a.get('target')
         let bT = b.get('target')
@@ -1594,7 +1536,7 @@ define([
     sortAndDisplayEntries: function () {
       let sortedEntries = this._sort_default()
       sortedEntries.forEach((k) => {
-        let e = this.Entries[k]
+        const e = this.Entries.get(k)
         let inType = false
         let insertBefore = null
         if (e.domNode.dataset.pushToEnd) {
@@ -1614,21 +1556,21 @@ define([
       })
 
       /* as we display we modify the order, so check the final order by using the DOM */
-      let entriesOrder = []
+      let i = 0
       for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
-        let widget = dtRegistry.byNode(n)
-        if (widget) {
-          entriesOrder.push(widget)
+        const entry = this.Entries.get(n.dataset.target)
+        if (entry !== undefined){
+          entry.setHPos(i)
+          i++
         }
       }
-      this.entries = [...entriesOrder]
     },
 
     sortEntries: function (orderedKeys, linear = false) {
       let container = this.domEntries
       if (linear) {
         for (let k of orderedKeys) {
-          let dom  = this.Entries[k].domNode
+          const dom  = this.Entries.get(k).domNode
           if (dom.parentNode) {
             dom.parentNode.removeChild(dom)
           }
@@ -1637,7 +1579,7 @@ define([
       } else {
         let last = null
         for (let k of orderedKeys) {
-          let dom = this.Entries[k].domNode
+          const dom = this.Entries.get(k).domNode
           if (dom.parentNode !== null) {
             container.removeChild(dom)
           }
@@ -1648,13 +1590,6 @@ define([
           }
           last = dom
         }
-      }
-    },
-
-    updateChild: function () {
-      for (var k in this.Entries) {
-        let update = this.Entries[k].update
-        setTimeout(update, 1)
       }
     },
 
@@ -1709,9 +1644,9 @@ define([
       var middle = window.innerHeight / 3
       var widget = null
 
-      for (var k in this.entries) {
-        if (this.entries[k].target === data['target']) {
-          widget = this.entries[k]
+      for (const [_, entry] of this.Entries) {
+        if (entry.target === data['target']) {
+          widget = entry
           break
         }
       }
@@ -1748,15 +1683,15 @@ define([
     currentTopEntry: function () {
       var current
       var page = getPageRect()
-      for (var k in this.entries) {
-        var rect = this.entries[k].view.rectangle
+      for (const [_, entry] of this.Entries) {
+        var rect = entry.view.rectangle
         if (!current && rect[1] >= page[1]) {
-          current = this.entries[k]
+          current = entry
           continue
         }
 
         if (rect[1] >= page[1] && rect[1] < current.view.rectangle[1]) {
-          current = this.entries[k]
+          current = entry
         }
       }
       return current
@@ -1777,13 +1712,14 @@ define([
               }
               if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
               this.update()
-              let data = result.data
-              if (this.Entries[data.target]) {
-                this.Entries[data.target].createEntry(data)
+              const data = result.data
+              if (this.Entries.has(data.target)) {
+                const entry = this.Entries.get(data.target)
+                entry.createEntry(data)
                 .then(() => {
-                  if (this.Entries[data.target].openReservation(data.uuid || data.id)) {
+                  if (entry.openReservation(data.uuid || data.id)) {
                     if (!dontmove) {
-                      let pos = djDomGeo.position(this.Entries[data.target].domNode, true)
+                      let pos = djDomGeo.position(entry.domNode, true)
                       window.scroll(0, pos.y - (window.innerHeight / 3))
                     }
                     resolve(true)
@@ -1793,11 +1729,12 @@ define([
                 })
               } else {
                 let entry = null
-                for (let k in this.Entries) {
-                  this.Entries[k].KEntry.is(reservation.target).then(is => {
+                for (const [_, currentEntry] of this.Entries) {
+                  currentEntry.KEntry.is(reservation.target)
+                  .then(is => {
                     if (!entry && is) {
-                      entry = this.Entries[k]
-                      const r = new Reservation({uid: data.id, uuid: data.uuid, sup: entry, _json: data})
+                      entry = currentEntry
+                      const r = new Reservation({uid: data.id, uuid: data.uuid, sup: currentEntry, _json: data})
                       r.popMeUp()
                       resolve(true)
                       return
@@ -1817,15 +1754,12 @@ define([
     },
 
     getEntry: function (entry) {
-      var e = null
-      for (var i = 0; i < this.entries.length; i++) {
-        if (this.entries[i].get('target') === entry) {
-          e = this.entries[i]
-          break
+      for (const [_, entry] of this.Entries) {
+        if (entry.get('target') === entry) {
+          return entry
         }
       }
-
-      return e
+      return null
     },
 
     setOpen: function (ident) {
@@ -1947,8 +1881,7 @@ define([
 
     searchMachineLive: function (event) {
       let val = event.target.value
-      for (let i in this.Entries) {
-        let entry = this.Entries[i]
+      for (const [_, entry] of this.Entries) {
         if (val === '') {
           entry.domNode.dataset.active = '1'; 
           continue

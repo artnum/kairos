@@ -5,7 +5,7 @@ function KEntry (id) {
     this.channel = new MessageChannel()
     this.channel.port1.onmessage = this.handleMessage.bind(this)
     this.evtTarget = new EventTarget()
-    this.entries = {}
+    this.entries = new Map()
     this.wwInstance
     this._loaded
 }
@@ -32,20 +32,19 @@ KEntry.prototype.delete = function (entry) {
         id = entry.id
     }
     KAIROS.unregister(`reservation/${id}`)
-    if (this.entries[id] !== undefined) {
-        delete this.entries[id]
-        this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
-    }
+    if (this.entries.get(id) === undefined) { return }
+    this.entries.delete(id)
+    this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
 }
 
 KEntry.prototype.add = function (entry) {
-    this.entries[entry.id] = entry
+    this.entries.set(entry.id, entry)
     KAIROS.register(`reservation/${entry.id}`, entry)
     this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry}}))
 }
 
 KEntry.prototype.update = function (entry) {
-    this.entries[entry.id] = entry
+    this.entries.set(entry.id, entry)
     KAIROS.register(`reservation/${entry.id}`, entry)
     this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry}}))
 
@@ -180,11 +179,9 @@ KEntry.prototype.handleMessage = function (msg) {
                     id = entry.id
                 }
                 if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
-                    if (this.entries[id]) {
-                        /* no change recorder, so don't bother any further */
-                        if (this.entries[id].modification === entry.modification) { continue; }
+                    if (this.entries.get(id) !== undefined) {
                         this.update(entry)
-                    } else {
+                    } else { 
                         this.add(entry)
                     }
                 } else {

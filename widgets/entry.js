@@ -66,6 +66,7 @@ define([
       this.tags = []
       this.entries = new Map()
       this.currentLocation = ''
+      this.HPos = -1
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
@@ -118,6 +119,14 @@ define([
     info: function (txt, code) {
       KAIROS.info(txt, code)
     },
+
+    setHPos: function (hpos) {
+      this.HPos = hpos
+    },
+    getHPos: function (hpos) {
+      return this.HPos
+    },
+
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
         for (const [kEntry, currentEntry] of this.entries) {
