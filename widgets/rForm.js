@@ -1229,10 +1229,6 @@ define([
         djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
 
         this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
-        djOn(this.domNode, 'mousemove', function (event) {
-          event.preventDefault()
-          event.stopPropagation()
-        }, { capture: true })
 
         this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), { capture: true })
