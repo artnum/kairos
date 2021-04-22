@@ -18,7 +18,6 @@ define([
   'dijit/layout/ContentPane',
 
   'location/rForm',
-  'location/_Mouse',
   'location/lock',
   'location/Stores/Locality',
 
@@ -41,7 +40,6 @@ define([
   DtContentPane,
 
   RForm,
-  Mouse,
   Lock,
   Locality,
 
@@ -49,7 +47,7 @@ define([
   Query
 ) {
   return djDeclare('location.reservation', [
-    dtWidgetBase, djEvented, Mouse], {
+    dtWidgetBase, djEvented], {
     events: [],
     baseClass: 'reservation',
     attrs: [],
@@ -403,6 +401,7 @@ define([
     info: function (txt, code) {
       window.App.info(txt, code)
     },
+    
     postCreate: function () {
       this.domNode.dataset.uuid = this.uuid
       if (this._json) {
@@ -412,21 +411,8 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
-      // this.resize()
     },
 
-    tooltipShow: function (event) {
-      /**/
-      let node = event.target
-      if (node.dataset.name) {
-        if (this.htmlIdentity.dataset[node.dataset.name]) {
-          let tooltip = document.createElement('DIV')
-          tooltip.classList.add('smallTooltip')
-          tooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
-          window.App.toolTip(tooltip, this.domNode, event.target)
-        }
-      }
-    },
     evTouchStart: function (event) {
       event.stopPropagation()
       event.preventDefault()
@@ -853,16 +839,6 @@ define([
       return this._currentTextDesc
     },
 
-    eDetails: function (event) {
-      event.preventDefault()
-      event.stopPropagation()
-
-      var pos = this.getAbsPos(event)
-      var x = djDomConstruct.toDom('<div>' + this.detailsHtml + '</div>')
-      x.style = 'background-color: white;position: absolute; top: ' + pos.y + 'px; left: ' + pos.x + 'px; z-index: 100'
-
-      document.getElementsByTagName('BODY')[0].appendChild(x)
-    },
     eClick: function (event) {
       event.stopPropagation()
       event.preventDefault()

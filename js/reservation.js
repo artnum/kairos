@@ -236,19 +236,17 @@ KReservation.prototype.loadContact = function () {
 KReservation.prototype.oneLine = function () {
   return new Promise((resolve, reject) => {
     if (!this.ok) { resolve(''); return }
-    this.loaded().then(() => {
-      let div = document.createElement('DIV')
-      div.dataset.id = this.data.reservation.id
-      div.innerHTML = `
-        <span class="ident">${this.data.reservation.id}</span>
-        ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
-        <span class="mnumber">${this.data.machine.uid}</span>
-        <span class="machine">${this.data.machine.cn}</span>
-        <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
-        <span class="address">${this.data.reservation.address ?? ''}</span>
-        <span class="locality">${this.data.locality.label ?? ''}</span>
-      `
-      resolve(div)
-    })
+    let div = document.createElement('DIV')
+    div.dataset.id = this.data.reservation.id
+    div.innerHTML = `
+      <span class="ident">${this.data.reservation.id}</span>
+      ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
+      <span class="mnumber">${this.data.machine.uid}</span>
+      <span class="machine">${this.data.machine.cn}</span>
+      <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
+      <span class="address">${this.data.reservation.address ?? ''}</span>
+      <span class="locality">${this.data.locality.label ?? ''}</span>
+    `
+    resolve(div)
   })
 }
