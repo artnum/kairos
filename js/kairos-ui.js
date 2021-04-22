@@ -179,7 +179,6 @@ KAIROS.searchResults = function () {
 
 KAIROS.zMax = function (node = null) {
     let max = 0
-    let start = performance.now()
     document.body.getElementsByTagName('*').forEach(element => {
         let zx = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'))
         if (zx > max) { max = zx }
