@@ -1,6 +1,8 @@
 KAIROS.timeline = null
-
 KAIROS.dataVersion = 2
+KAIROS.Cache = {
+  _timeout: 7200000 // 2h cache timeout
+} // global cache
 
 KAIROS.getBase = function () {
   return `${window.location.origin}/${KAIROS.base}`
