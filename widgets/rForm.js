@@ -1760,6 +1760,7 @@ define([
 
     doCopy: function (event) {
       this.reservation.copy().then((reservation) => {
+        KAIROS.info(`Succès de la duplication de ${this.reservation.id} vers ${reservation.id}`)
         reservation.popMeUp()
         this.hide()
       })
