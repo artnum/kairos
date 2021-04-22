@@ -281,15 +281,6 @@ div.contact > div:first-child {
 	z-index: -1;
 }
 
-.bitsfield {
-	text-align: center;	
-}
-
-.bit {
-	font-size: 1.3em !important;
-	margin: 2px;	
-}
-
 fieldset {
 	margin-top: 1em;	
 	margin-bottom: 1em;	
