@@ -684,7 +684,10 @@ define([
       }, true)
 
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
-      djOn(this.domNode, 'mouseup, mousedown, touchstart, touchend', djLang.hitch(this, this.mouseUpDown))
+      this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
+      this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
+      this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this))
+      this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
