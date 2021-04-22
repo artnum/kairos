@@ -110,19 +110,11 @@ define([
         this.id = 'location_entry_' + args['target']
       }
     },
-    warn: function (txt, code) {
-      KAIROS.warn(txt, code)
-    },
-    error: function (txt, code) {
-      KAIROS.error(txt, code)
-    },
-    info: function (txt, code) {
-      KAIROS.info(txt, code)
-    },
 
     setHPos: function (hpos) {
       this.HPos = hpos
     },
+  
     getHPos: function (hpos) {
       return this.HPos
     },

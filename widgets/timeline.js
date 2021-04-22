@@ -734,23 +734,6 @@ define([
       }, {capture: true})
     },
 
-    revision: function () {
-      fetch(Path.url('/revision.php')).then(function (response) {
-        response.json().then(function (data) {
-          this.currentRevision = data.revision
-          var currentRevision = window.localStorage.getItem(Path.bcname('revision'))
-          if (!currentRevision) {
-            this.reinit()
-          } else {
-            if (currentRevision !== this.currentRevision) {
-              this.reinit()
-            }
-          }
-          setTimeout(this.revision.bind(this), 5400000)
-        }.bind(this))
-      }.bind(this))
-    },
-
     countList: function () {
       if (this.CountList) {
         delete this.CountList
@@ -781,27 +764,26 @@ define([
 
       menuLoaded.push(new Promise((resolve, reject) => {
         let userStore = new UserStore()
-        UserStore.getCurrentUser()
-        .then(currentUser => {
+        Promise.all( [
+          UserStore.getCurrentUser(), 
           userStore.search({'function': 'admin', 'disabled': 0})
-          .then(users => {
+        ] )
+        .then(([currentUser, users]) => {
             users.forEach((user) => {
-              var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
-              radio.domNode.dataset.user = JSON.stringify(user)
-              this.userSelectMenu.addChild(radio)
-              radio.on('click', event => {
-                let node = event.target
-                while (node && !node.dataset.user) {
-                  node = node.parentNode
-                }
-                if (node) {
-                  window.localStorage.setItem(`/${KAIROS.getBaseName()}/user`, node.dataset.user)
-                }
-              })
+            var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
+            radio.domNode.dataset.user = JSON.stringify(user)
+            this.userSelectMenu.addChild(radio)
+            radio.on('click', event => {
+              let node = event.target
+              while (node && !node.dataset.user) {
+                node = node.parentNode
+              }
+              if (node) {
+                window.localStorage.setItem(`/${KAIROS.getBaseName()}/user`, node.dataset.user)
+              }
             })
-            resolve()
           })
-          .catch(_ => resolve())
+          resolve()
         })
         .catch(_ => resolve())
       }))
@@ -1855,18 +1837,6 @@ define([
       } else {
         node.setAttribute('data-artnum-maximize', 'yes')
       }
-    },
-
-    reinit: function () {
-      if (!this.FirstLoad) {
-        if (!confirm('Une mise à jour est dispobnible, voulez-vous recharger')) {
-          return
-        }
-      }
-
-      this.wait('Mise à jour du programme')
-      window.localStorage.setItem(Path.bcname('revision'), this.currentRevision)
-      this.Cleaner.postMessage({op: 'rebuild'})
     },
 
     autoprint: function (path) {
