@@ -391,17 +391,7 @@ define([
         headers: new Headers({'X-Restore': new Date().toISOString(), 'X-Request-Id': `${new Date().toISOString()}-${performance.now()}`})
       })
     },
-
-    error: function (txt, code) {
-      window.App.error(txt, code)
-    },
-    warn: function (txt, code) {
-      window.App.warn(txt, code)
-    },
-    info: function (txt, code) {
-      window.App.info(txt, code)
-    },
-    
+   
     postCreate: function () {
       this.domNode.dataset.uuid = this.uuid
       if (this._json) {

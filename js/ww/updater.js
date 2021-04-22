@@ -8,9 +8,9 @@ importScripts('/js/Path.js')
 importScripts('../stores/user.js')
 
 let LastMod = 0
-let Entries = {}
-let Channels = {}
-let Symlinks = {}
+const Entries = new Map()
+const Channels = new Map()
+const Symlinks = new Map()
 let Range = null
 let PostPoned = {}
 
@@ -18,23 +18,23 @@ self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
-        let targetId = btoa(msg.data.target)
-        Channels[targetId] = msg.ports[0]
-        Channels[targetId].onmessage = (m) => {
+        const targetId = msg.data.target
+        Channels.set(targetId,  msg.ports[0])
+        Channels.get(targetId).onmessage = (m) => {
           targetMessages(m, targetId)
         }
         if (PostPoned[targetId]) {
-          Channels[targetId].postMessage({op: 'entries', value: PostPoned[targetId]})
+          Channels.get(targetId).postMessage({op: 'entries', value: PostPoned[targetId]})
           delete PostPoned[targetId]
         }
       }
       break
     case 'symlinkTarget':
-      let targetId = btoa(msg.data.source)
+      let targetId = msg.data.source
       if (msg.data.source === undefined || msg.data.destination === undefined) { return }
-      Symlinks[targetId] = btoa(msg.data.destination)
+      Symlinks.set(targetId, msg.data.destination)
       if (PostPoned[targetId]) {
-        Channels[Symlinks[targetId]].postMessage({op: 'entries', value: PostPoned[targetId]})
+        Channels.get(Symlinks.get(targetId)).postMessage({op: 'entries', value: PostPoned[targetId]})
         delete PostPoned[targetId]
       }
       break
@@ -53,17 +53,19 @@ self.onmessage = function (msg) {
         return
       }
       let entry = JSON.parse(msg.data.reservation)
-      if (!Entries[entry.id]) { return }
-      let oldChannel = Channels[btoa(entry.previous)] 
+      if (!Entries.has(entry.id)) { return }
+      const oldEntry = Entries.get(entry.id)
+      let oldChannel = Channels.get(entry.previous)
       if (oldChannel === undefined) {
-        oldChannel = Symlinks[btoa(entry.previous)]
+        oldChannel = Symlinks.get(entry.previous)
       }
-      let newChannel = Channels[btoa(entry.target)]
+      let newChannel = Channels.get(entry.target)
       if (newChannel === undefined) {
-        newChannel = Symlinks[btoa(entry.target)]
+        newChannel = Symlinks.get(entry.target)
       }
       oldChannel.postMessage({op: 'remove', reservation: entry})
-      Entries[entry.id][1] = newChannel
+      oldEntry[1] = newChannel
+      Entries.set(entry.id, oldEntry)
       newChannel.postMessage({op: 'add', reservation: entry})
       break
   }
@@ -84,13 +86,13 @@ function targetMessages (msg, targetId = null) {
     case 'uncache':
       if (msg.data.value.length > 0) {
         msg.data.value.entry.forEach((id) => {
-          delete Entries[id]
+          Entries.delete(id)
         })
       }
       break
     case 'reload':
       if (msg.data.reservation) {
-        doFetch(getUrl(`store/DeepReservation/${msg.data.reservation}`)).then((response) => {
+        fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${msg.data.reservation}`)).then((response) => {
           if (response.ok) {
             response.json().then((json) => {
               if (json.length > 0 && json.success) {
@@ -102,19 +104,6 @@ function targetMessages (msg, targetId = null) {
       }
       break
   }
-}
-
-var fetchId = 0
-function doFetch(url) {
-  fetchId++
-  return fetch(url, {credential: 'include', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${fetchId}`})})
-}
-
-function getUrl (suffix) {
-  let path = self.location.pathname.split('/')
-  let first = ''
-  while ((first = path.shift()) === '') ;
-  return new URL(`${self.location.origin}/${first}/${suffix}`)
 }
 
 function getIntervention (entry) {
@@ -188,34 +177,34 @@ function cacheAndSend (data, vTimeLine) {
           if (parseInt(entry.modification) > LastMod) {
             LastMod = parseInt(entry.modification)
           }
-          let channel = btoa(entry.target)
-          if (Symlinks[channel]) {
-            channel = Symlinks[channel]
+          let channel = entry.target
+          if (Symlinks.has(channel)) {
+            channel = Symlinks.get(channel)
           }
           if (!entries[channel]) {
             entries[channel] = []
           }
           let hash = objectHash.sha1(entry)
           entry._hash = hash
-          if (Entries[entry.id]) {
-            if (hash !== Entries[entry.id][0]) {
-              if (Entries[entry.id][1] !== channel) {
-                if (!entries[Entries[entry.id][1]]) {
-                  entries[Entries[entry.id][1]] = []
+          if (Entries.get(entry.id)) {
+            if (hash !== Entries.get(entry.id)[0]) {
+              if (Entries.get(entry.id)[1] !== channel) {
+                if (!entries[Entries.get(entry.id)[1]]) {
+                  entries[Entries.get(entry.id)[1]] = []
                 }
-                let remChannel = Entries[entry.id][1] 
-                if (Symlinks[remChannel]) {
-                  remChannel = Symlinks[remChannel]
+                let remChannel = Entries.get(entry.id)[1] 
+                if (Symlinks.has(remChannel)) {
+                  remChannel = Symlinks.get(remChannel)
                 }
-                Channels[remChannel]?.postMessage({op: 'remove', reservation: entry})
-                entries[Entries[entry.id][1]].push(entry)
-                delete Entries[entry.id]
+                Channels.get(remChannel)?.postMessage({op: 'remove', reservation: entry})
+                entries[Entries.get(entry.id)[1]].push(entry)
+                Entries.delete(entry.id)
               }
-              Entries[entry.id] = [hash, channel, new Date().getTime()]
+              Entries.set(entry.id, [hash, channel, new Date().getTime()])
               entries[channel].push(entry)
             }
           } else {
-            Entries[entry.id] = [hash, channel, new Date().getTime()]
+            Entries.set(entry.id, [hash, channel, new Date().getTime()])
             entries[channel].push(entry)
           }
           resolve()
@@ -228,8 +217,8 @@ function cacheAndSend (data, vTimeLine) {
   }).then((entries) => {
     let processed = []
     for (let k in entries) {
-      if (Channels[k] && entries[k].length > 0) {
-        Channels[k].postMessage({op: 'entries', value: entries[k]})
+      if (Channels.has(k) && entries[k].length > 0) {
+        Channels.get(k).postMessage({op: 'entries', value: entries[k]})
         processed.push(k)
       } else if (entries[k].length > 0) {
         if (!PostPoned[k]) {
@@ -238,24 +227,25 @@ function cacheAndSend (data, vTimeLine) {
         PostPoned[k] = [...PostPoned[k], ...entries[k]]
       }
     }
-    for (let k in Channels) {
-      if (processed.indexOf(k) === -1) {
-        Channels[k].postMessage({op: 'entries', value: []})
+    for (const [key, channel] of Channels) {
+      if (processed.indexOf(key) === -1) {
+        channel.postMessage({op: 'entries', value: []})
       }
     }
-    let url = getUrl('store/User')
+
+    const url = new URL(`${KAIROS.getBase()}/store/User`)
     url.searchParams.set('search.function', 'machiniste')
     url.searchParams.set('search.disabled', '0')
     url.searchParams.set('search.temporary', '0')
-    doFetch(url).then((response) => {
-      /* in any case we process each days */
-      if (response.ok) {
-        response.json().then((json) => {
-          processDays(vTimeLine, {machinist: json})
-        })
-      } else {
-        processDays(vTimeLine)
+    fetch(url)
+    .then((response) => {
+      if (response.ok) { return {length: 0, data: null}}
+      return response.json()
+    }).then(result => {
+      if (result.length > 0) {
+          return processDays(vTimeLine, {machinist: result})
       }
+      processDays(vTimeLine)
     })
   })
 }
@@ -278,104 +268,114 @@ function newVTimeLine () {
   return vTimeLine
 }
 
-var Status = {}
+const Status = new Map()
 function checkMachineState () {
-  let url = getUrl('store/Evenement/.machinestate')
-  doFetch(url).then(response => {
-    if (response.ok) {
-      response.json().then(result => {
-        let prmses = []
-        for (i = 0; i < result.length; i++) {
-          prmses.push(new Promise((resolve, reject) => {
-            let entry = result.data[i]
-            let channel = btoa(entry.resolvedTarget)
-
-            if (Symlinks[channel]) {
-              channel = Symlinks[channel]
-            }
-
-            if (entry.type === '') { resolve([]); return }
-            if (Status[entry.type] !== undefined) {
-              if (Status[entry.type] !== null) {
-                entry.type = Status[entry.type]
-              }
-              resolve([channel, entry])
-            } else {
-              doFetch(getUrl(`store/${entry.type}`)).then(response => {
-                if (!response.ok) { Status[entry.type] = null; resolve(); return }
-                response.json().then(status => {
-                  if (status.length === 1) {
-                    let severity = parseInt(status.data.severity)
-                    if (severity < 1000) {
-                      status.data.color = 'black'
-                    } else if (severity < 2000) {
-                      status.data.color = 'blue'
-                    } else if (severity < 3000) {
-                      status.data.color = 'darkorange'
-                    } else {
-                      status.data.color = 'red'
-                    }
-                    Status[entry.type] = status.data
-                    entry.type = Status[entry.type]
-                    resolve([channel, entry])
-                  }
-                }, () => resolve([]))
-              })
-            }
-          
-          }))
-        }
-        Promise.all(prmses).then((toSend) => {
-          let merged = {}
-          for (let i = 0; i < toSend.length; i++) {
-            if (toSend[i].length !== 2) { continue }
-            if (merged[toSend[i][0]] === undefined) {
-              merged[toSend[i][0]] = toSend[i][1]
-            } else {
-              if (merged[toSend[i][0]].severity === undefined) {
-                merged[toSend[i][0]] = toSend[i][1]
-              } else {
-                if (parseInt(merged[toSend[i][0]].severity) < parseInt(toSend[i][1].severity)) {
-                  merged[toSend[i][0]] = toSend[i][1]
-                }
-              }
-            }
-          }
-          for (let k in merged) {
-            if (Channels[k] !== undefined) {
-              Channels[k].postMessage({op: 'state', value: merged[k]})
-            }
-          }
-          setTimeout(checkMachineState, 5000)
-        })
-      })
-    }
+  const url = new URL(`${KAIROS.getBase()}/store/Evenement/.machinestate`)
+  fetch(url)
+  .then(response => {
+    if (!response.ok) { return {length: 0, data: null} }
+    return response.json()
   })
+  .then(result => {
+    let prmses = []
+    for (i = 0; i < result.length; i++) {
+      prmses.push(new Promise((resolve, reject) => {
+        let entry = result.data[i]
+        let channel = entry.resolvedTarget
+
+        if (Symlinks.has(channel)) {
+          channel = Symlinks.get(channel)
+        }
+
+        if (entry.type === '') { resolve([]); return }
+        if (Status.has(entry.type)) {
+          entry.type = Status.get(entry.type)
+          resolve([channel, entry])
+        } else {
+          fetch(new URL(`${KAIROS.getBase()}/store/${entry.type}`))
+          .then(response => {
+            if (!response.ok) { return {length: 0, data: null} }
+            return response.json()
+          })
+          .then(status => {
+            if (status.length === 1) {
+              let severity = parseInt(status.data.severity)
+              if (severity < 1000) {
+                status.data.color = 'black'
+              } else if (severity < 2000) {
+                status.data.color = 'blue'
+              } else if (severity < 3000) {
+                status.data.color = 'darkorange'
+              } else {
+                status.data.color = 'red'
+              }
+              Status.set(entry.type, status.data)
+              entry.type = status.data
+              resolve([channel, entry])
+            }
+          })
+          .catch(reason => {
+            console.log(reason)
+          })
+        }
+      }))
+    }
+    Promise.all(prmses)
+    .then((toSend) => {
+      let merged = {}
+      for (let i = 0; i < toSend.length; i++) {
+        if (toSend[i].length !== 2) { continue }
+        if (merged[toSend[i][0]] === undefined) {
+          merged[toSend[i][0]] = toSend[i][1]
+        } else {
+          if (merged[toSend[i][0]].severity === undefined) {
+            merged[toSend[i][0]] = toSend[i][1]
+          } else {
+            if (parseInt(merged[toSend[i][0]].severity) < parseInt(toSend[i][1].severity)) {
+              merged[toSend[i][0]] = toSend[i][1]
+            }
+          }
+        }
+      }
+      for (const k in merged) {
+        if (Channels.has(k)) {
+          Channels.get(k).postMessage({op: 'state', value: merged[k]})
+        }
+      }
+      setTimeout(checkMachineState, 5000)
+    })
+  })
+  .catch(reason => {
+    console.log(reason)
+  })
+  
 }
 
 function runUpdater () {
-  let url = getUrl('store/DeepReservation')
+  const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
 
   url.searchParams.set('search.begin', '<' + Range.end.toISOString().split('T')[0])
   url.searchParams.set('search.end', '>' + Range.begin.toISOString().split('T')[0])
   url.searchParams.set('search.deleted', '-')
-  doFetch(url).then((response) => {
-    if (response.ok) {
-      response.json().then((json) => {
-        if (json.length > 0 && json.success) {
-          cacheAndSend(json.data, newVTimeLine())
-        }
-      })
+  fetch(url)
+  .then((response) => {
+    if (!response.ok) { return {length: 0, data: null} }
+    return response.json()
+  })
+  .then((json) => {
+    if (json.length > 0) {
+      cacheAndSend(json.data, newVTimeLine())
     }
   })
+  .catch(reason => console.log(reason))
 }
 
 const updateTimer = 10
 function startUpdater () {
   if (LastMod > 0) {
-    let url = getUrl('store/DeepReservation')
+    const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
     url.searchParams.set('search.modification', '>' + LastMod)
-    doFetch(url).then((response) => {
+    fetch(url).then((response) => {
       if (response.ok) {
         response.json().then((json) => {
           if (json.length > 0 && json.success) {

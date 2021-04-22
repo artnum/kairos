@@ -5,6 +5,9 @@ KAIROS.Cache = {
 } // global cache
 
 KAIROS.getBase = function () {
+  if (self) {
+    return `${self.location.origin}/${KAIROS.base}`
+  }
   return `${window.location.origin}/${KAIROS.base}`
 }
 
