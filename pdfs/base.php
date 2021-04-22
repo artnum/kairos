@@ -2,7 +2,7 @@
 include('artnum/autoload.php');
 include('../lib/format.php');
 include('../lib/get-entry.php');
-
+include('../lib/kobject.php');
 header('Cache-Control: no-cache, max-age=0');
 
 function e404($msg = 'aucun') {
@@ -102,52 +102,22 @@ function format_address($addr, $options = array()) {
    $lines = array();
 
    if($addr['type'] == 'db') {
-      $addr = $addr['data'];
-      if(isset($addr['o'])) {
-         if(is_string($addr['o'])) {
-            $lines[] = $addr['o'];
-         } else if(is_array($addr['o'])) {
-            foreach($addr['o'] as $o) {
-               $lines[] = $o;
-            }
+      $kaddr = new Kairos\KObject($addr['data']);
+
+      if ($kaddr->has('o')) {
+         $lines = array_merge($lines, $kaddr->getMultiString('o'));
+      }
+
+      if ($kaddr->hasAny('givenname', 'sn')) {$lines[] = trim(trim($kaddr->getString('givenname')) . ' ' . trim($kaddr->getString('sn'))); }
+      if ($kaddr->has('postaladdress')) {
+         foreach (explode("\n", $kaddr->getString('postaladdress')) as $line) {
+            $lines[] = trim($line);
          }
       }
 
-      if(isset($addr['givenname']) || isset($addr['sn'])) {
-         $cn = '';
-         if(isset($addr['givenname'])) {
-            $cn = trim($addr['givenname']);
-         }
-         if(isset($addr['sn'])) {
-            if($cn != '') { $cn .= ' '; };
-            $cn .= trim($addr['sn']);
-         }
-         
-         $lines[] = $cn;
-      }
-
-      if (isset($addr['postaladdress'])) {
-         $l = explode("\n", $addr['postaladdress']);
-         foreach ($l as $_l) {
-            $lines[] = trim($_l);
-         }
-      }
-
-      if(isset($addr['l']) || isset($addr['postalcode'])) {
-         $locality = '';
-         if(isset($addr['postalcode'])) {
-            $locality = trim($addr['postalcode']);
-         }
-         if(isset($addr['l'])) {
-            if($locality != '') { $locality .= ' '; }
-            $locality .= trim($addr['l']);
-         }
-         
-         $lines[] = $locality;
-      }
-
-      if(isset($addr['c'])) {
-         switch(strtolower($addr['c'])) {
+      if ($kaddr->hasAny('l', 'postalcode')) { $lines[] = trim(trim($kaddr->getString('postalcode') . ' ' . trim($kaddr->getString('l')))); }
+      if ($kaddr->has('c')) {
+         switch(strtolower($kaddr->getString('c'))) {
             default: case 'ch': break;
             case 'fr': $lines[] = 'France'; break;
             case 'uk': $lines[] = 'Angleterre'; break;
@@ -156,28 +126,21 @@ function format_address($addr, $options = array()) {
          }
       }
 
-      if(isset($addr['mobile']) || isset($addr['telephonenumber'])) {
+      if ($kaddr->hasAny('mobile', 'telephonnumber')) {
          if (!isset($options['prefer-telephone']) || !$options['prefer-telephone']) {
-            $lines[] = isset($addr['mobile']) ?  trim($addr['mobile']) : trim($addr['telephonenumber']);
+            $lines[] = $kaddr->has('mobile') ?  trim($kaddr->getString('mobile')) : trim($kaddr->getString('telephonenumber'));
          } else {
-            $lines[] = isset($addr['telephonenumber']) ?  trim($addr['telephonenumber']) : trim($addr['mobile']);
-         }
-      }
-      if(isset($addr['mail'])) {
-         if (is_string($addr['mail'])) {
-            $lines[] = trim($addr['mail']);
-         } else if(is_array($addr['mail'])) {
-            $lines[] = trim($addr['mail'][0]);
-         }
-      }
-   } else {
-      $l = explode("\n", $addr['data']);
-      foreach($l as $_l) {
-         if(!empty($_l)) {
-            $lines[] = trim($_l);
+            $lines[] = $kaddr->has('telephonenumber') ?  trim($kaddr->getString('telephonenumber')) : trim($kaddr->getString('mobile'));
          }
       }
 
+      if ($kaddr->has('mail')) { $lines[] = $kaddr->getString('mail'); }
+   } else {
+      foreach(explode("\n", $addr['data']) as $l) {
+         if(!empty($l)) {
+            $lines[] = trim($l);
+         }
+      }
    }
 
    return $lines;
