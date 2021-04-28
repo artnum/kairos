@@ -101,7 +101,7 @@ function getLocality ($JClient, $locality) {
 function format_address($addr, $options = array()) {
    $lines = array();
 
-   if($addr['type'] == 'db') {
+   if($addr['type'] == 'db' && is_array($addr['data'])) {
       $kaddr = new Kairos\KObject($addr['data']);
 
       if ($kaddr->has('o')) {
