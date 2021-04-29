@@ -150,14 +150,16 @@ KReservation.prototype.loadCreator = function () {
     if (this.data.reservation.creator === null) {
       resolve(); return
     }
-    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator.split('/').pop()}`)).then(response => {
-      if (!response.ok) { resolve(); return }
-      response.json().then(result => {
-        if (result.length !== 1) { resolve(); return }
-        this.data.creator = Array.isArray(result.data) ? result.data[0] : result.data
-        this.hash.creator._complete = this.hashJson(this.data.creator, [ 'id' ])
-        resolve(this.data.creator)
-      })
+    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator.split('/').pop()}`))
+    .then(response => {
+      if (!response.ok) { return {length: 0, data: null} }
+      return response.json()
+    })
+    .then(result => {
+      if (result.length !== 1) { resolve(); return }
+      this.data.creator = Array.isArray(result.data) ? result.data[0] : result.data
+      this.hash.creator._complete = this.hashJson(this.data.creator, [ 'id' ])
+      resolve(this.data.creator)
     })
   })
   return this.promise.creator
