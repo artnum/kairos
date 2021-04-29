@@ -239,7 +239,7 @@ function cacheAndSend (data, vTimeLine) {
     url.searchParams.set('search.temporary', '0')
     fetch(url)
     .then((response) => {
-      if (response.ok) { return {length: 0, data: null}}
+      if (!response.ok) { return {length: 0, data: null}}
       return response.json()
     }).then(result => {
       if (result.length > 0) {
