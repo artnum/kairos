@@ -62,7 +62,6 @@ KAIROS.unregister = function (resource) {
 KAIROS.purgeDelayedQuery = function (iter) {
   if (typeof requestIdleCallback !== 'function') {
     /* web worker run */
-    console.log('run workder version')
     const start = performance.now()
     let iterator = iter === undefined ? KAIROS.fetch.current.entries() : iter
     const now = Date.now()
@@ -162,11 +161,12 @@ KAIROS.fetch = function (url, options = {}) {
 
   query.then(response => {
     if (response.ok) { return } // don't process good response
-    let headers = response.headers
+    const clonedResponse = response.clone()
+    let headers = clonedResponse.headers
     if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
-    response.json().then(error => {
+    clonedResponse.json().then(error => {
       if (!error.message) { return }
-      switch(Math.trunc(response.status / 100)) {
+      switch(Math.trunc(clonedResponse.status / 100)) {
         case 3:
           KAIROS.log(`Message serveur : "${errror.message}"`)
           break

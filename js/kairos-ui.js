@@ -89,7 +89,7 @@ KAIROS.log = function (level, txt, code) {
         document.body.classList.remove('info', 'error', 'warning')
     })
 
-    window.requestAnimationFrame(() => document.getElementById('LogLine').appendChild(div))
+    window.requestAnimationFrame(() => document.getElementById('LogLine')?.appendChild(div))
 }
 
 KAIROS.stackClosable = function (closeFunction) {
