@@ -1050,7 +1050,7 @@ define([
         this.calculate({target: parent})
         var id = parent.getAttribute('data-id')
 
-        var query = {count: this.get('data-id')}
+        const query = {count: this.get('data-id') }
         ;['INPUT', 'TEXTAREA', 'SELECT'].forEach((e) => {
           let inputs = parent.getElementsByTagName(e)
           for (let i = 0; i < inputs.length; i++) {
@@ -1093,7 +1093,7 @@ define([
       }
       await this.refresh()
 
-      query = {}
+      let query = {}
       ;['INPUT', 'SELECT'].forEach(function (element) {
         let inputs = this.form_invoice.getElementsByTagName(element)
         for (let i = 0; i < inputs.length; i++) {
@@ -1115,7 +1115,7 @@ define([
 
       var invoice = await Query.exec(Path.url(url), {method: method, body: JSON.stringify(query)})
 
-      query = {comment: this.form_details.getElementsByTagName('TEXTAREA')[0].value, total: this.Total, id: this.get('data-id'), reference: null}
+      query = {comment: this.form_details.getElementsByTagName('TEXTAREA')[0].value, total: this.Total, id: this.get('data-id'), reference: null, printed: this.get('data').printed}
       if (invoice.success && invoice.length > 0) {
         if (invoice.data[0].id) {
           query.invoice = invoice.data[0].id
@@ -1146,6 +1146,9 @@ define([
     },
 
     print: async function (event) {
+      const data = this.get('data')
+      data.printed = (new Date()).toISOString()
+      this.set('data', data)
       this.save(event).then(() => {
         window.open(Path.url('pdfs/count/' + this.get('data-id')))
       })
@@ -1153,6 +1156,9 @@ define([
 
     autoPrint: function (file, params = {}) {
       let type = params.forceType ? params.forceType : file
+      const data = this.get('data')
+      data.printed = (new Date()).toISOString()
+      this.set('data', data)
       return new Promise((resolve, reject) => {
         this.save().then(() => {
           Query.exec((Path.url('exec/auto-print.php', {
