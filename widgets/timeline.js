@@ -346,7 +346,7 @@ define([
 
       window.setTimeout(() => {
         window.requestAnimationFrame(() => {
-          div.parentNode.removeChild(div)
+          div.parentNode?.removeChild(div)
         })
       }, timeout)
 
@@ -356,7 +356,7 @@ define([
       })
 
       window.requestAnimationFrame(djLang.hitch(this, () => {
-        this.logline.appendChild(div)
+        this.logline?.appendChild(div)
       }))
     },
 
