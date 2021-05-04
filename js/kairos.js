@@ -159,7 +159,8 @@ KAIROS.fetch = function (url, options = {}) {
     KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
   }
 
-  query.then(response => {
+  query
+  .then(response => {
     if (response.ok) { return } // don't process good response
     const clonedResponse = response.clone()
     let headers = clonedResponse.headers

@@ -185,7 +185,7 @@ define([
       var sStore = window.sessionStorage
       let url = new URL('store/Status/', KAIROS.getBase())
       url.searchParams.append('search.type', 0)
-      fetch(url).then(response => {
+      kfetch(url).then(response => {
         if (!response.ok) { return }
         response.json().then(results => {
           if (results.length <= 0) { return }
@@ -793,7 +793,7 @@ define([
       this.searchMenu.addChild(new DtMenuSeparator())
 
       menuLoaded.push(new Promise((resolve, reject) => {
-        fetch(`${KAIROS.getBase()}/store/Category`)
+        kfetch(`${KAIROS.getBase()}/store/Category`)
         .then(response => {
           if (!response.ok) { KAIROS.warn('Problème à charger les catégories'); return }
           response.json()
@@ -1345,7 +1345,7 @@ define([
           })
         }
 
-        fetch(url).then(response => {
+        kfetch(url).then(response => {
           if (!response.ok) {
             KAIROS.error('Chargement des machines échoués')
             reject()
@@ -1685,7 +1685,7 @@ define([
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
       return new Promise((resolve, reject) => {
-        let query = fetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+        let query = kfetch(Path.url('store/DeepReservation/' + loc)).then(response => {
           if (!response.ok) { reject(); return }
           response.json().then(result=> {
             if (result && result.length === 0) {
@@ -1841,7 +1841,7 @@ define([
 
     autoprint: function (path) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
+        kfetch(Path.url('exec/auto-print.php', {params: {file: path}}))
       }
     },
     openUncounted: function () {

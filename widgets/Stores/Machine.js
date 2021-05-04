@@ -21,7 +21,7 @@ define([
           }
         }
 
-        fetch(url)
+        kfetch(url)
         .then(response => {
           if (!response.ok) { return {length: 0, data: null} }
           return response.json()
@@ -85,7 +85,7 @@ define([
           }
         }
 
-        fetch(url)
+        kfetch(url)
         .then(response => {
             if (!response.ok) { return {length: 0, data: null} }
             return response.json()

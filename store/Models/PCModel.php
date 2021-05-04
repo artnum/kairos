@@ -24,6 +24,10 @@ class PCModel extends artnum\SQL {
   function _delete($arg) {
     return false;
   }
+  function getCacheOpts() {
+    /* 15min cache for contacts */
+    return ['age' => 3600, 'public' => true];
+  }
 }
 
 ?>
