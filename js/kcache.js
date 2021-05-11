@@ -45,6 +45,10 @@ function kcget (url) {
     return new Response(objectItem.value.body, objectItem.value.options)
 }
 
+function kcremove (url) {
+    localStorage.removeItem(url)
+}
+
 function kfetch (url, options = { method: 'GET' }) {
     return new Promise ((resolve, reject) => {
         switch (options.method.toLowerCase()) {
@@ -56,7 +60,7 @@ function kfetch (url, options = { method: 'GET' }) {
                     return
                 }
                 break
-        }       
+        }
         fetch(url, options)
         .then (response => {
             resolve(response)

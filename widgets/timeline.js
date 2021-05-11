@@ -1345,7 +1345,7 @@ define([
           })
         }
 
-        kfetch(url).then(response => {
+        fetch(url).then(response => {
           if (!response.ok) {
             KAIROS.error('Chargement des machines échoués')
             reject()

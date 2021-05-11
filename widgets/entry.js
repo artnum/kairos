@@ -480,7 +480,7 @@ define([
           this.nControl.setAttribute('class', 'control ' + location.value.tagify())
           this.nLocation.setAttribute('data-id', location.id)
           this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> ' + location.value
-        }.bind(this))
+        }.bind(this)) 
       } else {
         window.requestAnimationFrame(function () {
           this.nLocation.removeAttribute('data-id')
@@ -498,27 +498,72 @@ define([
         let url
         for (node = event.target; node.nodeName !== 'DIV'; node = node.parentNode);
         for (input = node.firstChild; input.nodeName !== 'INPUT'; input = input.nextSibling);
-        if (node.getAttribute('data-id')) {
-          var body = {id: node.getAttribute('data-id'), value: input.value}
-          var method = 'PATCH'
-          url = new URL(`store/Entry/${body.id}`, KAIROS.getBase())
-        } else {
-          body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
-          method = 'POST'
-          url = new URL('store/Entry', KAIROS.getBase())
-        }
 
-        fetch(url, {method: method, body: JSON.stringify(body)}).then(response => {
-          if (!response.ok) { return }
-          response.json().then(result => {
-            if (result.length !== 1) { return }
-            fetch(new URL(`store/Entry/${result.data[0].id}`, KAIROS.getBase())).then((response) => {
-              if (!response.ok) { return }
-              response.json().then(result => {
-                if (result.length !== 1) { return }
-                this.set('currentLocation', result.data)
-                this.displayLocation()
-              })
+        new Promise((resolve, reject) => {
+          const url = new URL(`${KAIROS.getBase()}/store/Entry`)
+          url.searchParams.append('search.name', 'currentLocation')
+          url.searchParams.append('search.ref:1', this.KEntry.data.uid)
+          kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.uid}`)
+          if (Array.isArray(this.KEntry.data.oldid)) {
+            const refs = []
+            for (let i = 0; i < this.KEntry.data.oldid.length; i++) {
+              url.searchParams.append(`search.ref:${i+2}`, this.KEntry.data.oldid[i])
+              kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.oldid[i]}`)
+              refs.push(`ref:${i+2}`)
+            }
+            url.searchParams.append('search._rules', `name AND (ref:1 OR ${refs.join(' OR ')})` )
+          } else {
+            url.searchParams.append('search.ref:2', this.KEntry.data.oldid)
+            url.searchParams.append('search._rules', 'name AND (ref:1 OR ref:2)')
+            kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.oldid}`)
+          }
+          
+          fetch (url)
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          })
+          .then(result => {
+            if (result === null) { resolve() }
+            const promises = []
+            if (result.length > 1) {
+              for (let i = 0; i< result.length; i++) {
+                const url = new URL(`${KAIROS.getBase()}/store/Entry/${result.data[i].id}`)
+                promises.push(fetch(url, {method: 'DELETE'}))
+              }
+            }
+            Promise.all(promises)
+            .then(() => { delete node.dataset.id; resolve() })
+          })
+        })
+        .then(_ => {
+          if (node.dataset.id) {
+            var body = {id: node.dataset.id, value: input.value}
+            var method = 'PATCH'
+            url = new URL(`${KAIROS.getBase()}/store/Entry/${body.id}`)
+          } else {
+            body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
+            method = 'POST'
+            url = new URL(`${KAIROS.getBase()}/store/Entry`)
+          }
+
+          fetch(url, {method: method, body: JSON.stringify(body)})
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          })
+          .then(result => {
+            if (result === null) { return; }
+            if (result.length !== 1) { return; }
+            fetch(new URL(`${KAIROS.getBase()}/store/Entry/${result.data[0].id}`))
+            .then((response) => {
+              if (!response.ok) { return null }
+              return response.json()
+            }).then(result => {
+              if (result === null) { return }
+              if (result.length !== 1) { return }
+              this.set('currentLocation', result.data)
+              this.displayLocation()
             })
           })
         })
