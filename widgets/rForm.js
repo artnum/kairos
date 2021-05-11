@@ -1767,19 +1767,21 @@ define([
     },
 
     doSaveAndQuit: function (event) {
-      this.doSave().then(function () {
+      this.doSave()
+      .then(_ => {
         this.hide()
-      }.bind(this))
+      })
     },
     doSave: function (event) {
-      this.doNumbering()
-      let lastModificationTest
-      if (this.reservation.id) {
-        lastModificationTest = this.reservation.KReservation?.serverCompare() ?? Promise.resolve(true)
-      } else {
-        lastModificationTest = Promise.resolve(true)
-      }
-      return new Promise(function (resolve, reject) {
+      if (this.onSave) { return this.onSave }
+      this.onSave = new Promise((resolve, reject) => {
+        this.doNumbering()
+        let lastModificationTest
+        if (this.reservation.id) {
+          lastModificationTest = this.reservation.KReservation?.serverCompare() ?? Promise.resolve(true)
+        } else {
+          lastModificationTest = Promise.resolve(true)
+        }
         var err = this.validate()
         if (!err[1]) {
           KAIROS.error(err[0])
@@ -1832,91 +1834,100 @@ define([
           if (!carryon) { return; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
-          fetch(url).then(response => {
-            response.json().then(res => {
-              let arrival = {}
-              if(res.length > 0) {
-                arrival = Object.assign(arrival, res.data[0])
-              }
+          fetch(url)
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          }).then(res => {
+            if (!res) { return }
+            let arrival = {}
+            if(res.length > 0) {
+              arrival = Object.assign(arrival, res.data[0])
+            }
 
-              if (this.Buttons.addEnd.getValue()) {
-                arrival.deleted = null
-                arrival.target = this.reservation.uid
-                if (f.arrivalDate) {
-                  if (f.arrivalTime) {
-                    arrival.reported = f.arrivalDate.join(f.arrivalTime)
-                  } else {
-                    arrival.reported = f.arrivalDate
-                  }
+            if (this.Buttons.addEnd.getValue()) {
+              arrival.deleted = null
+              arrival.target = this.reservation.uid
+              if (f.arrivalDate) {
+                if (f.arrivalTime) {
+                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
+                } else {
+                  arrival.reported = f.arrivalDate
                 }
-                arrival.creator = this.nArrivalCreator.value
-                arrival.comment = f.arrivalComment
-                arrival.contact = f.arrivalAddress
-                arrival.locality = this.nArrivalLocality.value
-                arrival.other = f.arrivalKeys
-                arrival.done = this.Buttons.addArrivalDone.getValue()
-                arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
-                this.reservation.set('_arrival', arrival)
+              }
+              arrival.creator = this.nArrivalCreator.value
+              arrival.comment = f.arrivalComment
+              arrival.contact = f.arrivalAddress
+              arrival.locality = this.nArrivalLocality.value
+              arrival.other = f.arrivalKeys
+              arrival.done = this.Buttons.addArrivalDone.getValue()
+              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+              this.reservation.set('_arrival', arrival)
+            } else {
+              if (arrival.id) {
+                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
               } else {
-                if (arrival.id) {
-                  this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-                } else {
-                  this.reservation.set('_arrival', {})
-                }
+                this.reservation.set('_arrival', {})
               }
+            }
 
-              let status = this.nStatus.value
-              if (isNaN(parseInt(status))) {
-                status = status.split('/').pop()
-              }
-              this.reservation.set('status', `${status}`)
-              this.reservation.set('begin', begin)
-              this.reservation.set('end', end)
-              this.reservation.set('deliveryBegin', deliveryBegin)
-              this.reservation.set('deliveryEnd', deliveryEnd)
-              this.reservation.set('address', this.nAddress.value)
-              this.reservation.set('reference', f.reference)
-              this.reservation.set('equipment', f.equipment)
-              this.reservation.set('locality', this.nLocality.value)
-              this.reservation.set('comment', f.comments)
-              this.reservation.set('folder', f.folder)
-              this.reservation.set('gps', f.gps)
-              this.reservation.set('title', f.title)
-              this.reservation.set('creator', this.nCreator.value)
-              this.reservation.set('technician', this.nTechnician.value)
-              this.reservation.set('visit', this.nAddVisit.value)
-              this.reservation.set('vreport', this.nAddReport.value)
-              this.reservation.set('padlock', this.nPadlock.value)
-              this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
+            let status = this.nStatus.value
+            if (isNaN(parseInt(status))) {
+              status = status.split('/').pop()
+            }
+            this.reservation.set('status', `${status}`)
+            this.reservation.set('begin', begin)
+            this.reservation.set('end', end)
+            this.reservation.set('deliveryBegin', deliveryBegin)
+            this.reservation.set('deliveryEnd', deliveryEnd)
+            this.reservation.set('address', this.nAddress.value)
+            this.reservation.set('reference', f.reference)
+            this.reservation.set('equipment', f.equipment)
+            this.reservation.set('locality', this.nLocality.value)
+            this.reservation.set('comment', f.comments)
+            this.reservation.set('folder', f.folder)
+            this.reservation.set('gps', f.gps)
+            this.reservation.set('title', f.title)
+            this.reservation.set('creator', this.nCreator.value)
+            this.reservation.set('technician', this.nTechnician.value)
+            this.reservation.set('visit', this.nAddVisit.value)
+            this.reservation.set('vreport', this.nAddReport.value)
+            this.reservation.set('padlock', this.nPadlock.value)
+            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
-              this.reservation.save().then((id) => {
-                fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`)).then(response => {
-                  if (!response.ok) { return }
-                  response.json().then(result => {
-                    let data = Array.isArray(result.data) ? result.data[0] : result.data
-                    this.reservation.fromJson(data).then(_ => {
-                      this.domNode.classList.remove('outofsync')
-                      this.Buttons.resync.setDisabled(true)
-                    })
-                    if (data.modification) {
-                      this.lastModified = parseInt(data.modification)
-                      this.reservation.lastModified = parseInt(data.modification)
-                    }
-                  })
+            this.reservation.save()
+            .then((id) => {
+              fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
+              .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+              }).then(result => {
+                if (!result) { return null }
+                let data = Array.isArray(result.data) ? result.data[0] : result.data
+                this.reservation.fromJson(data)
+                .then(_ => {
+                  this.domNode.classList.remove('outofsync')
+                  this.Buttons.resync.setDisabled(true)
                 })
-                if (!move) {
-                  this.resize()
-                } else {
-                  this.reservation.toObject().then((reservation) => {
-                    this.reservation.sup.KEntry.move(reservation[0])
-                  })
+                if (data.modification) {
+                  this.lastModified = parseInt(data.modification)
+                  this.reservation.lastModified = parseInt(data.modification)
                 }
-                resolve()
               })
+              if (!move) {
+                this.resize()
+              } else {
+                this.reservation.toObject()
+                .then((reservation) => {
+                  this.reservation.sup.KEntry.move(reservation[0])
+                })
+              }
+              resolve()
             })
           })
         })
-      }.bind(this))
+      })
+      return this.onSave
     },
 
     evtNoEquipment: function () {
