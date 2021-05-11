@@ -31,7 +31,7 @@ var Arrival = function () {
   }
 
   this.ww = new Worker(Artnum.Path.url('/js/ww/return.js'))
-  this.ww.onmessage = function (msg) {
+  this.ww.onmessage = msg => {
     if (msg && msg.data) {
       if (msg.data.delete && msg.data.id) {
         console.log('delete', msg.data)
@@ -40,12 +40,14 @@ var Arrival = function () {
           this.parent.removeChild(node)
         }
       } else {
-        this.query(msg.data).then(function (retval) {
+        this.query(msg.data)
+        .then(retval => {
+          if (!retval) { return }
           this.add(retval)
-        }.bind(this))
+        })
       }
     }
-  }.bind(this)
+  }
   this.entry = {}
   new IdxDB().then(function (db) {
     this.db = db
@@ -58,20 +60,28 @@ var Arrival = function () {
 
 Arrival.prototype.query = function (retval) {
   return new Promise(function (resolve, reject) {
-    fetch(Artnum.Path.url('/store/DeepReservation/' + retval.target)).then(function (response) {
-      if (response.ok) {
-        response.json().then(function (reservation) {
-          if (reservation.type === 'results' && reservation.data !== null) {
-            fetch(Artnum.Path.url('/store/Machine/', {params: {'search.description': reservation.data.target,'search.airref': reservation.data.target}})).then(function (response) {
-              if (response.ok) {
-                response.json().then(function (machine) {
-                  retval._target = reservation.data
-                  retval._target._target = machine.data[0]
-                  resolve(retval)
-                })
-              }
-            })
+    fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${retval.target}`))
+    .then(function (response) {
+      if (!response.ok) { return null }
+      return response.json()
+    })
+    .then(reservation => {
+      if (!reservation) { resolve(); return;}
+      if (reservation.type === 'results' && reservation.data !== null) {
+        const url = new URL(`${KAIROS.getBase()}/store/Machine`)
+        url.searchParams.append('search.description', reservation.data.target)
+        url.searchParams.append('search.airref', reservation.data.target)
+        fetch(url)
+        .then(function (response) {
+          if (!response.ok) { return null }
+          return response.json()
+        }).then(function (machine) {
+          if (!machine) { resolve(); return }
+          retval._target = reservation.data
+          if (machine.data) {
+            retval._target._target = Array.isArray(machine.data) ? machine.data[0] : machine.data
           }
+          resolve(retval)
         })
       }
     })
@@ -337,8 +347,10 @@ Arrival.prototype.add = async function (retval) {
 
   var rep = retval.reported ? new Date(retval.reported) : ''
   if (rep !== '') { rep = '\n<span class="addendum">Annonce : ' + rep.fullDate() + ' ' + rep.shortHour() + '</span>' }
-  dom.appendChild(this.html.label(retval._target._target.cn + rep))
-  dom.appendChild(this.html.label(retval._target._target.uid))
+  if (retval._target._target) {
+    dom.appendChild(this.html.label(retval._target._target.cn + rep))
+    dom.appendChild(this.html.label(retval._target._target.uid))
+  }
 
   let locality = retval.locality ? retval.locality : retval._target.locality
   let locPromise = new Promise((resolve, reject) => {
