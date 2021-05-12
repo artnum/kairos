@@ -1922,7 +1922,11 @@ define([
                   this.reservation.sup.KEntry.move(reservation[0])
                 })
               }
+              this.onSave = null
               resolve()
+            })
+            .catch(reason => {
+              this.onSave = null
             })
           })
         })
