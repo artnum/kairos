@@ -5,6 +5,8 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('Not an Input element')
   }
+  this.value = undefined
+  this._oldValue = undefined
   this.allowFreeText = options.allowFreeText
   this.input = input
   if (options.realSelect) {
@@ -36,20 +38,20 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
           .then((entry) => {
             if (entry) {
               obj.lastEntry = entry
-              input.value = entry.label
-              obj.value = input.value
-              colorize(entry.color)
-              input.dataset.value = entry.value
+              obj.setLabel(entry.label)
+              obj.setValue(entry.value)
+              obj.colorize(entry.color)
             } else {
               if (obj.allowFreeText) {
-                input.value = value
+                obj.setLabel(value)
+                obj.setValue(value)
               } else {
                 if (!obj.lastEntry) {
-                  obj.value = ''
-                  input.value = ''
+                  obj.setLabel('')
+                  obj.setValue('')
                 } else {
-                  obj.value = obj.lastEntry.value
-                  input.value = obj.lastEntry.label
+                  obj.setLabel(obj.lastEntry.label)
+                  obj.setValue(obj.lastEntry.value)
                 }
               }
             }
@@ -65,28 +67,6 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   var list = document.createElement('DIV')
   list.classList.add('dropdown')
   var popper = null
-
-  var colorize = (color) => {
-    let element = this.input
-    if (this.container) { element = this.container }
-    window.requestAnimationFrame(() => {
-      if (color === undefined || color === null || color === false) {
-        element.classList.remove('colored')
-        element.style.removeProperty('--colored-color')
-      } else {
-        element.classList.add('colored')
-        element.style.setProperty('--colored-color', color)
-      }
-    })
-  }
-
-  var select = (target, dontMessValue = false) => {
-    if (!dontMessValue) {
-      input.value = target.dataset.label
-    }
-    colorize(target.dataset.color)
-    input.dataset.value = target.dataset.value
-  }
 
   var move = (k) => {
     let current = null
@@ -162,7 +142,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
         set.scrollIntoView(false)
       }
       if (!options.allowFreeText) {
-        select(set, true)
+        this.select(set, true)
       }
     }
     if (reset && set !== reset) {
@@ -184,7 +164,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       case 'Tab':
         for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
           if (n.dataset.hover === '1') {
-            select(n)
+            this.select(n)
             degenerate()
             return
           }
@@ -204,7 +184,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
       case 'Enter':
         for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
           if (n.dataset.hover === '1') {
-            select(n)
+            this.select(n)
             degenerate()
             input.blur()
             return
@@ -244,9 +224,10 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     }
     let currentRequest = performance.now()
     this.latestRequest = currentRequest
-    store.query(value, currentValue).then((data) => {
+    store.query(value, currentValue)
+    .then((data) => {
       if (this.latestRequest !== currentRequest) { return }
-      let frag = document.createDocumentFragment()
+      const frag = document.createDocumentFragment()
       if (data.length < 1) {
         degenerate()
       } else {
@@ -282,35 +263,25 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
             }
             event.target.dataset.hover = '1'
           })
-          s.addEventListener('mousedown', (event) => { event.stopPropagation(); select(event.target); degenerate() })
+          s.addEventListener('mousedown', (event) => { event.stopPropagation(); this.select(event.target); degenerate() })
           frag.appendChild(s)
         })
         window.requestAnimationFrame(() => {
           list.innerHTML = ''
           list.appendChild(frag)
           if (selected) {
-            select(selected)
+            this.select(selected)
             selected.dataset.hover = '1'
             selected.scrollIntoView()
           } else {
             if (!options.allowFreeText) {
-              select(list.firstElementChild, true)
+              this.select(list.firstElementChild, true)
             }
           }
         })
       }
     })
   }
-
-  input.addEventListener('change', (event) => {
-    if (input.dataset.value) {
-      store.get(input.dataset.value).then((entry) => {
-        if (entry) {
-          input.value = entry.label
-        }
-      })
-    }
-  })
 
   input.addEventListener('blur', degenerate)
   input.addEventListener('keyup', generate)
@@ -328,6 +299,11 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   return obj
 }
 
+Select.prototype.doChangeEvent = function () {
+  if (this.value !== this._oldValue) {
+    this.input.dispatchEvent(new Event('change', {bubbles: true}))
+  }
+}
 
 Select.prototype.clear = function () {
   let element = this.input
@@ -355,5 +331,37 @@ Select.prototype.realSelectUI = function () {
     arrow.classList.add('arrow')
     arrow.innerHTML = '<i class="fas fa-caret-down"> </i> '
     container.appendChild(arrow)
+  })
+}
+
+Select.prototype.setValue = function (value) {
+  this._oldValue = this.value
+  this.value = value
+  this.input.dataset.value = value
+  this.doChangeEvent()
+}
+
+Select.prototype.setLabel = function (label) {
+  this.input.value = label
+}
+
+Select.prototype.select = function (target, dontMessValue = false) {
+  if (!dontMessValue) {
+    this.setLabel(target.dataset.label)
+  }
+  this.colorize(target.dataset.color)
+  this.setValue(target.dataset.value)
+}
+
+Select.prototype.colorize = function (color) {
+  const element = this.container || this.input
+  window.requestAnimationFrame(() => {
+    if (color === undefined || color === null || color === false) {
+      element.classList.remove('colored')
+      element.style.removeProperty('--colored-color')
+    } else {
+      element.classList.add('colored')
+      element.style.setProperty('--colored-color', color)
+    }
   })
 }

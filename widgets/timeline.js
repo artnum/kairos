@@ -661,7 +661,7 @@ define([
       this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
 
       var tContainer = dtRegistry.byId('tContainer')
-      this.bc = new BroadcastChannel(Path.bcname('artnum/location'))
+      this.bc = new BroadcastChannel('KAIROS-Location-bc')
       this.view = {}
       this.set('zoom', 'week')
       tContainer.startup()

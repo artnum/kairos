@@ -1,5 +1,5 @@
 /* eslint-env browser */
-/* global IdxDB, Address, Artnum, Histoire */
+/* global IdxDB, Address, Histoire */
 'use strict'
 
 var Arrival = function () {
@@ -30,7 +30,7 @@ var Arrival = function () {
     }.bind(this))
   }
 
-  this.ww = new Worker(Artnum.Path.url('/js/ww/return.js'))
+  this.ww = new Worker(`${KAIROS.getBase()}/js/ww/return.js`)
   this.ww.onmessage = msg => {
     if (msg && msg.data) {
       if (msg.data.delete && msg.data.id) {
@@ -54,8 +54,8 @@ var Arrival = function () {
     this.run()
   }.bind(this))
 
-  this.bc = new BroadcastChannel(Artnum.Path.bcname('artnum/location'))
-  this.RChannel = new BroadcastChannel(Artnum.Path.bcname('reservations'))
+  this.bc = new BroadcastChannel('KAIROS-Location-bc')
+  this.RChannel = new BroadcastChannel('KAIROS-reservation-bc')
 }
 
 Arrival.prototype.query = function (retval) {
@@ -253,7 +253,8 @@ Arrival.prototype.progress = function (event) {
     req.inprogress = now.toISOString()
   }
 
-  fetch(Artnum.Path.url('/store/Arrival/' + req.id), {method: 'PUT', body: JSON.stringify(req)}).then(function () {
+  fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${req.id}`), {method: 'PUT', body: JSON.stringify(req)})
+  .then(function () {
     Histoire.LOG('Reservation', reservationId, ['_arrival.inprogress'], null)
     this.RChannel.postMessage({op: 'touch', id: reservationId})
   }.bind(this))

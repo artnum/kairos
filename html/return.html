@@ -4,31 +4,17 @@
     <title>Tableau des retours</title>
     <link rel="stylesheet" type="text/css" href="../css/return.css" />
     <link rel="stylesheet" href="../css/fontawesome-all.min.css" />
+    <script src="../js/index.js"></script>
   </head>
   <body>
   </body>
-  <script src="../conf/app.js"></script>
-  <script src="../js/kairos.js"></script>
-  <script src="../js/kairos-ui.js"></script>
-  <script src="../js/css.js"></script>
-  <script src="../node_modules/sjcl/sjcl.js"></script>
-  <script src="../node_modules/artnum/Query.js"></script>
-  <script src="../node_modules/artnum/Path.js"></script>
-  <script src="../node_modules/artnum/Date.js"></script>
-  <script src="../js/Histoire.js"></script>
-  <script src="../js/localdb.js"></script>
-  <script src="../js/address.js"></script>
-  <script src="../js/evenement.js"></script>
-  <script src="../js/arrival.js"></script>
-  <script src="../js/tel.js"></script>
-  <script src="../js/select.js"></script>
-  <script src="../js/stores/user.js"></script>
-  <script src="../js/string.js"></script>
-  <script src="../js/MButton.js"></script>
-  <script src="../node_modules/@popperjs/core/dist/umd/popper.min.js"></script>
   <script>
-    window.onload = function () {
-      var ret = new Arrival()
-    }
+    KLoadResources([
+      ['../js/arrival.js', 'script'],
+      ['../js/tel.js', 'script']
+    ])
+    .then(() => {
+      const ret = new Arrival()
+    })
   </script>
 </html>
