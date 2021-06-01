@@ -165,7 +165,20 @@ KPopup.prototype.place = function () {
         }
     } else {
         this.popup.classList.add('win')
+        this.position()
     }
+}
+
+KPopup.prototype.position = function () {
+    if (!this.isWindow) { return; }
+    
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+    const popup = this.popup.getClientRects()
+    window.requestAnimationFrame(() => {
+        this.popup.style.setProperty('top', `${vh / 2 - popup[0].height / 2}px`)
+        this.popup.style.setProperty('left', `${vw / 2 - popup[0].width / 2}px`)
+    })
 }
 
 KPopup.prototype.open = function () {
