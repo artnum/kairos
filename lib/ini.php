@@ -20,7 +20,8 @@ $defaultConf = [
   'trees' => [
     'contacts' => '',
     'users' => '',
-    'machines' => ''
+    'machines' => '',
+    'categories' => ''
   ]
 ];
 

@@ -5,6 +5,8 @@ function MButton(button, choice = []) {
   this.MButton = button
   this.Events = {}
   this.linkedState = []
+  this._value = undefined
+  this._oldValue = undefined
   button.setAttribute('type', 'button')
   this.initialized = new Promise((resovle, reject) => {
     this.MutObserver = new MutationObserver((mutList, observer) => {
@@ -34,11 +36,15 @@ function MButton(button, choice = []) {
 
     ;['name', 'id'].forEach((attr) => {
       if (this.MButton.hasAttribute(attr)) {
-        let val = this.MButton.getAttribute(attr)
+        const val = this.MButton.getAttribute(attr)
         this.MButton.removeAttribute(attr)
+        if (attr === 'name') {
+          this.MButton.setAttribute('name', `${val}#`)
+        }
         this.Button.setAttribute(attr, val)
       }
     })
+    
 
     if (Array.isArray(choice) && choice.length > 0) {
       single = false
@@ -98,6 +104,7 @@ function MButton(button, choice = []) {
           } else {
             target[property] = value
           }
+          this.doChangeEvent()
         }.bind(this)
       })    
       Object.assign(this, {
@@ -148,6 +155,12 @@ MButton.prototype.setLabel = function (label) {
 
 MButton.prototype.getDomNode = function () {
   return this.Button
+}
+
+MButton.prototype.doChangeEvent = function () {
+  if (this._oldValue !== this._value) {
+    this.MButton.dispatchEvent(new Event('change', {bubbles: true}))
+  }
 }
 
 MButton.prototype.hide = function () {
@@ -234,7 +247,11 @@ MButton.prototype.setColorFlavor = function (flavor) {
 
 MButton.prototype.getValue = function () {
   if (this._disabled) {
-
+    if (typeof this.values[0] === 'function') {
+      return this.values[0]()
+    } else {
+      return this.values[0] ?? ''
+    }
   } else {
     return this._value
   }
@@ -250,6 +267,7 @@ MButton.prototype._setValue = function (value) {
     window.requestAnimationFrame(() => this.Button.classList.add('set'))
   }
   this.setLinkedState(this.state)
+  this._oldValue = this._value
   this._value = value
   return this.values[this.state]
 }
@@ -276,6 +294,7 @@ MButton.prototype.setValue = function (value) {
   }
   this.MButton.dispatchEvent(new CustomEvent('change'))
   this.Button.dispatchEvent(new CustomEvent('change'))
+  this.doChangeEvent()
   return this._value
 }
 

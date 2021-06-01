@@ -64,13 +64,23 @@ define([
       this.stores = {}
       this.originalHeight = 0
       this.tags = []
-      this.entries = {}
+      this.entries = new Map()
       this.currentLocation = ''
+      this.HPos = -1
+      this.Stores = {
+        Locality: new KLocalityStore('warehouse')
+      }
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
+        this.displayLocation()
         let change = this.stateChange.bind(this)
         let create = (event) => {
+          for (const value of this.entries) {
+            if (value.uuid === event.detail.entry.uuid) {
+              return
+            }
+          }
           if (event.detail && event.detail.entry) {
             this.KEntry.fixReservation(event.detail.entry).then (json => {
               if (json) { this.createEntry(json) }
@@ -104,21 +114,21 @@ define([
         this.id = 'location_entry_' + args['target']
       }
     },
-    warn: function (txt, code) {
-      KAIROS.warn(txt, code)
+
+    setHPos: function (hpos) {
+      this.HPos = hpos
     },
-    error: function (txt, code) {
-      KAIROS.error(txt, code)
+  
+    getHPos: function (hpos) {
+      return this.HPos
     },
-    info: function (txt, code) {
-      KAIROS.info(txt, code)
-    },
+
     removeEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        for (let k in this.entries) {
-          if (this.entries[k].uuid === entry.uuid) {
-            this.destroyReservation(this.entries[k]).then(() => {
-              delete this.entries[k]
+        for (const [kEntry, currentEntry] of this.entries) {
+          if (currentEntry.uuid === entry.uuid) {
+            this.destroyReservation(currentEntry).then(() => {
+              this.entries.delete(kEntry)
               this.resize()
               resolve()
               return
@@ -131,18 +141,17 @@ define([
     },
     createEntry: function (entry) {
       return new Promise((resolve, reject) => {
-        let id = entry.uuid
-        if (entry.uuid === undefined || entry.uuid === null) { id = entry.id }
-        if (this.entries[id] === undefined) {
-          this.entries[id] = new Reservation({
+        const id = entry.uuid || entry.id
+        if (!this.entries.has(id)) {
+          this.entries.set(id, new Reservation({
             sup: this,
             uuid: entry.uuid
-          })
+          }))
         }
-        this.entries[id].fromJson(entry).then(() => {
+        this.entries.get(id).fromJson(entry).then(() => {
           if (this.entries[id]) { this.entries[id].waitStop() }
           this.resize()
-          resolve(this.entries[id])
+          resolve(this.entries.get(id))
         })
       })
     },
@@ -180,7 +189,8 @@ define([
       this.verifyLock()
       let url = new URL(`store/Tags/`, KAIROS.getBase())
       url.searchParams.append('!', this.url)
-      fetch(url).then(response => {
+      fetch(url)
+      .then(response => {
         if (!response.ok) { return }
         response.json().then(result => {
           if (result.length > 0) {
@@ -373,47 +383,10 @@ define([
             txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
         }
       }
-     /* this.getDatasheet().then((url) => {
-        if (url) {
-          txt.push(`<p><a href="${url}" target="_blank">Fiche technique</a></p>`)
-        }*/
-        txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
-        this.htmlDetails = txt.join('')
-        this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
-      //})
-    },
-
-    getDatasheet: function () {
-      return new Promise((resolve, reject) => {
-        let datasheet = window.localStorage.getItem(`location/datasheet/${this.details.reference}`)
-        if (datasheet) {
-          try { datasheet = JSON.parse(datasheet) } catch (error) { datasheet = null }
-        } else {
-          datasheet = null
-        }
-        if (datasheet && datasheet.lastFetch < new Date().getTime() - 2592000) {
-          datasheet = null
-        }
-        if (datasheet) { resolve(datasheet.url) } else {
-          fetch(`https://www.local.airnace.ch/${this.details.reference}/pdf`, {mode: 'cors', method: 'HEAD'}).then((response) => {
-            if (response.ok) {
-              let datasheet = {lastFetch: new Date().getTime(), url: `https://www.local.airnace.ch/${this.details.reference}/pdf`}
-              window.localStorage.setItem(`location/datasheet/${this.details.reference}`, JSON.stringify(datasheet))
-              resolve(datasheet.url)
-            } else {
-              resolve(null)
-            }
-          })
-        }
-      })
-    },
-
-    /* this function can be deleted and replaced by just a call to displayLocation */
-    loadExtension: function () {
-      return new Promise(function (resolve, reject) {
-        this.displayLocation()
-        resolve(this)
-      }.bind(this))
+      txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
+      this.htmlDetails = txt.join('')
+      this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+    
     },
 
     displayTags: function (tags) {
@@ -421,7 +394,8 @@ define([
         let notag = true
         let frag = document.createDocumentFragment()
         if (tags.length > 0) {
-          tags.forEach(function (tag) {
+          this.KEntry.set('tags', tags)
+          for (let tag of tags) {
             if (tag !== '') {
               notag = false
               var s = document.createElement('A')
@@ -430,7 +404,7 @@ define([
               s.appendChild(document.createTextNode(tag))
               frag.appendChild(s)
             }
-          })
+          }
         }
         if (notag) {
           frag.appendChild(document.createTextNode('Ajouter ... '))
@@ -455,6 +429,7 @@ define([
 
     eEditTags: function (event) {
       let form = document.createElement('FORM')
+      form.style.zIndex = KAIROS.zMax()
       form.innerHTML = `<input type="text" name="tags" value="${this.tags.join(', ')}" /><input type="submit" value="Ok" />`
       form.addEventListener('submit', event => {
         event.preventDefault()
@@ -486,7 +461,7 @@ define([
           while (input && input.getAttribute('name') !== 'tags') { input = input.nextElementSibling }
           input.focus() 
         })
-      }) 
+      })
     },
 
     focus: function () {
@@ -498,75 +473,85 @@ define([
     },
 
     displayLocation: function () {
-      var location = this.get('currentLocation')
-      if (location && location.value) {
-        window.requestAnimationFrame(function () {
-          this.nControl.setAttribute('class', 'control ' + location.value.tagify())
-          this.nLocation.setAttribute('data-id', location.id)
-          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> ' + location.value
-        }.bind(this))
-      } else {
-        window.requestAnimationFrame(function () {
-          this.nLocation.removeAttribute('data-id')
-          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> '
-        }.bind(this))
+      const location = this.get('currentLocation')
+      const Anim = new KAnimation()
+      Anim.add(() => {
+        this.nLocation.removeAttribute('data-id')
+        this.nLocation.innerHTML = `<i class="fas fa-warehouse"> </i> `
+      })
+      if (!location) {
+        return
       }
+      Anim.then(() => {
+        this.Stores.Locality.get(location.value)
+        .then(value => {
+          if (location && location.value) {
+            const label = value.printableLabel
+            const color = value.color ? CSSColor(value.color) : 'black'
+            this.KEntry.set('location', label)
+            window.requestAnimationFrame(() => {
+              this.nControl.setAttribute('class', 'control ' + label.tagify())
+              this.nLocation.dataset.value = location.value
+              this.nLocation.dataset.id = location.id
+              this.nLocation.style.color = color;
+              this.nLocation.innerHTML = `<i class="fas fa-warehouse"> </i> ${label}`
+            })
+          }
+        })
+      })
     },
 
     eEditLocation: function (event) {
-      var location = this.get('currentLocation')
-      var frag = document.createDocumentFragment()
-      var saveLocFn = (event) => {
-        var node = null
-        var input = null
-        let url
-        for (node = event.target; node.nodeName !== 'DIV'; node = node.parentNode);
-        for (input = node.firstChild; input.nodeName !== 'INPUT'; input = input.nextSibling);
-        if (node.getAttribute('data-id')) {
-          var body = {id: node.getAttribute('data-id'), value: input.value}
-          var method = 'PATCH'
-          url = new URL(`store/Entry/${body.id}`, KAIROS.getBase())
-        } else {
-          body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
-          method = 'POST'
-          url = new URL('store/Entry', KAIROS.getBase())
-        }
-
-        fetch(url, {method: method, body: JSON.stringify(body)}).then(response => {
-          if (!response.ok) { return }
-          response.json().then(result => {
-            if (result.length !== 1) { return }
-            fetch(new URL(`store/Entry/${result.data[0].id}`, KAIROS.getBase())).then((response) => {
-              if (!response.ok) { return }
-              response.json().then(result => {
-                if (result.length !== 1) { return }
-                this.set('currentLocation', result.data)
-                this.displayLocation()
-              })
+      const form = document.createElement('FORM')
+      this.Stores.Locality.get(this.nLocation.dataset.value)
+      .then(value => {
+        form.dataset.id = this.nLocation.dataset.id
+        form.innerHTML = `<input type="text" name="location"></input><button type="submit">Valider</button><button type="reset">Annuler</button>`
+        const select = new Select(form.firstElementChild, this.Stores.Locality, {allowFreeText: true, realSelect: true})
+        select.value = value.value
+        const popup = new KPopup('Modifer dépôt', {reference: this.nControl, minWith: '200px', minHeight: '180px'})
+        popup.setContentDiv(form)
+        popup.open()
+        form.addEventListener('reset', event => {
+          popup.close();
+        })
+        form.addEventListener('submit', event => {
+          event.preventDefault()
+          kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.uid}`)
+          let query
+          const body = {
+            name: 'currentLocation',
+            value: select.value
+          }
+          if (! this.nLocation.dataset.id) {
+            body.ref = this.KEntry.data.uid
+            query = fetch(`${KAIROS.getBase()}/store/Entry`, {
+              method: 'POST',
+              body: JSON.stringify(body)
             })
+          } else {
+            body.id = event.target.dataset.id
+            query = fetch(`${KAIROS.getBase()}/store/Entry/${event.target.dataset.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify(body)
+            })
+          }
+          query.then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          })
+          .then(result => {
+            if (!result) { KAIROS.error('Erreur lors de l\'attribution du nouveau dépôt'); popup.close(); return }
+            if (result.length <= 0) { KAIROS.error('Erreur lors de l\'attribution du nouveau dépôt'); popup.close(); return }
+            body.id = Array.isArray(result.data) ? result.data[0].id : result.data.id
+            body.value = select.value
+            body.ref = this.KEntry.data.uid
+            this.set('currentLocation', body)
+            this.displayLocation()
+            popup.close()
           })
         })
-      }
-
-      frag.appendChild(document.createElement('INPUT'))
-      if (location && location.value) {
-        frag.lastChild.value = location.value
-      }
-      frag.lastChild.addEventListener('keyup', function (event) { if (event.key === 'Enter') { saveLocFn(event) } })
-
-      frag.appendChild(document.createElement('BUTTON'))
-      frag.lastChild.addEventListener('click', saveLocFn)
-
-      frag.lastChild.innerHTML = 'Ok'
-      frag.appendChild(document.createElement('BUTTON'))
-      frag.lastChild.addEventListener('click', this.displayLocation.bind(this))
-      frag.lastChild.innerHTML = 'Annuler'
-
-      window.requestAnimationFrame(function () {
-        this.nLocation.setAttribute('class', 'location edit')
-        this.nLocation.innerHTML = ''
-        this.nLocation.appendChild(frag)
-      }.bind(this))
+      })
     },
 
     defaultStatus: function () {
@@ -609,34 +594,39 @@ define([
       end.setHours(17, 0, 0, 0)
       day.setHours(8, 0, 0, 0)
 
-      this.defaultStatus().then((s) => {
-        UserStore.getCurrentUser().then(currentUser => {
-          let uuid = KAIROS.uuidV4()
-          let newReservation = new Reservation({
-            sup: this,
-            uuid: uuid,
-            begin: day,
-            end: end,
-            status: s,
-            creator: currentUser !== null ? currentUser.getUrl() : null, create: true
-          })
-          this.entries[uuid] = newReservation
-          newReservation.save().then((id) => {
-            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`))
-            .then(response => {
-              if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
-              response.json()
-              .then(result => {
-                if (result.length < 1)  { return ;}
-                newReservation.fromJson(Array.isArray(result.data) ? result.data[0] : result.data).then(() => {
-                  newReservation.waitStop()
-                  newReservation.popMeUp()
-                })
-              })
-            })
-          })
+      Promise.all([this.defaultStatus(), UserStore.getCurrentUser()])
+      .then(([defaultStatus, currentUser]) => {
+        const uuid = KAIROS.uuidV4()
+        const newReservation = new Reservation({
+          sup: this,
+          uuid: uuid,
+          begin: day,
+          end: end,
+          status: defaultStatus,
+          creator: currentUser !== null ? currentUser.getUrl() : null, create: true
         })
+        this.entries.set(uuid, newReservation)
+        newReservation.save()
+        .then((id) => {
+          fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${id}`))
+          .then(response => {
+            if (!response.ok) { KAIROS.error(`Réservation ${id} n'a pas pu être retrouvée après sa création`); return }
+            response.json()
+            .then(reservation => {
+              newReservation.fromJson(reservation)
+              .then(() => {
+                newReservation.waitStop()
+                newReservation.popMeUp()
+              })
+              .catch(reason => KAIROS.catch(reason))
+            })
+            .catch(reason => KAIROS.catch(reason))
+          })
+          .catch (reason => KAIROS.catch(reason))
+        })
+        .catch(reason => KAIROS.catch(reason))
       })
+      .catch(reason => KAIROS.catch(reason, 'Erreur de création de la réservation'))
     },
 
     _getOffsetAttr: function () {
@@ -695,9 +685,9 @@ define([
       this.domNode.dataset.refresh = 'outdated'
     },
     _resizeChild: function () {
-      for (let e in this.entries) {
-        this.entries[e].resize()
-      }
+      this.entries.forEach(e => {
+        e.resize()
+      })
     },
 
     _resize: function () {
@@ -730,48 +720,23 @@ define([
       window.requestAnimationFrame(function () { djDomClass.remove(e, 'error') })
     },
 
-    show: function () {
-      var frag = document.createDocumentFragment()
-      var entries = []
-
-      for (var k in this.entries) {
-        if (!this.entries[k].get('displayed')) {
-          if (this.entries[k].domNode) {
-            frag.appendChild(this.entries[k].domNode)
-          }
-          this.entries[k].set('displayed', true)
-        }
-        this.entries[k].overlap = { elements: [], level: 0, order: 0, do: false }
-        entries.push(this.entries[k])
-      }
-
-      this.overlap(entries)
-      window.requestAnimationFrame(function () {
-        this.data.appendChild(frag)
-        this.resize()
-      }.bind(this))
-    },
-
     overlap: function () {
-      var entries
+      let entries
       if (arguments[0]) { entries = arguments[0] } else {
         entries = []
-        for (var k in this.entries) {
-          if (!this.entries[k]) { delete this.entries[k]; continue }
-          if (this.entries[k].deleted) {
-            this.entries[k].hide()
-            delete this.entries[k]
-            continue
+        this.entries.forEach(entry =>{
+          if (entry.deleted) {
+            this.removeEntry(entry)
+            return
           }
-          Object.assign(this.entries[k].overlap, { elements: [], level: 0, order: 0, do: false })
-          entries.push(this.entries[k])
-        }
+          Object.assign(entry.overlap, { elements: [], level: 0, order: 0, do: false })
+          entries.push(entry)
+        })
       }
 
       /* Overlap entries, good enough for now */
       var overlapRoot = []
       for (var i = 0; i < entries.length; i++) {
-        if (entries[i].deleted) { continue }
         var root = true
         entries[i].overlap.order = i
         for (var j = 0; j < overlapRoot.length; j++) {
@@ -814,15 +779,15 @@ define([
     },
 
     openReservation: function (id) {
-      for (let uuid in this.entries) {
-        if (this.entries[uuid].uid === id || this.entries[uuid].id === id) {
-          this.entries[uuid].popMeUp()
+      if (this.entries.has(id)) {
+        this.entries.get(id).popMeUp()
+        return true
+      }
+      for (const entry of this.entries) {
+        if (entry.uid === id || entry.id === id || entry.uuid === id) {
+          entry.popMeUp()
           return true
         }
-      }
-      if (this.entries[id]) {
-        this.entries[id].popMeUp()
-        return true
       }
       return false
     },
@@ -830,16 +795,17 @@ define([
     destroyReservation: function (reservation) {
       return new Promise((resolve, reject) => {
         if (!reservation) { resolve(); return }
-        delete this.entries[reservation.id]
+        const id = reservation.uuid || reservation.uid || reservation.id
+        this.entries.delete(id)
         reservation.destroy().then(() => resolve())
       })
     },
 
     _getActiveReservationsAttr: function () {
       var active = []
-      for (var k in this.entries) {
-        if (this.entries[k].get('active')) {
-          active.push(this.entries[k])
+      for (const entry of this.entries) {
+        if (entry.get('active')) {
+          active.push(entry)
         }
       }
 

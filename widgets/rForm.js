@@ -38,7 +38,6 @@ define([
 
   'location/count',
   'location/countList',
-  'location/Stores/Locality',
   'location/Stores/Machine',
   'location/Stores/Status',
   'location/Stores/Unit',
@@ -85,7 +84,6 @@ define([
 
   Count,
   CountList,
-  Locality,
   Machine,
   Status,
   Unit,
@@ -678,14 +676,18 @@ define([
         this.Buttons.addArrivalInProgress.setValue(true)
         this.Buttons.addArrivalDone.setValue(true)
         UserStore.getCurrentUser().then(current => {
-          this.doSave().then(() => {
-            KairosEvent('autoCheck', {
-              reservation: this.reservation.id,
-              type: KAIROS.events.autoCheck[0],
-              technician: current.getUrl(),
-              comment: '',
-              append: true
-            }).then(() => { this.interventionReload() })
+          this.doSave()
+          .then((done) => {
+            if (done) {
+              KairosEvent('autoCheck', {
+                reservation: this.reservation.id,
+                type: KAIROS.events.autoCheck[0],
+                technician: current.getUrl(),
+                comment: '',
+                append: true
+              })
+              .then(() => { this.interventionReload() })
+            }
           })
         })
       })
@@ -730,8 +732,8 @@ define([
 
       this.Buttons.addEnd.addEventListener('unset', event => {
         UserStore.getCurrentUser().then(user => {
-          this.nArrivalDone = false
-          this.nArrivalInprogress = false
+          this.Buttons.addArrivalDone.setValue(false)
+          this.Buttons.addArrivalInProgress.setValue(false)
 
           window.requestAnimationFrame(() => {
             this.nBack.style.setProperty('display', 'none')
@@ -769,6 +771,7 @@ define([
         if (event.target.value) {
           this.nArrivalDone.disabled = false
         } else {
+          this.Buttons.addArrivalDone.setValue(false)
           this.nArrivalDone.disabled = true
         }
       })
@@ -1162,7 +1165,7 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
-        const L = new Locality()
+        const L = new KLocalityStore()
         const U = new UserStore()
         const M = new Machine()
         const S = new Status({type: '0'})
@@ -1228,10 +1231,6 @@ define([
         djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
 
         this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
-        djOn(this.domNode, 'mousemove', function (event) {
-          event.preventDefault()
-          event.stopPropagation()
-        }, { capture: true })
 
         this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), { capture: true })
@@ -1676,20 +1675,23 @@ define([
     autoPrint: function (file, params = {}) {
       let type = params.forceType ? params.forceType : file
       return new Promise((resolve, reject) => {
-        this.doSave().then(() => {
-          Query.exec((Path.url('exec/auto-print.php', {
-            params: {
-              type: type, file: `pdfs/${file}/${this.reservation.uid}`
-            }
-          }))).then((result) => {
-            if (result.success) {
-              window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
-              resolve()
-            } else {
-              window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-              reject(new Error('Print error'))
-            }
-          })
+        this.doSave()
+        .then((done) => {
+          if (done) {
+            Query.exec((Path.url('exec/auto-print.php', {
+              params: {
+                type: type, file: `pdfs/${file}/${this.reservation.uid}`
+              }
+            }))).then((result) => {
+              if (result.success) {
+                window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+                resolve()
+              } else {
+                window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
+                reject(new Error('Print error'))
+              }
+            })
+          }
         }, () => {
           window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
           reject(new Error('Print error'))
@@ -1698,12 +1700,15 @@ define([
     },
 
     showPrint: function (type, params = {}) {
-      this.doSave().then(() => {
-        let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
-        for (let k in params) {
-          url.searchParams.append(k, params[k])
+      this.doSave()
+      .then((done) => {
+        if (done) {
+          let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+          for (let k in params) {
+            url.searchParams.append(k, params[k])
+          }
+          window.open(url)
         }
-        window.open(url)
       })
     },
 
@@ -1785,29 +1790,33 @@ define([
 
     doCopy: function (event) {
       this.reservation.copy().then((reservation) => {
+        KAIROS.info(`Succès de la duplication de ${this.reservation.id} vers ${reservation.id}`)
         reservation.popMeUp()
         this.hide()
       })
     },
 
     doSaveAndQuit: function (event) {
-      this.doSave().then(function () {
-        this.hide()
-      }.bind(this))
+      this.doSave()
+      .then(done => {
+        if (done) {
+          this.hide()
+        }
+      })
     },
     doSave: function (event) {
-      this.doNumbering()
-      let lastModificationTest
-      if (this.reservation.id) {
-        lastModificationTest = this.reservation.KReservation?.serverCompare() ?? Promise.resolve(true)
-      } else {
-        lastModificationTest = Promise.resolve(true)
-      }
-      return new Promise(function (resolve, reject) {
+      return new Promise((resolve, reject) => {
+        this.doNumbering()
+        let lastModificationTest
+        if (this.reservation.id) {
+          lastModificationTest = this.reservation.KReservation?.serverCompare() ?? Promise.resolve(true)
+        } else {
+          lastModificationTest = Promise.resolve(true)
+        }
         var err = this.validate()
         if (!err[1]) {
           KAIROS.error(err[0])
-          reject(new Error('Not valid'))
+          resolve(false)
           return
         }
         let move = false
@@ -1856,92 +1865,104 @@ define([
           if (!carryon) { return; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
-          fetch(url).then(response => {
-            response.json().then(res => {
-              let arrival = {}
-              if(res.length > 0) {
-                arrival = Object.assign(arrival, res.data[0])
-              }
+          fetch(url)
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          }).then(res => {
+            if (!res) { return }
+            let arrival = {}
+            if(res.length > 0) {
+              arrival = Object.assign(arrival, res.data[0])
+            }
 
-              if (this.Buttons.addEnd.getValue()) {
-                arrival.deleted = null
-                arrival.target = this.reservation.uid
-                if (f.arrivalDate) {
-                  if (f.arrivalTime) {
-                    arrival.reported = f.arrivalDate.join(f.arrivalTime)
-                  } else {
-                    arrival.reported = f.arrivalDate
-                  }
+            if (this.Buttons.addEnd.getValue()) {
+              arrival.deleted = null
+              arrival.target = this.reservation.uid
+              if (f.arrivalDate) {
+                if (f.arrivalTime) {
+                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
+                } else {
+                  arrival.reported = f.arrivalDate
                 }
-                arrival.creator = this.nArrivalCreator.value
-                arrival.comment = f.arrivalComment
-                arrival.contact = f.arrivalAddress
-                arrival.locality = this.nArrivalLocality.value
-                arrival.other = f.arrivalKeys
-                arrival.done = this.Buttons.addArrivalDone.getValue()
-                arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
-
-                this.reservation.set('_arrival', arrival)
+              }
+              arrival.creator = this.nArrivalCreator.value
+              arrival.comment = f.arrivalComment
+              arrival.contact = f.arrivalAddress
+              arrival.locality = this.nArrivalLocality.value
+              arrival.other = f.arrivalKeys
+              arrival.done = this.Buttons.addArrivalDone.getValue()
+              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+              this.reservation.set('_arrival', arrival)
+            } else {
+              if (arrival.id) {
+                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
               } else {
-                if (arrival.id) {
-                  this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-                } else {
-                  this.reservation.set('_arrival', {})
-                }
+                this.reservation.set('_arrival', {})
               }
+            }
 
-              let status = this.nStatus.value
-              if (isNaN(parseInt(status))) {
-                status = status.split('/').pop()
-              }
-              this.reservation.set('status', `${status}`)
-              this.reservation.set('begin', begin)
-              this.reservation.set('end', end)
-              this.reservation.set('deliveryBegin', deliveryBegin)
-              this.reservation.set('deliveryEnd', deliveryEnd)
-              this.reservation.set('address', this.nAddress.value)
-              this.reservation.set('reference', f.reference)
-              this.reservation.set('equipment', f.equipment)
-              this.reservation.set('locality', this.nLocality.value)
-              this.reservation.set('comment', f.comments)
-              this.reservation.set('folder', f.folder)
-              this.reservation.set('gps', f.gps)
-              this.reservation.set('title', f.title)
-              this.reservation.set('creator', this.nCreator.value)
-              this.reservation.set('technician', this.nTechnician.value)
-              this.reservation.set('visit', this.nAddVisit.value)
-              this.reservation.set('vreport', this.nAddReport.value)
-              this.reservation.set('padlock', this.nPadlock.value)
-              this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
+            let status = this.nStatus.value
+            if (isNaN(parseInt(status))) {
+              status = status.split('/').pop()
+            }
+            this.reservation.set('status', `${status}`)
+            this.reservation.set('begin', begin)
+            this.reservation.set('end', end)
+            this.reservation.set('deliveryBegin', deliveryBegin)
+            this.reservation.set('deliveryEnd', deliveryEnd)
+            this.reservation.set('address', this.nAddress.value)
+            this.reservation.set('reference', f.reference)
+            this.reservation.set('equipment', f.equipment)
+            this.reservation.set('locality', this.nLocality.value)
+            this.reservation.set('comment', f.comments)
+            this.reservation.set('folder', f.folder)
+            this.reservation.set('gps', f.gps)
+            this.reservation.set('title', f.title)
+            this.reservation.set('creator', this.nCreator.value)
+            this.reservation.set('technician', this.nTechnician.value)
+            this.reservation.set('visit', this.nAddVisit.value)
+            this.reservation.set('vreport', this.nAddReport.value)
+            this.reservation.set('padlock', this.nPadlock.value)
+            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
-              this.reservation.save().then((id) => {
-                fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`)).then(response => {
-                  if (!response.ok) { return }
-                  response.json().then(result => {
-                    let data = Array.isArray(result.data) ? result.data[0] : result.data
-                    this.reservation.fromJson(data).then(_ => {
-                      this.domNode.classList.remove('outofsync')
-                      this.Buttons.resync.setDisabled(true)
-                    })
-                    if (data.modification) {
-                      this.lastModified = parseInt(data.modification)
-                      this.reservation.lastModified = parseInt(data.modification)
-                    }
-                  })
+            this.reservation.save()
+            .then((id) => {
+              fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
+              .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+              }).then(result => {
+                if (!result) { return null }
+                let data = Array.isArray(result.data) ? result.data[0] : result.data
+                this.reservation.fromJson(data)
+                .then(_ => {
+                  this.domNode.classList.remove('outofsync')
+                  this.Buttons.resync.setDisabled(true)
                 })
-                if (!move) {
-                  this.resize()
-                } else {
-                  this.reservation.toObject().then((reservation) => {
-                    this.reservation.sup.KEntry.move(reservation[0])
-                  })
+                if (data.modification) {
+                  this.lastModified = parseInt(data.modification)
+                  this.reservation.lastModified = parseInt(data.modification)
                 }
-                resolve()
               })
+              if (!move) {
+                this.resize()
+              } else {
+                this.reservation.toObject()
+                .then((reservation) => {
+                  this.reservation.sup.KEntry.move(reservation[0])
+                })
+              }
+              this.onSave = null
+              resolve(true)
+            })
+            .catch(reason => {
+              this.onSave = null
+              resolve(false)
             })
           })
         })
-      }.bind(this))
+      })
     },
 
     evtNoEquipment: function () {

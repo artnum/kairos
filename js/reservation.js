@@ -31,27 +31,42 @@ function KReservation () {
   this.evttarget = new EventTarget()
 }
 
-KReservation.prototype.init = function (id) {
-  this.inited = new Promise((resolve, reject) => {
-    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`))
-    .then(response => {
-      if (!response.ok) { this.ok = false; resolve(r); return }
+KReservation.load = function (id) {
+  const r = new KReservation(id)
+  return new Promise((resolve, reject) => {
+    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
+      if (!response.ok) { r.ok = false; resolve(r); return }
       response.json()
       .then(result => {
-        if (result.length !== 1) { this.ok = false; resolve(this);  return }
-        this.fromJson(result.data)
-        this.ok = true
-        this.evttarget.dispatchEvent(new CustomEvent('base-loaded', { details: this }))
-        this.loadExtended()
-        .then(_ => { 
-          this.evttarget.dispatchEvent(new CustomEvent('complete-loaded', { details: this }))
-          resolve(this)
-        })
+          if (result.length !== 1) { r.ok = false; resolve(r);  return }
+          r.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
+          
+          r.hash.reservation._complete = r.hashJsonS(r.data.reservation, [ 'modification' ])
+
+          r.data.reservation.begin = new Date(r.data.reservation.begin)
+          r.data.reservation.end = new Date(r.data.reservation.end)
+          r.data.reservation.duration = r.data.reservation.end.getTime() - r.data.reservation.begin.getTime()
+          r.data.reservation.delivery = {
+            begin: r.data.reservation.deliveryBegin ? new Date(r.data.reservation.deliveryBegin) : r.data.reservation.begin,
+            end: r.data.reservation.deliveryEnd ? new Date(r.data.reservation.deliveryEnd) : r.data.reservation.end
+          }
+          r.data.reservation.created = KAIROS.DateFromTS(r.data.reservation.created)
+          r.data.reservation.modification = KAIROS.DateFromTS(r.data.reservation.modification)
+          r.data.reservation.reference = r.data.reservation.reference ? r.data.reservation.reference : ''
+          r.ok = true
+          Promise.all([
+            r.loadMachine(),
+            r.loadCreator(),
+            r.loadTechnician(),
+            r.loadLocality(),
+            r.loadContact(),
+          ])
+          .then(_ => { 
+            resolve(r)
+          })
       })
     })
   })
-  this.inited.then(r => { this._initresolve(r) })
-  return this.inited
 }
 
 KReservation.load = function (id) {
@@ -187,14 +202,16 @@ KReservation.prototype.loadCreator = function () {
     if (this.data.reservation.creator === null) {
       resolve(); return
     }
-    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator.split('/').pop()}`)).then(response => {
-      if (!response.ok) { resolve(); return }
-      response.json().then(result => {
-        if (result.length !== 1) { resolve(); return }
-        this.data.creator = Array.isArray(result.data) ? result.data[0] : result.data
-        this.hash.creator._complete = this.hashJson(this.data.creator, [ 'id' ])
-        resolve(this.data.creator)
-      })
+    fetch(new URL(`${KAIROS.getBase()}/store/User/${this.data.reservation.creator.split('/').pop()}`))
+    .then(response => {
+      if (!response.ok) { return {length: 0, data: null} }
+      return response.json()
+    })
+    .then(result => {
+      if (result.length !== 1) { resolve(); return }
+      this.data.creator = Array.isArray(result.data) ? result.data[0] : result.data
+      this.hash.creator._complete = this.hashJson(this.data.creator, [ 'id' ])
+      resolve(this.data.creator)
     })
   })
   return this.promise.creator
@@ -273,19 +290,17 @@ KReservation.prototype.loadContact = function () {
 KReservation.prototype.oneLine = function () {
   return new Promise((resolve, reject) => {
     if (!this.ok) { resolve(''); return }
-    this.loaded().then(() => {
-      let div = document.createElement('DIV')
-      div.dataset.id = this.data.reservation.id
-      div.innerHTML = `
-        <span class="ident">${this.data.reservation.id}</span>
-        ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
-        <span class="mnumber">${this.data.machine.uid}</span>
-        <span class="machine">${this.data.machine.cn}</span>
-        <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
-        <span class="address">${this.data.reservation.address ?? ''}</span>
-        <span class="locality">${this.data.locality.label ?? ''}</span>
-      `
-      resolve(div)
-    })
+    let div = document.createElement('DIV')
+    div.dataset.id = this.data.reservation.id
+    div.innerHTML = `
+      <span class="ident">${this.data.reservation.id}</span>
+      ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
+      <span class="mnumber">${this.data.machine.uid}</span>
+      <span class="machine">${this.data.machine.cn}</span>
+      <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
+      <span class="address">${this.data.reservation.address ?? ''}</span>
+      <span class="locality">${this.data.locality.label ?? ''}</span>
+    `
+    resolve(div)
   })
 }

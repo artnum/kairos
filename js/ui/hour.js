@@ -1,6 +1,7 @@
 function HourBox (targetNode) {
     this.data = {
-        value: HourBox.nowNextQuarter() // initialize at now
+        value: HourBox.nowNextQuarter(), // initialize at now
+        oldValue: null
     }
 
     if (targetNode instanceof HTMLElement) {
@@ -18,6 +19,7 @@ function HourBox (targetNode) {
         set: (object, property, value) => {
             switch (property) {
                 case 'value':
+                    object.data.oldValue = object.data.value
                     object.setValid()
                     let dt = object.toDateTime(value)
                     if (value instanceof Date) {
@@ -30,6 +32,7 @@ function HourBox (targetNode) {
                         object.data[property] = dt
                     }
                     object.displayValue()
+                    object.doChangeEvent()
                     break
                 default: object.data[property] = value
                     break
@@ -52,7 +55,7 @@ function HourBox (targetNode) {
         this.closeTimeSelector()
         this.displayValue()
     }.bind(proxy)
-    proxy.domNode.addEventListener('change', closeTimeSelector)
+    //proxy.domNode.addEventListener('change', closeTimeSelector)
     proxy.domNode.addEventListener('blur', function(event) {
         if (!this.timeSelector.disableBlur) {
             closeTimeSelector(event)
@@ -125,6 +128,12 @@ HourBox.nowNextQuarter = function () {
     const date = new Date()
     date.setMinutes(Math.ceil(date.getMinutes() / 15) * 15, 0, 0)
     return date
+}
+
+HourBox.prototype.doChangeEvent = function () {
+    if (this.data.value !== this.data.oldValue) {
+        this.domNode.dispatchEvent(new Event('change', {bubbles: true}))
+    }
 }
 
 HourBox.prototype.closeTimeSelector = function () {

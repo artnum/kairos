@@ -7,6 +7,10 @@ const kMouseFollow = event => {
     KAIROS.mouse.clientY = event.clientY
 }
 
+const K_INFO = 1
+const K_WARN = 2
+const K_ERROR = 3
+
 window.addEventListener('mousemove', kMouseFollow)
 window.addEventListener('touchmove', kMouseFollow)
 
@@ -37,19 +41,27 @@ KAIROS.error = function (txt, code = 0) {
     console.groupEnd()
 }
 
+KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {
+    console.log(reason)
+    this.log(level, message, code)
+}
+
 KAIROS.log = function (level, txt, code) {
     var timeout = 10000
     let div = document.createElement('DIV')
 
     switch (level) {
+        case K_INFO:
         case 'info': timeout = 3000
             div.appendChild(document.createElement('I'))
             div.lastChild.setAttribute('class', 'fas fa-info-circle')
             break
+        case K_ERROR:
         case 'error':
             div.appendChild(document.createElement('I'))
             div.lastChild.setAttribute('class', 'fas fa-times-circle')
             break
+        case K_WARN:
         case 'warning':
             div.appendChild(document.createElement('I'))
             div.lastChild.setAttribute('class', 'fas fa-exclamation-circle')
@@ -77,7 +89,7 @@ KAIROS.log = function (level, txt, code) {
         document.body.classList.remove('info', 'error', 'warning')
     })
 
-    window.requestAnimationFrame(() => document.getElementById('LogLine').appendChild(div))
+    window.requestAnimationFrame(() => document.getElementById('LogLine')?.appendChild(div))
 }
 
 KAIROS.stackClosable = function (closeFunction) {
@@ -167,7 +179,6 @@ KAIROS.searchResults = function () {
 
 KAIROS.zMax = function (node = null) {
     let max = 0
-    let start = performance.now()
     document.body.getElementsByTagName('*').forEach(element => {
         let zx = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'))
         if (zx > max) { max = zx }

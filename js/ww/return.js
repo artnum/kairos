@@ -1,21 +1,29 @@
 /* eslint-env worker */
 /* global IdxDB, Artnum */
 'use strict'
-importScripts('https://bitwiseshiftleft.github.io/sjcl/sjcl.js')
-importScripts('https://artnum.ch/code/js/Path.js')
-importScripts('https://artnum.ch/code/js/Query.js')
+importScripts('../../conf/app.js')
+importScripts('../kairos.js')
+
 
 var lastMod = 0
 function run () {
+  const url = new URL(`${KAIROS.getBase()}/store/Arrival`)
   var p = {'search.done': '--'}
+  url.searchParams.append('search.done', '--')
   if (lastMod > 0) {
-    p = {'search.modification': `>${lastMod}`, 'long': '1'}
+    url.searchParams.append('search.modification', `>${lastMod}`)
+    url.searchParams.append('long', '1')
   }
-  Artnum.Query.exec(Artnum.Path.url('store/Arrival', {params: p})).then(function (results) {
-    if (results.success && results.length > 0) {
-      for (var i = 0; i < results.length; i++) {
+    
+  fetch(url)
+  .then(function (response) {
+    if (!response.ok) { return null}
+    return response.json()
+  }).then(results =>{
+    if (results) {
+      for (let i = 0; i < results.length; i++) {
         postMessage(results.data[i])
-        var mod = parseInt(results.data[i].modification)
+        const mod = parseInt(results.data[i].modification)
         if (mod > lastMod) { lastMod = mod }
       }
     }

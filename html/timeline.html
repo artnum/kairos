@@ -1,17 +1,13 @@
-<!DOCTYPE>
+<!DOCTYPE html>
 <html>
 <head profile="http://www.w3.org/2005/10/profile">
-  <title>Location</title>
-<link rel="stylesheet" href="../css/loading.css" id="cssLoading" />
+<title>Location</title>
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
 <link rel="icon" type="image/png" href="../resources/images/favicon.png" />
 <link rel="icon" type="image/svg+xml" href="../resources/images/favicon.svg" />
-<link rel="stylesheet" href="../css/timeline.css" />
-<link href="../css/dtable.css" rel="stylesheet" />
-<link rel="stylesheet" href="../css/fontawesome-all.min.css" />
-<link rel="stylesheet" href="../css/balloon.css/balloon.min.css" />
+<script src="../js/index.js"></script>
 </head>
 <body class="claro">
   <script>
@@ -68,63 +64,22 @@ dojoConfig = {
 	]
    }
 </script>
-<script src="../resources/symbols.js"></script>
-<script src="../conf/app.js"></script>
-<script src="../js/kairos.js"></script>
-<script src="../js/kairos-ui.js"></script>
-<script src="../js/css.js"></script>
-<script src="../js/gevent.js"></script>
-<script src="../js/crc32.js"></script>
-<script src="../js/Histoire.js"></script>
-<script src="../js/wait.js"></script>
-<script src="../js/days.js"></script>
-<script src="../js/date.js"></script>
-<script src="../js/tooltip.js"></script>
-<script src="../js/dLoop.js"></script>
-<script src="../js/MButton.js"></script>
-<script src="../js/stores/user.js"></script>
-<script src="../js/evenement.js"></script>
-<script src="../js/popup.js"></script>
-<script src="../js/clientSearch.js"></script>
-<script src="../js/reservation.js"></script>
-<script src="../js/KAffaire.js"></script>
-<script src="../js/ui/KBar.js"></script>
-<script src="../node_modules/popper.js/dist/umd/popper.min.js"></script>
-<script src="../node_modules/tooltip.js/dist/umd/tooltip.min.js"></script>
-<script src="../node_modules/transliteration/dist/browser/bundle.umd.min.js"></script>
-<script src="../node_modules/sjcl/sjcl.js"></script>
-<script src="../node_modules/object-hash/dist/object_hash.js"></script>
-<script src="../node_modules/imurmurhash/imurmurhash.min.js"></script>
-<script src="../js/PJs/pSBC.js"></script>
-<script src="../js/localdb.js"></script>
-<script src="../js/select.js"></script>
-<script src="../js/entry.js"></script>
-<script src="../node_modules/artnum/DTable.js"></script>
-<script src="../node_modules/artnum/Date.js"></script>
-<script src="../node_modules/artnum/String.js"></script>
-<script src="../js/view.js"></script>
-<script src="../js/ldap.js"></script>
-<!-- https://raw.githubusercontent.com/pieroxy/lz-string/master/libs/lz-string.min.js //-->
-<script src="../js/string.js"></script>
-<script src="../js/address.js"></script>
-<script src="../js/ui/hour.js"></script>
-<script src="../js/ui/radiolike.js"></script>
-<script src="../node_modules/@popperjs/core/dist/umd/popper.min.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script> 
 <script>
-	require([
-		"location/timeline",
-		"location/entry",
-		"dojo/domReady!"
-	], function (timeline, entry) {
-		wantdb( () => {
-      window.App = new timeline();
-      KAIROS.timeline = window.App
-			window.App.DB = DB;
-			document.getElementsByTagName('body')[0].appendChild(window.App.domNode);
-			window.App.run();
-		});
-	});
+  window.addEventListener('kairos-ready', event => {
+    require([
+      "location/timeline",
+      "location/entry",
+      "dojo/domReady!"
+    ], function (timeline, entry) {
+      wantdb( () => {
+        window.App = new timeline()
+        window.App.DB = DB
+        KAIROS.timeline = window.App
+        document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
+        KAIROS.timeline.run()
+      });
+    });
+  })
 </script>
 <div id="loadingOverlay">&nbsp;</div>
 <div id="LogLine" data-dojo-attach-point="logline" class="logline"></div>

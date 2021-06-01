@@ -21,6 +21,13 @@ function KPopup (title, opts = {}) {
     this.domNode.startLoading = this.startLoading.bind(this)
     this.domNode.stopLoading = this.stopLoading.bind(this)
 
+    if (opts.minWidth) {
+        this.popup.style.minWidth = opts.minWidth
+    }
+    if (opts.minHeigt) {
+        this.popup.style.minHeight = opts.minHeight
+    }
+
     if (opts.content) {
         this.setContent(opts.content)
     }
@@ -158,7 +165,20 @@ KPopup.prototype.place = function () {
         }
     } else {
         this.popup.classList.add('win')
+        this.position()
     }
+}
+
+KPopup.prototype.position = function () {
+    if (!this.isWindow) { return; }
+    
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+    const popup = this.popup.getClientRects()
+    window.requestAnimationFrame(() => {
+        this.popup.style.setProperty('top', `${vh / 2 - popup[0].height / 2}px`)
+        this.popup.style.setProperty('left', `${vw / 2 - popup[0].width / 2}px`)
+    })
 }
 
 KPopup.prototype.open = function () {
@@ -181,7 +201,7 @@ KPopup.prototype.open = function () {
 
 KPopup.prototype.close = function () {
     return new Promise((resolve, reject) => {
-        if (!this.opened) { resolve(); return }
+        if (this.opened === null) { resolve(); return }
         if (this.popper) { this.popper.destroy() }
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null

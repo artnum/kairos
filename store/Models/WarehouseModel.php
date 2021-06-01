@@ -12,5 +12,10 @@ class WarehouseModel extends artnum\SQL {
     $entry['label'] = 'Dépôt ' . $entry['name'];
     return $entry;
   }
+
+  function getCacheOpts() {
+    /* 15min cache for contacts */
+    return ['age' => 3600, 'public' => true];
+  }
 }
 ?>

@@ -1,8 +1,13 @@
 KAIROS.timeline = null
-
 KAIROS.dataVersion = 2
+KAIROS.Cache = {
+  _timeout: 7200000 // 2h cache timeout
+} // global cache
 
 KAIROS.getBase = function () {
+  if (self) {
+    return `${self.location.origin}/${KAIROS.base}`
+  }
   return `${window.location.origin}/${KAIROS.base}`
 }
 
@@ -54,6 +59,37 @@ KAIROS.unregister = function (resource) {
   KAIROS.eventTarget.dispatchEvent(new CustomEvent('resource-delete', {detail: object}))
 }
 
+KAIROS.purgeDelayedQuery = function (iter) {
+  if (typeof requestIdleCallback !== 'function') {
+    /* web worker run */
+    const start = performance.now()
+    let iterator = iter === undefined ? KAIROS.fetch.current.entries() : iter
+    const now = Date.now()
+    while (performance.now() - start < 50) {
+      const current = iterator.next()
+      if (current.done) { iterator = KAIROS.fetch.current.entries(); continue }
+      if (now - current.value[1][1] > KAIROS.cache?.queryBufferDelay) {
+        KAIROS.fetch.current.delete(current.value[0])
+      }
+    }
+    setTimeout(() => KAIROS.purgeDelayedQuery(iterator), 500)  
+    return;
+  }
+  requestIdleCallback(deadline => {
+    let iterator = iter === undefined ? KAIROS.fetch.current.entries() : iter
+    const now = Date.now()
+    const start = performance.now()
+    while (performance.now() - start < 10) { // frontend have 10 ms
+      const current = iterator.next()
+      if (current.done) { iterator = KAIROS.fetch.current.entries(); continue }
+      if (now - current.value[1][1] > KAIROS.cache?.queryBufferDelay) {
+        KAIROS.fetch.current.delete(current.value[0])
+      }
+    }
+    setTimeout(() => KAIROS.purgeDelayedQuery(iterator), 500)  
+  })
+}
+
 KAIROS.get = function (resource) {
   if (KAIROS.register.table === undefined) { return null } 
   if (KAIROS.register.table[resource] === undefined) { return null }
@@ -64,8 +100,33 @@ KAIROS.get = function (resource) {
 const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch
 KAIROS.fetch = function (url, options = {}) {
+  const originalUrl = url instanceof URL ? url.toString() : url
+  let bufferDelay = false
+
+  if (KAIROS.cache?.queryBufferDelay) {
+    if (options.method === undefined) { bufferDelay = true }
+    else {
+      switch(options.method.toLowerCase()) {
+        case 'head':
+        case 'get':
+          bufferDelay = true;
+          break
+      }
+    }
+  }
+
   if (KAIROS.fetch.uuid === undefined) {
     KAIROS.fetch.uuid = KAIROS.uuidV4()
+  }
+  if (bufferDelay && KAIROS.fetch.current === undefined) {
+    KAIROS.fetch.current = new Map()
+    KAIROS.purgeDelayedQuery() // start purge loop
+  }
+  if (bufferDelay) {
+    const currentRunning = KAIROS.fetch.current.get(originalUrl)
+    if (currentRunning) {
+      return currentRunning[0].then(response => { return response.clone() })
+    }
   }
 
   if (KAIROS.fetch.count === undefined) {
@@ -93,14 +154,20 @@ KAIROS.fetch = function (url, options = {}) {
     }
   }
 
-  let query = __kairos_fetch(url, options)
-  query.then(response => {
+  const query = __kairos_fetch(url, options)
+  if (bufferDelay) {
+    KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
+  }
+
+  query
+  .then(response => {
     if (response.ok) { return } // don't process good response
-    let headers = response.headers
+    const clonedResponse = response.clone()
+    let headers = clonedResponse.headers
     if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
-    response.json().then(error => {
+    clonedResponse.json().then(error => {
       if (!error.message) { return }
-      switch(Math.trunc(response.status / 100)) {
+      switch(Math.trunc(clonedResponse.status / 100)) {
         case 3:
           KAIROS.log(`Message serveur : "${errror.message}"`)
           break
@@ -115,7 +182,7 @@ KAIROS.fetch = function (url, options = {}) {
     })
   })
 
-  return query
+  return query.then(response => { return response.clone() })
 }
 
 KAIROS.DateFromTS = function(ts) {

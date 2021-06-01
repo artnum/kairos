@@ -5,23 +5,21 @@ define([
   'dojo/_base/declare',
   'dijit/_WidgetBase',
   'dojo/Evented',
-  'artnum/Path',
-  'artnum/Query',
+
   'artnum/Doc',
-  'location/card',
   'location/count'
 ], function (
   djDeclare,
   _dtWidgetBase,
   djEvented,
-  Path,
-  Query,
+
   Doc,
-  Card,
+  
   Count
 ) {
   return djDeclare('location/countList', [ _dtWidgetBase, djEvented ], {
     constructor: function () {
+      this.data = new Map()
       this.inherited(arguments)
 
       if (arguments[0].integrated) {
@@ -51,11 +49,6 @@ define([
       return x.split('T')[0]
     },
 
-    _toHtmlDate: function (date) {
-      var x = new Date(date)
-      return x.getDate() + '.' + (x.getMonth() + 1 < 10 ? '0' + String(x.getMonth() + 1) : String(x.getMonth() + 1)) + '.' + String(x.getYear() - 100)
-    },
-
     _shortDesc: function (text) {
       var x = text.replace(/(?:[\r\n]+)/g, ', ')
       if (x.length > 30) {
@@ -67,15 +60,15 @@ define([
 
     _toHtmlRange: function (d1, d2) {
       if (d1 || d2) {
-        return (d1 ? this._toHtmlDate(d1) : '') + ' - ' + (d2 ? this._toHtmlDate(d2) : '')
+        return (d1 ? (new Date(d1)).briefDate() : '') + ' - ' + (d2 ? (new Date(d2)).briefDate() : '')
       }
 
       return ''
     },
 
-    run: async function () {
-      var limit = 50
-      var offset = 0
+    run: function () {
+      let limit = 50
+      let offset = 0
       if (arguments[0].limit && arguments[0].limit > 0) {
         limit = arguments[0].limit
       } else if (arguments[0].limit) {
@@ -88,34 +81,30 @@ define([
         offset = arguments[0].offset
       }
 
-      var units = await Query.exec(Path.url('store/Unit'))
-      if (units.success && units.length > 0) {
-        this.set('units', units.data)
-      } else {
-        this.set('units', [])
-      }
-
-      var articles = await Query.exec(Path.url('store/Article'))
-      if (articles.success && articles.length > 0) {
-        this.set('articles', articles.data)
-      } else {
-        this.set('articles', [])
-      }
-      let url = Path.url('store/Count')
+      const url = new URL(`${KAIROS.getBase()}/store/Count`)
       url.searchParams.set('search.deleted', '-')
       url.searchParams.set('sort.id', 'DESC')
       if (limit) {
         url.searchParams.set('limit', `${offset},${limit}`)
       }
 
-      let query = Query.exec(url)
-      var queryCount = Path.url('store/Count/.count')
-      queryCount.searchParams = url.searchParams
-      queryCount = Query.exec(queryCount)
+      const query = fetch(url)
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json()
+      })
 
-      var div = document.createElement('DIV')
+      const url2 = new URL(`${KAIROS.getBase()}/store/Count/.count`)
+      url2.searchParams = url.searchParams
+      const queryCount = fetch(url2)
+      .then(response =>{
+        if (!response.ok) { return null }
+        return response.json()
+      })
+
+      const div = document.createElement('DIV')
       div.setAttribute('class', 'DocCount')
-      window.GEvent.listen('count.count-deleted', function (event) {
+      window.GEvent.listen('count.count-deleted', event => {
         var id = String(event.detail.id)
         var tbody = this.domNode.getElementsByTagName('TBODY')[0]
         var node = tbody.firstElementChild
@@ -131,7 +120,7 @@ define([
             }
           })
         }
-      }.bind(this))
+      })
 
       this.domNode = div
 
@@ -156,7 +145,8 @@ define([
         this.run({limit: evt.target.value})
       }.bind(this))
 
-      queryCount.then(function (n) {
+      queryCount.then(n => {
+        if (!n) {return }
         if (limit <= 0) { return }
         let pselect = document.createElement('SELECT')
         var pages = Math.floor(n.length / limit)
@@ -177,85 +167,106 @@ define([
           select.parentNode.insertBefore(pselect, select.nextSibling.nextSibling)
           select.parentNode.insertBefore(document.createTextNode(` sur ${pages}`), pselect.nextSibling)
         })
-      }.bind(this))
+      })
       var Tbody = this.domNode.getElementsByTagName('TBODY')[0]
       var Table = this.domNode.getElementsByTagName('TABLE')[0]
       this.dtable = new Artnum.DTable({table: Table, sortOnly: true})
 
-      query.then(function (results) {
-        var _clients = {}
-        let url = Path.url('store/CountReservation', {params: {'sort.count': 'DESC'}})
+      query
+      .then(results => {
+        if (!results) { return }
+        const url = new URL(`${KAIROS.getBase()}/store/CountReservation`)
+        url.searchParams.append('sort.count', 'DESC')
+
+        let queryChain = Promise.resolve()
         for (let i = 0; i < results.length; i++) {
-          setTimeout(function () {
-            let count = results.data[i]
-            var clients = []
+          const promise = new Promise((resolve, reject) => {
+            const count = results.data[i]
             url.searchParams.set('search.count', count.id)
-            Query.exec(url).then(async function (reservations) {
-              if (reservations.success && reservations.length > 0) {
-                reservations._table = []
-                clients = []
-                for (var j = 0; j < reservations.length; j++) {
-                  reservations._table.push(reservations.data[j].reservation)
-                  if (!_clients[reservations.data[j].reservation]) {
-                    var t = await Query.exec(Path.url(`store/DeepReservation/${reservations.data[j].reservation}`))
-                    if (t.success && t.length === 1) {
-                      if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {
-                        var a = new Address(t.data.contacts['_client'][0])
-                        _clients[reservations.data[j].reservation] = a.toArray()[0]
-                        if (a.toArray().length > 1) {
-                          _clients[reservations.data[j].reservation] += `<br />${a.toArray()[1]}`
-                        }
+            fetch(url)
+            .then(response => {
+              if (!response.ok) { return null }
+              return response.json()
+            })
+            .then(reservations => {
+              return new Promise((resolve, reject) => {
+                if (!reservations) { resolve([count, '', []]); return}
+                if (reservations.length <= 0) { resolve([count, '', []]); return }
+                const p = []
+                const table = []
+                const clients = []
+                const _clients = new Map()
+                for (let j = 0; j < reservations.length; j++) {
+                  table.push(reservations.data[j].reservation)
+                  if (_clients.has(reservations.data[j].reservation)) { continue; }
+                  
+                  p.push(new Promise((resolve, reject) => {
+                    fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${reservations.data[j].reservation}`))
+                    .then(response => {
+                      if (!response.ok) { return null }
+                      return response.json()
+                    })
+                    .then(t => {
+                      if (!t) { resolve(); return }
+                      if (t.length !== 1) { resolve(); return }
+          
+                      if (t.data.contacts && t.data.contacts['_client'] && t.data.contacts['_client'].length > 0) {                 
+                        _clients.set(
+                          reservations.data[j].reservation, 
+                          new Address(t.data.contacts['_client'][0]).toArray().slice(0, 2).join('<br />')
+                        )
                       }
+          
+                      if (_clients.has(reservations.data[j].reservation)) {
+                        clients.push(_clients.get(reservations.data[j].reservation))
+                      }
+                      resolve()
+                    })
+                  }))
+                }
+                Promise.all(p)
+                .then(_ => {
+                  const c = []
+                  for (const client of clients) {
+                    if (c.indexOf(client) === -1) {
+                      c.push(client)
                     }
                   }
-                  if (_clients[reservations.data[j].reservation]) {
-                    clients.push(_clients[reservations.data[j].reservation])
-                  }
-                }
-                reservations = reservations._table.join(', ')
-              } else {
-                reservations = ''
-              }
-
-              let addIn = []
-              let c = []
-              clients.forEach(function (_c) {
-                let h = sjcl.codec.base64.fromBits(sjcl.hash.sha256.hash(_c))
-                if (addIn.indexOf(h) === -1) {
-                  addIn.push(h)
-                  c.push(_c)
-                }
+                  resolve([count, table.join(', '), c])
+                })
               })
-
-              var tr = document.createElement('TR')
+            })
+            .then(([count, reservations, clients]) => {
+              let tr = document.createElement('TR')
               tr.setAttribute('data-url', `#DEC${String(count.id)}`)
               tr.setAttribute('data-count-id', String(count.id))
               tr.addEventListener('click', this.evtSelectTr.bind(this))
               tr.innerHTML = `<td data-sort-value="${count.id}">${count.id}</td>
-          <td data-sort-value="${(count.state === 'FINAL' ? 'true' : 'false')}">${(count.state === 'FINAL' ? 'Oui' : 'Non')}</td>
-          <td tabindex data-edit="0" data-invoice="${(count.invoice ? count.invoice : '')}">${(count.invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '')}</td>
-          <td>${reservations}</td>
-          <td>${(count.status && count._status ? count._status.name : '')}</td>
-          <td data-sort-value="${count.begin}">${this._toHtmlRange(count.begin, count.end)}</td>
-          <td>${(count.reference ? count.reference : '')}</td>
-          <td>${c.length > 0 ? c.join('<hr>') : ''}</td>
-          <td>${(count.comment ? this._shortDesc(count.comment) : '')}</td>
-          <td>${(count.total ? count.total : '')}</td>
-          <td>${(count.printed ? this._toHtmlDate(count.printed) : '')}</td>
-          <td data-op="delete"><i class="far fa-trash-alt action"></i></td>`
+                <td data-sort-value="${(count.state === 'FINAL' ? 'true' : 'false')}">${(count.state === 'FINAL' ? 'Oui' : 'Non')}</td>
+                <td tabindex data-edit="0" data-invoice="${(count.invoice ? count.invoice : '')}">${(count.invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '')}</td>
+                <td>${reservations}</td>
+                <td>${(count.status && count._status ? count._status.name : '')}</td>
+                <td data-sort-value="${count.begin}">${this._toHtmlRange(count.begin, count.end)}</td>
+                <td>${(count.reference ? count.reference : '')}</td>
+                <td>${clients.length > 0 ? clients.join('<hr>') : ''}</td>
+                <td>${(count.comment ? this._shortDesc(count.comment) : '')}</td>
+                <td>${(count.total ? count.total : '')}</td>
+                <td>${(count.printed ? (new Date(count.printed)).briefDate() : '')}</td>
+                <td data-op="delete"><i class="far fa-trash-alt action"></i></td>`
 
               let n = Tbody.lastElementChild
               let p = null
               while (n &&
-                     parseInt(tr.firstElementChild.dataset.sortValue) > parseInt(n.firstElementChild.dataset.sortValue)) {
+                      parseInt(tr.firstElementChild.dataset.sortValue) > parseInt(n.firstElementChild.dataset.sortValue)) {
                 p = n
                 n = n.previousSibling
               }
-              window.requestAnimationFrame(() => Tbody.insertBefore(tr, p))
-            }.bind(this))
-          }.bind(this), 10)
+              window.requestAnimationFrame(() => { Tbody.insertBefore(tr, p); resolve() })
+            })
+          })
+          queryChain.then(_ => { return promise })
         }
-      }.bind(this))
+      })
 
       this.doc.content(this.domNode)
       if (arguments[0].addReservation && String(arguments[0].addReservation) !== '0') {
@@ -264,49 +275,94 @@ define([
     },
 
     evtSelectTr: async function (event) {
-      var tr = event.target
-      var td = event.target
+      let tr = event.target
+      let td = event.target
       while (tr && tr.nodeName !== 'TR') {
         if (tr.nodeName === 'TD') { td = tr }
         tr = tr.parentNode
       }
-      if (td.getAttribute('data-invoice') !== null) {
-        if (td.getAttribute('data-edit') === '0') {
-          td.setAttribute('data-edit', '1')
+      if (td.dataset.invoice !== undefined) {
+        if (td.dataset.edit === '0') {
+          td.dataset.edit = '1'
           td.dataset.previousValue = td.innerHTML
-          var fn = async function (event) {
-            var td = event.target
+          const fn = (event) => {
+            let td = event.target
             while (td.nodeName !== 'TD') { td = td.parentNode }
-            var invoice = td.getAttribute('data-invoice')
-            if (invoice) {
-              var result = await Query.exec(Path.url('store/Invoice/' + invoice), {method: 'PATCH', body: {id: invoice, winbiz: event.target.value}})
-            } else {
-              var tr = event.target
-              while (tr.nodeName !== 'TR') { tr = tr.parentNode }
-              var countid = tr.getAttribute('data-count-id')
-              result = await Query.exec(Path.url('store/Invoice'), {method: 'POST', body: {winbiz: event.target.value}})
-              if (result.success) {
-                invoice = result.data[0].id
-                td.setAttribute('data-invoice', invoice)
-                result = await Query.exec(Path.url('store/Count/' + countid), {method: 'PATCH', body: {id: countid, invoice: result.data[0].id}})
-              }
-            }
-            if (result.success) {
-              td.setAttribute('data-edit', '0')
-              result = await Query.exec(Path.url('store/Invoice/' + invoice))
-              var winbiz = result.data.winbiz
-              window.requestAnimationFrame(function () {
-                td.innerHTML = winbiz
+
+            if (event.target.value.trim() === '') {
+              td.dataset.edit = '0'
+              window.requestAnimationFrame(() => {
+                td.innerHTML = td.dataset.previousValue
               })
+              return 
             }
+            const invoice = td.dataset.invoice
+            new Promise((resolve, reject ) => {
+              if (invoice) {
+                fetch(new URL(`${KAIROS.getBase()}/store/Invoice/${invoice}`),
+                  {method: 'PATCH', body: JSON.stringify({id: invoice, winbiz: event.target.value.trim()})})
+                .then(response => {
+                  if (!response.ok) { return null }
+                  return response.json()
+                })
+                .then(result => {
+                  if (!result) { resolve(null); return }
+                  resolve(invoice)
+                })
+              } else {
+                let tr = event.target
+                while (tr.nodeName !== 'TR') { tr = tr.parentNode }
+                const countid = tr.dataset.countId
+                fetch(new URL(`${KAIROS.getBase()}/store/Invoice`), {method: 'POST', body: JSON.stringify({winbiz: event.target.value.trim()})})
+                .then(response => {
+                  if (!response.ok) { return null }
+                  return response.json()
+                }).then(result => {
+                  if (!result) { resolve(null); return }
+                  if (result.length <= 0) { resolve(null); return }
+
+                  const invoice = Array.isArray(result.data) ? result.data[0] : result.data
+                  td.dataset.invoice = invoice.invoice
+                  fetch(new URL(`${KAIROS.getBase()}/store/Count/${countid}`), {method: 'PATCH', body: JSON.stringify({id: countid, invoice: invoice.id})})
+                  .then(response => {
+                    if (!response.ok) { return null }
+                    return response.json()
+                  })
+                  .then(result => {
+                    if (!result) { resolve(null); return }
+                    resolve(invoice.id)
+                  })
+                })
+              }
+            })
+            .then(result => {
+              if (!result) { return; }
+              td.dataset.edit = '0'
+              fetch(new URL(`${KAIROS.getBase()}/store/Invoice/${result}`))
+              .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+              })
+              .then(result => {
+                if (!result || !result.data) { 
+                  window.requestAnimationFrame(() => {
+                    td.innerHTML = td.dataset.previousValue
+                  })
+                  return 
+                }
+                window.requestAnimationFrame(() => {
+                  td.innerHTML =  Array.isArray(result.data) ? result.data[0].winbiz : result.data.winbiz
+                })
+              })
+            })
           }
-          var input = document.createElement('INPUT')
+          const input = document.createElement('INPUT')
           input.value = td.innerHTML
           input.addEventListener('blur', fn)
-          input.addEventListener('keypress', function (event) {
+          input.addEventListener('keypress', event => {
             if (event.key === 'Enter') { fn(event); return }
             if (event.key === 'Escape') {
-              var td = event.target
+              let td = event.target
               for (; td.nodeName !== 'TD'; td = td.parentNode) ;
               td.innerHTML = td.dataset.previousValue
               td.dataset.previousValue = null
@@ -317,139 +373,26 @@ define([
             td.appendChild(input)
           })
         }
-      } else if (td.getAttribute('data-op')) {
-        switch (td.getAttribute('data-op')) {
+        return 
+      } 
+      if (td.dataset.op) {
+        switch (td.dataset.op) {
           case 'delete':
-            if (tr.getAttribute('data-count-id')) {
-              var res = await Query.exec(Path.url('store/Count/' + tr.getAttribute('data-count-id')), {method: 'DELETE', body: {id: tr.getAttribute('data-count-id')}})
-              if (res.success) {
-                tr.parentNode.removeChild(tr)
-              }
-            }
+            if (!tr.dataset.countId) { return }
+            fetch(new URL(`${KAIROS.getBase()}/store/Count/${tr.dataset.countId}`), {method: 'DELETE', body: JSON.stringify({id: tr.dataset.countId})})
+            .then(response => {
+              if (!response.ok) { return null }
+              return response.json()
+            }).then(result => {
+              if (!result) { return }
+              window.requestAnimationFrame(() => { tr.parentNode.removeChild(tr) })
+            })
             break
         }
-      } else {
-        new Count({'data-id': tr.dataset.countId, reservation: this.AddReservationToCount}) // eslint-disable-line
-        this.AddReservationToCount = null
-      }
-    },
-
-    deleteCount: function (countId) {
-      return new Promise(function (resolve, reject) {
-        Promise.all([
-          Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId}})),
-          Query.exec(Path.url('store/Centry', {params: {'search.count': countId}}))
-        ]).then(function (results) {
-          var subres = []
-          for (var i = 0; i < results.length; i++) {
-            if (results[i].success && results[i].length > 0) {
-              for (var j = 0; j < results[i].length; j++) {
-                subres.push(Query.exec(Path.url((i === 0 ? 'store/CountReservation/' : 'store/Centry/') + results[i].data[j].id), {method: 'DELETE'}))
-              }
-            }
-          }
-          Promise.all(subres).then(() => {
-            Query.exec(Path.url('store/Count/' + countId), {method: 'DELETE'}).then(function (result) {
-              if (result.success) {
-                window.GEvent('count.count-deleted', {id: countId})
-                resolve()
-              } else {
-                reject(new Error('Delete failed'))
-              }
-            }, () => reject(new Error('Delete query failed')))
-          }, () => reject(new Error('Sub delete failed')))
-        }, () => reject(new Error('Sub delete query failed')))
-      })
-    },
-
-    deleteReservation: function (countId, reservationId) {
-      return new Promise(async function (resolve, reject) {
-        var result = await Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId}}))
-
-        if (result.success && result.length === 1) {
-          if (confirm('Ce décompte ne contient qu\'une résarvation. Voulez-vous supprimer le décompte ?')) {
-            this.deleteCount().then(function () {
-              resolve('count-deleted')
-            }, () => reject(new Error(`Suppression de la réservation ${countId} échouée`)))
-            return
-          } else {
-            resolve('user-cancel')
-            return
-          }
-        }
-
-        Promise.all([
-          Query.exec(Path.url('store/CountReservation', {params: {'search.count': countId, 'search.reservation': reservationId}})),
-          Query.exec(Path.url('store/Centry', {params: {'search.count': countId, 'search.reservation': reservationId}}))
-        ]).then(function (results) {
-          if (results[1].success && results[0].success && results[0].length === 1) {
-            var all = []
-            var centryDeleted = []
-            for (var i = 0; i < results[1].length; i++) {
-              all.push(Query.exec(Path.url('store/Centry/' + results[1].data[i].id), {method: 'DELETE'}))
-              centryDeleted.push(results[1].data[i].id)
-            }
-            Promise.all(all).then(function (results2) {
-              var s = 'success'
-              for (i = 0; i < results2.length; i++) {
-                if (!results2[i].success) {
-                  s = 'success-with-errors'
-                  break
-                }
-              }
-              Query.exec(Path.url('store/CountReservation/' + results[0].data[0].id), {method: 'DELETE'}).then(function (result) {
-                if (result.success) {
-                  window.GEvent('count.reservation-deleted', {id: countId, reservation: reservationId})
-                  resolve(s)
-                }
-              })
-            })
-          } else {
-            reject(new Error(`Erreur de traitement de la suppression de la réseravtion ${reservationId}`))
-          }
-        }, () => reject(new Error(`Requête échouée pour les sous-éléments du décompte ${countId} durant la suppression de la réservation ${reservationId}`)))
-      }.bind(this))
-    },
-
-    getReservations: async function () {
-      var r = this.get('reservations')
-      var reservations = []
-      for (var i = 0; i < r.length; i++) {
-        var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
-        if (x.success && x.length) {
-          x = x.data
-          if (x.locality) {
-            if (x.address && x.address.length > 0) {
-              x.address = x.address.trim() + ', ' + x.locality.trim()
-            } else {
-              x.address = x.locality.trim()
-            }
-          }
-          if (!x.reference && x.address) {
-            x.reference = x.address
-          } else if (x.reference && x.address) {
-            x.reference = x.reference + ' / ' + x.address.split('\n').join(', ')
-          }
-          reservations.push(x)
-        }
-      }
-
-      return reservations
-    },
-
-    print: async function (event) {
-      await this.save(event)
-      window.open(Path.url('pdfs/count/' + this.get('data-id')))
-    },
-
-    click: function (event) {
-      switch (event.target.getAttribute('data-op')) {
-        case '': default: break
-        case 'delete':
-          event.stopPropagation()
-          this.delete(event)
-          break
-      }
+        return
+      } 
+      new Count({'data-id': tr.dataset.countId, reservation: this.AddReservationToCount}) // eslint-disable-line
+      this.AddReservationToCount = null
     }
   })
 })

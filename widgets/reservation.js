@@ -18,9 +18,7 @@ define([
   'dijit/layout/ContentPane',
 
   'location/rForm',
-  'location/_Mouse',
   'location/lock',
-  'location/Stores/Locality',
 
   'artnum/Path',
   'artnum/Query'
@@ -41,15 +39,13 @@ define([
   DtContentPane,
 
   RForm,
-  Mouse,
   Lock,
-  Locality,
 
   Path,
   Query
 ) {
   return djDeclare('location.reservation', [
-    dtWidgetBase, djEvented, Mouse], {
+    dtWidgetBase, djEvented], {
     events: [],
     baseClass: 'reservation',
     attrs: [],
@@ -82,7 +78,7 @@ define([
       this.Lock = new Lock(null)
       this.own(this.Lock)
       this.Stores = {
-        Locality: new Locality()
+        Locality: new KLocalityStore()
       }
       if (options.sup) {
         this.target = options.sup.get('target')
@@ -135,11 +131,9 @@ define([
           this.lastModified = parseInt(json['modification'])
         }
 
-        let krLoad = Promise.resolve()
         if (json['id']) {
           hash.hash(json.id)
           this.set('uid', json['id'])
-          krLoad = this.KReservation.init(json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -392,15 +386,6 @@ define([
       })
     },
 
-    error: function (txt, code) {
-      window.App.error(txt, code)
-    },
-    warn: function (txt, code) {
-      window.App.warn(txt, code)
-    },
-    info: function (txt, code) {
-      window.App.info(txt, code)
-    },
     postCreate: function () {
       this.domNode.dataset.uuid = this.uuid
       if (this._json) {
@@ -410,27 +395,8 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
-      this.KReservation.inited.then(kres => {
-        const affaireId = kres.getAffaire()
-        if (affaireId) {
-          this.domNode.dataset.affaire = affaireId
-        }
-      })
-      // this.resize()
     },
 
-    tooltipShow: function (event) {
-      /**/
-      let node = event.target
-      if (node.dataset.name) {
-        if (this.htmlIdentity.dataset[node.dataset.name]) {
-          let tooltip = document.createElement('DIV')
-          tooltip.classList.add('smallTooltip')
-          tooltip.appendChild(document.createTextNode(this.htmlIdentity.dataset[node.dataset.name]))
-          window.App.toolTip(tooltip, this.domNode, event.target)
-        }
-      }
-    },
     evTouchStart: function (event) {
       event.stopPropagation()
       event.preventDefault()
@@ -550,12 +516,14 @@ define([
     _setSupAttr: function (sup) {
       if (this.sup === sup) { return }
       this._set('sup', sup)
-      window.requestAnimationFrame(() => {
-        if (this.domNode && this.domNode.parentNode) {
-          this.domNode.parentNode.removeChild(this.domNode)
-          sup.data.appendChild(this.domNode)
-        }
-      })
+      if (this.domNode && this.domNode.parentNode) {
+        window.requestAnimationFrame(() => {
+          if (this.domNode?.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+          }
+          if (this.domNode) { sup.data.appendChild(this.domNode) }
+        })
+      }
     },
     _getDeliveryBeginAttr: function () {
       if (this.deliveryBegin) {
@@ -855,16 +823,6 @@ define([
       return this._currentTextDesc
     },
 
-    eDetails: function (event) {
-      event.preventDefault()
-      event.stopPropagation()
-
-      var pos = this.getAbsPos(event)
-      var x = djDomConstruct.toDom('<div>' + this.detailsHtml + '</div>')
-      x.style = 'background-color: white;position: absolute; top: ' + pos.y + 'px; left: ' + pos.x + 'px; z-index: 100'
-
-      document.getElementsByTagName('BODY')[0].appendChild(x)
-    },
     eClick: function (event) {
       event.stopPropagation()
       event.preventDefault()
@@ -1161,7 +1119,6 @@ define([
       if (!this.domNode.parentNode) {
         window.requestAnimationFrame(() => {
           if (this.sup && this.sup.data) { this.sup.data.appendChild(this.domNode) }
-          if (!this.originalTop) { this.originalTop = djDomStyle.get(this.domNode, 'top') }
         })
       }
     },

@@ -28,7 +28,6 @@ define([
         if(!isNaN(parseInt(id))) {
           id = `Status/${id}`
         }
-        let entry = null
         let s = id.split('/')
         if (s[0] === 'store' || s[0] === '') {
           s.shift()
@@ -37,20 +36,64 @@ define([
           }
           id = s.join('/')
         }
-        entry = window.localStorage.getItem(`location/${id}`)
-        if (entry) {
-          try {
-            entry = JSON.parse(entry)
-            if (entry.lastFetch >= new Date().getTime() - APPConf.cache.maxAge) {
-              resolve(entry)
-              return
-            }
-          } catch (error) { /* NOP */ }
-        }
         if (!id.includes('Status')) { id = `Status/${id}` }
-        Query.exec(Path.url(`store/${id}`)).then((results) => {
-          if (results.success && results.length === 1) {
-            entry = results.data
+
+        kfetch(new URL(`${KAIROS.getBase()}/store/${id}`))
+        .then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        })
+        .then(results => {
+          if (results.length !== 1) { resolve(null); return }
+          const entry = Array.isArray(results.data) 
+            ? results.data[0]
+            : results.data
+          if (parseInt(entry.type) === 3) {
+            let severity = parseInt(entry.severity)
+            if (severity < 1000) {
+              entry.color = 'black'
+            } else if (severity < 2000) {
+              entry.color = 'blue'
+            } else if (severity < 3000) {
+              entry.color = 'darkorange'
+            } else {
+              entry.color = 'red'
+            }
+          }
+          let name = `${entry.name}`
+          entry.label = name
+          entry.value = id
+          if (entry.symbol) {
+            entry.symbol = ` <i class="${GSymbol(entry.symbol).join(' ')}" aria-hidden="true"> </i> `
+          }
+
+          entry.lastFetch = new Date().getTime()
+          window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
+          resolve(entry)
+        })
+      })
+    },
+
+    query: function (txt, currentValue = undefined) {
+      return new Promise((resolve, reject) => {
+        const entries = []
+        let searchName = txt.toAscii()
+        const url = new URL(`${KAIROS.getBase()}/store/Status`)
+        url.searchParams.set('search.name', `~${searchName}%`)
+        url.searchParams.set('sort.severity', 'ASC')
+        for (const k in this.params) {
+          url.searchParams.set(k, this.params[k])
+        }
+        kfetch(url).then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        })
+        .then(results => {
+          if (!results) { resolve(entries); return }
+          for (let i = 0; i < results.length; i++) {
+            const entry = results.data[i]
+            if (entry.disabled && entry.disabled !== '0') { continue }
+            let name = entry.name
             if (parseInt(entry.type) === 3) {
               let severity = parseInt(entry.severity)
               if (severity < 1000) {
@@ -63,71 +106,33 @@ define([
                 entry.color = 'red'
               }
             }
-            let name = `${entry.name}`
-            entry.label = name
-            entry.value = id
+            if (currentValue !== undefined) {
+              let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
+              if (s !== -1) {
+                name = `${entry.name.substring(0, s)}<span class="match">${entry.name.substring(s, s + searchName.length)}</span>${entry.name.substring(s + searchName.length)}`
+              }
+            }
+            entry.printableLabel = entry.name
+            entry.label = `${name}`
+            entry.value = `Status/${entry.id}`
             if (entry.symbol) {
               entry.symbol = ` <i class="${GSymbol(entry.symbol).join(' ')}" aria-hidden="true"> </i> `
             }
-
-            entry.lastFetch = new Date().getTime()
-            window.localStorage.setItem(`location/${id}`, JSON.stringify(entry))
+            
+            if (currentValue) {
+              if (isNaN(parseInt(currentValue))) {
+                if (parseInt(currentValue.split('/').pop()) === parseInt(entry.id)) {
+                  entry.selected = true
+                }
+              } else {
+                if (parseInt(currentValue) === parseInt(entry.id)) {
+                  entry.selected = true
+                }
+              }
+            }
+            entries.push(entry)
           }
-          resolve(entry)
-        })
-      })
-    },
-
-    query: function (txt, currentValue = undefined) {
-      return new Promise((resolve, reject) => {
-        let entries = []
-        let searchName = txt.toAscii()
-        Query.exec(Path.url('store/Status', {params: Object.assign({'search.name': `~${searchName}%`, 'sort.severity': 'ASC'}, this.params)})).then((results) => {
-          if (results.success && results.length > 0) {
-            results.data.forEach((entry) => {
-              if (entry.disabled && entry.disabled !== '0') { return }
-              let name = entry.name
-              if (parseInt(entry.type) === 3) {
-                let severity = parseInt(entry.severity)
-                if (severity < 1000) {
-                  entry.color = 'black'
-                } else if (severity < 2000) {
-                  entry.color = 'blue'
-                } else if (severity < 3000) {
-                  entry.color = 'darkorange'
-                } else {
-                  entry.color = 'red'
-                }
-              }
-              if (currentValue !== undefined) {
-                let s = entry.name.toLowerCase().toAscii().indexOf(searchName.toLowerCase())
-                if (s !== -1) {
-                  name = `${entry.name.substring(0, s)}<span class="match">${entry.name.substring(s, s + searchName.length)}</span>${entry.name.substring(s + searchName.length)}`
-                }
-              }
-              entry.printableLabel = entry.name
-              entry.label = `${name}`
-              entry.value = `Status/${entry.id}`
-              if (entry.symbol) {
-                entry.symbol = ` <i class="${GSymbol(entry.symbol).join(' ')}" aria-hidden="true"> </i> `
-              }
-              
-              if (currentValue) {
-                if (isNaN(parseInt(currentValue))) {
-                  if (parseInt(currentValue.split('/').pop()) === parseInt(entry.id)) {
-                    entry.selected = true
-                  }
-                } else {
-                  if (parseInt(currentValue) === parseInt(entry.id)) {
-                    entry.selected = true
-                  }
-                }
-              }
-
-              entries.push(entry)
-            })
-          }
-
+   
           this.entries = entries
           resolve(entries)
         })

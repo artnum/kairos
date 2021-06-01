@@ -49,7 +49,7 @@ Address.load = function (dbContactEntry) {
       resolve(new Address(dbContactEntry))
     } else {
       let url = new URL(`${KAIROS.getBase()}/store/${dbContactEntry.target}`)
-      fetch(url).then(response => {
+      kfetch(url).then(response => {
         if (!response.ok) { resolve(null); return }
         response.json().then(result => {
           if (result.length !== 1) { resolve(null); return }
