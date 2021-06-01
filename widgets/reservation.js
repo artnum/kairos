@@ -1063,13 +1063,13 @@ define([
         if (lines[color][0] >= 100) {
           let div = document.createElement('DIV')
           div.classList.add('stabiloLine')
-          div.setAttribute('style', `position: absolute; background-color: ${color}; left: 0; width: 100%; top: ${lineCount * height}%; height: ${height}%;`)
+          div.setAttribute('style', `position: absolute; background-color: ${CSSColor(color)}; left: 0; width: 100%; top: ${lineCount * height}%; height: ${height}%;`)
           compdiv.appendChild(div)
         } else {
           for (let i = 1; i < lines[color].length; i++) {
             let div = document.createElement('DIV')
             div.classList.add('stabiloLine')
-            div.setAttribute('style', `position: absolute; background-color: ${color}; left: ${lines[color][i].percentStart}%; width: ${lines[color][i].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
+            div.setAttribute('style', `position: absolute; background-color: ${CSSColor(color)}; left: ${lines[color][i].percentStart}%; width: ${lines[color][i].percent}%; top: ${lineCount * height}%; height: ${height}%;`)
             compdiv.appendChild(div)
           }
         }
