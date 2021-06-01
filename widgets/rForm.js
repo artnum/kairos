@@ -1783,6 +1783,7 @@ define([
         var err = this.validate()
         if (!err[1]) {
           KAIROS.error(err[0])
+          this.onSave = null
           reject(new Error('Not valid'))
           return
         }
