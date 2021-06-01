@@ -676,14 +676,18 @@ define([
         this.Buttons.addArrivalInProgress.setValue(true)
         this.Buttons.addArrivalDone.setValue(true)
         UserStore.getCurrentUser().then(current => {
-          this.doSave().then(() => {
-            KairosEvent('autoCheck', {
-              reservation: this.reservation.id,
-              type: KAIROS.events.autoCheck[0],
-              technician: current.getUrl(),
-              comment: '',
-              append: true
-            }).then(() => { this.interventionReload() })
+          this.doSave()
+          .then((done) => {
+            if (done) {
+              KairosEvent('autoCheck', {
+                reservation: this.reservation.id,
+                type: KAIROS.events.autoCheck[0],
+                technician: current.getUrl(),
+                comment: '',
+                append: true
+              })
+              .then(() => { this.interventionReload() })
+            }
           })
         })
       })
@@ -1649,20 +1653,23 @@ define([
     autoPrint: function (file, params = {}) {
       let type = params.forceType ? params.forceType : file
       return new Promise((resolve, reject) => {
-        this.doSave().then(() => {
-          Query.exec((Path.url('exec/auto-print.php', {
-            params: {
-              type: type, file: `pdfs/${file}/${this.reservation.uid}`
-            }
-          }))).then((result) => {
-            if (result.success) {
-              window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
-              resolve()
-            } else {
-              window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-              reject(new Error('Print error'))
-            }
-          })
+        this.doSave()
+        .then((done) => {
+          if (done) {
+            Query.exec((Path.url('exec/auto-print.php', {
+              params: {
+                type: type, file: `pdfs/${file}/${this.reservation.uid}`
+              }
+            }))).then((result) => {
+              if (result.success) {
+                window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+                resolve()
+              } else {
+                window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
+                reject(new Error('Print error'))
+              }
+            })
+          }
         }, () => {
           window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
           reject(new Error('Print error'))
@@ -1671,12 +1678,15 @@ define([
     },
 
     showPrint: function (type, params = {}) {
-      this.doSave().then(() => {
-        let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
-        for (let k in params) {
-          url.searchParams.append(k, params[k])
+      this.doSave()
+      .then((done) => {
+        if (done) {
+          let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+          for (let k in params) {
+            url.searchParams.append(k, params[k])
+          }
+          window.open(url)
         }
-        window.open(url)
       })
     },
 
@@ -1766,13 +1776,14 @@ define([
 
     doSaveAndQuit: function (event) {
       this.doSave()
-      .then(_ => {
-        this.hide()
+      .then(done => {
+        if (done) {
+          this.hide()
+        }
       })
     },
     doSave: function (event) {
-      if (this.onSave) { return this.onSave }
-      this.onSave = new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         this.doNumbering()
         let lastModificationTest
         if (this.reservation.id) {
@@ -1783,8 +1794,7 @@ define([
         var err = this.validate()
         if (!err[1]) {
           KAIROS.error(err[0])
-          this.onSave = null
-          reject(new Error('Not valid'))
+          resolve(false)
           return
         }
         let move = false
@@ -1922,15 +1932,15 @@ define([
                 })
               }
               this.onSave = null
-              resolve()
+              resolve(true)
             })
             .catch(reason => {
               this.onSave = null
+              resolve(false)
             })
           })
         })
       })
-      return this.onSave
     },
 
     evtNoEquipment: function () {
