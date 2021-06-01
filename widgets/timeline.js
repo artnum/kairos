@@ -1537,7 +1537,6 @@ define([
         } else {
           this.domEntries.appendChild(e.domNode)
         }
-        e.displayLocation()
       })
 
       /* as we display we modify the order, so check the final order by using the DOM */
@@ -1877,7 +1876,7 @@ define([
             }
           }
           if (found !== '1') {
-            if (regexp.test(entry.KEntry?.data?.currentLocation?.value)) {
+            if (regexp.test(entry.KEntry.get('location'))) {
               found = '1'
             }
           }

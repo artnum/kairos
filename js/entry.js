@@ -14,16 +14,25 @@ KEntry.load = function (id) {
     let entry = new KEntry(id)
     entry._loaded = new Promise((resolve, reject) => {
         kfetch(new URL(`${KAIROS.getBase()}/store/Machine/${id}`)).then(response => {
-            if (!response.ok) { resolve(entry); return }
-            response.json().then(result => {
-                if (result.length !== 1) { resolve(entry); return}
-                entry.data = Array.isArray(result.data) ? result.data[0] : result.data
-                entry.ok = true
-                resolve(entry)
-            })
+            if (!response.ok) { return null }
+            return response.json()
+        }).then(result => {
+            if (!result) { resolve(entry); return; }
+            if (result.length !== 1) { resolve(entry); return}
+            entry.data = Array.isArray(result.data) ? result.data[0] : result.data
+            entry.ok = true
+            resolve(entry)
         })
     })
     return entry._loaded
+}
+
+KEntry.prototype.set = function(name, value) {
+    this.data[name] = value
+}
+
+KEntry.prototype.get = function(name) {
+    return this.data[name]
 }
 
 KEntry.prototype.delete = function (entry) {

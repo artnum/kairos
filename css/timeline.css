@@ -349,12 +349,16 @@ table.count .reference {
     cursor: pointer;
 }
 
-.clickable, [data-action], button {
+.clickable, [data-action] {
     cursor: pointer;
     color: hsla(30, 100%, 30%, 1);
     text-decoration: underline;
 }
 
+button {
+	cursor: pointer;
+    color: var(--default-color)
+}
 
 .complementDiv {
 	position: relative;

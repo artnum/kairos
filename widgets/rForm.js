@@ -38,7 +38,6 @@ define([
 
   'location/count',
   'location/countList',
-  'location/Stores/Locality',
   'location/Stores/Machine',
   'location/Stores/Status',
   'location/Stores/Unit',
@@ -85,7 +84,6 @@ define([
 
   Count,
   CountList,
-  Locality,
   Machine,
   Status,
   Unit,
@@ -1163,7 +1161,7 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
-        const L = new Locality()
+        const L = new KLocalityStore()
         const U = new UserStore()
         const M = new Machine()
         const S = new Status({type: '0'})

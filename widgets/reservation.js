@@ -19,7 +19,6 @@ define([
 
   'location/rForm',
   'location/lock',
-  'location/Stores/Locality',
 
   'artnum/Path',
   'artnum/Query'
@@ -41,7 +40,6 @@ define([
 
   RForm,
   Lock,
-  Locality,
 
   Path,
   Query
@@ -79,7 +77,7 @@ define([
       this.Lock = new Lock(null)
       this.own(this.Lock)
       this.Stores = {
-        Locality: new Locality()
+        Locality: new KLocalityStore()
       }
       if (options.sup) {
         this.target = options.sup.get('target')

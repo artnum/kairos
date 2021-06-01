@@ -67,9 +67,13 @@ define([
       this.entries = new Map()
       this.currentLocation = ''
       this.HPos = -1
+      this.Stores = {
+        Locality: new KLocalityStore('warehouse')
+      }
 
       KEntry.load(args.target).then(kentry => {
         this.KEntry = kentry
+        this.displayLocation()
         let change = this.stateChange.bind(this)
         let create = (event) => {
           for (const value of this.entries) {
@@ -185,7 +189,8 @@ define([
       this.verifyLock()
       let url = new URL(`store/Tags/`, KAIROS.getBase())
       url.searchParams.append('!', this.url)
-      fetch(url).then(response => {
+      fetch(url)
+      .then(response => {
         if (!response.ok) { return }
         response.json().then(result => {
           if (result.length > 0) {
@@ -384,20 +389,13 @@ define([
     
     },
 
-    /* this function can be deleted and replaced by just a call to displayLocation */
-    loadExtension: function () {
-      return new Promise(function (resolve, reject) {
-        this.displayLocation()
-        resolve(this)
-      }.bind(this))
-    },
-
     displayTags: function (tags) {
       return new Promise((resolve, reject) => {
         let notag = true
         let frag = document.createDocumentFragment()
         if (tags.length > 0) {
-          tags.forEach(function (tag) {
+          this.KEntry.set('tags', tags)
+          for (let tag of tags) {
             if (tag !== '') {
               notag = false
               var s = document.createElement('A')
@@ -406,7 +404,7 @@ define([
               s.appendChild(document.createTextNode(tag))
               frag.appendChild(s)
             }
-          })
+          }
         }
         if (notag) {
           frag.appendChild(document.createTextNode('Ajouter ... '))
@@ -431,6 +429,7 @@ define([
 
     eEditTags: function (event) {
       let form = document.createElement('FORM')
+      form.style.zIndex = KAIROS.zMax()
       form.innerHTML = `<input type="text" name="tags" value="${this.tags.join(', ')}" /><input type="submit" value="Ok" />`
       form.addEventListener('submit', event => {
         event.preventDefault()
@@ -462,7 +461,7 @@ define([
           while (input && input.getAttribute('name') !== 'tags') { input = input.nextElementSibling }
           input.focus() 
         })
-      }) 
+      })
     },
 
     focus: function () {
@@ -474,120 +473,85 @@ define([
     },
 
     displayLocation: function () {
-      var location = this.get('currentLocation')
-      if (location && location.value) {
-        window.requestAnimationFrame(function () {
-          this.nControl.setAttribute('class', 'control ' + location.value.tagify())
-          this.nLocation.setAttribute('data-id', location.id)
-          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> ' + location.value
-        }.bind(this)) 
-      } else {
-        window.requestAnimationFrame(function () {
-          this.nLocation.removeAttribute('data-id')
-          this.nLocation.innerHTML = '<i class="fas fa-warehouse"> </i> '
-        }.bind(this))
+      const location = this.get('currentLocation')
+      const Anim = new KAnimation()
+      Anim.add(() => {
+        this.nLocation.removeAttribute('data-id')
+        this.nLocation.innerHTML = `<i class="fas fa-warehouse"> </i> `
+      })
+      if (!location) {
+        return
       }
+      Anim.then(() => {
+        this.Stores.Locality.get(location.value)
+        .then(value => {
+          if (location && location.value) {
+            const label = value.printableLabel
+            const color = value.color ? CSSColor(value.color) : 'black'
+            this.KEntry.set('location', label)
+            window.requestAnimationFrame(() => {
+              this.nControl.setAttribute('class', 'control ' + label.tagify())
+              this.nLocation.dataset.value = location.value
+              this.nLocation.dataset.id = location.id
+              this.nLocation.style.color = color;
+              this.nLocation.innerHTML = `<i class="fas fa-warehouse"> </i> ${label}`
+            })
+          }
+        })
+      })
     },
 
     eEditLocation: function (event) {
-      var location = this.get('currentLocation')
-      var frag = document.createDocumentFragment()
-      var saveLocFn = (event) => {
-        var node = null
-        var input = null
-        let url
-        for (node = event.target; node.nodeName !== 'DIV'; node = node.parentNode);
-        for (input = node.firstChild; input.nodeName !== 'INPUT'; input = input.nextSibling);
-
-        new Promise((resolve, reject) => {
-          const url = new URL(`${KAIROS.getBase()}/store/Entry`)
-          url.searchParams.append('search.name', 'currentLocation')
-          url.searchParams.append('search.ref:1', this.KEntry.data.uid)
+      const form = document.createElement('FORM')
+      this.Stores.Locality.get(this.nLocation.dataset.value)
+      .then(value => {
+        form.dataset.id = this.nLocation.dataset.id
+        form.innerHTML = `<input type="text" name="location"></input><button type="submit">Valider</button><button type="reset">Annuler</button>`
+        const select = new Select(form.firstElementChild, this.Stores.Locality, {allowFreeText: true, realSelect: true})
+        select.value = value.value
+        const popup = new KPopup('Modifer dépôt', {reference: this.nControl, minWith: '200px', minHeight: '180px'})
+        popup.setContentDiv(form)
+        popup.open()
+        form.addEventListener('reset', event => {
+          popup.close();
+        })
+        form.addEventListener('submit', event => {
+          event.preventDefault()
           kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.uid}`)
-          if (Array.isArray(this.KEntry.data.oldid)) {
-            const refs = []
-            for (let i = 0; i < this.KEntry.data.oldid.length; i++) {
-              url.searchParams.append(`search.ref:${i+2}`, this.KEntry.data.oldid[i])
-              kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.oldid[i]}`)
-              refs.push(`ref:${i+2}`)
-            }
-            url.searchParams.append('search._rules', `name AND (ref:1 OR ${refs.join(' OR ')})` )
-          } else {
-            url.searchParams.append('search.ref:2', this.KEntry.data.oldid)
-            url.searchParams.append('search._rules', 'name AND (ref:1 OR ref:2)')
-            kcremove(`${KAIROS.getBase()}/store/Machine/${this.KEntry.data.oldid}`)
+          let query
+          const body = {
+            name: 'currentLocation',
+            value: select.value
           }
-          
-          fetch (url)
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json()
-          })
-          .then(result => {
-            if (result === null) { resolve() }
-            const promises = []
-            if (result.length > 1) {
-              for (let i = 0; i< result.length; i++) {
-                const url = new URL(`${KAIROS.getBase()}/store/Entry/${result.data[i].id}`)
-                promises.push(fetch(url, {method: 'DELETE'}))
-              }
-            }
-            Promise.all(promises)
-            .then(() => { delete node.dataset.id; resolve() })
-          })
-        })
-        .then(_ => {
-          if (node.dataset.id) {
-            var body = {id: node.dataset.id, value: input.value}
-            var method = 'PATCH'
-            url = new URL(`${KAIROS.getBase()}/store/Entry/${body.id}`)
-          } else {
-            body = {ref: this.get('target'), name: 'currentLocation', value: input.value}
-            method = 'POST'
-            url = new URL(`${KAIROS.getBase()}/store/Entry`)
-          }
-
-          fetch(url, {method: method, body: JSON.stringify(body)})
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json()
-          })
-          .then(result => {
-            if (result === null) { return; }
-            if (result.length !== 1) { return; }
-            fetch(new URL(`${KAIROS.getBase()}/store/Entry/${result.data[0].id}`))
-            .then((response) => {
-              if (!response.ok) { return null }
-              return response.json()
-            }).then(result => {
-              if (result === null) { return }
-              if (result.length !== 1) { return }
-              this.set('currentLocation', result.data)
-              this.displayLocation()
+          if (! this.nLocation.dataset.id) {
+            body.ref = this.KEntry.data.uid
+            query = fetch(`${KAIROS.getBase()}/store/Entry`, {
+              method: 'POST',
+              body: JSON.stringify(body)
             })
+          } else {
+            body.id = event.target.dataset.id
+            query = fetch(`${KAIROS.getBase()}/store/Entry/${event.target.dataset.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify(body)
+            })
+          }
+          query.then(response => {
+            if (!response.ok) { return null }
+            return response.json()
+          })
+          .then(result => {
+            if (!result) { KAIROS.error('Erreur lors de l\'attribution du nouveau dépôt'); popup.close(); return }
+            if (result.length <= 0) { KAIROS.error('Erreur lors de l\'attribution du nouveau dépôt'); popup.close(); return }
+            body.id = Array.isArray(result.data) ? result.data[0].id : result.data.id
+            body.value = select.value
+            body.ref = this.KEntry.data.uid
+            this.set('currentLocation', body)
+            this.displayLocation()
+            popup.close()
           })
         })
-      }
-
-      frag.appendChild(document.createElement('INPUT'))
-      if (location && location.value) {
-        frag.lastChild.value = location.value
-      }
-      frag.lastChild.addEventListener('keyup', function (event) { if (event.key === 'Enter') { saveLocFn(event) } })
-
-      frag.appendChild(document.createElement('BUTTON'))
-      frag.lastChild.addEventListener('click', saveLocFn)
-
-      frag.lastChild.innerHTML = 'Ok'
-      frag.appendChild(document.createElement('BUTTON'))
-      frag.lastChild.addEventListener('click', this.displayLocation.bind(this))
-      frag.lastChild.innerHTML = 'Annuler'
-
-      window.requestAnimationFrame(function () {
-        this.nLocation.setAttribute('class', 'location edit')
-        this.nLocation.innerHTML = ''
-        this.nLocation.appendChild(frag)
-      }.bind(this))
+      })
     },
 
     defaultStatus: function () {

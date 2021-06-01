@@ -1,4 +1,4 @@
-.dropdown {
+.kdropdown {
     background-color: white;
     max-height: 120px;
     min-width:240px;
@@ -9,9 +9,10 @@
     padding: 5px;
     border: 1px solid black;
     font-family: 'Roboto', sans-serif;
+    font-size: 16px;
 }
 
-.dropdown div {
+.kdropdown div {
     cursor: pointer;
     padding: 2px;
     width: calc(100% - 4px); /* enleve le padding gauche/droite */
@@ -24,15 +25,17 @@
     width: calc(100% - 24px);
     background-color: transparent;
     border: none;
+    margin: 0.5px 0.5px;
+    padding: 0.5px 0.5px;
 }
 
-.dropdown div[data-hover="1"] {
+.kdropdown div[data-hover="1"] {
     background-color: hsla(var(--default-highlight-color-base), 0.2);
     border: 1px solid hsla(var(--default-highlight-color-base), 0.4);
     transition-delay: 10ms;
 }
 
-.dropdown div .match {
+.kdropdown div .match {
     background-color: hsla(var(--default-highlight-color-base), 0.4);
     pointer-events: none;
 }
@@ -42,7 +45,15 @@
     max-height: 25px;
     border: 1px solid hsla(var(--default-color-base), 0.4);
     background-color: var(--default-bg-color);
-    display: inline-block;
+    display: inline-flex;
+    padding: 0;
+    margin: 0;
+}
+
+.kselect.colored {
+    --colored-color: black;
+    border-bottom-color: var(--colored-color);
+    border-bottom-width: thick;
 }
 
 .kselect[data-loading="1"]  input {

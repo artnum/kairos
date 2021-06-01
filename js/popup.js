@@ -21,6 +21,13 @@ function KPopup (title, opts = {}) {
     this.domNode.startLoading = this.startLoading.bind(this)
     this.domNode.stopLoading = this.stopLoading.bind(this)
 
+    if (opts.minWidth) {
+        this.popup.style.minWidth = opts.minWidth
+    }
+    if (opts.minHeigt) {
+        this.popup.style.minHeight = opts.minHeight
+    }
+
     if (opts.content) {
         this.setContent(opts.content)
     }
@@ -181,7 +188,7 @@ KPopup.prototype.open = function () {
 
 KPopup.prototype.close = function () {
     return new Promise((resolve, reject) => {
-        if (!this.opened) { resolve(); return }
+        if (this.opened === null) { resolve(); return }
         if (this.popper) { this.popper.destroy() }
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
