@@ -163,7 +163,7 @@ define([
         case 2: eventType = 'eventError'; break
         case 3: eventType = 'eventFailure'; break
       }
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         this.domNode.classList.remove('eventNone', 'eventCheck', 'eventError','eventFailure')
         this.domNode.classList.add(eventType)
       })
@@ -215,7 +215,7 @@ define([
         a.innerHTML += `<br><span class="brand">${this.details.brand ?? ''}</span> <span class="kmodel">${this.details.kmodel ?? ''}</span>`
       }
       frag.appendChild(a)
-      window.requestAnimationFrame(function () { this.nameNode.appendChild(frag) }.bind(this))
+      KAIROSAnim.push(() => { this.nameNode.appendChild(frag) })
       this.domNode.dataset.reference = this.target
       this.domNode.dataset.type = Array.isArray(this.details.type) ? this.details.type[0] : this.details.type
       this.domNode.dataset.family = Array.isArray(this.details.family) ? this.details.family[0] : this.details.family
@@ -393,6 +393,7 @@ define([
       return new Promise((resolve, reject) => {
         let notag = true
         let frag = document.createDocumentFragment()
+        if (!this.KEntry) { return }
         if (tags.length > 0) {
           this.KEntry.set('tags', tags)
           for (let tag of tags) {
@@ -409,9 +410,11 @@ define([
         if (notag) {
           frag.appendChild(document.createTextNode('Ajouter ... '))
         }
-        window.requestAnimationFrame(() => {
+        this.nTags.addEventListener('dblclick', event => { this.eEditTags(event) }, {once: true})
+        KAIROSAnim.push(() => {
           this.nTags.appendChild(frag); 
-          this.nTags.addEventListener('dblclick', event => { this.eEditTags(event) }, {once: true})
+        })
+        .then(() => {
           resolve()
         })
       })
@@ -420,10 +423,10 @@ define([
     clearTags: function () {
       return new Promise((resolve, reject) => {
         this.nTags.setAttribute('class', 'tags')
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           this.nTags.innerHTML = ''
-          resolve()
         })
+        .then(() => resolve())
       })
     },
 
@@ -455,7 +458,7 @@ define([
 
       this.clearTags().then(() => {
         this.nTags.setAttribute('class', 'tags edit'); 
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           this.nTags.appendChild(form); 
           let input = form.firstElementChild
           while (input && input.getAttribute('name') !== 'tags') { input = input.nextElementSibling }
@@ -488,7 +491,7 @@ define([
             const label = value.printableLabel
             const color = value.color ? CSSColor(value.color) : 'black'
             this.KEntry.set('location', label)
-            window.requestAnimationFrame(() => {
+            KAIROSAnim.push(() => {
               this.nControl.setAttribute('class', 'control ' + label.tagify())
               this.nLocation.dataset.value = location.value
               this.nLocation.dataset.id = location.id
@@ -711,12 +714,10 @@ define([
     },
 
     _setError: function () {
-      var e = this.domNode
-      window.requestAnimationFrame(function () { djDomClass.add(e, 'error') })
+      KAIROSAnim.push(() => { this.domNode.classList.add('error') })
     },
     _resetError: function () {
-      var e = this.domNode
-      window.requestAnimationFrame(function () { djDomClass.remove(e, 'error') })
+      KAIROSAnim.push(() => { this.domNOde.classList.remove('error') })
     },
 
     overlap: function () {

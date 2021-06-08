@@ -369,7 +369,7 @@ define([
 
     waitStart: function () {
       if (this.destroyed) { return }
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         if (!this.domNode) { return }
         this.domNode.classList.add('updating')
       })
@@ -377,7 +377,7 @@ define([
 
     waitStop: function () {
       if (this.destroyed) { return }
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         if (!this.domNode) { return }
         this.domNode.classList.remove('updating')
       })
@@ -467,18 +467,17 @@ define([
       this._gui.hidden = value
     },
     animate: function (x) {
-      var that = this
-      window.requestAnimationFrame(function () {
-        if (x && x > that.get('offset')) {
-          djDomStyle.set(that.domNode, 'width', Math.abs(x - that.get('clickPoint')))
-          if (that.get('clickPoint') < x) {
-            djDomStyle.set(that.domNode, 'left', that.get('clickPoint'))
+      KAIROSAnim.push(() => {
+        if (x && x > this.get('offset')) {
+          djDomStyle.set(this.domNode, 'width', Math.abs(x - this.get('clickPoint')))
+          if (this.get('clickPoint') < x) {
+            djDomStyle.set(this.domNode, 'left', this.get('clickPoint'))
           } else {
-            djDomStyle.set(that.domNode, 'left', x)
+            djDomStyle.set(this.domNode, 'left', x)
           }
         }
-        that.set('enable')
-        djDomStyle.set(that.domNode, 'position', 'absolute')
+        this.set('enable')
+        djDomStyle.set(this.domNode, 'position', 'absolute')
       })
     },
     _setStartAttr: function (value) {
@@ -521,7 +520,7 @@ define([
       if (this.sup === sup) { return }
       this._set('sup', sup)
       if (this.domNode && this.domNode.parentNode) {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           if (this.domNode?.parentNode) {
             this.domNode.parentNode.removeChild(this.domNode)
           }
@@ -782,10 +781,10 @@ define([
                     if (colors.length === 2) {
                       colors[0] = colors[0].trim().toLowerCase()
                       colors[1] = colors[1].trim().toLowerCase()
-                      window.requestAnimationFrame(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
+                      KAIROSAnim.push(() => { i.style.color = colors[0]; i.style.backgroundColor = colors[1] })
                     } else {
                       colors[0] = colors[0].trim().toLowerCase()
-                      window.requestAnimationFrame(() => { i.style.color = colors[0] })
+                      KAIROSAnim.push(() => { i.style.color = colors[0] })
                     }
                     return
                   }
@@ -840,36 +839,38 @@ define([
       this.popMeUp()
     },
 
-    popMeUp: async function () {
-      var tContainer = dtRegistry.byId('tContainer')
-      if (this.get('localid') == null) { return }
-      if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
-        tContainer.selectChild('ReservationTab_' + this.get('localid'))
-        return
-      }
+    popMeUp: function () {
+      return new Promise((resolve, reject) => {
+        var tContainer = dtRegistry.byId('tContainer')
+        if (this.get('localid') == null) { return }
+        if (dtRegistry.byId('ReservationTab_' + this.get('localid'))) {
+          tContainer.selectChild('ReservationTab_' + this.get('localid'))
+          return
+        }
 
-      window.App.setOpen(this.uid)
-      var f = new RForm({reservation: this, htmlDetails: this.sup ? this.sup.htmlDetails : '<p></p>', deleted: this.deleted ? true : false})
-      var title = 'Réservation ' + this.uid
+        window.App.setOpen(this.uid)
+        var f = new RForm({reservation: this, htmlDetails: this.sup ? this.sup.htmlDetails : '<p></p>', deleted: this.deleted ? true : false})
+        var title = 'Réservation ' + this.uid
 
-      var cp = new DtContentPane({
-        title: title,
-        closable: true,
-        style: 'width: 100%; height: 100%; padding: 0; padding-top: 8px;',
-        id: 'ReservationTab_' + this.get('localid'),
-        content: f.domNode})
-      cp.own(f)
-      tContainer.addChild(cp)
-      tContainer.resize()
-      tContainer.selectChild(cp.id)
+        var cp = new DtContentPane({
+          title: title,
+          closable: true,
+          style: 'width: 100%; height: 100%; padding: 0; padding-top: 8px;',
+          id: 'ReservationTab_' + this.get('localid'),
+          content: f.domNode})
+        cp.own(f)
+        tContainer.addChild(cp)
+        tContainer.resize()
+        tContainer.selectChild(cp.id)
 
-      this.myForm = f
-      this.myForm.PostCreatePromise.then(() => {
-        this.syncForm()
-        this.myContentPane = cp
-        f.set('_pane', [cp, tContainer])
-        f.set('_closeId', 'ReservationTab_' + this.get('localid'))
-        this.close.closableIdx = KAIROS.stackClosable(this.close.bind(this))
+        this.myForm = f
+        this.myForm.PostCreatePromise.then(() => {
+          this.syncForm()
+          this.myContentPane = cp
+          f.set('_pane', [cp, tContainer])
+          f.set('_closeId', 'ReservationTab_' + this.get('localid'))
+          this.close.closableIdx = KAIROS.stackClosable(this.close.bind(this))
+        })
       })
     },
 
@@ -1118,10 +1119,13 @@ define([
           djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
       }
       if (!this.DblClick) {
-        this.DblClick = djOn(this.domNode, 'dblclick', djLang.hitch(this, function (e) { e.stopPropagation(); this.popMeUp() }))
+        this.domNode.addEventListener('dblclick', (event) => {
+          event.stopPropagation()
+          this.popMeUp()
+        })
       }
       if (!this.domNode.parentNode) {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           if (this.sup && this.sup.data) { this.sup.data.appendChild(this.domNode) }
         })
       }
@@ -1129,7 +1133,7 @@ define([
 
     hide: function () {
       return new Promise((resolve, reject) => {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           if (this.domNode && this.domNode.parentNode) {
             this.domNode.parentNode.removeChild(this.domNode)
           }
@@ -1292,7 +1296,7 @@ define([
       var compdiv = this._drawComplement()
 
       new Promise((resolve, reject) => {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           if (this.domNode) {
             this.domNode.innerHTML = ''
             this.domNode.setAttribute('style', domstyle.join(';'))
@@ -1314,6 +1318,8 @@ define([
             }
             this.domNode.dataset.uid = this.uid
           }
+        })
+        .then(() => {
           resolve()
         })
       }).then(() => {
@@ -1363,14 +1369,14 @@ define([
 
           let x = new Tooltip(s, {placement: 'top', title: `${message.join(' / ')}`})
           this.InterventionsSymbols.push([s, x])
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             parentNode.appendChild(s)
           })
         }
       } else {
         if (!this.InterventionsSymbols) { return }
         this.InterventionsSymbols.forEach((s) => {
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             if (s[0]) { parentNode.appendChild(s[0]) }
           })
         })

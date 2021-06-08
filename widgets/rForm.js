@@ -254,7 +254,7 @@ define([
         let d = document.createElement('DIV')
         d.classList.add('backward')
         d.innerHTML = value
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           this.nNewNote.appendChild(d)
         })
       }
@@ -351,7 +351,7 @@ define([
       }
 
       var complements = this.complements
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         while (complements.firstChild) {
           complements.removeChild(complements.firstChild)
         }
@@ -724,7 +724,7 @@ define([
             this.nArrivalTime.set('value', new Date())
             this.nArrivalCreator.value = user.getUrl()
           }
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             this.nBack.style.removeProperty('display')
           })
         })
@@ -735,7 +735,7 @@ define([
           this.Buttons.addArrivalDone.setValue(false)
           this.Buttons.addArrivalInProgress.setValue(false)
 
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             this.nBack.style.setProperty('display', 'none')
           })
         })
@@ -999,13 +999,13 @@ define([
       let inputs = fset.getElementsByTagName('input')
       for (let k in inputs) {
         if (inputs[k].name === 'iDate') {
-          window.requestAnimationFrame(() => inputs[k].value = (new Date()).toISOString().split('T')[0])
+          KAIROSAnim.push(() => inputs[k].value = (new Date()).toISOString().split('T')[0])
         } else if (inputs[k].name === 'iPerson') {
           this.Intervention.person.clear()
         } else if (inputs[k].name === 'iType') {
           this.Intervention.type.clear()
         } else {
-          window.requestAnimationFrame(() => inputs[k].value = '')
+          KAIROSAnim.push(() => inputs[k].value = '')
         }
       }
       fset.dataset.previous = ''
@@ -1080,7 +1080,7 @@ define([
           frag.appendChild(n)
         }
         this.interventionSetCheckButton()
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           div.innerHTML = ''
           div.appendChild(frag)
         })
@@ -1102,7 +1102,7 @@ define([
       }
 
       if (node.classList.contains('replying')) {
-        window.requestAnimationFrame(() => node.classList.remove('replying'))
+        KAIROSAnim.push(() => node.classList.remove('replying'))
         let a = fset.dataset.previous.split(',')
         let b = []
         a.forEach((e) => {
@@ -1112,7 +1112,7 @@ define([
         })
         fset.dataset.previous = b.join(',')
       } else {
-        window.requestAnimationFrame(() => node.classList.add('replying'))
+        KAIROSAnim.push(() => node.classList.add('replying'))
         if (fset.dataset.previous === undefined || fset.dataset.previous === '') {
           fset.dataset.previous = node.dataset.id
         } else {
@@ -1246,20 +1246,45 @@ define([
         this.dtable = new Artnum.DTable({ table: this.nCountTable, sortOnly: true })
         djOn(this.nForm, 'click', this.clickForm.bind(this))
 
-        Query.exec(Path.url('store/Mission', { params: { 'search.reservation': this.reservation.uid } })).then((result) => {
-          if (result.success && result.length > 0) {
-            this.nMissionDisplay.dataset.uid = result.data[0].uid
-            Query.exec(Path.url('store/MissionFichier', { params: { 'search.mission': result.data[0].uid } })).then(async (result) => {
-              if (result.length <= 0) { return }
-              let images = result.data
-              images = images.sort((a, b) => {
-                return parseInt(a.ordre) - parseInt(b.ordre)
-              })
-              for (let i = 0; i < images.length; i++) {
-                await this.addMissionImage(images[i], true)
-              }
-            })
-          }
+        const url = new URL(`${KAIROS.getBase()}/store/Mission`)
+        url.searchParams.append('search.reservation', this.reservation.uid)
+
+        fetch(url)
+        .then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        })
+        .then(result => {
+          if (!result) { return null }
+          if (result.length <= 0) { return null }
+          this.nMissionDisplay.dataset.uid = result.data[0].uid
+          return result.data[0].uid
+        })
+        .then(uid => {
+          if (!uid) { return null }
+          const url = new URL(`${KAIROS.getBase()}/store/MissionFichier`)
+          url.searchParams.append('search.mission', uid)
+          return fetch(url)
+        })
+        .then(response => {
+          if (!response) { return null }
+          if (!response.ok) { return null }
+          return response.json()
+        })
+        .then(result => {
+          if (!result) { return null }
+          if (result.length <= 0) { return }
+          let images = result.data
+          images = images.sort((a, b) => {
+            return parseInt(a.ordre) - parseInt(b.ordre)
+          })
+          let chain = Promise.resolve()
+          for (let i = 0; i < images.length; i++) {
+            chain = chain.then(() => { return  this.addMissionImage(images[i], true) })
+          }       
+        })
+        .catch(reason => {
+          console.log(reason)
         })
         this.buttonCreate()
         for (let i in this.Sections) {
@@ -1614,8 +1639,7 @@ define([
     },
 
     show: function () {
-      var that = this
-      window.requestAnimationFrame(function () { djDomStyle.set(that.domNode.parentNode, 'display', 'block') })
+      KAIROSAnim.push(() => { this.domNode.parentNode.style.setProperty('display', 'block') })
     },
 
     initCancel: function () {
@@ -1968,13 +1992,13 @@ define([
     },
 
     dropToDeleteBegin: function () {
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         this.nMissionDrop.classList.add('dragToDelete')
         this.nMissionDrop.innerText = 'Glisser pour supprimer !'
       })
     },
     dropToDeleteEnd: function () {
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         this.nMissionDrop.classList.remove('dragToDelete')
         this.nMissionDrop.innerText = 'Glisser ou copier des images pour ajouter !'
       })
@@ -2047,12 +2071,12 @@ define([
               let brect = n.getBoundingClientRect()
               let m = brect.x + (brect.width / 2) + 1
               if (event.clientX > m) {
-                window.requestAnimationFrame(() => {
+                KAIROSAnim.push(() => {
                   p.removeChild(spacer)
                   p.insertBefore(spacer, n.nextElementSibling)
                 })
               } else {
-                window.requestAnimationFrame(() => {
+                KAIROSAnim.push(() => {
                   p.removeChild(spacer)
                   p.insertBefore(spacer, n)
                 })
@@ -2074,7 +2098,7 @@ define([
 
           let spacer = document.createElement('DIV')
           spacer.classList.add('ddSpacer')
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             if (p.firstElementChild === n) {
               p.insertBefore(spacer, n.nextElementSibling)
             } else {
@@ -2090,7 +2114,7 @@ define([
           let p = n.parentNode
           let spacer = p.firstElementChild
           for (; spacer && !spacer.classList.contains('ddSpacer'); spacer = spacer.nextElementSibling);
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             if (spacer) {
               if (n) {
                 p.removeChild(n)
@@ -2105,12 +2129,12 @@ define([
           window.open(`${window.location.origin}/${APPConf.base}/${APPConf.uploader}/${hash},download`, hash)
         })
         /* add div in place */
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           this.nMissionDisplay.appendChild(div)
           div.style.backgroundImage = `url('${window.location.origin}/${APPConf.base}/${APPConf.uploader}/${hash}')`
           if (!skipNumbering) { this.doNumbering(this.nMissionDisplay) }
-          resolve()
         })
+        .then(() => resolve())
       })
     },
 
@@ -2242,10 +2266,10 @@ define([
             frag.appendChild(n)
           })
         }
-        window.requestAnimationFrame(function () {
+        KAIROSAnim.push(() => {
           this.nCountList.innerHTML = ''
           this.nCountList.appendChild(frag)
-        }.bind(this))
+        })
       }.bind(this))
     },
 

@@ -161,7 +161,7 @@ define([
                   html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
                 }
               }
-              window.requestAnimationFrame(() => { node.innerHTML = html })
+              KAIROSAnim.push(() => { node.innerHTML = html })
             }
             break
         }
@@ -345,7 +345,7 @@ define([
       div.appendChild(document.createTextNode(' ' + txt))
 
       window.setTimeout(() => {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           div.parentNode?.removeChild(div)
         })
       }, timeout)
@@ -355,9 +355,9 @@ define([
         div.parentNode.removeChild(div)
       })
 
-      window.requestAnimationFrame(djLang.hitch(this, () => {
+      KAIROSAnim.push(() => {
         this.logline?.appendChild(div)
-      }))
+      })
     },
 
     _setBlockSizeAttr: function (value) {
@@ -748,7 +748,7 @@ define([
         this._maskDom = mask
         mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998')
         djOn(mask, 'click', (e) => { this.mask(false); callback(e) })
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           document.getElementsByTagName('BODY')[0].appendChild(mask)
         })
       } else {
@@ -930,9 +930,11 @@ define([
       for (const [_, entry] of this.Entries) {
         p.push(new Promise((resolve, reject) => {
           if (entries.indexOf(entry.get('target')) === -1) {
-            window.requestAnimationFrame(() => { entry.domNode.dataset.active = '0'; resolve() })
+            KAIROSAnim.push(() => { entry.domNode.dataset.active = '0' })
+            .then(() => resolve())
           } else {
-            window.requestAnimationFrame(() => { entry.domNode.dataset.active = '1'; resolve() })
+            KAIROSAnim.push(() => { entry.domNode.dataset.active = '1' })
+            .then(() => resolve())
           }
         }))
       }
@@ -945,7 +947,8 @@ define([
       let p = []
       for (const [_, entry] of this.Entries) {
         p.push(new Promise((resolve, reject) => {
-          window.requestAnimationFrame(() => { entry.domNode.dataset.active = '1'; resolve() })
+          KAIROSAnim.push(() => { entry.domNode.dataset.active = '1' })
+          .then(() => resolve())
         }))
       }
       Promise.all(p).then(() => {
@@ -959,7 +962,7 @@ define([
       }
       
       if (event.type === 'mouseup' || event.type === 'touchstart') {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           document.body.classList.remove('kmove')
         })
         if (this.mouseUpDown.timeout) {
@@ -970,7 +973,7 @@ define([
         this.followMouse.stop = true
       } else {
         this.mouseUpDown.timeout = setTimeout(() => {
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             document.body.classList.add('kmove')
           })
           this.eventStarted = event
@@ -1024,7 +1027,7 @@ define([
       for (let i = 0; i < this.days.length; i++) {
         var pos = djDomGeo.position(this.days[i].domNode, this.days[i].computedStyle)
         if (KAIROS.mouse.clientX >= pos.x && KAIROS.mouse.clientX <= (pos.x + pos.w)) {
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             this.sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
           })
           none = false
@@ -1034,7 +1037,7 @@ define([
 
       if (none) {
         this.showSight.timeout = setTimeout(() => {
-          window.requestAnimationFrame(() => {
+          KAIROSAnim.push(() => {
             this.sight.removeAttribute('style')
           })
         }, 350)
@@ -1288,7 +1291,7 @@ define([
       if (dayMonthCount > 0) {
         this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
       }
-      window.requestAnimationFrame(() => {
+      KAIROSAnim.push(() => {
         this.subline.innerHTML = ''
         this.subline.appendChild(subLineFrag)
         this.line.appendChild(docFrag)
@@ -1323,7 +1326,7 @@ define([
           frag.firstChild.appendChild(node)
         }
 
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           if (this.nVerticals.firstChild) { this.nVerticals.removeChild(that.nVerticals.firstChild) }
           this.nVerticals.appendChild(frag)
           this.currentVerticalLine = this.get('blockSize')
@@ -1805,7 +1808,7 @@ define([
           z.appendChild(document.createTextNode(arguments[0]))
           x.appendChild(z)
         }
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           document.body.appendChild(x)
         })
       }
@@ -1813,7 +1816,7 @@ define([
     unwait: function () {
       var n = document.getElementById('WaitDisplay')
       if (n) {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
           document.body.removeChild(n)
         })
       }

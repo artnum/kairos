@@ -71,13 +71,13 @@ KAIROS.log = function (level, txt, code) {
     div.classList.add('message', level)
     if (!code) { code = '' }
     else { code = `(${code})` }
-    window.requestAnimationFrame(() => {
+    KAIROSAnim.push(() => {
         div.appendChild(document.createTextNode(` ${txt} ${code}`))
         document.body.classList.add(`${level}`)
     })
 
     window.setTimeout(() => {
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
             if (div.parentNode) { div.parentNode.removeChild(div) }
             document.body.classList.remove('info', 'error', 'warning')
         })
@@ -89,7 +89,7 @@ KAIROS.log = function (level, txt, code) {
         document.body.classList.remove('info', 'error', 'warning')
     })
 
-    window.requestAnimationFrame(() => document.getElementById('LogLine')?.appendChild(div))
+    KAIROSAnim.push(() => document.getElementById('LogLine')?.appendChild(div))
 }
 
 KAIROS.stackClosable = function (closeFunction) {
@@ -157,7 +157,7 @@ KAIROS.searchResults = function () {
         if (!KAIROS.searchResults.box.parentNode) { return }
         if (KAIROS.searchResults.boxDelete) { return }
         KAIROS.searchResults.boxDelete = 1
-        window.requestAnimationFrame(() => { 
+        KAIROSAnim.push(() => { 
             KAIROS.searchResults.box.parentNode.removeChild(KAIROS.searchResults.box) 
             delete KAIROS.searchResults.boxDelete
         })
@@ -171,7 +171,7 @@ KAIROS.searchResults = function () {
     KAIROS.searchResults.box.classList.add('searchResult')
     KAIROS.searchResults.box.style.setProperty('z-index', KAIROS.zMax())
     KAIROS.stackClosable(closeSearchResult)
-    window.requestAnimationFrame(() => { document.body.appendChild(KAIROS.searchResults.box) })
+    KAIROSAnim.push(() => { document.body.appendChild(KAIROS.searchResults.box) })
 
 
     return KAIROS.searchResults.box
@@ -207,26 +207,23 @@ KAIROS._pstack = function (force = false) {
         return
     }
     KAIROS._pstack.run = true
-    let p = new Promise((resolve, reject) => {
-        window.requestAnimationFrame((ts) => {
-            let start = performance.now()
-            let p 
-            while ((p = KAIROS._domStack.shift()) !== undefined && performance.now() - start < 10) {
-                switch(p[0]) {
-                    case 'insert': 
-                        p[1].insertBefore(p[2], p[3])
-                        break
-                    case 'remove':
-                        p[1].removeChild(p[2])
-                        break
-                    case 'replace':
-                        p[1].replaceChild(p[2], p[3]);
-                }
+    KAIROSAnim.push((ts) => {
+        let start = performance.now()
+        let p 
+        while ((p = KAIROS._domStack.shift()) !== undefined && performance.now() - start < 10) {
+            switch(p[0]) {
+                case 'insert': 
+                    p[1].insertBefore(p[2], p[3])
+                    break
+                case 'remove':
+                    p[1].removeChild(p[2])
+                    break
+                case 'replace':
+                    p[1].replaceChild(p[2], p[3]);
             }
-            resolve()
-        })
+        }
     })
-    p.then(() => {
+    .then(() => {
         if (KAIROS._domStack.length > 0) {
             KAIROS._pstack(true)
         } else {
