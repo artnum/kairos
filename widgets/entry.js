@@ -474,15 +474,14 @@ define([
 
     displayLocation: function () {
       const location = this.get('currentLocation')
-      const Anim = new KAnimation()
-      Anim.add(() => {
+      const anim = KAIROSAnim.push(() => {
         this.nLocation.removeAttribute('data-id')
         this.nLocation.innerHTML = `<i class="fas fa-warehouse"> </i> `
       })
       if (!location) {
         return
       }
-      Anim.then(() => {
+      anim.then(() => {
         this.Stores.Locality.get(location.value)
         .then(value => {
           if (location && location.value) {

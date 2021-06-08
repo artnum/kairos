@@ -10,9 +10,11 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   this._oldValue = undefined
   this.allowFreeText = options.allowFreeText
   this.input = input
+  this.store = store
   if (options.realSelect) {
     this.realSelectUI()
   }
+  this.realSelect = options.realSelect
   input.setAttribute('autocomplete', 'off')
   let originalValue = input.value
   let obj = new Proxy(this, {
@@ -71,7 +73,8 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   list.style.zIndex = KAIROS.zMax()
   var popper = null
 
-  var move = (k) => {
+  const move = (k) => {
+    this.mouseOverBlock = true
     let current = null
     for (let i = list.firstElementChild; i; i = i.nextElementSibling) {
       if (i.dataset.hover === '1') {
@@ -140,7 +143,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     if (set) {
       set.dataset.hover = '1'
       const setBox = set.getBoundingClientRect()
-      window.requestAnimationFrame(() => { list.scrollTop = (set.dataset.position - 1) * setBox.height })
+      KAIROSAnim.push(() => { list.scrollTop = (set.dataset.position - 1) * setBox.height })
       if (!options.allowFreeText) {
         this.select(set, true)
       }
@@ -150,87 +153,65 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     }
   }
 
-  var degenerate = () => {
+  const degenerate = () => {
     this.opened = false
-    KAIROS.removeClosableFromStack(degenerate)
     if (popper) { popper.destroy(); popper = null }
     if (list.parentNode) {
       list.parentNode.removeChild(list)
     }
     list.innerHTML = ''
+    KAIROS.removeClosableFromStack(degenerate)
   }
 
-  var handleTab = (event) => {
+  const handleEvents = (event) => {
     switch (event.key) {
-      case 'Tab':
+      case 'Enter':
         for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
           if (n.dataset.hover === '1') {
             this.select(n)
             degenerate()
-            return
+            input.blur()
           }
+        }
+        return
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'PageUp':
+      case 'PageDown':
+        event.preventDefault()
+        return move(event.key)
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'Alt':
+      case 'AltGraph':
+        break
+      case 'Backspace':
+      case 'Delete':
+        if (input.value.length === 0 && !options.realSelect) { 
+          return degenerate() 
         }
         break
     }
+    generate(input.value)
+    return Promise.resolve()
   }
 
-  var generate = (event) => {
+  const generate = (value = null) => {
     return new Promise((resolve, reject) => {
-      if (event) {
-        if (event.type === 'focus') {
-          input.setSelectionRange(0, input.value.length)
-        }
-        if (event.key) {
-          delete input.dataset.value
-        }
-        switch (event.key) {
-          case 'Enter':
-            for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
-              if (n.dataset.hover === '1') {
-                this.select(n)
-                degenerate()
-                input.blur()
-                resolve()
-                return
-              }
-            }
-            break
-          case 'ArrowUp':
-          case 'ArrowDown':
-          case 'PageUp':
-          case 'PageDown':
-            event.preventDefault()
-            move(event.key)
-            resolve()
-          case 'Escape':
-          case 'ArrowLeft':
-          case 'ArrowRight':
-          case 'Alt':
-          case 'AltGraph':
-            resolve()
-            return
-          case 'Backspace':
-          case 'Delete':
-            if (input.value.length === 0 && !options.realSelect) { 
-              degenerate() 
-              resolve()
-              return
-            }
-        }
-      }
-      const Frame = new KAnimation()
+      const input = this.input
       this.closableIdx = KAIROS.stackClosable(degenerate)
-      Frame.add(() => {
+      KAIROSAnim.push(() => {
         if (!list.parentNode) {
           document.body.appendChild(list)
           popper = Popper.createPopper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
         }
       })
-      let value = input.value
+      if (value === null) {
+        value = input.value
+      }
       let currentValue = undefined
       if (options.realSelect) {
         currentValue = input.dataset.value
-        value = ''
       }
       let currentRequest = performance.now()
       this.latestRequest = currentRequest
@@ -265,6 +246,7 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
             selected = s
           }
           s.addEventListener('mouseover', (event) => {
+            if (this.mouseOverBlock) { this.mouseOverBlock = false; return }
             for (let i = list.firstElementChild; i; i = i.nextElementSibling) {
               if (i !== event.target) {
                 i.dataset.hover = '0'
@@ -272,24 +254,29 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
             }
             event.target.dataset.hover = '1'
           })
-          s.addEventListener('mousedown', (event) => { event.stopPropagation(); this.select(event.target); degenerate() })
+          s.addEventListener('mousedown', (event) => { 
+            event.stopPropagation();
+            this.select(event.target); 
+            degenerate() 
+          })
           posCount++
           s.dataset.position = posCount
           frag.appendChild(s)
         }
-        Frame.add(() => {
+        const frame = KAIROSAnim.push(() => {
           list.innerHTML = ''
           list.appendChild(frag)
           if (selected) {
-            this.select(selected)
             selected.dataset.hover = '1'
+            return true
           } else {
             if (!options.allowFreeText) {
-              this.select(list.firstElementChild, true)
+              return true
             }
           }
+          return false
         })
-        Frame.then(() => { 
+        frame.then((state) => { 
           resolve()
           input.focus()
         })
@@ -298,22 +285,32 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     })
   }
 
-  this.EvtTarget.addEventListener('open', () => {
-    generate()
-  })
-  this.EvtTarget.addEventListener('close', degenerate)
-
-  input.addEventListener('blur', degenerate)
-  input.addEventListener('keyup', generate)
-  input.addEventListener('keydown', handleTab)
-  input.addEventListener('keypress',
-  (event) => { 
-    if (event.key === 'Enter') {
-      event.stopPropagation(); 
-      event.preventDefault() 
+  this.EvtTarget.addEventListener('open', () => { generate('') })
+  this.EvtTarget.addEventListener('close', () => { degenerate() })
+  
+  input.addEventListener('blur', this.blur.bind(this))
+  input.addEventListener('keyup', handleEvents.bind(this))
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab' || event.key === 'Escape') {
+      for (let n = list.firstElementChild; n; n = n.nextElementSibling) {
+        if (n.dataset.hover === '1') {
+          this.select(n)
+          return degenerate()
+        }
+      }
+      if (!this.realSelect) {
+        return degenerate()
+      }
+      this.error()
+      // error if needed
     }
-  }, {capture: true})
-  input.addEventListener('focus', generate)
+  })
+
+  input.addEventListener('focus', (event) =>{
+    const input = event.target
+    input.setSelectionRange(0, input.value.length)
+    this.open()
+  })
 
   obj.value = originalValue
   return obj
@@ -335,6 +332,13 @@ Select.prototype.clear = function () {
 
 Select.prototype.close = function () {
   this.EvtTarget.dispatchEvent(new CustomEvent('close', {}))
+  if (this.realSelect) {
+    this.store.get(this.input.dataset.value)
+    .then(entry => {
+      this.setLabel(entry.label)
+      this.colorize(entry.color)
+    })
+  }
 }
 
 Select.prototype.open = function () {
@@ -355,7 +359,7 @@ Select.prototype.realSelectUI = function () {
   let arrow = document.createElement('SPAN')
   let container = document.createElement('DIV')
   this.container = container
-  window.requestAnimationFrame(() => {
+  KAIROSAnim.push(() => {
     String(this.input.classList).split(' ')
     .forEach(token => {
       if (token === '') { return; }
@@ -385,6 +389,7 @@ Select.prototype.setLabel = function (label) {
 }
 
 Select.prototype.select = function (target, dontMessValue = false) {
+  if (!target) { return }
   if (!dontMessValue) {
     this.setLabel(target.dataset.label)
   }
@@ -394,7 +399,7 @@ Select.prototype.select = function (target, dontMessValue = false) {
 
 Select.prototype.colorize = function (color) {
   const element = this.container || this.input
-  window.requestAnimationFrame(() => {
+  KAIROSAnim.push(() => {
     if (color === undefined || color === null || color === false) {
       element.classList.remove('colored')
       element.style.removeProperty('--colored-color')
@@ -403,4 +408,12 @@ Select.prototype.colorize = function (color) {
       element.style.setProperty('--colored-color', CSSColor(color))
     }
   })
+}
+
+Select.prototype.error = function () {
+  // nothing yet
+}
+
+Select.prototype.blur = function (event) {
+  this.close()
 }

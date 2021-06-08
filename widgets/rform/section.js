@@ -28,6 +28,7 @@ define(['dojo/_base/declare'], function (djDeclare) {
             object: this.reservation.uid,
             type: 'Reservation'
           }}).then((result) => {
+            if (!result) { resolve(); return }
             result.forEach((entry) => {
               let div = document.createElement('DIV')
               let action = ''
