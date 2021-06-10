@@ -21,6 +21,7 @@
 @import '../../select.css';
 @import '../../color.css';
 @import '../../mbutton.css';
+@import '../../kbar.css';
 
 #loadingOverlay { display: none; }
 

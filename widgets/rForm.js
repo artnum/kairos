@@ -1307,6 +1307,28 @@ define([
         resolve()
         this.load()
       })
+      this.reservation.KReservation.inited.then(kres => {
+        const affaireDom = this.domNode.querySelector('*[name="affaire"]')
+        const affaireId = kres.getAffaire()
+        if (affaireId === null) {
+          const newAffaireButton = new MButton(document.createElement('button'))
+          newAffaireButton.setLabel('Ouvrir une affaire')
+          affaireDom.appendChild(newAffaireButton.getDomNode())
+          newAffaireButton.addEventListener('click', event => {
+            this.reservation.KReservation.createAffaire()
+            .then(affaire => {
+              console.log(affaire, affaire.getId())
+              fetch(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`, {method: 'PUT', body: JSON.stringify({id: this.reservation.id, affaire: affaire.getId()})})
+              .then(result => {
+                console.log(result)
+              })
+            })
+          })
+        } else {
+          const legendDom = affaireDom.querySelector('legend')
+          window.requestAnimationFrame(() => legendDom.innerHTML = `Affaire ${affaireId}`)
+        }
+      })
     },
 
     clickForm: function (event) {

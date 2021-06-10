@@ -1,4 +1,4 @@
-function KReservation (id) {
+function KReservation () {
   this.data = {
     reservation: null,
     locality: null,
@@ -22,8 +22,13 @@ function KReservation (id) {
     machine: null,
     creator: null,
     technician: null,
-    addresses: null
+    addresses: null,
   }
+
+  this.inited = new Promise((resolve, reject) => {
+    this._initresolve = resolve
+  })
+  this.evttarget = new EventTarget()
 }
 
 KReservation.load = function (id) {
@@ -64,6 +69,54 @@ KReservation.load = function (id) {
   })
 }
 
+KReservation.load = function (id) {
+  const r = new KReservation()
+  return r.init(id)
+}
+
+KReservation.prototype.createAffaire = function () {
+  return this.affaire.init()
+}
+
+KReservation.prototype.fromJson = function (json) {
+  this.data.reservation = Array.isArray(json) ? json[0] : json
+  this.affaire = new KAffaire()
+
+  this.loadAffaire = Promise.resolve()
+  if (this.data.reservation.affaire) {
+    this.loadAffaire = this.affaire.init(this.data.reservation.affaire)
+  }
+
+  this.hash.reservation._complete = this.hashJsonS(this.data.reservation, [ 'modification' ])
+
+  this.data.reservation.begin = new Date(this.data.reservation.begin)
+  this.data.reservation.end = new Date(this.data.reservation.end)
+  this.data.reservation.duration = this.data.reservation.end.getTime() - this.data.reservation.begin.getTime()
+  this.data.reservation.delivery = {
+    begin: this.data.reservation.deliveryBegin ? new Date(this.data.reservation.deliveryBegin) : this.data.reservation.begin,
+    end: this.data.reservation.deliveryEnd ? new Date(this.data.reservation.deliveryEnd) : this.data.reservation.end
+  }
+  this.data.reservation.created = KAIROS.DateFromTS(this.data.reservation.created)
+  this.data.reservation.modification = KAIROS.DateFromTS(this.data.reservation.modification)
+  this.data.reservation.reference = this.data.reservation.reference ? this.data.reservation.reference : ''
+}
+
+KReservation.prototype.loadExtended = function () {
+  return new Promise ((resolve, reject) => {
+    Promise.all([
+      this.loadAffaire,
+      this.loadMachine(),
+      this.loadCreator(),
+      this.loadTechnician(),
+      this.loadLocality(),
+      this.loadContact()
+    ])
+    .then(_ => {
+      resolve()
+    })
+  })
+}
+
 KReservation.prototype.hashJsonS = function (json, skip = [], topHash) {
   if (!json) { return null }
   const keys = Object.keys(json)
@@ -93,11 +146,6 @@ KReservation.prototype.hashJson = function (json, only = [], topHash) {
     h.hash(this.data.reservation[k] ?? '')
   })
   return h.result()
-}
-
-/* some json data obtained elsewhere are available */
-KReservation.prototype.extUpdate = function (json) {
-
 }
 
 KReservation.prototype.serverCompare = function () {
@@ -142,6 +190,10 @@ KReservation.prototype.getMonth = function () {
 
 KReservation.prototype.getId = function () {
   return this.data.reservation.id
+}
+
+KReservation.prototype.getAffaire = function () {
+  return this.affaire.getId()
 }
 
 KReservation.prototype.loadCreator = function () {

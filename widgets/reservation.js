@@ -71,6 +71,7 @@ define([
       this.duration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this.uuid = options.uuid
+      this.KReservation = new KReservation()
       this._gui = {
         hidden: false
       }
@@ -130,11 +131,9 @@ define([
           this.lastModified = parseInt(json['modification'])
         }
 
-        let krLoad = Promise.resolve()
         if (json['id']) {
           hash.hash(json.id)
           this.set('uid', json['id'])
-          krLoad = KReservation.load(json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -243,12 +242,9 @@ define([
         }
         this.modifiedState = true
         this.resize()
-        krLoad.then(kres => {
-          let hasKReservation = this.KReservation
-          delete this.KReservation
-          this.KReservation = kres
+        this.KReservation.inited.then(_ => {
           let state = hash.result()
-          if (this.stateHash && this.stateHash !== state && hasKReservation) {
+          if (this.stateHash && this.stateHash !== state) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
           }
           this.stateHash = state
@@ -1480,6 +1476,7 @@ define([
                   if (!response.ok) { resolve(); return }
                   response.json()
                   .then(result => {
+                    if (result.length < 1) { resolve(); return }
                     let data = Array.isArray(result.data) ? result.data[0] : result.data
                     this.lastModified = parseInt(data.modification)
                     resolve()
