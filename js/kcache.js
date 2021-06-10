@@ -20,17 +20,21 @@ function kcstore (url, stObject) {
     }
 
     if (public && age > 0) {
-        localStorage.setItem(url, JSON.stringify({
-            cache: { time: Date.now(), age: age },
-            value: {
-                body: stObject.body,
-                options: {
-                    status: stObject.status,
-                    statusText: stObject.statusText,
-                    headers: stObject.headers
+        try {
+            localStorage.setItem(url, JSON.stringify({
+                cache: { time: Date.now(), age: age },
+                value: {
+                    body: stObject.body,
+                    options: {
+                        status: stObject.status,
+                        statusText: stObject.statusText,
+                        headers: stObject.headers
+                    }
                 }
-            }
-        }))
+            }))
+        } catch (exception) {
+            KCacheReduce()
+        }
     }
 }
 
@@ -88,6 +92,25 @@ function kfetch (url, options = { method: 'GET' }) {
         })
         .catch(reason => reject(reason))
     })
+}
+
+function KCacheReduce () {
+    console.log('Forced reduce')
+    for (let i = 0; i < localStorage.length; i++) {
+        const url = localStorage.key(i)
+        if (!(url.startsWith('http://') || url.startsWith('https://'))) { continue }
+        try {
+            const objectItem = JSON.parse(localStorage.getItem(url))
+            if (!objectItem) { continue; }
+            if (!objectItem.cache) { continue; }
+            if (!objectItem.cache.age) { localStorage.removeItem(url) }
+            if (objectItem.cache.time + Math.round(objectItem.cache.age / 2) > Date.now()) { 
+                localStorage.removeItem(url)
+            }
+        } catch (exception) {
+            console.log(exception)
+        }
+    }
 }
 
 function KCacheClean (origin) {
