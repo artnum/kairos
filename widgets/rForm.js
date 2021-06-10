@@ -1175,14 +1175,6 @@ define([
           Machine: M,
           Unit: new Unit()
         }
-        let namedNode = this.domNode.querySelectorAll('*[name]')
-        for (let i of namedNode) {
-          switch (i.getAttribute('name')) {
-            case 'offerUnit':
-              new Select(i, this.Stores.Unit, { allowFreeText: false, realSelect: true })
-              break
-          }
-        }
         this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
         this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)

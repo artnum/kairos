@@ -70,7 +70,6 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
   var list = document.createElement('DIV')
   list.classList.add('kdropdown')
   list.style.position = 'absolute'
-  list.style.zIndex = KAIROS.zMax()
   var popper = null
 
   const move = (k) => {
@@ -200,7 +199,9 @@ var Select = function (input, store, options = {allowFreeText: true, realSelect:
     return new Promise((resolve, reject) => {
       const input = this.input
       this.closableIdx = KAIROS.stackClosable(degenerate)
+      const zMax = KAIROS.zMax()
       KAIROSAnim.push(() => {
+        list.style.zIndex = zMax
         if (!list.parentNode) {
           document.body.appendChild(list)
           popper = Popper.createPopper(input, list, {removeOnDestroy: true, positionFixed: true, placement: 'bottom-start'})
