@@ -178,12 +178,10 @@ KAIROS.searchResults = function () {
 }
 
 KAIROS.zMax = function (node = null) {
-    let max = 0
-    document.body.getElementsByTagName('*').forEach(element => {
-        let zx = parseInt(window.getComputedStyle(element).getPropertyValue('z-index'))
-        if (zx > max) { max = zx }
-    })
-    return max + 1
+    if (KAIROS.zMax.current === undefined) {
+        KAIROS.zMax.current = 1000
+    }
+    return ++KAIROS.zMax.current
 }
 
 KAIROS._domStack = []
