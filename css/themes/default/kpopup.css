@@ -1,3 +1,50 @@
+#KTaskBar {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    border: none;
+    margin: 0;    
+    padding: 0;
+    background-color: transparent;
+    pointer-events: none;
+}
+
+#KTaskBar .ktask .title span {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+#KTaskBar .ktask {
+    position: fixed;
+    bottom: 2;
+    border: 2px gray solid;
+    max-width: 300px;
+    min-width: 300px;
+    max-height: 40px;
+    min-height: 40px;
+    background-color: black;
+    color: white;
+    pointer-events: all;
+}
+
+#KTaskBar .ktask .title {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 1ch;
+}
+
+#KTaskBar .ktask .close, #KTaskBar .ktask .minimize {
+    display: none;
+    text-overflow: ellipsis;
+}
+
 .kpopup {
     display: flex;
     flex-direction: column;
@@ -63,38 +110,7 @@
     min-width: 800px;
 }
 
-.kpopupMin {
-    position: fixed;
-    bottom: 2;
-    border: 2px gray solid;
-    max-width: 300px;
-    min-width: 300px;
-    max-height: 40px;
-    min-height: 40px;
-    background-color: black;
-    color: white;
-
-}
-
-.kpopupMin .title {
-    height: 40px;
-    display: flex;
-    align-items: center;
-}
-
-.kpopupMin .title span {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    font-weight: bold;
-    display: inline-block;
-}
-
 .kpopup .reservation.wait {
     cursor: wait;   
     border-bottom: 4px solid rgba(255,0,0,1);
-}
-
-.kpopupMin .close, .kpopupMin .minimize {
-    display: none;
-    text-overflow: ellipsis;
 }

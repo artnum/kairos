@@ -1,4 +1,50 @@
+function KTaskBar () {
+    if (!KTaskBar._taskBar) {
+        KTaskBar._id = 0
+        KTaskBar._taskBar = document.createElement('DIV')
+        KTaskBar._taskBar.id = 'KTaskBar'
+        KTaskBar._taskBar.style.setProperty('z-index', KAIROS.zMax())
+        KAIROS.keepAtTop(KTaskBar._taskBar)
+        KAIROSAnim.push(() => {
+            document.body.appendChild(KTaskBar._taskBar)
+        })
+    }
+    this.taskbar = KTaskBar._taskBar
+    this.tasks = new Map()
+}
+
+KTaskBar.prototype.minimize = function (node, maximizeCallback) {
+    const tid = ++KTaskBar._id
+    const task = document.createElement('DIV')
+    task.classList.add('ktask')
+    task.appendChild(node)
+    task.style.left = `${this.taskbar.childElementCount * 300 + 4}px`
+    task.addEventListener('click', maximizeCallback)
+    KAIROSAnim.push(() => { this.taskbar.appendChild(task) })
+    this.tasks.set(tid, task)
+    return tid
+}
+
+KTaskBar.prototype.maximize = function (tid) {
+    const node = this.tasks.get(tid)
+    if (!node) { return }
+    this.tasks.delete(tid)
+    KAIROSAnim.push(() => { 
+        if (!node.parentNode) { return }
+        node.parentNode.removeChild(node)
+    })
+    .then(() => {
+        let i = 0;
+        for (let n = this.taskbar.firstElementChild; n; n = n.nextElementSibling) {
+            const y = i * 300 + 4
+            KAIROSAnim.push(() => { n.style.left = `${y}px` })
+            i++
+        }
+    })
+}
+
 function KPopup (title, opts = {}) {
+    this.taskbar = new KTaskBar()
     this.evttarget = new EventTarget()
     this.popup = document.createElement('DIV')
     this.popup.classList.add('kpopup')
@@ -76,6 +122,7 @@ function KPopup (title, opts = {}) {
             })
         })
     }
+
     this.opened = null
 }
 
@@ -89,7 +136,7 @@ KPopup.prototype.removeEventListener = function (type, callback, options = {}) {
 
 KPopup.prototype.focus = function () {
     const zmax = KAIROS.zMax()
-    window.requestAnimationFrame(() => {
+    return KAIROSAnim.push(() => {
         this.popup.style.zIndex = zmax
     })
 }
@@ -99,11 +146,12 @@ KPopup.prototype.followMouse = function () {
     KAIROS.clearSelection()
     const left = KAIROS.mouse.clientX - this.deltaX
     const top = KAIROS.mouse.clientY - this.deltaY
+    /* follow runs regulary */
     window.requestAnimationFrame(() => {
         if (left > 0) { this.popup.style.left = `${left}px` }
         if (top > 0) { this.popup.style.top = `${top}px` }
-        this.followMouse()
     })
+    setTimeout(this.followMouse.bind(this), 16)
 }
 
 KPopup.prototype.stopLoading = function () {
@@ -123,21 +171,17 @@ KPopup.prototype.startLoading = function () {
 KPopup.prototype.minimize = function () {
     this.originalParent = this.popup.parentNode
     this.popup.parentNode.removeChild(this.popup)
-    this.minimizedTab = document.createElement('DIV')
-    this.minimizedTab.classList.add('kpopupMin')
-    this.minimizedTab.appendChild(this.title.cloneNode(true))
-    this.minimizedTab.style.left = `${document.querySelectorAll('div.kpopupMin').length * 300 + 4}px`
-    this.minimizedTab.style.zIndex = KAIROS.zMax()
-    this.minimizedTab.addEventListener('click', event => {
-        this.maximize()
-    })
-    document.body.appendChild(this.minimizedTab)
+    this.minimizedTab = this.taskbar.minimize(this.title.cloneNode(true), this.maximize.bind(this))
 }
 
 KPopup.prototype.maximize = function () {
-    this.originalParent.appendChild(this.popup)
-    this.minimizedTab.parentNode.removeChild(this.minimizedTab)
-    this.focus()
+    this.taskbar.maximize(this.minimizedTab)
+    KAIROSAnim.push(() => {
+        this.originalParent.appendChild(this.popup)
+    })
+    .then(() => {
+        return this.focus()
+    })
 }
 
 KPopup.prototype.addEventListener = function (type, callback, opts) {
@@ -175,7 +219,7 @@ KPopup.prototype.position = function () {
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
     const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
     const popup = this.popup.getClientRects()
-    window.requestAnimationFrame(() => {
+    KAIROSAnim.push(() => {
         this.popup.style.setProperty('top', `${vh / 2 - popup[0].height / 2}px`)
         this.popup.style.setProperty('left', `${vw / 2 - popup[0].width / 2}px`)
     })
@@ -185,7 +229,7 @@ KPopup.prototype.open = function () {
     return new Promise ((resolve, reject) => {
         if (this.opened) { resolve(); return }
         this.opened = KAIROS.stackClosable(this.close.bind(this))
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
             if (!this.popup.parentNode) {
                 if (this.reference) {
                     this.reference.parentNode.appendChild(this.popup)
@@ -194,6 +238,8 @@ KPopup.prototype.open = function () {
                 }
             }
             this.place()
+        })
+        .then(() => {
             resolve(this.domNode)
         })
     })
@@ -206,17 +252,19 @@ KPopup.prototype.close = function () {
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
         this.evttarget.dispatchEvent(new CustomEvent('close'))
-        window.requestAnimationFrame(() => {
+        KAIROSAnim.push(() => {
             if (this.popup.parentNode) {
                 this.popup.parentNode.removeChild(this.popup)
             }
+        })
+        .then(() => {
             resolve()
         })
     })
 }
 
 KPopup.prototype.setContent = function (html) {
-    window.requestAnimationFrame(() => {
+    return KAIROSAnim.push(() => {
         this.domNode.innerHTML = html
     })
 }
@@ -225,7 +273,7 @@ KPopup.prototype.setContentDiv = function (div) {
     let oldPopup = this.domNode
     this.domNode = div
     this.domNode.classList.add('content')
-    window.requestAnimationFrame(() => {
+    return KAIROSAnim.push(() => {
         oldPopup.parentNode.replaceChild(this.domNode, oldPopup)
     })
 }
