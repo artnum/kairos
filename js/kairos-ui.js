@@ -181,7 +181,29 @@ KAIROS.zMax = function (node = null) {
     if (KAIROS.zMax.current === undefined) {
         KAIROS.zMax.current = 1000
     }
-    return ++KAIROS.zMax.current
+
+    const max = ++KAIROS.zMax.current
+    if (KAIROS.keepAtTop.list) {
+        const currentList = KAIROS.keepAtTop.list
+        KAIROS.keepAtTop.list = []
+        for (const n of currentList) {
+            if (!n.parentNode) { continue }
+            KAIROS.keepAtTop.list.push(n)
+            KAIROSAnim.push(() => { n.style.setProperty('z-index', ++KAIROS.zMax.current) })
+        }
+    }
+
+    return max
+}
+
+KAIROS.keepAtTop = function (node) {
+    if (!KAIROS.keepAtTop.list) {
+        KAIROS.keepAtTop.list = []
+    }
+    /* kattop is set on node to avoid having a node several time in the list */
+    if (node.dataset.kattop) { return }
+    node.dataset.kattop = '1'
+    KAIROS.keepAtTop.list.push(node)
 }
 
 KAIROS._domStack = []
