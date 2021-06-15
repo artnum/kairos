@@ -1,6 +1,8 @@
 function KTaskBar () {
     if (!KTaskBar._taskBar) {
         KTaskBar._id = 0
+        KTaskBar._tasks = new Map()
+        KTaskBar._lists = new Map()
         KTaskBar._taskBar = document.createElement('DIV')
         KTaskBar._taskBar.id = 'KTaskBar'
         KTaskBar._taskBar.style.setProperty('z-index', KAIROS.zMax())
@@ -10,17 +12,38 @@ function KTaskBar () {
         })
     }
     this.taskbar = KTaskBar._taskBar
-    this.tasks = new Map()
+    this.tasks = KTaskBar._tasks
+    this.lists = KTaskBar._lists
 }
 
-KTaskBar.prototype.minimize = function (node, maximizeCallback) {
-    const tid = ++KTaskBar._id
+KTaskBar.prototype.dispose = function () {
+    let j = 0
+    let i = 0
+    const offset = this.lists.size * 152
+    for (let n = this.taskbar.firstElementChild; n; n = n.nextElementSibling) {
+        if (n.classList.contains('klist')) {
+            const y = j * 154
+            KAIROSAnim.push(() => { n.style.left = `${y}px` })
+            j++
+            continue
+        }
+        const y = offset + i * 302
+        KAIROSAnim.push(() => { n.style.left = `${y}px` })
+        i++
+    }
+}
+
+KTaskBar.prototype.minimize = function (titleNode, maximizeCallback) {
+    const tid = `ktask-t-${++KTaskBar._id}`
     const task = document.createElement('DIV')
+    task.id = tid
     task.classList.add('ktask')
-    task.appendChild(node)
-    task.style.left = `${this.taskbar.childElementCount * 300 + 4}px`
+    task.appendChild(titleNode)
     task.addEventListener('click', maximizeCallback)
     KAIROSAnim.push(() => { this.taskbar.appendChild(task) })
+    .then(() => {
+        this.dispose()
+    })
     this.tasks.set(tid, task)
     return tid
 }
@@ -34,13 +57,30 @@ KTaskBar.prototype.maximize = function (tid) {
         node.parentNode.removeChild(node)
     })
     .then(() => {
-        let i = 0;
-        for (let n = this.taskbar.firstElementChild; n; n = n.nextElementSibling) {
-            const y = i * 300 + 4
-            KAIROSAnim.push(() => { n.style.left = `${y}px` })
-            i++
-        }
+        this.dispose()
     })
+}
+
+KTaskBar.prototype.list = function (titleNode, items) {
+    const lid = `ktask-l-${++KTaskBar._id}`
+    const list = document.createElement('DIV')
+    list.classList.add('klist')
+    list.id = lid
+    list.appendChild(titleNode)
+    list.style.setProperty('left', 0)
+    list.addEventListener('click', this.popList.bind(this), {capture: true})
+
+    KAIROSAnim.push(() => { this.taskbar.appendChild(list) })
+    .then(() => { this.dispose() })
+
+    this.lists.set(lid, {node: list, items: items})
+
+    return lid
+}
+
+KTaskBar.prototype.popList = function (event) {
+    let node = event.target
+    while (node && !node.classList.contains('klist')) { node = node.parentNode }
 }
 
 function KPopup (title, opts = {}) {
@@ -106,12 +146,12 @@ function KPopup (title, opts = {}) {
 
 
     this.popup.addEventListener('mousedown', event => {
-        this.focus.bind(this)
-    })
+        this.focus()
+    }, {capture: true})
 
     /* if placed at special position, don't move window */
     if (!opts.reference) {
-            this.title.addEventListener('mousedown', event => {
+        this.title.addEventListener('mousedown', event => {
             const bounding = this.popup.getClientRects()
             this.deltaX =  event.clientX - bounding[0].x
             this.deltaY = event.clientY - bounding[0].y
@@ -134,10 +174,10 @@ KPopup.prototype.removeEventListener = function (type, callback, options = {}) {
     this.evttarget.removeEventListener(type, callback, options)
 }
 
-KPopup.prototype.focus = function () {
+KPopup.prototype.focus = function (event) {
     const zmax = KAIROS.zMax()
     return KAIROSAnim.push(() => {
-        this.popup.style.zIndex = zmax
+        this.popup.style.setProperty('z-index', zmax)
     })
 }
 
