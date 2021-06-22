@@ -1,19 +1,18 @@
 .logline {
 	position: fixed;
 	bottom: 0;
-	left: 0;
-    width: 100%;
+	left: 30%;
+    width: 40%;
 	margin: 0;
 	padding: 0;
-	z-index: 99999;
     background-color: var(--default-bg-color);
     font-size: 1.2em;
 }
 
 .message {
-	margin: 2px 5px 2px 5px;
-    padding: 2px;
+    padding: 5px;
     border: 2px solid;
+    border-bottom: none;
     cursor: pointer;
 }
 

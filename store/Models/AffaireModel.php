@@ -9,6 +9,7 @@ class AffaireModel extends artnum\SQL {
       $this->conf('mtime.ts', true);
       $this->conf('delete', 'affaire_deleted');
       $this->conf('delete.ts', true); 
+      $this->conf('delete.zero', true); 
       $this->conf('create', 'affaire_created');
       $this->conf('create.ts', true);
    }

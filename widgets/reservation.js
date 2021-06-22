@@ -9,8 +9,7 @@ define([
 
   'dojo/date',
   'dojo/date/stamp',
-  'dojo/dom-construct',
-  'dojo/on',
+   'dojo/on',
   'dojo/dom-style',
 
 
@@ -31,7 +30,6 @@ define([
 
   djDate,
   djDateStamp,
-  djDomConstruct,
   djOn,
   djDomStyle,
 
@@ -242,7 +240,7 @@ define([
         }
         this.modifiedState = true
         this.resize()
-        this.KReservation.inited.then(_ => {
+        this.KReservation.init(this.get('uid')).then(_ => {
           let state = hash.result()
           if (this.stateHash && this.stateHash !== state) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
@@ -418,9 +416,8 @@ define([
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
           this._isolated = true
-          this._zindex = djDomStyle.get(this.domNode, 'z-index')
           this.highlight()
-          djDomStyle.set(this.domNode, 'z-index', '99999999')
+          this.domNode.style.setProperty('z-index', KAIROS.zMax())
           djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
@@ -434,7 +431,7 @@ define([
 
       if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
-          djDomStyle.set(this.domNode, 'z-index', this._zindex)
+          this.domNode.style.removeProperty('z-index')
           this._isolated = false
         }
       }
@@ -1397,11 +1394,6 @@ define([
     },
     destroyMe: function () {
       this.destroyReservation(this)
-    },
-
-    _newCookie: function () {
-      let uuidv4 = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
-      return {uuid: uuidv4, timestamp: Date.now()}
     },
 
     move: function (newTarget, oldTarget) {

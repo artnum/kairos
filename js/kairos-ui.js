@@ -47,8 +47,8 @@ KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {
 }
 
 KAIROS.log = function (level, txt, code) {
-    var timeout = 10000
-    let div = document.createElement('DIV')
+    let timeout = 10000
+    const div = document.createElement('DIV')
 
     switch (level) {
         case K_INFO:
@@ -88,8 +88,12 @@ KAIROS.log = function (level, txt, code) {
         div.parentNode.removeChild(div)
         document.body.classList.remove('info', 'error', 'warning')
     })
-
-    KAIROSAnim.push(() => document.getElementById('LogLine')?.appendChild(div))
+    const logLine = document.getElementById('LogLine')
+    const zmax = KAIROS.zMax()
+    KAIROSAnim.push(() => { 
+        logLine.style.setProperty('z-index', zmax)
+        logLine.appendChild(div)
+    })
 }
 
 KAIROS.stackClosable = function (closeFunction) {
@@ -204,6 +208,12 @@ KAIROS.keepAtTop = function (node) {
     if (node.dataset.kattop) { return }
     node.dataset.kattop = '1'
     KAIROS.keepAtTop.list.push(node)
+}
+
+KAIROS.setAtTop = function (node) {
+    if (node instanceof HTMLElement) {
+        node.style.setProperty('z-index', KAIROS.zMax())
+    }
 }
 
 KAIROS._domStack = []

@@ -1,3 +1,24 @@
+:root {
+    --kpopup-bg-color: darkslategray;
+    --kpopup-action-bg-color: powderblue;
+    --kpopup-item-bg-color: white;
+    --kpopup-button-bg-color: purple;
+    --kpopup-button-active-bg-color: violet;
+    --kpopup-action-color: black;
+    --kpopup-item-color: black;
+    --kpopup-button-color: white;
+    --kpopup-button-active-color: black;
+    --kpopup-button-border-color: gray;
+    --kpopup-button-active-border-color: black;
+    --kpopup-head-bg-color: var(--kpopup-bg-color);
+    --kpopup-head-color: white;
+    --kpopup-list-shadow-color: darkslategray;
+    --kpopup-item-active-bg-color: lightseagreen;
+    --kpopup-action-active-bg-color: lightseagreen;
+    --kpopup-item-active-color: white;
+    --kpopup-action-active-color: white;
+}
+
 #KTaskBar {
     position: fixed;
     display: flex;
@@ -11,12 +32,12 @@
     padding: 0;
     background-color: transparent;
     pointer-events: none;
+    font-size: 14px;
+    font-family: 'B612 Mono';
+    color: white;
 }
 
 #KTaskBar .ktask .title span {
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    font-weight: bold;
     display: inline-block;
 }
 
@@ -33,7 +54,7 @@
     pointer-events: all;
 }
 
-#KTaskBar .ktask .title {
+#KTaskBar .ktask .title, #KTaskBar .klist .title {
     height: 40px;
     display: flex;
     align-items: center;
@@ -43,6 +64,92 @@
 #KTaskBar .ktask .close, #KTaskBar .ktask .minimize {
     display: none;
     text-overflow: ellipsis;
+}
+
+#KTaskBar .klist {
+    position: fixed;
+    bottom: 2;
+    max-width: 150px;
+    min-width: 150px;
+    max-height: 40px;
+    min-height: 40px;
+    background-color: var(--kpopup-button-bg-color);
+    border: 2px var(--kpopup-button-border-color) solid;
+    color: var(--kpopup-button-color);
+    pointer-events: all;
+}
+
+
+#KTaskBar .klist:active {
+    background-color: var(--kpopup-button-active-bg-color);
+    border: 2px var(--kpopup-button-active-border-color) solid;
+    color: var(--kpopup-button-active-color);
+}
+
+.klist.pop {
+    box-shadow: 6px -4px 5px 0px var(--kpopup-list-shadow-color);
+    min-width: 250px;
+    max-width: 250px;
+    position: fixed;
+    bottom: 44px;
+    left: 0;
+    background-color: var(--kpopup-bg-color);
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    flex-wrap: wrap;
+    padding: 5px 5px 5px 5px;
+}
+
+.klist.pop .kitem, .klist.pop .kaction, .klist.pop .khead, .klist.pop .kseparator {
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 26px;
+    max-height: 26px;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    font-family: 'B612 Mono';
+    font-size: 14px;
+    border: 1px solid var(--kpopup-bg-color);
+    border-left: none;
+    border-right: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.klist.pop .khead {
+    background-color: var(--kpopup-head-bg-color);
+    color: var(--kpopup-head-color);
+}
+
+.klist.pop .kseparator {
+    background-color: var(--kpopup-head-bg-color);
+    color: var(--kpopup-head-color);
+    min-height: 5px;
+    max-height: 5px;
+}
+
+.klist.pop .kitem {
+    background-color: var(--kpopup-item-bg-color);
+    color: var(--kpopup-item-color);
+}
+
+.klist.pop .kaction {
+    background-color: var(--kpopup-action-bg-color);
+    color: var(--kpopup-action-color);
+}
+
+.klist.pop .kitem:active {
+    background-color: var(--kpopup-item-active-bg-color);
+    color: var(--kpopup-item-active-color);
+}
+
+.klist.pop .kaction:active {
+    background-color: var(--kpopup-action-active-bg-color);
+    color: var(--kpopup-action-active-color);
 }
 
 .kpopup {
