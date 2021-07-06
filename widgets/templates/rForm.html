@@ -63,9 +63,8 @@
       </fieldset>
       
       <fieldset class="full ui"><legend>Contacts</legend>
-        <div data-dojo-attach-point="nContactsContainer" data-dojo-type="dijit/layout/TabContainer" style="width: 100%; height: 40ex;" data-dojo-props="isLayoutContainer: true"></div>
-        <div class="contacts" data-dojo-attach-point="nContacts">
-        </div>
+        <div class="liveSearch"><input type="text" name="contactLiveSearch" /></div>
+        <div class="kaddressGroup" name="contactEntries"></div>
       </fieldset>
       
       <fieldset class="ui" name="H:equipment">
@@ -102,38 +101,7 @@
     <button type="button" name="iAdd">Ajout</button>
     <div class="content note" name="iContent">
     </div>
-  </fieldset>
-
-<!--      <fieldset class="ui full">
-        <legend>Offre</legend>
-        <div class="inputLine" data-handler="offer">
-          <label for="offerDescription" style="width: 38%;">          
-            <span class="label th">Description</span>
-            <textarea name="offerDescription"></textarea>
-          </label>
-          <label for="offerPrice">
-            <span class="label th">Prix</span>
-            <input type="text" name="offerPrice" />
-          </label>
-          <label for="offerQuantity">
-            <span class="label th">Quantité</span>
-            <input type="text" name="offerQuantity" />
-          </label>
-          <label for="offerUnit">
-            <span class="label th">Unité</span>
-            <input type="text" name="offerUnit" />
-          </label>
-          <label for="offerDiscount">
-            <span class="label th">Rabais</span>
-            <input type="text" name="offerDiscount" />
-          </label>
-          <label>
-            <span class="label th">Total</span>
-            <span class="input" name="offerTotal"></span>
-          </label>
-        </div>
-      </fieldset>
-//-->      
+  </fieldset>     
       <fieldset class="ui full typezone" name="H:note"><legend>Note interne</legend>
         <div class="note" data-dojo-attach-point="nNewNote"></div>
         <textarea name="newNote" class="short" data-handler="note"  placeholder="Nouvelle note ..."></textarea>

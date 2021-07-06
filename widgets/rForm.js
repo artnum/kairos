@@ -100,10 +100,6 @@ define([
     contacts: {},
     isLayoutContainer: true,
 
-    resize: function () {
-      this.nContactsContainer.resize()
-    },
-
     constructor: function (args) {
       this.Disabled = false
       this.reservation = args.reservation
@@ -1165,23 +1161,25 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
+        //const Contacts = new KContactStore(`${KAIROS.getBase()}/store/Contacts`)
         const L = new KLocalityStore()
-        const U = new UserStore()
+
         const M = new Machine()
         const S = new Status({type: '0'})
         this.Stores = {
+          Contacts: new KContactStore(`${KAIROS.getBase()}/store/Contacts`),
           Locality: L,
           User: new UserStore(),
-          Machine: M,
+          Machine: new Machine(),
           Unit: new Unit()
         }
         this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
         this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-        this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: true })
-        this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
+        this.nArrivalCreator = new Select(this.nArrivalCreator, this.Stores.User, { allowFreeText: false, realSelect: true })
+        this.nCreator = new Select(this.nCreator, this.Stores.User, { allowFreeText: false, realSelect: true })
+        this.nTechnician = new Select(this.nTechnician, this.Stores.User, { allowFreeText: true, realSelect: true })
+        this.nMachineChange = new Select(this.nMachineChange, this.Stores.Machine, { allowFreeText: false, realSelect: true })
         this.nAssociationType = new Select(this.nAssociationType, new Status({type: 1}), { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()
@@ -1222,11 +1220,40 @@ define([
         djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
         djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
 
-        this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
-
         this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), { capture: true })
+
+        const contactTypeSelect = new KFlatList(KAIROS.contact.type, '_client')
+        const cLiveSearch = this.domNode.querySelector('[name="contactLiveSearch"]')
+        const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts/`, {limit: 50})
+        cLiveSearch.parentNode.insertBefore(contactTypeSelect.domNode, cLiveSearch)
+        const contactLiveSearch = new KLiveSearch(
+          cLiveSearch,
+          contactStore
+        )
+
+        contactLiveSearch.addEventListener('change', event => {
+          const address = event.detail
+          const target = this.domNode.querySelector('[name="contactEntries"]')
+          const fieldset = new KFieldset(contactTypeSelect.selected, KAIROS.contact.type)
+          if (KAIROS?.contact?.relation) {
+            if (KAIROS.contact.relation[contactTypeSelect.selected]) {
+              address.getRelated(KAIROS.contact.relation[contactTypeSelect.selected])
+              .then(addresses => {
+                for (const type in addresses) {
+                  const nextFieldset = new KFieldset(type, KAIROS.contact.type)
+                  nextFieldset.domNode.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
+                  target.appendChild(nextFieldset.domNode)
+                }
+              })
+            }
+          }
+          contactTypeSelect.nextItem()
+          
+          fieldset.domNode.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+          target.appendChild(fieldset.domNode)
+        })
 
         this.nMBeginDate.set('value', this.beginDate.get('value'))
         this.MBeginTime = new HourBox(this.nMBeginTime)
@@ -1297,6 +1324,8 @@ define([
           })
         }
         resolve()
+      })
+      .then(() => {
         this.load()
       })
     },
@@ -1339,128 +1368,131 @@ define([
       }.bind(this))
     },
 
-    load: async function () {
-        this.initCancel()
-        this.nMachineChange.value = this.reservation.get('target')
-        this.nLocality.value = this.reservation.get('locality')
-        if (this.reservation.get('title') != null) {
-          this.nTitle.set('value', this.reservation.get('title'))
+    load: function () {
+      this.initCancel()
+      this.nMachineChange.value = this.reservation.get('target')
+      this.nLocality.value = this.reservation.get('locality')
+      if (this.reservation.get('title') != null) {
+        this.nTitle.set('value', this.reservation.get('title'))
+      }
+
+      if (this.reservation.get('folder')) {
+        var folder = this.reservation.get('folder')
+        this.nFolder.set('value', this.reservation.get('folder'))
+        let url = folder
+        if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
+          url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
         }
+        let node = this.nFolder.domNode.previousElementSibling
+        node.dataset.href = url
+      }
 
-        if (this.reservation.get('folder')) {
-          var folder = this.reservation.get('folder')
-          this.nFolder.set('value', this.reservation.get('folder'))
-          let url = folder
-          if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
-            url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
-          }
-          let node = this.nFolder.domNode.previousElementSibling
-          node.dataset.href = url
-        }
+      if (this.reservation.get('gps')) {
+        this.nGps.set('value', this.reservation.get('gps'))
 
-        if (this.reservation.get('gps')) {
-          this.nGps.set('value', this.reservation.get('gps'))
-
-          let node = this.nGps.domNode.previousElementSibling
-          node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
-        } else {
-          let node = this.nGps.domNode.previousElementSibling
-          let addr = ''
-          let l = this.reservation.get('locality')
-          if (l && l !== undefined && l !== null) {
-            if (l.indexOf('PC/') === 0) {
-              this.Stores.Locality.get(l).then((locality) => {
-                if (!locality || locality === undefined || locality === null) { return }
-                if (this.reservation.get('address')) {
-                  addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
-                }
-                if (locality) {
-                  if (!locality.np) { return } // in warehouse
-                  if (addr !== '') {
-                    addr += ','
-                  }
-                  addr += `${locality.np.trim()}+${locality.name.trim()}`
-                }
-                if (addr) {
-                  node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
-                }
-              })
-            } else {
+        let node = this.nGps.domNode.previousElementSibling
+        node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
+      } else {
+        let node = this.nGps.domNode.previousElementSibling
+        let addr = ''
+        let l = this.reservation.get('locality')
+        if (l && l !== undefined && l !== null) {
+          if (l.indexOf('PC/') === 0) {
+            this.Stores.Locality.get(l).then((locality) => {
+              if (!locality || locality === undefined || locality === null) { return }
               if (this.reservation.get('address')) {
                 addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
               }
-              if (this.reservation.get('locality')) {
+              if (locality) {
+                if (!locality.np) { return } // in warehouse
                 if (addr !== '') {
                   addr += ','
                 }
-                addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+                addr += `${locality.np.trim()}+${locality.name.trim()}`
               }
               if (addr) {
                 node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
               }
+            })
+          } else {
+            if (this.reservation.get('address')) {
+              addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
+            }
+            if (this.reservation.get('locality')) {
+              if (addr !== '') {
+                addr += ','
+              }
+              addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+            }
+            if (addr) {
+              node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
             }
           }
         }
+      }
 
-        this.loaded.association = true
-        this.set('warehouse', this.reservation.get('warehouse'))
+      this.loaded.association = true
+      this.set('warehouse', this.reservation.get('warehouse'))
 
-        if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
-          this.nConfirmed.value = true
-        } else {
-          this.nConfirmed.value = false
+      if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
+        this.nConfirmed.value = true
+      } else {
+        this.nConfirmed.value = false
+      }
+
+      if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
+        this.nDelivery.set('checked', true)
+      } else {
+        this.nDelivery.set('checked', false)
+      }
+      this.toggleDelivery()
+
+      const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+      url.searchParams.set('search.reservation', this.reservation.uid)
+      fetch(url)
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json()
+      })
+      .then(result => {
+        if (!result) { return }
+        if (!result.length) { return }
+        if (!result.data) { return }
+        for (let i = 0; i < result.length; i++) {
+          const contact = result.data[i]
+          if (contact.freeform) {
+            this.createContact(new KContactText(contact.id, contact.freeform), contact.comment, contact.id)
+            continue
+          }
+          if (contact.target === null) { continue }
+          this.Stores.Contacts.get(contact.target)
+          .then(kcontact => {
+            this.createContact(kcontact, contact.comment, contact.id)
+          })
         }
+      })
 
-        if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
-          this.nDelivery.set('checked', true)
-        } else {
-          this.nDelivery.set('checked', false)
-        }
-        this.toggleDelivery()
+      djAll(this.initRequests).then(djLang.hitch(this, () => {
+        this.doResetComplement()
+        this.refresh()
+        this.initRequests = []
+      }))
 
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        var res = await Query.exec(url)
-        if (res.length > 0) {
-          res.data.forEach(djLang.hitch(this, async function (contact) {
-            if (contact.freeform) {
-              contact.linkId = contact.id
-              this.createContact(contact, contact.comment)
+      const inputs = this.domNode.getElementsByTagName('input')
+      for (var j = 0; j < inputs.length; j++) {
+        const name = inputs[j].getAttribute('name')
+        if (name && name.substr(0, 2) === 'o-') {
+          const other = this.get('other')
+          if (other && other[name.substr(2)]) {
+            var w = dtRegistry.byNode(inputs[j])
+            if (w) {
+              w.set('value', other[name.substr(2)])
             } else {
-              var linkId = contact.id
-              var comment = contact.comment
-              let url = Path.url('store/' + contact.target)
-              results = await Query.exec(url)
-              if (results.length > 0) {
-                var e = results.data[0]
-                e.linkId = linkId
-                this.createContact(e, comment)
-              }
-            }
-          }))
-        }
-
-        djAll(this.initRequests).then(djLang.hitch(this, () => {
-          this.doResetComplement()
-          this.refresh()
-          this.initRequests = []
-        }))
-
-        var inputs = this.domNode.getElementsByTagName('input')
-        for (var j = 0; j < inputs.length; j++) {
-          var name = inputs[j].getAttribute('name')
-          if (name && name.substr(0, 2) === 'o-') {
-            var other = this.get('other')
-            if (other && other[name.substr(2)]) {
-              var w = dtRegistry.byNode(inputs[j])
-              if (w) {
-                w.set('value', other[name.substr(2)])
-              } else {
-                inputs[j].value = other[name.substr(2)]
-              }
+              inputs[j].value = other[name.substr(2)]
             }
           }
         }
+      }
     },
 
     refresh: function () {
@@ -1534,53 +1566,19 @@ define([
       this.nArrivalDone.value = true
     },
 
-    createContact: function (entry, type) {
-      var c = new Card('/Contacts/')
+    createContact: function (address, type, linkId) {
+      const target = this.domNode.querySelector('[name="contactEntries"]')
+      const previous = target.querySelector(`[name="${linkId}"]`)
+      const fieldset = new KFieldset(type, KAIROS.contact.type)
+      fieldset.domNode.setAttribute('name', linkId)
 
-      if (type === '') {
-        type = 'Autre'
-      }
+      fieldset.domNode.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+      fieldset.domNode.style.setProperty('order', `${KAIROS?.contact?.order[type] || 1000}`)
 
-      c.entry(entry)
-
-      var contact = new DtContentPane({
-        title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
-        content: c.domNode,
-        closable: !this.Disabled,
-        contactType: type,
-        contactCard: c,
-        contactLinkId: entry.linkId,
-        contactSup: this,
-        style: 'height: 80px;',
-        onClose: function (event) {
-          var sup = this.contactSup
-          if (confirm('Supprimer le contact ' + this.contactCard.getType(this.contactType))) {
-            var url = Path.url('store/ReservationContact/' + this.contactLinkId)
-            Query.exec(url, {method: 'delete'}).then(function () {
-              event.removeChild(this)
-              for (var i in sup.contacts) {
-                if (sup.contacts[i].contactLinkId === this.contactLinkId) {
-                  sup.contacts[i].destroy()
-                  delete sup.contacts[i]
-                  break
-                }
-              }
-            }.bind(this))
-          }
-        }
-      })
-
-      for (var k in this.contacts) {
-        if (this.contacts[k].contactLinkId === contact.contactLinkId) {
-          this.nContactsContainer.removeChild(this.contacts[k])
-          this.contacts[k].destroy()
-          break
-        }
-      }
-      this.contacts[type + contact.contactLinkId] = contact
-      this.nContactsContainer.addChild(this.contacts[type + contact.contactLinkId])
-      if (type === '_client') {
-        this.nContactsContainer.selectChild(this.contacts[type + contact.contactLinkId])
+      if (previous) {
+        target.replaceChild(fieldset.domNode, previous)
+      } else {
+        target.appendChild(fieldset.domNode)
       }
     },
 
@@ -1602,13 +1600,13 @@ define([
               if (!result.success) {
                 return
               }
-              Query.exec(Path.url('store/' + id)).then(djLang.hitch(this, function (c) {
-                if (c.success && c.length === 1) {
-                  var e = c.data[0]
-                  e.linkId = result.data[0].id
-                  that.createContact(e, type, true)
-                }
-              }))
+              this.Stores.Contacts.get(id)
+              .then(kcontact => {
+                if (!kcontact) { return }
+                kcontact.set('linkId', result.data[0].id)
+                kcontact.set('linkType', type)
+                that.createContact(kcontact, type, true)
+              })
             }))
           }
         }))

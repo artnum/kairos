@@ -252,3 +252,42 @@ KReservation.prototype.oneLine = function () {
     resolve(div)
   })
 }
+
+KReservation.prototype.addContact = function (contact, type) {
+  
+}
+
+KReservation.prototype.delContact = function (contact) {
+  return new Promise((resolve, reject) => {
+    if (contact instanceof KContactObject) {
+      const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+      url.searchParams.append('search.target', contact.getId())
+      url.searchParams.append('search.reservation', this.getId())
+      fetch(url)
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json()
+      })
+      .then(result => {
+        if (!result) { return null }
+        if (result.length > 1) { return null }
+        return result.data instanceof Array ? result.data[0].id : result.data.id
+      })
+      .then(id => {
+        if (!id) { return null }
+        const url = new URL(`${KAIROS.getBase()}/store/ReservationContact/${id}`)
+        return fetch(url, {method: 'DELETE'})
+      })
+      .then(result => {
+        if (!result) { resolve(false) }
+        if (result.ok) { resolve(true) }
+        else { resolve(false) }
+      })
+      .catch(reason => reject(reason instanceof Error ? reason : new Error(reason)))
+    }
+  })
+}
+
+KReservation.prototype.modContact = function (contact) {
+
+}

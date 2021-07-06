@@ -210,15 +210,6 @@ define([
           this.dataHash['uuid'] = crc32('')
         }
 
-        if (this.contacts && this.contacts['_client']) {
-          if (this.contacts['_client'][0].target) {
-            this.dbContact = this.contacts['_client'][0].target
-          } else {
-            this.dbContact = { freeform: this.contacts['_client'][0].freeform }
-          }
-        } else {
-          this.dbContact = {}
-        }
         if (!this.color) { this.color = 'FFF' }
         if (!this.complements) { this.complements = [] }
 
@@ -242,17 +233,40 @@ define([
           this.sup.resize()
         }
         this.modifiedState = true
-        this.resize()
-        krLoad.then(kres => {
-          let hasKReservation = this.KReservation
-          delete this.KReservation
-          this.KReservation = kres
-          let state = hash.result()
-          if (this.stateHash && this.stateHash !== state && hasKReservation) {
-            this.EventTarget.dispatchEvent(new CustomEvent('synced'))
+
+        new Promise((resolve, reject) => {
+          const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts`)
+          if (this.contacts && this.contacts['_client']) {
+            if (this.contacts['_client'][0].target) {
+              contactStore.get(this.contacts['_client'][0].target.IDent)
+              .then(kcontact => {
+                this.dbContact = kcontact
+                resolve()
+              })
+            } else {
+              if (this.contacts['_client'][0].freeform) {
+                this.dbContact = new KContactText(this.contacts['_client'][0].id, this.contacts['_client'][0].freeform)
+              }
+              resolve()
+            }
+          } else {
+            this.dbContact = null
+            resolve()
           }
-          this.stateHash = state
-          resolve()
+        })
+        .then(() => {
+          this.resize()
+          krLoad.then(kres => {
+            let hasKReservation = this.KReservation
+            delete this.KReservation
+            this.KReservation = kres
+            let state = hash.result()
+            if (this.stateHash && this.stateHash !== state && hasKReservation) {
+              this.EventTarget.dispatchEvent(new CustomEvent('synced'))
+            }
+            this.stateHash = state
+            resolve()
+          })
         })
       })
     },
@@ -621,35 +635,13 @@ define([
     },
 
     contactDom: function () {
-      var contact = this.get('dbContact')
-      var content = document.createDocumentFragment()
-      if (contact) {
-        if (contact.freeform) {
-          content.appendChild(document.createTextNode(String(contact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')))
-        } else {
-          if (contact.displayname) {
-            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'displayname names')
-            content.lastChild.appendChild(document.createTextNode(contact.displayname))
-          } else {
-            if (contact.o) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names')
-              content.lastChild.appendChild(document.createTextNode(contact.o))
-            }
-
-            if (contact.givenname) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'givenname names')
-              content.lastChild.appendChild(document.createTextNode(contact.givenname))
-            }
-
-            if (contact.sn) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'sn names')
-              content.lastChild.appendChild(document.createTextNode(contact.sn))
-            }
-          }
-        }
-      }
-
-      return content
+      const contact = this.get('dbContact')
+      const domNode = 
+        contact === null ? 
+          document.createElement('ADDRESS') : 
+          contact.getDOMLabel({postaladdress: true, locality: true, o: true, mail: true, singlephone: true}, true)
+      domNode.classList.add('inline')
+      return domNode
     },
 
     _setTextDesc: function (root) {
@@ -716,8 +708,7 @@ define([
 
       frag.lastChild.appendChild(ident)
 
-      frag.lastChild.appendChild(document.createElement('address'))
-      frag.lastChild.lastChild.appendChild(this.contactDom())
+      frag.lastChild.appendChild(this.contactDom())
 
       /* Second line */
       frag.appendChild(document.createElement('DIV'))
