@@ -639,7 +639,7 @@ define([
       const domNode = 
         contact === null ? 
           document.createElement('ADDRESS') : 
-          contact.getDOMLabel({postaladdress: true, locality: true, o: true, mail: true, singlephone: true}, true)
+          contact.getDOMLabel({postaladdress: true, o: true, mail: true, mobile: true, telephonenumber: true}, true)
       domNode.classList.add('inline')
       return domNode
     },
@@ -745,7 +745,7 @@ define([
         locality = frag.lastChild.lastChild
         if (this.gps) {
           frag.lastChild.lastChild.appendChild(document.createElement('A'))
-          frag.lastChild.lastChild.lastChild.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.gps).replace(/\s/g, ''))
+          frag.lastChild.lastChild.lastChild.setAttribute('href', KAIROS.maps.gps.replace('$GPS', String(this.gps).replace(/\s/g, '')))
           frag.lastChild.lastChild.lastChild.setAttribute('target', '_blank')
           locality = frag.lastChild.lastChild.lastChild
         }

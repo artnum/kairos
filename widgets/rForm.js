@@ -1163,12 +1163,12 @@ define([
 
         //const Contacts = new KContactStore(`${KAIROS.getBase()}/store/Contacts`)
         const L = new KLocalityStore()
-
         const M = new Machine()
         const S = new Status({type: '0'})
         this.Stores = {
           Contacts: new KContactStore(`${KAIROS.getBase()}/store/Contacts`),
           Locality: L,
+          OnlyLocality: new KLocalityStore('locality'),
           User: new UserStore(),
           Machine: new Machine(),
           Unit: new Unit()
@@ -1230,15 +1230,16 @@ define([
         cLiveSearch.parentNode.insertBefore(contactTypeSelect.domNode, cLiveSearch)
         const contactLiveSearch = new KLiveSearch(
           cLiveSearch,
-          contactStore
+          contactStore,
+          this.Stores.OnlyLocality
         )
 
         contactLiveSearch.addEventListener('change', event => {
           const address = event.detail
           const target = this.domNode.querySelector('[name="contactEntries"]')
-          const fieldset = new KFieldset(contactTypeSelect.selected, KAIROS.contact.type)
+          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type)
           if (KAIROS?.contact?.relation) {
-            if (KAIROS.contact.relation[contactTypeSelect.selected]) {
+            if (KAIROS.contact.relation[contactTypeSelect.getSelected()]) {
               address.getRelated(KAIROS.contact.relation[contactTypeSelect.selected])
               .then(addresses => {
                 for (const type in addresses) {
@@ -1391,7 +1392,7 @@ define([
         this.nGps.set('value', this.reservation.get('gps'))
 
         let node = this.nGps.domNode.previousElementSibling
-        node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
+        node.dataset.href = KAIROS.maps.direction.replace('$FROM', KAIROS.maps.origin.replace("\s", '+')).replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
       } else {
         let node = this.nGps.domNode.previousElementSibling
         let addr = ''

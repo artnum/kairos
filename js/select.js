@@ -336,6 +336,7 @@ Select.prototype.close = function () {
   if (this.realSelect) {
     this.store.get(this.input.dataset.value)
     .then(entry => {
+      if (!entry) { return }
       this.setLabel(entry.label)
       this.colorize(entry.color)
     })
@@ -379,6 +380,7 @@ Select.prototype.realSelectUI = function () {
 }
 
 Select.prototype.setValue = function (value) {
+  if (!value) { return }
   this._oldValue = this.value
   this.value = value
   this.input.dataset.value = value
@@ -386,6 +388,7 @@ Select.prototype.setValue = function (value) {
 }
 
 Select.prototype.setLabel = function (label) {
+  if (!label) { return }
   this.input.value = label
 }
 

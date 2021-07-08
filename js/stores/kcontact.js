@@ -213,8 +213,23 @@ function KContactText (id, text) {
 KContactText.prototype.getHTMLLabel = function (hidden = {}, short = false) {
     if (!this.json) {
         const div = document.createElement('DIV')
-        div.innerHTML = this.text.replace("\n", '<br>')
-        createLinkFromPhone(div)
+        const parts = this.text.split("\n")
+        let i = 1
+        const hasHidden = Object.keys(hidden).length > 1
+        for (const line of parts) {
+            div.innerHTML += `<div ${hasHidden && i > 1 ? 'data-hidden="1"' : ''} class="${i === 1 ? 'name ' : ''}addrline addrline-${i}">${line}</div>`
+            i++
+        }
+        phoneLinks = createLinkFromPhone(div)
+        console.log(phoneLinks)
+        if (phoneLinks.length > 0) {
+            let line = phoneLinks[0]
+            while (line && !line.classList.contains('addrline')) { line = line.parentNode }
+            console.log(line)
+            if (line && line.dataset.hidden) {
+                line.removeAttribute('data-hidden')
+            }
+        }
         return div.innerHTML
     }
     let label
@@ -278,7 +293,7 @@ KContactText.prototype.getDOMLabel = function (hidden = {}, short = false) {
         p.classList.add('dynamic')
         p.addEventListener('click', (event) => {
             if (!event.target instanceof HTMLElement) { return }
-            if (event.target.nodeName !== 'SPAN') { return }
+            if (event.target.nodeName !== 'SPAN' && event.target.nodeName !== 'DIV') { return }
             if (!event.target.classList.contains('name')) { return }
             const p = event.target.parentNode
             const hidden =  p.querySelectorAll('[data-hidden]')

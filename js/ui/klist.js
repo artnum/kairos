@@ -127,7 +127,6 @@ KFlatList.prototype.genChoices = function (value) {
             item.innerHTML = `<i class="far fa-circle"> </i>&nbsp;${chvalue}`
         }
         item.dataset.id = k
-        this.domNode.appendChild(item)
         item.addEventListener('click', (event) => {
             let node = event.target
             while (node && !node.dataset.id) { 
@@ -137,6 +136,8 @@ KFlatList.prototype.genChoices = function (value) {
             if (!node) { return }
             this.selectItem(node.dataset.id)
         })
+        this.domNode.appendChild(item)
+        console.log(item)
     }
 }
 
@@ -160,6 +161,13 @@ KFlatList.prototype.selectItem = function (id) {
     if (this.choices[id] === '<input>') {
         this.value = targetNode.querySelector('INPUT').value
     }
+}
+
+KFlatList.prototype.getSelected = function () {
+    if (this.choices[this.selected] === '<input>') {
+        return this.value
+    }
+    return this.selected
 }
 
 KFlatList.prototype.nextItem = function () {

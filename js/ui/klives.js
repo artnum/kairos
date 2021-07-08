@@ -1,9 +1,11 @@
-function KLiveSearch(searchBox, store) {
+function KLiveSearch(searchBox, store, localityStore) {
     this.store = store
+    this.localityStore = localityStore
     this.domNode = searchBox
     this.domNode.addEventListener('keyup', this.searchBoxHandleEvents.bind(this))
     this.domNode.addEventListener('keydown', this.searchBoxHandleEvents.bind(this))
     this.EvtTarget = new EventTarget()
+    this.noMoreSearch = false
 }
 
 KLiveSearch.prototype.addEventListener = function (type, listener, opt = {}) {
@@ -24,7 +26,6 @@ KLiveSearch.prototype.search = function (term) {
 }
 
 KLiveSearch.prototype.handleMouseEvent = function (event) {
-    console.log(event)
     if (this.mouseEventBlock && event.type === 'mouseenter') {
         this.mouseEventBlock = false
         return
@@ -42,7 +43,7 @@ KLiveSearch.prototype.handleMouseEvent = function (event) {
 }
 
 KLiveSearch.prototype.searchBoxHandleEvents = function (event) {
-    console.log(event)
+    if (this.noMoreSearch) { return }
     if (event.type === 'keydown') {
         switch (event.key) {
             case 'Up':
@@ -112,6 +113,7 @@ KLiveSearch.prototype.searchBoxHandleEvents = function (event) {
 }
 
 KLiveSearch.prototype.selectElement = function (event) {
+    if (this.noMoreSearch) { return }
     event.preventDefault()
     const current = this.popDiv.querySelector('.kls-result[data-hover="1"]')
     const object = this.ObjectList.get(current.dataset.id)
@@ -174,7 +176,7 @@ KLiveSearch.prototype.removeResult = function (replace = null) {
         const oldDiv = this.popDiv
         if (replace !== null) { this.popDiv = replace }
         else { this.popDiv = null }
-        KAIROSAnim.push(() => { console.log(oldDiv); oldDiv.parentNode.removeChild(oldDiv) })
+        KAIROSAnim.push(() => { oldDiv.parentNode.removeChild(oldDiv) })
     } else if (replace) {
         this.popDiv = replace
     }
@@ -191,6 +193,12 @@ KLiveSearch.prototype.renderResult = function (results) {
 
         const more = new MButton('Tous les résultats')
         const add = new MButton('Ajouter adresse')
+
+        add.addEventListener('click', event => {
+            console.log(event)
+
+            this.renderAddForm()
+        })
 
         optDiv.appendChild(more.domNode)
         optDiv.appendChild(add.domNode)
@@ -223,5 +231,32 @@ KLiveSearch.prototype.renderResult = function (results) {
 }
 
 KLiveSearch.prototype.renderAddForm = function () {
-    const type = new KFlatList({organization: 'Société', person: 'Personne'})
+    this.noMoreSearch = true
+    const type = new KFlatList({organization: 'Société', person: 'Personne'}, 'organization')
+    const domNode = document.createElement('FORM')
+    domNode.innerHTML = `
+        <fieldset class="kfieldset"><legend>Adresse</legend>
+        <div class="name"><label>Société</label><input type="text" name="name"></input></label></div>
+        <div class="address"><label>Addresse</label><textarea type="address"></textarea></label></div>
+        <div class="locality"><label>Localité</label><input type="text" name="locality"></input></label></div>
+        </fieldset>
+        <fieldset class="kfieldset"><legend>Téléphonie</legend>
+        <div class="mobile"><label>Mobile</label><input type="text" name="mobile"></input></div>
+        <div class="landline"><label>Fixe</label><input type="text" name="landline"></input></div>
+        </fieldset>
+        <fieldset class="kfieldset"><legend>Internet</legend>
+        <div class="email"><label>E-Mail</label><input type="text" name="email"></input></div>
+        <div class="website"><label>Site Web</label><input type="text" name="website"></input></div>
+        </fieldset>
+        <button type="submit">Ajouter</button> <button type="reset">Annuler</button>
+    `
+    const locality = new Select(domNode.querySelector('input[name="locality"]'), this.localityStore)   
+    domNode.insertBefore(type.domNode, domNode.firstElementChild)
+
+    this.popDiv.innerHTML = ''
+    this.popDiv.appendChild(domNode)
+    /* add domNode before adding type.domNode or else events are discarded */
+    
+
+    console.log(locality)
 }

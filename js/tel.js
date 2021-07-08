@@ -2,11 +2,12 @@
 function createLinkFromPhone (htmlnode) {
   const phoneExp = /(:? |^)(:?0|\+)[0-9 +./-]+/g
   const unwantedChar = /[ ./-]/g
+  let phoneLinks = []
   for (let i = htmlnode.childNodes.length - 1; i >= 0; i--) {
     const node = htmlnode.childNodes[i]
     if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.nodeName === 'A' || node.nodeName === 'SCRIPT') { continue } // don't put link into link
-      createLinkFromPhone(node)
+      phoneLinks = phoneLinks.concat(createLinkFromPhone(node))
     } else if (node.nodeType === Node.TEXT_NODE) {
       let txt = node.nodeValue
       const res = String(node.nodeValue).match(phoneExp)
@@ -18,6 +19,7 @@ function createLinkFromPhone (htmlnode) {
             continue
           } else {
             const a = document.createElement('A')
+            phoneLinks.push(a)
             a.setAttribute('href', `tel:${num}`)
             a.classList.add('phonenumber')
             a.appendChild(document.createTextNode(m))
@@ -34,4 +36,5 @@ function createLinkFromPhone (htmlnode) {
       }
     }
   }
+  return phoneLinks
 }
