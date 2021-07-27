@@ -58,6 +58,12 @@ var Arrival = function () {
   this.RChannel = new BroadcastChannel('KAIROS-reservation-bc')
 }
 
+Arrival.prototype.rmLine = function (line) {
+  window.requestAnimationFrame(() => {
+    if (line) { line.parentNode.removeChild(line) }
+  })
+}
+
 Arrival.prototype.query = function (retval) {
   return new Promise(function (resolve, reject) {
     fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${retval.target}`))
@@ -192,8 +198,10 @@ Arrival.prototype.done = function (event) {
     let url = new URL(`${KAIROS.getBase()}/store/Arrival/${req.id}`)
     fetch(url, {method: 'PATCH', body: JSON.stringify(req)}).then(response => {
       if (!response.ok) { KAIROS.error('Erreur serveur'); return }
-      response.json(result => {
+      response.json()
+      .then(result => {
         if (result.length === 1) {
+          this.rmLine(line)
           Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
           this.RChannel.postMessage({op: 'touch', id: reservationId})
         }
@@ -230,6 +238,7 @@ Arrival.prototype.doneAndChecked = function (event) {
             comment: '',
             append: true
           })
+          this.rmLine(line)
           Histoire.LOG('Reservation', reservationId, ['_arrival.done'], null)
           this.RChannel.postMessage({op: 'touch', id: reservationId})
         }
@@ -450,6 +459,7 @@ Arrival.prototype.add = async function (retval) {
     }
 
     retval.RChannel = this.RChannel
+    retval.rmLine = this.rmLine
     doneBtn.addEventListener('click', this.done.bind(retval))
     progBtn.addEventListener('click', this.progress.bind(retval))
     doneAndCheckdBtn.addEventListener('click', this.doneAndChecked.bind(retval))
