@@ -76,6 +76,10 @@ define([
           url.searchParams.append('search.cn', `${searchName}*`)
           url.searchParams.append('search.description', `${searchName}*`)
           url.searchParams.append('search.airref', `*${searchName}*`)
+          url.searchParams.append('search.state', '!SOLD')
+          url.searchParams.append('search._rules', '(&(|(_cn_)(_description_)(_airref_))(_state_))')
+        } else {
+          url.searchParams.append('search.state', '!SOLD')
         }
         if (KAIROS.Cache.MachineStore.has(url.toString())) {
           const cache = KAIROS.Cache.MachineStore.get(url.toString())
