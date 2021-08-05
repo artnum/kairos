@@ -40,7 +40,10 @@ function KLiveSearch(searchBox, store, localityStore, opts = {}) {
             this.localityStore,
             {onlyBook: true, type: 'organization', typeSelect: false}
         )
-        this.orgLiveSearch.addEventListener('')
+        this.orgLiveSearch.addEventListener('change', event => {
+            this.orgLiveInput.value = event.detail.getLabel()
+            this.orgLiveInput.dataset.value = event.detail.getId()
+        })
     }
 }
 
@@ -347,6 +350,7 @@ KLiveSearch.prototype.renderAddForm = function (addrType) {
     /* add domNode before adding type.domNode or else events are discarded */
     
     domNode.addEventListener('submit', event => {
+        this.noMoreSearch = false
         event.preventDefault()
         const form = KFormData.new(event.target)
 

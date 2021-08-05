@@ -98,12 +98,25 @@ class ContactsModel extends artnum\LDAP {
     return $entry;
   }
 
-  function do_write($data, $ovewrite = false) {
+  function do_write($data, $overwrite = false) {
     if ($data['type'] === 'person') {
       if (!isset($data['sn'])) { $data['sn'] = ' '; }
       $data['cn'] = $data['sn'] . ' ' . $data['givenname'];
+      if (!empty($data['organization'])) {
+        $org = trim($data['organization']);
+        if (substr($org, 0, 9) === 'Contacts/') {
+          $orgId = rawurldecode(substr($org, 9));
+          $dn = $this->_dn($orgId);
+          if ($this->_exists($orgId)) {
+            $data['seeAlso;relation-worker'] = $dn;
+          }
+        } else {
+          $data['o'] = $data['organization'];
+        }
+      }
+      unset($data['organization']);
     }
-    return parent::do_write($data, $ovewrite);
+    return parent::do_write($data, $overwrite);
   }
 
   function getCacheOpts() {
