@@ -235,7 +235,7 @@ define([
         this.modifiedState = true
 
         new Promise((resolve, reject) => {
-          const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts`)
+          const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts`, {limit: 1})
           if (this.contacts && this.contacts['_client']) {
             if (this.contacts['_client'][0].target) {
               contactStore.get(this.contacts['_client'][0].target.IDent)

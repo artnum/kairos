@@ -102,6 +102,12 @@ function KFlatList (choices, value) {
     this.selected = value
     this.value = this.choices[value]
     this.genChoices(value)
+    this.domNode.dataset.value = this.getSelected()
+    this.EvtTarget = new EventTarget()
+}
+
+KFlatList.prototype.addEventListener = function (type, callback, options) {
+    this.EvtTarget.addEventListener(type, callback, options)
 }
 
 KFlatList.prototype.genChoices = function (value) {
@@ -110,7 +116,13 @@ KFlatList.prototype.genChoices = function (value) {
         item.classList.add('klist', 'item')
 
         let chvalue = this.choices[k]
-        if (this.choices[k] === '<input>') {
+        let icon = 'far fa-circle'
+        if (Array.isArray(chvalue)) {
+            icon = chvalue[1]
+            chvalue = chvalue[0]
+            item.dataset.icon = '1'
+        }
+        if (chvalue === '<input>') {
             chvalue = `<input class="klist input"></input>`
             item.addEventListener('change', (event) => {
                 let node = event.target
@@ -122,9 +134,13 @@ KFlatList.prototype.genChoices = function (value) {
             }, {capture: true})
         }
         if (value === k) {
-            item.innerHTML = `<i class="fas fa-check-circle"> </i>&nbsp;${chvalue}`
+            if (icon === 'far fa-circle') {
+                icon = 'fas fa-check-circle'
+            }
+            item.innerHTML = `<i class="${icon}"> </i>&nbsp;${chvalue}`
+            item.dataset.selected = '1'
         } else {
-            item.innerHTML = `<i class="far fa-circle"> </i>&nbsp;${chvalue}`
+            item.innerHTML = `<i class="${icon}"> </i>&nbsp;${chvalue}`
         }
         item.dataset.id = k
         item.addEventListener('click', (event) => {
@@ -137,7 +153,6 @@ KFlatList.prototype.genChoices = function (value) {
             this.selectItem(node.dataset.id)
         })
         this.domNode.appendChild(item)
-        console.log(item)
     }
 }
 
@@ -148,11 +163,17 @@ KFlatList.prototype.selectItem = function (id) {
     for (let node = this.domNode.firstElementChild; node; node = node.nextElementSibling) {
         if (node.dataset.id === id) {
             targetNode = node
-            node.firstElementChild.classList.remove('fa-circle', 'far')
-            node.firstElementChild.classList.add('fa-check-circle', 'fas')
+            if (!node.dataset.icon) {
+                node.firstElementChild.classList.remove('fa-circle', 'far')
+                node.firstElementChild.classList.add('fa-check-circle', 'fas')
+            }
+            node.dataset.selected = '1'
         } else {
-            node.firstElementChild.classList.remove('fa-check-circle', 'fas')
-            node.firstElementChild.classList.add('fa-circle', 'far')  
+            if (!node.dataset.icon) {
+                node.firstElementChild.classList.remove('fa-check-circle', 'fas')
+                node.firstElementChild.classList.add('fa-circle', 'far')  
+            }
+            node.dataset.selected = '0'
         }
     }
 
@@ -161,6 +182,8 @@ KFlatList.prototype.selectItem = function (id) {
     if (this.choices[id] === '<input>') {
         this.value = targetNode.querySelector('INPUT').value
     }
+    this.domNode.dataset.value = this.getSelected()
+    this.EvtTarget.dispatchEvent(new CustomEvent('change', { detail: this.getSelected() }))
 }
 
 KFlatList.prototype.getSelected = function () {

@@ -1,4 +1,12 @@
-function KLiveSearch(searchBox, store, localityStore) {
+function KLiveSearch(searchBox, store, localityStore, opts = {}) {
+    this.opts = Object.assign(
+        {
+            onlyBook: false,
+            typeSelect: true,
+            type: null
+        },
+        opts
+    )
     this.store = store
     this.localityStore = localityStore
     this.domNode = searchBox
@@ -6,6 +14,34 @@ function KLiveSearch(searchBox, store, localityStore) {
     this.domNode.addEventListener('keydown', this.searchBoxHandleEvents.bind(this))
     this.EvtTarget = new EventTarget()
     this.noMoreSearch = false
+    if (opts.type) {
+        this.store.typeFilter(opts.type)
+    } else {
+        this.store.typeFilter('any')
+    }
+    if (opts.typeSelect) {
+        const searchType = new KFlatList({
+            'any': ['Tout', 'fas fa-asterisk'],
+            'organization': ['Société', 'fas fa-building'],
+            'person': ['Personne', 'fas fa-user']
+        }, 'any')
+        searchType.addEventListener('change', event => {
+            this.store.typeFilter(event.detail)
+        })
+        this.domNode.parentNode.insertBefore(searchType.domNode, this.domNode.nextElementSibling)
+    }
+    this.orgInput = null
+    if (this.opts.typeSelect || (!this.opts.typeSelect && (this.opts.type === 'person' || this.opts.type === 'any'))) {
+        this.orgLiveInput = document.createElement('INPUT')
+        this.orgLiveInput.setAttribute('name', 'organization')
+        this.orgLiveSearch = new KLiveSearch(
+            this.orgLiveInput,
+            new KContactStore(`${KAIROS.getBase()}/store/Contacts`,  {type: 'organization', limit: KAIROS.searchLimit}),
+            this.localityStore,
+            {onlyBook: true, type: 'organization', typeSelect: false}
+        )
+        this.orgLiveSearch.addEventListener('')
+    }
 }
 
 KLiveSearch.prototype.addEventListener = function (type, listener, opt = {}) {
@@ -14,6 +50,11 @@ KLiveSearch.prototype.addEventListener = function (type, listener, opt = {}) {
 
 KLiveSearch.prototype.removeEventListener = function (type, listener, opt = {}) {
     this.EvtTarget.removeEventListener(type, listener, opt)
+}
+
+KLiveSearch.prototype.setTargetType = function (type) {
+    this.targetType = type
+    this.EvtTarget.dispatchEvent(new CustomEvent('type-change', { detail: this.targetType }))
 }
 
 KLiveSearch.prototype.search = function (term) {
@@ -102,7 +143,7 @@ KLiveSearch.prototype.searchBoxHandleEvents = function (event) {
                     popDiv.addEventListener('keyup', this.searchBoxHandleEvents.bind(this))
                     popDiv.addEventListener('keydown', this.searchBoxHandleEvents.bind(this))
                     this.removeResult(popDiv)
-                    KAIROSAnim.push(() => { this.domNode.parentNode.appendChild(popDiv) })
+                    KAIROSAnim.push(() => { document.body.appendChild(popDiv) })
                     .then(() => {
                         const pop = Popper.createPopper(this.domNode, popDiv, {placement: 'bottom-start'})
                     })
@@ -166,6 +207,7 @@ KLiveSearch.prototype.moveInResult = function (event, direction, quantity) {
             }
         }
     }
+    if (!next) { return }
     next.dataset.hover = '1'
     const nextRects = next.getBoundingClientRect()
     resultDiv.scrollTop = next.offsetTop - (resultDivRects.height / 2 - nextRects.height / 2)
@@ -188,19 +230,18 @@ KLiveSearch.prototype.renderResult = function (results) {
         popDiv.classList.add('kls-popup')
         const resDiv = document.createElement('DIV')
         resDiv.classList.add('kls-results')
+
         const optDiv = document.createElement('DIV')
         optDiv.classList.add('kls-opts')
 
-        const more = new MButton('Tous les résultats')
+        //const more = new MButton('Tous les résultats')
         const add = new MButton('Ajouter adresse')
 
         add.addEventListener('click', event => {
-            console.log(event)
-
-            this.renderAddForm()
+            this.renderAddForm(this.targetType)
         })
 
-        optDiv.appendChild(more.domNode)
+        //optDiv.appendChild(more.domNode)
         optDiv.appendChild(add.domNode)
 
         popDiv.appendChild(resDiv)
@@ -230,33 +271,215 @@ KLiveSearch.prototype.renderResult = function (results) {
     })
 }
 
-KLiveSearch.prototype.renderAddForm = function () {
+KLiveSearch.prototype.renderAddForm = function (addrType) {
     this.noMoreSearch = true
-    const type = new KFlatList({organization: 'Société', person: 'Personne'}, 'organization')
     const domNode = document.createElement('FORM')
     domNode.innerHTML = `
         <fieldset class="kfieldset"><legend>Adresse</legend>
-        <div class="name"><label>Société</label><input type="text" name="name"></input></label></div>
-        <div class="address"><label>Addresse</label><textarea type="address"></textarea></label></div>
-        <div class="locality"><label>Localité</label><input type="text" name="locality"></input></label></div>
+        <div class="name"><label>Société</label><input type="text" name="name"></input></div>
+        <div class="address"><label>Addresse</label><textarea name="postaladdress"></textarea></div>
+        <div class="locality"><label>Localité</label><input type="text" name="locality"></input> <i data-action="expand-locality" class="fas fa-chevron-down"></i></div>
         </fieldset>
         <fieldset class="kfieldset"><legend>Téléphonie</legend>
-        <div class="mobile"><label>Mobile</label><input type="text" name="mobile"></input></div>
-        <div class="landline"><label>Fixe</label><input type="text" name="landline"></input></div>
+        <div class="mobile"><label>Mobile</label><input type="text" name="mobile"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        <div class="landline"><label>Fixe</label><input type="text" name="telephonenumber"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
         </fieldset>
         <fieldset class="kfieldset"><legend>Internet</legend>
-        <div class="email"><label>E-Mail</label><input type="text" name="email"></input></div>
-        <div class="website"><label>Site Web</label><input type="text" name="website"></input></div>
+        <div class="email"><label>E-Mail</label><input type="text" name="mail"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        <div class="website"><label>Site Web</label><input type="text" name="labeleduri"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
         </fieldset>
         <button type="submit">Ajouter</button> <button type="reset">Annuler</button>
     `
-    const locality = new Select(domNode.querySelector('input[name="locality"]'), this.localityStore)   
-    domNode.insertBefore(type.domNode, domNode.firstElementChild)
+    const organization = domNode.querySelector('div.name')
+    this.orgInput = organization.querySelector('input')
+    const locality = new Select(domNode.querySelector('input[name="locality"]'), this.localityStore)
 
-    this.popDiv.innerHTML = ''
+    if (this.opts.typeSelect) {
+        const type = new KFlatList({organization: 'Société', person: 'Personne'}, 'organization')
+        type.domNode.setAttribute('name', 'type')
+        type.addEventListener('change', event => {
+            if (event.detail === 'person') {
+                const organization = domNode.querySelector('div.name')
+                organization.classList.replace('name', 'organization')
+    
+                const d1 = document.createElement('DIV')
+                const d2 = document.createElement('DIV')
+                d1.classList.add('name')
+                d1.innerHTML = '<label>Nom</label><input type="text" name="name"></input>'
+                d2.classList.add('givenname')
+                d2.innerHTML = '<label>Prénom</label><input type="text" name="givenname"></input>'
+    
+                organization.parentNode.insertBefore(d1, organization)
+                organization.parentNode.insertBefore(d2, organization)
+                this.orgInput.parentNode.replaceChild(this.orgLiveInput, this.orgInput)
+                return
+            }
+    
+            const organization = domNode.querySelector('div.organization')
+            organization.parentNode.removeChild(organization.parentNode.querySelector('div.name'))
+            organization.parentNode.removeChild(organization.parentNode.querySelector('div.givenname'))
+    
+            organization.classList.replace('organization', 'name')
+            if (this.orgLiveInput.parentNode) {
+                this.orgLiveInput.parentNode.replaceChild(this.orgInput, this.orgLiveInput)
+            }
+        })    
+        domNode.insertBefore(type.domNode, domNode.firstElementChild)
+    } else {
+        const type = document.createElement('INPUT')
+        type.setAttribute('type', 'hidden')
+        type.setAttribute('name', 'type')
+        type.setAttribute('value', this.opts.type)
+        domNode.insertBefore(type, domNode.firstElementChild)
+    }
+    
+    if (!this.opts.onlyBook) {
+        const saveTo = new KFlatList({addressbook: 'Carnet d\'adresses', local: 'Local'}, KAIROS.contact.saveto[addrType] ?? 'local')
+        saveTo.domNode.setAttribute('name', 'saveto')
+        this.addEventListener('type-change', event => {
+            saveTo.selectItem(KAIROS.contact.saveto[event.detail] ?? 'local')
+        })
+        domNode.insertBefore(saveTo.domNode, domNode.querySelector('button'))
+    }
+
+    this.popDiv.innerHTML = ''  
     this.popDiv.appendChild(domNode)
     /* add domNode before adding type.domNode or else events are discarded */
     
+    domNode.addEventListener('submit', event => {
+        event.preventDefault()
+        const form = KFormData.new(event.target)
 
-    console.log(locality)
+        new Promise((resolve, reject) => {
+            const contact = {}
+            if (form.get('locality') && /^PC\/[a-z0-9]+$/.test(form.get('locality'))) {
+                fetch(`${KAIROS.getBase()}/store/${form.get('locality')}`)
+                .then(response => {
+                    if (!response.ok) { reject() }
+                    return response.json()
+                })
+                .then(result => {
+                    const locality = Array.isArray(result.data) ? result.data[0] : result.data 
+                    contact.st = locality.state.toUpperCase() || null
+                    contact.l = locality.name || null
+                    contact.postalcode = locality.np || null
+                    contact.c = 'CH'
+                    resolve(contact)
+                })
+                .catch (reason => {
+
+                })
+            } else {
+                contact.st = form.get('canton') || null
+                contact.l = form.get('city') || null
+                contact.postalcode = form.get('np') || null
+                contact.c = form.get('country') || null
+                resolve(contact)
+            }
+        })
+        .then(contact => {
+            for (const k in contact) {
+                if (contact[k] === null) {
+                    delete contact[k]
+                }
+            }
+            const org = form.get('type') === 'organization'
+            for (const pair of form.entries()) {
+                switch (pair[0]) {
+                    case 'locality':
+                    case 'saveto': break
+                    case 'mobile':
+                    case 'telephonenumber':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.phone(pair[1]))
+                        break
+                    case 'mail':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.mail(pair[1]))
+                        break;
+                    case 'labeleduri':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.url(pair[1]))
+                        break
+                    default: contact[pair[0]] = pair[1]; break
+                    case 'name': 
+                        if (org) {
+                            contact.o = pair[1]
+                        } else {
+                            contact.sn = pair[1]
+                        }
+                        break
+                    case 'np': contact['postalcode'] = pair[1]; break
+                    case 'country': contact['c'] = pair[1]; break
+                    case 'canton': contact['st'] = pair[1]; break
+                    case 'city': contact['l'] = pair[1]; break
+                }
+            }
+            fetch(`${KAIROS.getBase()}/store/Contacts`, {method: 'POST', body: JSON.stringify(contact)})
+            .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+            })
+            .then(result => {
+                return this.store.get(Array.isArray(result.data) ? result.data[0].IDent : result.data.IDent)
+            })
+            .then(object => {
+                this.removeResult()
+                this.EvtTarget.dispatchEvent(new CustomEvent('change', {detail: object}))    
+            })
+        })
+    })
+    domNode.addEventListener('click', event => {
+        let node = event.target
+        switch (event.target.dataset.action) {
+            case 'expand-locality':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const np = document.createElement('DIV')
+                np.innerHTML = '<label>Code postale</label><input type="text" name="np"></input> <i data-action="reduce-locality" class="fas fa-chevron-up"></i>'
+                const city = document.createElement('DIV')
+                city.innerHTML = '<label>Localité</label><input type="text" name="city"></input>'
+                const dep = document.createElement('DIV')
+                dep.innerHTML = '<label>Canton</label><input type="text" name="canton"></input>'
+                const country = document.createElement('DIV')
+                country.innerHTML = '<label>Pays</label><input type="text" name="country"></input>'
+
+                node.parentNode.insertBefore(np, node)
+                node.parentNode.insertBefore(city, node)
+                node.parentNode.insertBefore(dep, node)
+                node.parentNode.insertBefore(country, node)
+                node.parentNode.removeChild(node)
+                np.querySelector('INPUT').focus()
+                break
+            case 'reduce-locality':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const locDiv = document.createElement('DIV')
+                locDiv.innerHTML = '<label>Localité</label> <i data-action="expand-locality" class="fas fa-chevron-down"></i>'
+                locDiv.insertBefore(locality.domNode, locDiv.firstElementChild.nextSibling)
+
+                node.parentNode.removeChild(node.nextElementSibling.nextElementSibling.nextElementSibling)
+                node.parentNode.removeChild(node.nextElementSibling.nextElementSibling)
+                node.parentNode.removeChild(node.nextElementSibling)
+                node.parentNode.insertBefore(locDiv, node)
+                node.parentNode.removeChild(node)
+                locDiv.querySelector('INPUT').focus()
+                break
+            case 'add-multiple':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const newNode = node.cloneNode(true)
+                newNode.querySelector('LABEL').innerHTML = ''
+                newNode.removeChild(newNode.querySelector('i'))
+                newNode.querySelector('INPUT').value = ''
+                let nextNode = node.nextElementSibling
+                while (nextNode && nextNode.querySelector('LABEL')?.innerHTML === '') { nextNode = nextNode.nextElementSibling }
+                node.parentNode.insertBefore(newNode, nextNode)
+                newNode.querySelector('INPUT').focus()
+                break
+        }
+    })
 }

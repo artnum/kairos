@@ -31,3 +31,27 @@
     border: 1px solid hsla(var(--default-highlight-color-base), 0.4);
     transition-delay: 10ms;
 }
+
+.kls-popup form {
+    padding: 5px;
+}
+
+.kls-popup form label {
+    display: inline-block;
+    min-width: 13ch;
+    max-width: 13ch;
+}
+
+.kls-popup form button {
+    min-width: 160px;
+    max-width: 160px;
+}
+
+.kls-type span {
+    cursor: pointer;
+    margin: 0 1ch;
+}
+
+.kls-type .kls-selected {
+    color: maroon;
+} 

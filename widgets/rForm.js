@@ -1231,8 +1231,13 @@ define([
         const contactLiveSearch = new KLiveSearch(
           cLiveSearch,
           contactStore,
-          this.Stores.OnlyLocality
+          this.Stores.OnlyLocality,
+          {typeSelect: true}
         )
+        contactLiveSearch.setTargetType('_client')
+        contactTypeSelect.addEventListener('change', event => {
+          contactLiveSearch.setTargetType(event.detail)
+        })
 
         contactLiveSearch.addEventListener('change', event => {
           const address = event.detail

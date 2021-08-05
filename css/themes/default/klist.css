@@ -19,9 +19,21 @@
     transition-delay: 10ms;
 }
 
+.klist .item[data-selected="1"] {
+    color: maroon;
+}
+
+.klist .item[data-selected="1"] input {
+    border-color: maroon;
+}
+
 .klist.flat {
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;
     justify-content: space-between;
+}
+
+.klist .item[data-selected="1"][data-icon="1"] {
+    text-decoration: underline;
 }

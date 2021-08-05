@@ -344,6 +344,7 @@ KContactText.prototype.set = function (name, value) {
 /* *** KContactStore *** */
 
 function KContactStore (baseURL, opts = {}) {
+    this.type = '*'
     if (!KContactStore._instances) {
         KContactStore._instances = new Map()
     }
@@ -354,12 +355,31 @@ function KContactStore (baseURL, opts = {}) {
 
     this.baseUrl = baseURL
     this.limit = 0
-
+    this.opts = opts
     if (opts.limit && parseInt(opts.limit) > 0) {
         this.limit = parseInt(opts.limit)
     }
+    if (opts.type) {
+        this.typeFilter(opts.type)
+    }
 
     KContactStore._instances.set(`${baseURL}#${JSON.stringify(opts)}`, this)
+}
+
+KContactStore.prototype.typeFilter = function (type = 'any') {
+    this.type = this.getType(type)
+}
+
+KContactStore.prototype.getType = function (type = 'any') {
+    switch(type) {
+        default:
+        case 'any':
+            return '*'; break
+        case 'person':
+            return 'person'; break
+        case 'organization':
+            return 'organization'; break
+    }
 }
 
 KContactStore.prototype.get = function (id) {
@@ -388,17 +408,19 @@ KContactStore.prototype.query = function (term, limit = null) {
     return new Promise((resolve, reject) => {
         const url = new URL(this.baseUrl)
         const terms = term.split(' ')
-        url.searchParams.append('search._or', '1')
         url.searchParams.append('limit', limit ?? this.limit)
         const appliedTerms = []
+        let rules = ''
         for (let t of terms) {
             if (t.length <= 0) { continue }
             if (appliedTerms.indexOf(t) !== -1) { continue }
             appliedTerms.push(t)
             for (let k of searchOn) {
                 url.searchParams.append(`search.${k}`, `*${t}*`)
+                rules += `(_${k}_)`
             }
         }
+        url.searchParams.append('search._rules', `(&(objectClass=${this.type})(|${rules}))`)
         fetch(url)
         .then(response => {
             if (!response.ok) { return null; }
@@ -406,6 +428,7 @@ KContactStore.prototype.query = function (term, limit = null) {
         })
         .then(result => {
             if (!result) { resolve([]); return }
+            if (result.length === 0 || result.data === null) { resolve([]); return }
             const results = []
             for(const entry of Array.isArray(result.data) ? result.data : [result.data]) {
                 const kcontact = new KContactObject(this)

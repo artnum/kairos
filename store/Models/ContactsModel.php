@@ -15,11 +15,13 @@ class ContactsModel extends artnum\LDAP {
         'o',
         'mobile',
         'l',
+        'st',
         'postalcode',
         'c',
         'postaladdress',
         'uid',
-        'seealso'
+        'seealso',
+        'labeleduri'
       ],
       []
     );
@@ -94,6 +96,14 @@ class ContactsModel extends artnum\LDAP {
     unset($entry['seealso']);
 
     return $entry;
+  }
+
+  function do_write($data, $ovewrite = false) {
+    if ($data['type'] === 'person') {
+      if (!isset($data['sn'])) { $data['sn'] = ' '; }
+      $data['cn'] = $data['sn'] . ' ' . $data['givenname'];
+    }
+    return parent::do_write($data, $ovewrite);
   }
 
   function getCacheOpts() {
