@@ -188,7 +188,18 @@
 }
 
 .rForm p.detail span.value {
-    max-width: calc(100% - 210px) !important;
+    min-width: calc(100% - 200px);
+    display: inline-block;
+    text-align: right;
+}
+
+.rForm p.detail.text span {
+    display: block;
+    min-width: 100%;
+}
+
+.rForm p.detail.text span.value {
+    text-align: right;
 }
 
 .rForm .dijitDateTextBox {

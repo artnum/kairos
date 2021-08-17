@@ -316,76 +316,146 @@ define([
       })
     },
 
+    resolveCategories: function () {
+      return new Promise((resolve) => {
+        const p = []
+        for (const k of ['family', 'special', 'subtype', 'type', 'motorization']) {
+          if (!this.details[k]) { continue }
+          if (!Array.isArray(this.details[k])) {
+            this.details[k] = [this.details[k]]
+          }
+          for (const category in this.details[k]) {
+            p.push(new Promise((resolve, reject) => {
+              fetch(`${KAIROS.getBase()}/store/Category/uniqueIdentifier=${this.details[k][category]}`)
+              .then(response => {
+                if (!response.ok) { throw new Error('Erreur réseau')}
+                return response.json()
+              }) 
+              .then(result => {
+                const data = Array.isArray(result.data) ? result.data[0] : result.data
+                if (data['cn;'][`lang-${KAIROS.lang()}`]) { 
+                  this.details[k][category] = Array.isArray(data['cn;'][`lang-${KAIROS.lang()}`]) ? data['cn;'][`lang-${KAIROS.lang()}`][0] : data['cn;'][`lang-${KAIROS.lang()}`]
+                } else if (data['cn']) {
+                  this.details[k][category] = Array.isArray(data['cn']) ? data['cn'][0] : data['cn']
+                }
+                resolve()
+              })
+              .catch(reason => {
+                reject(reason)
+              })
+            }))
+          }
+        }
+        Promise.allSettled(p)
+        .then(_ => { resolve() })
+      })
+    },
+
     genDetails: function () {
-      const texts = ['reference', 'uid', 'kmodel', 'brand']
-      const weights = ['maxcapacity', 'weight']
-      const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
-      let x = {}
-      if (this.details.oldid !== undefined) {
-        if (Array.isArray(this.details.oldid)) {
-          let oldid = []
-          for (let i = 0; i < this.details.oldid.length; i++) {
-            if (this.details.oldid[i] !== this.detail.uid) {
-              oldid.push(this.details.oldid[i])
+      new Promise((resolve, reject) => {
+        this.resolveCategories()
+        .then(_ => { resolve() })
+      })
+      .then(_ => {
+        const categories = ['motorization', 'special']
+        const texts = ['reference', 'uid', 'kmodel', 'brand', 'motorization']
+        const weights = ['maxcapacity', 'weight']
+        const lengths = ['length', 'height', 'width', 'floorheight', 'workheight', 'sideoffset']
+        let x = {}
+
+        if (this.details.oldid !== undefined) {
+          if (Array.isArray(this.details.oldid)) {
+            let oldid = []
+            for (let i = 0; i < this.details.oldid.length; i++) {
+              if (this.details.oldid[i] !== this.detail.uid) {
+                oldid.push(this.details.oldid[i])
+              }
             }
-          }
-          x['oldid'] = { raw: oldid, html: oldid.join(', ') }
-        } else {
-          if (this.details.oldid !== this.details.uid) {
-            x['oldid'] = { raw: this.details.oldid , html: this.details.oldid }
-          }
-        }
-      }
-      for (let i = 0; i < texts.length; i++) {
-        if (this.details[texts[i]] !== undefined) {
-          x[texts[i]] = { raw: this.details[texts[i]], html: this.details[texts[i]] }
-        }
-      }
-      for (let i = 0; i < weights.length; i++) {
-        if (this.details[weights[i]] !== undefined) {
-          let v = parseInt(this.details[weights[i]])
-          if (!Number.isNaN(v)) {
-            x[weights[i]] = {
-              raw: v,
-              html: v >= 1000 ? `${v / 1000} T` : `${v} kg`
+            x['oldid'] = { type: '', raw: oldid, html: oldid.join(', ') }
+          } else {
+            if (this.details.oldid !== this.details.uid) {
+              x['oldid'] = { type: '', raw: this.details.oldid , html: this.details.oldid }
             }
           }
         }
-      }
-      for (let i = 0; i < lengths.length; i++) {
-        if (this.details[lengths[i]] !== undefined) {
-          let v = parseInt(this.details[lengths[i]])
-          if (!Number.isNaN(v)) {
-            x[lengths[i]] = {
-              raw: v,
-              html: `${v / 100} m`
+        for (let i = 0; i < texts.length; i++) {
+          if (this.details[texts[i]] !== undefined) {
+            x[texts[i]] = { type: 'text', raw: this.details[texts[i]], html: this.details[texts[i]] }
+          }
+        }
+        for (let i = 0; i < weights.length; i++) {
+          if (this.details[weights[i]] !== undefined) {
+            let v = parseInt(this.details[weights[i]])
+            if (!Number.isNaN(v)) {
+              x[weights[i]] = {
+                type: 'number',
+                raw: v,
+                html: v >= 1000 ? `${v / 1000} T` : `${v} kg`
+              }
             }
           }
         }
-      }
-      const labels = {
-        reference: 'Originale',
-        brand: 'Marque',
-        kmodel: 'Modèle',
-        oldid: 'Ancien numéro',
-        weight: 'Poids',
-        maxcapacity: 'Charge max',
-        workheight: 'Hauteur travail',
-        floorheight: 'Hauteur plancher',
-        sideoffset: 'Déport latéral',
-        width: 'Largeur',
-        height: 'Hauteur',
-        length: 'Longueur'
-      }
-      let txt = []
-      for (let k in labels) {
-        if (x[k]) {
-            txt.push(`<p class="detail"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
+        for (let i = 0; i < lengths.length; i++) {
+          if (this.details[lengths[i]] !== undefined) {
+            let v = parseInt(this.details[lengths[i]])
+            if (!Number.isNaN(v)) {
+              x[lengths[i]] = {
+                type: 'number',
+                raw: v,
+                html: `${v / 100} m`
+              }
+            }
+          }
         }
-      }
-      txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
-      this.htmlDetails = txt.join('')
-      this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+        for (const cat of categories) {
+          if(this.details[cat]) {
+            x[cat] = {
+              type: 'list',
+              raw: this.details[cat],
+              html: this.details[cat],
+            }
+          }
+        }
+        const labels = {
+          reference: 'Originale',
+          brand: 'Marque',
+          kmodel: 'Modèle',
+          oldid: 'Ancien numéro',
+          weight: 'Poids',
+          maxcapacity: 'Charge max',
+          workheight: 'Hauteur travail',
+          floorheight: 'Hauteur plancher',
+          sideoffset: 'Déport latéral',
+          width: 'Largeur',
+          height: 'Hauteur',
+          length: 'Longueur',
+          motorization: 'Motorisation',
+          special: 'Spécialité',
+        }
+        let txt = []
+        for (let k in labels) {
+          if (x[k]) {
+              if (x[k].type === 'list') {
+                txt.push(`<p class="detail text"><span class="label">${labels[k]}:</span>`)
+                for (const text of x[k].html) {
+                  txt.push(`<span class="value">${text}</span>`)
+
+                }
+                txt.push('</p>')
+              } else {
+                txt.push(`<p class="detail ${x[k].type}"><span class="label">${labels[k]}:</span><span class="value">${x[k].html}</span></p>`)
+              }
+          }
+        }
+        return txt
+      })
+      .then(txt => {
+        txt.push(`<p><a target="_blank" href="${KAIROS.getBase()}/html/permachine.html#${this.get('target')}">Réservations pour la machine</a></p>`)
+        this.htmlDetails = txt.join('')
+      })
+      .then(_ => {
+        this.Tooltip = new Tooltip(this.nControl, {trigger: 'click', html: true, title: this.htmlDetails, placement: 'bottom-start', closeOnClickOutside: true})
+      })
     
     },
 

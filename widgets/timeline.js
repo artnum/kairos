@@ -185,7 +185,7 @@ define([
       var sStore = window.sessionStorage
       let url = new URL('store/Status/', KAIROS.getBase())
       url.searchParams.append('search.type', 0)
-      kfetch(url).then(response => {
+      fetch(url).then(response => {
         if (!response.ok) { return }
         response.json().then(results => {
           if (results.length <= 0) { return }
@@ -793,7 +793,7 @@ define([
       this.searchMenu.addChild(new DtMenuSeparator())
 
       menuLoaded.push(new Promise((resolve, reject) => {
-        kfetch(`${KAIROS.getBase()}/store/Category`)
+        fetch(`${KAIROS.getBase()}/store/Category`)
         .then(response => {
           if (!response.ok) { KAIROS.warn('Problème à charger les catégories'); return }
           response.json()
@@ -1687,7 +1687,8 @@ define([
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
       return new Promise((resolve, reject) => {
-        let query = kfetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+        fetch(Path.url('store/DeepReservation/' + loc))
+        .then(response => {
           if (!response.ok) { reject(); return }
           response.json().then(result=> {
             if (result && result.length === 0) {
@@ -1843,7 +1844,7 @@ define([
 
     autoprint: function (path) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        kfetch(Path.url('exec/auto-print.php', {params: {file: path}}))
+        fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
       }
     },
     openUncounted: function () {
@@ -1879,8 +1880,25 @@ define([
             }
           }
           if (found !== '1') {
-            if (regexp.test(entry.KEntry.get('location'))) {
+            if (regexp.test(entry.KEntry?.get('location'))) {
               found = '1'
+            }
+          }
+
+          if (found !== '1') {
+            for (let i = 0; i < entry.details?.motorization?.length; i++) {
+              if (regexp.test(entry.details?.motorization[i])) {
+                found = '1'
+                break
+              }
+            }
+          }
+          if (found !== '1') {
+            for (let i = 0; i < entry.details?.special?.length; i++) {
+              if (regexp.test(entry.details?.special[i])) {
+                found = '1'
+                break
+              }
             }
           }
           entry.domNode.dataset.active = found

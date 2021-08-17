@@ -282,3 +282,8 @@ KAIROS.confirm = function(title, message, opts) {
         win.open()
     })
 }
+
+KAIROS.lang = function () {
+    const lang = navigator.language || navigator.userLanguage
+    return lang.toLowerCase().split('-')[0]
+}
