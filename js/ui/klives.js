@@ -217,6 +217,14 @@ KLiveSearch.prototype.moveInResult = function (event, direction, quantity) {
 }
 
 KLiveSearch.prototype.removeResult = function (replace = null) {
+    if (this.closableIdx) {
+        KAIROS.removeClosableByIdx(this.closableIdx)
+        delete this.closableIdx
+    }
+    if (this.orgLiveInput) {
+        this.orgLiveInput.value = ''
+        delete this.orgLiveInput.dataset.value
+    }
     if (this.popDiv) {
         const oldDiv = this.popDiv
         if (replace !== null) { this.popDiv = replace }
@@ -225,6 +233,11 @@ KLiveSearch.prototype.removeResult = function (replace = null) {
     } else if (replace) {
         this.popDiv = replace
     }
+}
+
+KLiveSearch.prototype.removeAddForm = function () {
+    this.removeResult()
+    this.noMoreSearch = false
 }
 
 KLiveSearch.prototype.renderResult = function (results) {
@@ -270,6 +283,7 @@ KLiveSearch.prototype.renderResult = function (results) {
             div.style.setProperty('order', order)
             resDiv.appendChild(div)
         }
+        this.closableIdx = KAIROS.stackClosable(this.removeResult.bind(this))
         resolve(popDiv)
     })
 }
@@ -349,6 +363,10 @@ KLiveSearch.prototype.renderAddForm = function (addrType) {
     this.popDiv.appendChild(domNode)
     /* add domNode before adding type.domNode or else events are discarded */
     
+    domNode.addEventListener('reset', event => {
+        this.removeAddForm()
+    })
+
     domNode.addEventListener('submit', event => {
         this.noMoreSearch = false
         event.preventDefault()
@@ -390,8 +408,14 @@ KLiveSearch.prototype.renderAddForm = function (addrType) {
             const org = form.get('type') === 'organization'
             for (const pair of form.entries()) {
                 switch (pair[0]) {
-                    case 'locality':
-                    case 'saveto': break
+                    case 'locality': break
+                    case 'saveto':
+                        if (pair[1] === 'local') {
+                            contact['local'] = true
+                        } else {
+                            contact['local'] = false
+                        }
+                        break
                     case 'mobile':
                     case 'telephonenumber':
                         if (!contact[pair[0]]) {

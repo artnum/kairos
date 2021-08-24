@@ -1125,7 +1125,10 @@ define([
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      fetch(Path.url(`store/Evenement/${id}`), {method: 'delete', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then((result) => {
+      fetch(Path.url(`store/Evenement/${id}`), {
+        method: 'delete'
+      })
+      .then((result) => {
         if (!result.ok) {
           KAIROS.error(`Suppression de l'évènmenent ${id} a échoué`)
         }
@@ -1242,23 +1245,43 @@ define([
         contactLiveSearch.addEventListener('change', event => {
           const address = event.detail
           const target = this.domNode.querySelector('[name="contactEntries"]')
-          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type)
+          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type, address instanceof KContactObject)
+          fieldset.addEventListener('delete', event => { 
+            this.deleteContact(event.detail)
+            .then(result => {
+              if (!result) { event.preventDefault() }
+            }) 
+          })
           if (KAIROS?.contact?.relation) {
             if (KAIROS.contact.relation[contactTypeSelect.getSelected()]) {
               address.getRelated(KAIROS.contact.relation[contactTypeSelect.selected])
               .then(addresses => {
                 for (const type in addresses) {
-                  const nextFieldset = new KFieldset(type, KAIROS.contact.type)
-                  nextFieldset.domNode.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
+                  const nextFieldset = new KFieldset(type, KAIROS.contact.type, addresses[type] instanceof KContactObject)
+                  nextFieldset.addEventListener('delete', event => { 
+                    this.deleteContact(event.detail)
+                    .then(result => {
+                      if (!result) { event.preventDefault() }
+                    }) 
+                  })
+                  nextFieldset.set('address', addresses[type])
+                  nextFieldset.set('type', type)
+                  nextFieldset.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
                   target.appendChild(nextFieldset.domNode)
                 }
               })
             }
           }
-          contactTypeSelect.nextItem()
           
-          fieldset.domNode.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
-          target.appendChild(fieldset.domNode)
+          this.saveContact(address, contactTypeSelect)
+          .then(() => {
+            fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+            fieldset.set('address', address)
+            fieldset.set('type', contactTypeSelect.getSelected())
+            target.appendChild(fieldset.domNode)
+
+            contactTypeSelect.nextItem()
+          })
         })
 
         this.nMBeginDate.set('value', this.beginDate.get('value'))
@@ -1334,6 +1357,10 @@ define([
       .then(() => {
         this.load()
       })
+    },
+
+    saveContact: function (address, type) {
+      return this.reservation.addContact(address, type)
     },
 
     clickForm: function (event) {
@@ -1575,11 +1602,19 @@ define([
     createContact: function (address, type, linkId) {
       const target = this.domNode.querySelector('[name="contactEntries"]')
       const previous = target.querySelector(`[name="${linkId}"]`)
-      const fieldset = new KFieldset(type, KAIROS.contact.type)
+      const fieldset = new KFieldset(type, KAIROS.contact.type, address instanceof KContactObject)
       fieldset.domNode.setAttribute('name', linkId)
 
-      fieldset.domNode.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+      fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+      fieldset.set('address', address)
+      fieldset.set('type', type)
       fieldset.domNode.style.setProperty('order', `${KAIROS?.contact?.order[type] || 1000}`)
+      fieldset.addEventListener('delete', event => { 
+        this.deleteContact(event.detail)
+        .then(result => {
+          if (!result) { event.preventDefault() }
+        }) 
+      })
 
       if (previous) {
         target.replaceChild(fieldset.domNode, previous)
@@ -1588,6 +1623,21 @@ define([
       }
     },
 
+    deleteContact: function (fieldset) {
+      return new Promise ((resolve) => {
+        this.reservation.delContact(fieldset.get('address'), fieldset.get('type'))
+        .then(result => {
+          resolve(result)
+        })
+        .catch(reason => {
+          KAIROS.syslog(reason)
+          KAIROS.error(reason)
+          resolve(false)
+        })
+      })
+    },
+
+    /*
     saveContact: function (id, options) {
       var that = this
       var type = options.type ? options.type : ''
@@ -1632,7 +1682,7 @@ define([
           }
         }))
       }
-    },
+    },*/
 
     show: function () {
       KAIROSAnim.push(() => { this.domNode.parentNode.style.setProperty('display', 'block') })
@@ -1675,6 +1725,7 @@ define([
       return new Promise((resolve, reject) => {
         this.doSave()
         .then((done) => {
+          console.log(done)
           if (done) {
             Query.exec((Path.url('exec/auto-print.php', {
               params: {
@@ -1700,6 +1751,7 @@ define([
     showPrint: function (type, params = {}) {
       this.doSave()
       .then((done) => {
+        console.log(done)
         if (done) {
           let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
           for (let k in params) {
@@ -1801,7 +1853,12 @@ define([
           this.hide()
         }
       })
+      .catch (reason => {
+        KAIROS.error(reason)
+        this.hide()
+      })
     },
+
     doSave: function (event) {
       return new Promise((resolve, reject) => {
         this.doNumbering()
@@ -1848,7 +1905,8 @@ define([
         }
 
         (new Promise((resolve, reject) => {
-          lastModificationTest.then(same => {
+          lastModificationTest
+          .then(same => {
             if (!same || this.domNode.classList.contains('outofsync')) {
               KAIROS.confirm(
                 `Réservation modifiée`,
@@ -1860,104 +1918,103 @@ define([
           })
         }))
         .then(carryon => {
-          if (!carryon) { return; }
+          if (!carryon) { return {ok: false}; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
-          fetch(url)
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json()
-          }).then(res => {
-            if (!res) { return }
-            let arrival = {}
-            if(res.length > 0) {
-              arrival = Object.assign(arrival, res.data[0])
-            }
+          return fetch(url)
+        })
+        .then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        }).then(res => {
+          if (!res) { return }
+          let arrival = {}
+          if(res.length > 0) {
+            arrival = Object.assign(arrival, res.data[0])
+          }
 
-            if (this.Buttons.addEnd.getValue()) {
-              arrival.deleted = null
-              arrival.target = this.reservation.uid
-              if (f.arrivalDate) {
-                if (f.arrivalTime) {
-                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
-                } else {
-                  arrival.reported = f.arrivalDate
-                }
+          if (this.Buttons.addEnd.getValue()) {
+            arrival.deleted = null
+            arrival.target = this.reservation.uid
+            if (f.arrivalDate) {
+              if (f.arrivalTime) {
+                arrival.reported = f.arrivalDate.join(f.arrivalTime)
+              } else {
+                arrival.reported = f.arrivalDate
               }
-              arrival.creator = this.nArrivalCreator.value
-              arrival.comment = f.arrivalComment
-              arrival.contact = f.arrivalAddress
-              arrival.locality = this.nArrivalLocality.value
-              arrival.other = f.arrivalKeys
-              arrival.done = this.Buttons.addArrivalDone.getValue()
-              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
-              this.reservation.set('_arrival', arrival)
+            }
+            arrival.creator = this.nArrivalCreator.value
+            arrival.comment = f.arrivalComment
+            arrival.contact = f.arrivalAddress
+            arrival.locality = this.nArrivalLocality.value
+            arrival.other = f.arrivalKeys
+            arrival.done = this.Buttons.addArrivalDone.getValue()
+            arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+            this.reservation.set('_arrival', arrival)
+          } else {
+            if (arrival.id) {
+              this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
             } else {
-              if (arrival.id) {
-                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-              } else {
-                this.reservation.set('_arrival', {})
-              }
+              this.reservation.set('_arrival', {})
             }
+          }
 
-            let status = this.nStatus.value
-            if (isNaN(parseInt(status))) {
-              status = status.split('/').pop()
-            }
-            this.reservation.set('status', `${status}`)
-            this.reservation.set('begin', begin)
-            this.reservation.set('end', end)
-            this.reservation.set('deliveryBegin', deliveryBegin)
-            this.reservation.set('deliveryEnd', deliveryEnd)
-            this.reservation.set('address', this.nAddress.value)
-            this.reservation.set('reference', f.reference)
-            this.reservation.set('equipment', f.equipment)
-            this.reservation.set('locality', this.nLocality.value)
-            this.reservation.set('comment', f.comments)
-            this.reservation.set('folder', f.folder)
-            this.reservation.set('gps', f.gps)
-            this.reservation.set('title', f.title)
-            this.reservation.set('creator', this.nCreator.value)
-            this.reservation.set('technician', this.nTechnician.value)
-            this.reservation.set('visit', this.nAddVisit.value)
-            this.reservation.set('vreport', this.nAddReport.value)
-            this.reservation.set('padlock', this.nPadlock.value)
-            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
+          let status = this.nStatus.value
+          if (isNaN(parseInt(status))) {
+            status = status.split('/').pop()
+          }
+          this.reservation.set('status', `${status}`)
+          this.reservation.set('begin', begin)
+          this.reservation.set('end', end)
+          this.reservation.set('deliveryBegin', deliveryBegin)
+          this.reservation.set('deliveryEnd', deliveryEnd)
+          this.reservation.set('address', this.nAddress.value)
+          this.reservation.set('reference', f.reference)
+          this.reservation.set('equipment', f.equipment)
+          this.reservation.set('locality', this.nLocality.value)
+          this.reservation.set('comment', f.comments)
+          this.reservation.set('folder', f.folder)
+          this.reservation.set('gps', f.gps)
+          this.reservation.set('title', f.title)
+          this.reservation.set('creator', this.nCreator.value)
+          this.reservation.set('technician', this.nTechnician.value)
+          this.reservation.set('visit', this.nAddVisit.value)
+          this.reservation.set('vreport', this.nAddReport.value)
+          this.reservation.set('padlock', this.nPadlock.value)
+          this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
-            this.reservation.save()
-            .then((id) => {
-              fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
-              .then(response => {
-                if (!response.ok) { return null }
-                return response.json()
-              }).then(result => {
-                if (!result) { return null }
-                let data = Array.isArray(result.data) ? result.data[0] : result.data
-                this.reservation.fromJson(data)
-                .then(_ => {
-                  this.domNode.classList.remove('outofsync')
-                  this.Buttons.resync.setDisabled(true)
-                })
-                if (data.modification) {
-                  this.lastModified = parseInt(data.modification)
-                  this.reservation.lastModified = parseInt(data.modification)
-                }
+          this.reservation.save()
+          .then((id) => {
+            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
+            .then(response => {
+              if (!response.ok) { return null }
+              return response.json()
+            }).then(result => {
+              if (!result) { return null }
+              let data = Array.isArray(result.data) ? result.data[0] : result.data
+              this.reservation.fromJson(data)
+              .then(_ => {
+                this.domNode.classList.remove('outofsync')
+                this.Buttons.resync.setDisabled(true)
               })
-              if (!move) {
-                this.resize()
-              } else {
-                this.reservation.toObject()
-                .then((reservation) => {
-                  this.reservation.sup.KEntry.move(reservation[0])
-                })
+              if (data.modification) {
+                this.lastModified = parseInt(data.modification)
+                this.reservation.lastModified = parseInt(data.modification)
               }
-              this.onSave = null
-              resolve(true)
             })
-            .catch(reason => {
-              this.onSave = null
-              resolve(false)
-            })
+            if (move) {
+              this.reservation.toObject()
+              .then((reservation) => {
+                this.reservation.sup.KEntry.move(reservation[0])
+              })
+            }
+            this.onSave = null
+            resolve(true)
+          })
+          .catch(reason => {
+            KAIROS.syslog(reason)
+            this.onSave = null
+            resolve(false)
           })
         })
       })

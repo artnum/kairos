@@ -526,7 +526,8 @@ define([
         })
       })
 
-      this.clearTags().then(() => {
+      this.clearTags()
+      .then(() => {
         this.nTags.setAttribute('class', 'tags edit'); 
         KAIROSAnim.push(() => {
           this.nTags.appendChild(form); 
@@ -554,7 +555,8 @@ define([
       if (!location) {
         return
       }
-      anim.then(() => {
+      anim
+      .then(() => {
         this.Stores.Locality.get(location.value)
         .then(value => {
           if (location && location.value) {

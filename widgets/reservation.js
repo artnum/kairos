@@ -71,6 +71,7 @@ define([
       this.duration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this.uuid = options.uuid
+      this.version = 1
       this._gui = {
         hidden: false
       }
@@ -129,6 +130,11 @@ define([
         if (json['modification']) {
           this.lastModified = parseInt(json['modification'])
         }
+
+        if (json.version) {
+          this.version = parseInt(json.version)
+        }
+        this.updateVersionId()
 
         let krLoad = Promise.resolve()
         if (json['id']) {
@@ -841,7 +847,7 @@ define([
 
         window.App.setOpen(this.uid)
         var f = new RForm({reservation: this, htmlDetails: this.sup ? this.sup.htmlDetails : '<p></p>', deleted: this.deleted ? true : false})
-        var title = 'Réservation ' + this.uid
+        let title = `Réservation ${this.uid} V.${this.version}`
 
         var cp = new DtContentPane({
           title: title,
@@ -1318,6 +1324,12 @@ define([
       })
     },
 
+    updateVersionId: function () {
+      if (this.myContentPane) {
+        this.myContentPane.set('title', `Réservation ${this.id} V.${this.version}`)
+      }
+    },
+
     showIntervention: function (parentNode, moving) {
       if (!this.interventions || this.interventions.length <= 0) {
         return
@@ -1412,11 +1424,13 @@ define([
       }
       this.saveInProgress = true
       this.waitStart()
-      let savePromise = new Promise((resolve, reject) => {
-        this.toObject().then(obj => {
-          let dataHash = obj[1]
-          let reservation = object === null ? obj[0] : object
-          let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
+      const modifiedLog = {type: 'Reservation', object: null, attribute: [], original: this.dataOriginal}
+      const savePromise = new Promise((resolve, reject) => {
+        this.toObject()
+        .then(obj => {
+          const dataHash = obj[1]
+          const reservation = object === null ? obj[0] : object
+          modifiedLog.object = reservation.uid
           if (dataHash && this.dataHash) {
             for (let k in dataHash) {
               if (k === '_arrival') {
@@ -1434,11 +1448,35 @@ define([
               }
             }
           }
+          return reservation
+        })
+        .then(reservation => {
           let arrival = reservation.arrival
           delete reservation.arrival
-          fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${reservation.id ? reservation.id : ''}`), 
-              {method: reservation.id ? 'PUT' : 'POST', body: JSON.stringify(reservation)}).then(response => {
+          reservation.version = this.version
+          fetch(
+            new URL(
+              `${KAIROS.getBase()}/store/Reservation/${reservation.id ? reservation.id : ''}`
+            ), 
+            {
+              method: reservation.id ? 'PUT' : 'POST',
+              body: JSON.stringify(reservation)
+            }
+          )
+          .then(response => {
             if (!response.ok) { 
+              if (reservation.id) {
+                KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
+              } else {
+                KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
+              }
+              return null
+            }
+            return response.json()
+          })
+          .then(result => {
+            if (result === null) { }
+            if (result.length !== 1) {
               if (reservation.id) {
                 KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
               } else {
@@ -1446,52 +1484,46 @@ define([
               }
               return
             }
-            response.json().then(result => {
-              if (result.length !== 1) {
-                if (reservation.id) {
-                  KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
-                } else {
-                  KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
-                }
-                return
-              }
-              let entry = Array.isArray(result.data) ? result.data[0] : result.data
-              let id = entry.id
-              this.id = id
-              let subQueries = []
-              this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
-              if (modifiedLog.attribute.length > 0 || duplicate) {
-                /* POST to mod log */
-                modifiedLog.object = id
-                Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
-              }
-              subQueries.push(new Promise((resolve, reject) => {
-                fetch(`${KAIROS.getBase()}/store/Reservation/${id}`)
-                .then(response => {
-                  if (!response.ok) { resolve(); return }
-                  response.json()
-                  .then(result => {
-                    let data = Array.isArray(result.data) ? result.data[0] : result.data
-                    this.lastModified = parseInt(data.modification)
-                    resolve()
-                  })
-                })
-              }))
-           
-              if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
-                if (arrival._op && arrival._op.toLowerCase() === 'delete') {
-                  this.set('_arrival', null)
-                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
-                } else {
-                  arrival.target = id
-                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))
-                }
-              }
+            let entry = Array.isArray(result.data) ? result.data[0] : result.data
+            let id = entry.id
+            this.version = parseInt(entry.version)
+            this.id = id
 
-              Promise.all(subQueries)
-              .then(_ => {
-                resolve(id)
+            this.updateVersionId()
+            
+            let subQueries = []
+            this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
+            if (modifiedLog.attribute.length > 0 || duplicate) {
+              /* POST to mod log */
+              modifiedLog.object = id
+              Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
+            }
+            subQueries.push(new Promise((resolve, reject) => {
+              fetch(`${KAIROS.getBase()}/store/Reservation/${id}`)
+              .then(response => {
+                if (!response.ok) { resolve(); return }
+                response.json()
+                .then(result => {
+                  let data = Array.isArray(result.data) ? result.data[0] : result.data
+                  this.lastModified = parseInt(data.modification)
+                  resolve()
+                })
               })
+            }))
+          
+            if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
+              if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+                this.set('_arrival', null)
+                subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
+              } else {
+                arrival.target = id
+                subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))
+              }
+            }
+
+            Promise.all(subQueries)
+            .then(_ => {
+              resolve(id)
             })
           })
         })
@@ -1638,6 +1670,7 @@ define([
         let associations = []
         let contacts = []
         Promise.all([pContacts, pAssociations]).then((results) => {
+          console.log(results)
           if (results[1].length > 0) {
             results[1].data.forEach((a) => {
               delete a.reservation
@@ -1650,6 +1683,7 @@ define([
           }
           if (results[0].length > 0) {
             results[0].data.forEach((c) => {
+              console.log(c)
               delete c.reservation
               if (c.target) {
                 c.target = `store${c.target}`
@@ -1688,6 +1722,15 @@ define([
         this.deliveryEnd = newDeliveryEnd
         this.save()
       }.bind(this))
+    },
+
+    addContact: function (address, type) {
+      return this.KReservation.addContact(address, type)
+    },
+
+    delContact: function (address, type) {
+      return this.KReservation.delContact(address, type)
     }
+
   })
 })

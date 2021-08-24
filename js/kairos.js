@@ -185,6 +185,11 @@ KAIROS.fetch = function (url, options = {}) {
   return query.then(response => { return response.clone() })
 }
 
+KAIROS.syslog = function(error) {
+  console.trace()
+  console.log(error)
+}
+
 KAIROS.DateFromTS = function(ts) {
   let d = new Date()
   d.setTime(parseInt(ts) * 1000)

@@ -38,7 +38,7 @@ define([
         }
         if (!id.includes('Status')) { id = `Status/${id}` }
 
-        kfetch(new URL(`${KAIROS.getBase()}/store/${id}`))
+        fetch(new URL(`${KAIROS.getBase()}/store/${id}`))
         .then(response => {
           if (!response.ok) { return null }
           return response.json()
@@ -84,7 +84,7 @@ define([
         for (const k in this.params) {
           url.searchParams.set(k, this.params[k])
         }
-        kfetch(url).then(response => {
+        fetch(url).then(response => {
           if (!response.ok) { return null }
           return response.json()
         })

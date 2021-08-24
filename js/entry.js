@@ -13,7 +13,7 @@ function KEntry (id) {
 KEntry.load = function (id) {
     let entry = new KEntry(id)
     entry._loaded = new Promise((resolve, reject) => {
-        kfetch(new URL(`${KAIROS.getBase()}/store/Machine/${id}`)).then(response => {
+        fetch(new URL(`${KAIROS.getBase()}/store/Machine/${id}`)).then(response => {
             if (!response.ok) { return null }
             return response.json()
         }).then(result => {

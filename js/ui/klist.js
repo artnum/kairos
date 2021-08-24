@@ -4,6 +4,19 @@ function KList (head, choices, headText = null) {
     this.headText = headText
     this.head.addEventListener('click', (event) => { this.handleClickEvent(event) })
     this.head.classList.add('klist', 'head')
+    this.selected = this.choices[0]
+    this.EvtTarget = new EventTarget()
+}
+
+KList.prototype.getSelected = function () {
+    if (this.choices[this.selected] === '<input>') {
+        return this.value
+    }
+    return this.selected
+}
+
+KList.prototype.addEventListener = function (type, callback, options) {
+    this.EvtTarget.addEventListener(type, callback, options)
 }
 
 KList.prototype.handleClickEvent = function (event) {
@@ -90,9 +103,12 @@ KList.prototype.selectItem = function (id) {
     }
 
     this.head.dataset.id = id
+    this.selected = id
     if (this.headText) { this.headText.innerHTML = value }
     else { this.head.innerHTML = value }
     this.closePopup()
+    this.head.dataset.value = this.getSelected()
+    this.EvtTarget.dispatchEvent(new CustomEvent('change', { detail: this.getSelected() }))
 }
 
 function KFlatList (choices, value) {

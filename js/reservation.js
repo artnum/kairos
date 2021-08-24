@@ -36,6 +36,7 @@ KReservation.load = function (id) {
           if (result.length !== 1) { r.ok = false; resolve(r);  return }
           r.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
           
+          r.data.reservation.version = parseInt(r.data.reservation.version)
           r.hash.reservation._complete = r.hashJsonS(r.data.reservation, [ 'modification' ])
 
           r.data.reservation.begin = new Date(r.data.reservation.begin)
@@ -102,16 +103,21 @@ KReservation.prototype.extUpdate = function (json) {
 
 KReservation.prototype.serverCompare = function () {
   return new Promise((resolve, reject) => {
-    KReservation.load(this.data.reservation.id)
-    .then(srvVersion => {
-      const cmpVal = ['reservation', 'locality', 'creator', 'technician']
-      for (let i = 0; i < cmpVal.length; i++) {
-        if (this.hash[cmpVal[i]]._complete !== srvVersion.hash[cmpVal[i]]._complete) {
-          resolve(false)
-          return
-        }
-      }
-      resolve(true)
+    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/.version?id=${this.data.reservation.id}`))
+    .then(response => {
+      if (!response.ok) { return null }
+      return response.json()
+    })
+    .then(result => {
+      if (!result) { return false }
+      if (result.length <= 0 || result.length > 1) { return false }
+      const data = Array.isArray(result.data) ? result.data[0] : result.data
+      if (!data.version) { return false }
+      if (parseInt(data.version) !== this.data.reservation.version) { return false }
+      return true
+    })
+    .then(same => {
+      resolve(same)
     })
   })
 }
@@ -215,7 +221,8 @@ KReservation.prototype.loadContact = function () {
     let promises = []
     let url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
     url.searchParams.append('search.reservation', this.data.reservation.id)
-    fetch(url).then(response => {
+    fetch(url)
+    .then(response => {
       if (!response.ok) { resolve(); return }
       response.json().then(result => {
         for (let i = 0; i < result.length; i++) {
@@ -253,38 +260,105 @@ KReservation.prototype.oneLine = function () {
   })
 }
 
-KReservation.prototype.addContact = function (contact, type) {
-  
+
+
+KReservation.prototype.getContact = function (address, type) {
+  return new Promise((resolve, reject) => {
+    let url
+    if (address instanceof KContactText) {
+      url = new URL(`${KAIROS.getBase()}/store/ReservationContact/${address.getId()}`) 
+    } else {
+      url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+      url.searchParams.append('search.reservation', this.data.reservation.id)
+      url.searchParams.append('search.target', typeof address === 'string' ? address : address.getId())
+      url.searchParams.append('search.comment', typeof type === 'string' ? type : type.getSelected())
+    }
+    fetch(url)
+    .then(response => {
+      if (!response.ok) { throw new Error('Erreur réseau')}
+      return response.json()
+    })
+    .then(result => {
+      if (result.length > 1) { throw new Error('Adresse non unique') }
+      if (!result.data) { throw new Error('Data is null')}
+      resolve(Array.isArray(result.data) ? result.data[0] : result.data)
+    })
+    .catch(reason => {
+      reject(new Error(reason))
+    })
+  })
 }
 
-KReservation.prototype.delContact = function (contact) {
+KReservation.prototype.changeContactType = function (address, oldType, newType) {
+  this.getContact(address, oldType)
+  .then (relation => {
+    const url = new URL(`${KAIROS.getBase()}/store/ReservationContact/${relation.id}`)
+    return fetch(url, {method: 'PUT', body: JSON.stringify({id: relation.id, comment: newType.getSelected() })})
+  })
+  .then(response => {
+    console.log(response)
+  })
+  .catch(reason => {
+    KAIROS.syslog(reason)
+    KAIRSO.error('Impossible de changer le type')
+  })
+}
+
+KReservation.prototype.addContact = function (address, type) {
   return new Promise((resolve, reject) => {
-    if (contact instanceof KContactObject) {
+    const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+    url.searchParams.append('search.reservation', this.data.reservation.id)
+    url.searchParams.append('search.target', address.getId())
+    url.searchParams.append('search.comment', type.getSelected())
+    fetch(url)
+    .then(response => {
+      if (!response.ok) { return null }
+      return response.json()
+    })
+    .then(result => {
+      if (result.length > 1) {
+        KAIROS.error('...')
+      }
+      if (result.length === 1) {
+        console.log(result)
+        return
+      }
       const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
-      url.searchParams.append('search.target', contact.getId())
-      url.searchParams.append('search.reservation', this.getId())
-      fetch(url)
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+          reservation: this.data.reservation.id,
+          comment: type.getSelected(),
+          freeform: null,
+          target: address.getId()
+        })
+      })
       .then(response => {
         if (!response.ok) { return null }
         return response.json()
       })
       .then(result => {
-        if (!result) { return null }
-        if (result.length > 1) { return null }
-        return result.data instanceof Array ? result.data[0].id : result.data.id
+        console.log(result)
+        resolve()
       })
-      .then(id => {
-        if (!id) { return null }
-        const url = new URL(`${KAIROS.getBase()}/store/ReservationContact/${id}`)
-        return fetch(url, {method: 'DELETE'})
-      })
-      .then(result => {
-        if (!result) { resolve(false) }
-        if (result.ok) { resolve(true) }
-        else { resolve(false) }
-      })
-      .catch(reason => reject(reason instanceof Error ? reason : new Error(reason)))
-    }
+    })
+  })
+}
+
+KReservation.prototype.delContact = function (contact, type) {
+  return new Promise((resolve, reject) => {
+    this.getContact(contact, type)
+    .then(relation => {
+      if (!relation) { return null }
+      const url = new URL(`${KAIROS.getBase()}/store/ReservationContact/${relation.id}`)
+      return fetch(url, {method: 'DELETE'})
+    })
+    .then(result => {
+      if (!result) { resolve(false) }
+      if (result.ok) { resolve(true) }
+      else { resolve(false) }
+    })
+    .catch(reason => reject(reason instanceof Error ? reason : new Error(reason)))
   })
 }
 

@@ -3,6 +3,7 @@ function KContactObject (store, highlightTerm = []) {
     this.store = store
     this.data = new Map()
     this.highlightTerm = highlightTerm
+    this.local = false
 
     return new Proxy(this, {
         get: function (object, prop) {
@@ -19,6 +20,9 @@ function KContactObject (store, highlightTerm = []) {
             return object[prop]
         },
         set: function (object, prop, value) {
+            if (prop === local) {
+                return this.local = value
+            }
             return object.data.set(prop, value)
         }
     })
@@ -35,7 +39,7 @@ KContactObject.prototype.cmpId = function (id) {
 }
 
 KContactObject.prototype.getId = function () {
-    return `Contacts/${this.get('IDent')}`
+    return `/Contacts/${this.get('IDent')}`
 }
 
 KContactObject.prototype.get = function (name) {
@@ -88,7 +92,7 @@ KContactObject.prototype.getRelated = function (relations) {
 }
 
 KContactObject.prototype.getHTMLLabel = function (hidden = {}, short = false) {
-    let label
+    let label = ''
     if (hidden.singlephone) {
         if (this.data.has('mobile')) {
             hidden.telephonenumber = true
@@ -98,14 +102,20 @@ KContactObject.prototype.getHTMLLabel = function (hidden = {}, short = false) {
             hidden.mobile = true
         }
     }
+
     if (this.data.get('type') === 'organization') {
-        label = `<i class="fas fa-building">&nbsp;</i><span class="name">${this.data.get('o')}</span>`
+        label += `<i class="fas fa-building">&nbsp;</i><span class="name">${this.data.get('o')}</span>`
     } else {
-        label = `<i class="fas fa-user">&nbsp;</i><span class="name">${[this.data.get('givenname'), this.data.get('sn')].join(' ')}</span>`
+        label += `<i class="fas fa-user">&nbsp;</i><span class="name">${[this.data.get('givenname'), this.data.get('sn')].join(' ')}</span>`
         if (this.data.has('o')) {
             label += `<br ${hidden.o ? 'data-hidden="1"' : ''}><span class="organization" ${hidden.o ? 'data-hidden="1"' : ''}>${this.data.get('o')}</span>`
         }
     }
+
+    if (this.local) {
+        label += ' <i class="fas fa-sd-card"></i>'
+    }
+
     if (this.data.has('postaladdress')) {
         const address = this.data.get('postaladdress')
         label += `<div class="group address" ${hidden.postaladdress ? 'data-hidden="1"' : ''}><span class="address">${Array.isArray(address) ? address[0] : address}</span></div>`
@@ -183,6 +193,7 @@ function KContactText (id, text) {
     this.json = text.startsWith('JSON://')
     this.text = this.json ? JSON.parse(text.substring(7)) : text
     this.data = new Map()
+    this.local = true
 
     if (this.json) {
         for (const k in this.text) {

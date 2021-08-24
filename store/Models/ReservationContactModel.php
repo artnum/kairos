@@ -11,5 +11,13 @@ class ReservationContactModel extends artnum\SQL {
          'contacts_freeform' => 'string'
       ));
    }
+
+   function _write($data, $id = NULL) {
+      if (!empty($data['target'])) {
+         if ($data['target'][0] !== '/') { $data['target'] = '/' . $data['target']; }
+      }
+
+      return parent::_write($data, $id);
+   }
 }
 ?>

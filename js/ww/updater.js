@@ -3,7 +3,6 @@
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
 importScripts('../localdb.js')
-importScripts('../object-hash/dist/object_hash.js')
 importScripts('/js/Path.js')
 importScripts('../stores/user.js')
 
@@ -184,27 +183,26 @@ function cacheAndSend (data, vTimeLine) {
           if (!entries[channel]) {
             entries[channel] = []
           }
-          let hash = objectHash.sha1(entry)
-          entry._hash = hash
-          if (Entries.get(entry.id)) {
-            if (hash !== Entries.get(entry.id)[0]) {
-              if (Entries.get(entry.id)[1] !== channel) {
-                if (!entries[Entries.get(entry.id)[1]]) {
-                  entries[Entries.get(entry.id)[1]] = []
+          if (Entries.has(entry.id)) {
+            const storedEntry = Entries.get(entry.id)
+            if (entry.version !== storedEntry[0]) {
+              if (storedEntry[1] !== channel) {
+                if (!entries[storedEntry[1]]) {
+                  entries[storedEntry[1]] = []
                 }
-                let remChannel = Entries.get(entry.id)[1] 
+                let remChannel = storedEntry[1] 
                 if (Symlinks.has(remChannel)) {
                   remChannel = Symlinks.get(remChannel)
                 }
                 Channels.get(remChannel)?.postMessage({op: 'remove', reservation: entry})
-                entries[Entries.get(entry.id)[1]].push(entry)
+                entries[storedEntry[1]].push(entry)
                 Entries.delete(entry.id)
               }
-              Entries.set(entry.id, [hash, channel, new Date().getTime()])
+              Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
               entries[channel].push(entry)
             }
           } else {
-            Entries.set(entry.id, [hash, channel, new Date().getTime()])
+            Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
             entries[channel].push(entry)
           }
           resolve()
