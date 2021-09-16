@@ -279,9 +279,36 @@ class ReservationModel extends artnum\SQL
 
    function _write($data, $id = NULL)
    {
+      global $MSGSrv;
       $result = parent::_write($data, $id);
       $id = $result->getItem(0);
-      $this->getVersion($id, $result);
+      if ($id !== null) {
+         $this->getVersion($id, $result);
+         $item = $result->getItem(0);
+         $MSGSrv->send(json_encode([
+            'operation' => 'write',
+            'type' => 'reservation',
+            'id' => $item['id'],
+            'version' => $item['version'],
+         ]));
+      }
+      return $result;
+   }
+
+   function _delete($id) {
+      global $MSGSrv;
+      $time = time();
+      $data = ['reservation_id' => $id, 'reservation_deleted' => $time, 'reservation_modification' => $time, 'reservation_version' => 'force'];
+      $_id = $this->update($data);
+      $result = new artnum\JStore\Result([$id => $id !== false], 1);
+      
+      if ($_id !== false) {
+         $MSGSrv->send(json_encode([
+            'operation' => 'delete',
+            'type' => 'reservation',
+            'id' => $_id
+         ]));
+      }
       return $result;
    }
 }

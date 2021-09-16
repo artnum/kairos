@@ -141,6 +141,11 @@ define([
       this.Buttons.resync.setDisabled(false)
     },
 
+    remoteDelete: function () {
+      this.domNode.classList.add('deleted')
+    },
+
+
     _setDescriptionAttr: function (value) {
       this.description = value
     },
@@ -1245,42 +1250,36 @@ define([
         contactLiveSearch.addEventListener('change', event => {
           const address = event.detail
           const target = this.domNode.querySelector('[name="contactEntries"]')
-          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type, address instanceof KContactObject)
+          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type, false)
           fieldset.addEventListener('delete', event => { 
             this.deleteContact(event.detail)
             .then(result => {
               if (!result) { event.preventDefault() }
             }) 
           })
+          /*fieldset.addEventListener('modify', event => {
+            this.editContact(event.detail)
+          })*/
+          fieldset.addEventListener('change', event => {
+            this.changeContactType(event.detail)
+          })
           if (KAIROS?.contact?.relation) {
-            if (KAIROS.contact.relation[contactTypeSelect.getSelected()]) {
-              address.getRelated(KAIROS.contact.relation[contactTypeSelect.selected])
-              .then(addresses => {
-                for (const type in addresses) {
-                  const nextFieldset = new KFieldset(type, KAIROS.contact.type, addresses[type] instanceof KContactObject)
-                  nextFieldset.addEventListener('delete', event => { 
-                    this.deleteContact(event.detail)
-                    .then(result => {
-                      if (!result) { event.preventDefault() }
-                    }) 
-                  })
-                  nextFieldset.set('address', addresses[type])
-                  nextFieldset.set('type', type)
-                  nextFieldset.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
-                  target.appendChild(nextFieldset.domNode)
-                }
-              })
-            }
+            const type = contactTypeSelect.getSelected()
+            this.extendWithRelation(address, type, [type], target)
           }
           
           this.saveContact(address, contactTypeSelect)
-          .then(() => {
+          .then(linkId => {
             fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
             fieldset.set('address', address)
             fieldset.set('type', contactTypeSelect.getSelected())
+            fieldset.set('link', linkId)
             target.appendChild(fieldset.domNode)
 
             contactTypeSelect.nextItem()
+          })
+          .catch(error => {
+            KAIROS.error(error)
           })
         })
 
@@ -1357,6 +1356,33 @@ define([
       .then(() => {
         this.load()
       })
+    },
+
+    extendWithRelation: function (address, addrType, typeOrigin, target) {
+      if (KAIROS.contact.relation[addrType]) {
+        address.getRelated(KAIROS.contact.relation[addrType])
+        .then(addresses => {
+          for (const type in addresses) {
+            if (typeOrigin.indexOf(type) !== -1) { continue }
+            typeOrigin.push(type)
+            const nextFieldset = new KFieldset(type, KAIROS.contact.type, false)
+            nextFieldset.addEventListener('delete', event => { 
+              this.deleteContact(event.detail)
+              .then(result => {
+                if (!result) { event.preventDefault() }
+              }) 
+            })
+            nextFieldset.set('address', addresses[type])
+            nextFieldset.set('type', type)
+            nextFieldset.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
+            target.appendChild(nextFieldset.domNode)
+            this.saveContact(addresses[type], type).
+            then(e => {
+              this.extendWithRelation(addresses[type], type, typeOrigin, target)
+            })
+          }
+        })
+      }
     },
 
     saveContact: function (address, type) {
@@ -1602,12 +1628,13 @@ define([
     createContact: function (address, type, linkId) {
       const target = this.domNode.querySelector('[name="contactEntries"]')
       const previous = target.querySelector(`[name="${linkId}"]`)
-      const fieldset = new KFieldset(type, KAIROS.contact.type, address instanceof KContactObject)
+      const fieldset = new KFieldset(type, KAIROS.contact.type, false)
       fieldset.domNode.setAttribute('name', linkId)
 
       fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
       fieldset.set('address', address)
       fieldset.set('type', type)
+      fieldset.set('link', linkId)
       fieldset.domNode.style.setProperty('order', `${KAIROS?.contact?.order[type] || 1000}`)
       fieldset.addEventListener('delete', event => { 
         this.deleteContact(event.detail)
@@ -1615,7 +1642,12 @@ define([
           if (!result) { event.preventDefault() }
         }) 
       })
-
+      /*fieldset.addEventListener('modify', event => {
+        this.editContact(event.detail)
+      })*/
+      fieldset.addEventListener('change', event => {
+        this.changeContactType(event.detail)
+      })
       if (previous) {
         target.replaceChild(fieldset.domNode, previous)
       } else {
@@ -1635,6 +1667,28 @@ define([
           resolve(false)
         })
       })
+    },
+
+    changeContactType: function (kfieldset) {
+      console.log(kfieldset.get('address'))
+      const newType = kfieldset.getLegend()
+      const linkId = kfieldset.get('link')
+      fetch(`${KAIROS.getBase()}/store/ReservationContact/${linkId}`, {method: 'PUT', body: JSON.stringify({id: linkId, comment: newType})})
+      .then(response => {
+        if (!response.ok) { throw new Error('Erreur')}
+        return response.json()
+      })
+      .then(result => {
+        console.log(result)
+      })
+      .catch(error => {
+        KAIROS.error(error)
+      })
+    },
+
+    editContact: function (kfieldset) {
+      const address = kfieldset.get('address')
+      address.edit(kfieldset.domNode)
     },
 
     /*

@@ -2,7 +2,7 @@ function KFieldset (value, choices = {}, modifiable = false) {
     this.domNode = document.createElement('FIELDSET')
     this.domNode.classList.add('kfieldset')
     this.footer = document.createElement('DIV')
-    this.footer.innerHTML = '<span data-action="delete"><i class="fas fa-trash"> </i> Supprimer</span>'
+    this.footer.innerHTML = '<span data-action="delete"><i class="fas fa-trash"> </i> Retirer</span>'
     if (modifiable) {
         this.footer.innerHTML += '<span data-action="modify"><i class="fas fa-edit"> </i> Modifier</span>'
     }
@@ -44,6 +44,9 @@ KFieldset.prototype.handleClick = function (event) {
                 this.domNode.parentNode.removeChild(this.domNode)
             }
             break
+        case 'modify':
+            this.EvtTarget.dispatchEvent(new CustomEvent('modify', {detail: this, cancelable: false}))
+            break
     }
 }
 
@@ -66,6 +69,7 @@ KFieldset.prototype.setLegend = function () {
             value = this.value
         }
     }
+
     if (value !== '') {
         const legend = document.createElement('LEGEND')
         this.domNode.appendChild(legend)
@@ -73,7 +77,15 @@ KFieldset.prototype.setLegend = function () {
         legend.dataset.id = id
         legend.dataset.value = value
         const list = new KList(legend, this.choices, legend.firstElementChild)
+        list.addEventListener('change', event => {
+            this.EvtTarget.dispatchEvent(new CustomEvent('change', {detail: this, cancelable: false}))
+        })
+        this.list = list
     }
+}
+
+KFieldset.prototype.getLegend = function () {
+    return this.list.getSelected()
 }
 
 KFieldset.prototype.appendChild = function(node) {

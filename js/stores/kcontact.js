@@ -3,7 +3,8 @@ function KContactObject (store, highlightTerm = []) {
     this.store = store
     this.data = new Map()
     this.highlightTerm = highlightTerm
-    this.local = false
+    this.data.set('local', false)
+    this.loading = []
 
     return new Proxy(this, {
         get: function (object, prop) {
@@ -19,12 +20,22 @@ function KContactObject (store, highlightTerm = []) {
             if (object.data.has(prop)) { return object.data.get(prop) }
             return object[prop]
         },
+        has: function (object, prop) {
+            return object.data.has(prop)
+        },
         set: function (object, prop, value) {
-            if (prop === local) {
-                return this.local = value
-            }
             return object.data.set(prop, value)
         }
+    })
+}
+
+KContactObject.prototype.load = function () {
+    return new Promise((resolve) => {
+        if (this.loading.length <= 0) { resolve(); return}
+        Promise.allSettled(this.loading)
+        .then( _ => {
+            resolve()
+        })
     })
 }
 
@@ -54,6 +65,25 @@ KContactObject.prototype.has = function (name) {
 }
 
 KContactObject.prototype.set = function (name, value) {
+    switch(name) {
+        case 'o':
+            if (Array.isArray(value)) { value = value[0] } // keep first in multiple o affiliation
+            if (value.match(/\/?Contacts\/.+/) !== null) {
+                this.loading.push(new Promise((resolve, reject) => {
+                    this.store.get(value)
+                    .then(address => {
+                        this.data.set('o', address.getLabel())
+                        resolve()
+                    })
+                    .catch(_ => {
+                        resolve()
+                        // nothing
+                    })
+                }))
+                return true
+            }
+            break
+    }
     return this.data.set(name, value)
 }
 
@@ -112,7 +142,7 @@ KContactObject.prototype.getHTMLLabel = function (hidden = {}, short = false) {
         }
     }
 
-    if (this.local) {
+    if (this.get('local')) {
         label += ' <i class="fas fa-sd-card"></i>'
     }
 
@@ -186,6 +216,248 @@ KContactText.prototype.getRelated = function (relations) {
     })
 }
 
+if (false) {
+KContactObject.prototype.edit = function (addrNode) {
+    this.noMoreSearch = true
+    const domNode = document.createElement('FORM')
+    domNode.innerHTML = `
+        <fieldset class="kfieldset"><legend>Adresse</legend>
+        <div class="name"><label>Société</label><input type="text" name="name"></input></div>
+        <div class="address"><label>Addresse</label><textarea name="postaladdress"></textarea></div>
+        <div class="locality"><label>Localité</label><input type="text" name="locality"></input> <i data-action="expand-locality" class="fas fa-chevron-down"></i></div>
+        </fieldset>
+        <fieldset class="kfieldset"><legend>Téléphonie</legend>
+        <div class="mobile"><label>Mobile</label><input type="text" name="mobile"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        <div class="landline"><label>Fixe</label><input type="text" name="telephonenumber"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        </fieldset>
+        <fieldset class="kfieldset"><legend>Internet</legend>
+        <div class="email"><label>E-Mail</label><input type="text" name="mail"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        <div class="website"><label>Site Web</label><input type="text" name="labeleduri"></input> <i data-action="add-multiple" class="fas fa-plus"></i></div>
+        </fieldset>
+        <button type="submit">Ajouter</button> <button type="reset">Annuler</button>
+    `
+    const switchFormType = (type) => {
+        if (type === 'person') {
+            const organization = domNode.querySelector('div.name')
+            organization.classList.replace('name', 'organization')
+
+            const d1 = document.createElement('DIV')
+            const d2 = document.createElement('DIV')
+            d1.classList.add('name')
+            d1.innerHTML = '<label>Nom</label><input type="text" name="name"></input>'
+            d2.classList.add('givenname')
+            d2.innerHTML = '<label>Prénom</label><input type="text" name="givenname"></input>'
+
+            organization.parentNode.insertBefore(d1, organization)
+            organization.parentNode.insertBefore(d2, organization)
+            return
+        }
+
+        const organization = domNode.querySelector('div.organization')
+        if (organization) {
+            organization.parentNode.removeChild(organization.parentNode.querySelector('div.name'))
+            organization.parentNode.removeChild(organization.parentNode.querySelector('div.givenname'))
+
+            organization.classList.replace('organization', 'name')
+        }
+    }
+
+    const organization = domNode.querySelector('div.name')
+    this.orgInput = organization.querySelector('input')
+    const locality = new Select(domNode.querySelector('input[name="locality"]'), this.localityStore)
+    if (!this.has('type')) {
+        const type = new KFlatList({organization: 'Société', person: 'Personne'}, 'organization')
+        type.domNode.setAttribute('name', 'type')
+        type.addEventListener('change', event => {
+            switchFormType(type)
+        })    
+        domNode.insertBefore(type.domNode, domNode.firstElementChild)
+    } else {
+        switchFormType(this.get('type'))
+        const type = document.createElement('INPUT')
+        type.setAttribute('type', 'hidden')
+        type.setAttribute('name', 'type')
+        type.setAttribute('value', this.get('type'))
+        domNode.insertBefore(type, domNode.firstElementChild)
+    }
+    
+    if (!this.has('local')) {
+        const saveTo = new KFlatList({addressbook: 'Carnet d\'adresses', local: 'Local'}, KAIROS.contact.saveto[addrType] ?? 'local')
+        saveTo.domNode.setAttribute('name', 'saveto')
+        this.addEventListener('type-change', event => {
+            saveTo.selectItem(KAIROS.contact.saveto[event.detail] ?? 'local')
+        })
+        domNode.insertBefore(saveTo.domNode, domNode.querySelector('button'))
+    } else {
+        const type = document.createElement('INPUT')
+        type.setAttribute('type', 'hidden')     
+        type.setAttribute('name', 'saveto')
+        type.setAttribute('value', this.get('local') ? 'local' : 'addressbook')
+        domNode.insertBefore(type, domNode.firstElementChild)    
+    }
+
+    const parentNode = addrNode.parentNode
+    parentNode.removeChild(addrNode)
+    parentNode.appendChild(domNode)
+    /* add domNode before adding type.domNode or else events are discarded */
+    
+    domNode.addEventListener('reset', event => {
+        this.removeAddForm()
+    })
+
+    domNode.addEventListener('submit', event => {
+        this.noMoreSearch = false
+        event.preventDefault()
+        const form = KFormData.new(event.target)
+
+        new Promise((resolve, reject) => {
+            const contact = {}
+            if (form.get('locality') && /^PC\/[a-z0-9]+$/.test(form.get('locality'))) {
+                fetch(`${KAIROS.getBase()}/store/${form.get('locality')}`)
+                .then(response => {
+                    if (!response.ok) { reject() }
+                    return response.json()
+                })
+                .then(result => {
+                    const locality = Array.isArray(result.data) ? result.data[0] : result.data 
+                    contact.st = locality.state.toUpperCase() || null
+                    contact.l = locality.name || null
+                    contact.postalcode = locality.np || null
+                    contact.c = 'CH'
+                    resolve(contact)
+                })
+                .catch (reason => {
+
+                })
+            } else {
+                contact.st = form.get('canton') || null
+                contact.l = form.get('city') || null
+                contact.postalcode = form.get('np') || null
+                contact.c = form.get('country') || null
+                resolve(contact)
+            }
+        })
+        .then(contact => {
+            for (const k in contact) {
+                if (contact[k] === null) {
+                    delete contact[k]
+                }
+            }
+            const org = form.get('type') === 'organization'
+            for (const pair of form.entries()) {
+                switch (pair[0]) {
+                    case 'locality': break
+                    case 'saveto':
+                        if (pair[1] === 'local') {
+                            contact['local'] = true
+                        } else {
+                            contact['local'] = false
+                        }
+                        break
+                    case 'mobile':
+                    case 'telephonenumber':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.phone(pair[1]))
+                        break
+                    case 'mail':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.mail(pair[1]))
+                        break;
+                    case 'labeleduri':
+                        if (!contact[pair[0]]) {
+                            contact[pair[0]] = []
+                        }
+                        contact[pair[0]].push(KSano.url(pair[1]))
+                        break
+                    default: contact[pair[0]] = pair[1]; break
+                    case 'name': 
+                        if (org) {
+                            contact.o = pair[1]
+                        } else {
+                            contact.sn = pair[1]
+                        }
+                        break
+                    case 'np': contact['postalcode'] = pair[1]; break
+                    case 'country': contact['c'] = pair[1]; break
+                    case 'canton': contact['st'] = pair[1]; break
+                    case 'city': contact['l'] = pair[1]; break
+                }
+            }
+            fetch(`${KAIROS.getBase()}/store/Contacts`, {method: 'POST', body: JSON.stringify(contact)})
+            .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+            })
+            .then(result => {
+                return this.store.get(Array.isArray(result.data) ? result.data[0].IDent : result.data.IDent)
+            })
+            .then(object => {
+                this.removeResult()
+                this.EvtTarget.dispatchEvent(new CustomEvent('change', {detail: object}))    
+            })
+        })
+    })
+    domNode.addEventListener('click', event => {
+        let node = event.target
+        switch (event.target.dataset.action) {
+            case 'expand-locality':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const np = document.createElement('DIV')
+                np.innerHTML = '<label>Code postale</label><input type="text" name="np"></input> <i data-action="reduce-locality" class="fas fa-chevron-up"></i>'
+                const city = document.createElement('DIV')
+                city.innerHTML = '<label>Localité</label><input type="text" name="city"></input>'
+                const dep = document.createElement('DIV')
+                dep.innerHTML = '<label>Canton</label><input type="text" name="canton"></input>'
+                const country = document.createElement('DIV')
+                country.innerHTML = '<label>Pays</label><input type="text" name="country"></input>'
+
+                node.parentNode.insertBefore(np, node)
+                node.parentNode.insertBefore(city, node)
+                node.parentNode.insertBefore(dep, node)
+                node.parentNode.insertBefore(country, node)
+                node.parentNode.removeChild(node)
+                np.querySelector('INPUT').focus()
+                break
+            case 'reduce-locality':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const locDiv = document.createElement('DIV')
+                locDiv.innerHTML = '<label>Localité</label> <i data-action="expand-locality" class="fas fa-chevron-down"></i>'
+                locDiv.insertBefore(locality.domNode, locDiv.firstElementChild.nextSibling)
+
+                node.parentNode.removeChild(node.nextElementSibling.nextElementSibling.nextElementSibling)
+                node.parentNode.removeChild(node.nextElementSibling.nextElementSibling)
+                node.parentNode.removeChild(node.nextElementSibling)
+                node.parentNode.insertBefore(locDiv, node)
+                node.parentNode.removeChild(node)
+                locDiv.querySelector('INPUT').focus()
+                break
+            case 'add-multiple':
+                while (node && node.nodeName !== 'DIV') { node = node.parentNode }
+                const newNode = node.cloneNode(true)
+                newNode.querySelector('LABEL').innerHTML = ''
+                newNode.removeChild(newNode.querySelector('i'))
+                newNode.querySelector('INPUT').value = ''
+                let nextNode = node.nextElementSibling
+                while (nextNode && nextNode.querySelector('LABEL')?.innerHTML === '') { nextNode = nextNode.nextElementSibling }
+                node.parentNode.insertBefore(newNode, nextNode)
+                newNode.querySelector('INPUT').focus()
+                break
+        }
+    })
+}
+
+KContactObject.create = function (addrNode, store) {
+    const object = new KContactObject(store)
+    object.edit(addrNode)
+    return object
+}
+
+}
+
 /* *** KContactText *** */
 
 function KContactText (id, text) {
@@ -193,7 +465,7 @@ function KContactText (id, text) {
     this.json = text.startsWith('JSON://')
     this.text = this.json ? JSON.parse(text.substring(7)) : text
     this.data = new Map()
-    this.local = true
+    this.data.set('local', false)
 
     if (this.json) {
         for (const k in this.text) {
@@ -232,11 +504,9 @@ KContactText.prototype.getHTMLLabel = function (hidden = {}, short = false) {
             i++
         }
         phoneLinks = createLinkFromPhone(div)
-        console.log(phoneLinks)
         if (phoneLinks.length > 0) {
             let line = phoneLinks[0]
             while (line && !line.classList.contains('addrline')) { line = line.parentNode }
-            console.log(line)
             if (line && line.dataset.hidden) {
                 line.removeAttribute('data-hidden')
             }
@@ -409,7 +679,10 @@ KContactStore.prototype.get = function (id) {
             for (const k in entry) {
                 kcontact.set(k, entry[k])
             }
-            resolve(kcontact)
+            kcontact.load()
+            .then(_ => {
+                resolve(kcontact)
+            })
         })
     })
 }
@@ -441,14 +714,19 @@ KContactStore.prototype.query = function (term, limit = null) {
             if (!result) { resolve([]); return }
             if (result.length === 0 || result.data === null) { resolve([]); return }
             const results = []
+            const loading = []
             for(const entry of Array.isArray(result.data) ? result.data : [result.data]) {
                 const kcontact = new KContactObject(this)
                 for (const k in entry) {
                     kcontact.set(k, entry[k])
                 }
                 results.push(kcontact)
+                loading.push(kcontact.load())
             }
-            resolve(results)
+            Promise.allSettled(loading)
+            .then(_ => {
+                resolve(results)
+            })
         })
         .catch(reason => {
             reject(reason instanceof Error ? reason : new Error(reason))

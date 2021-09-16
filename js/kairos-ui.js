@@ -1,4 +1,14 @@
 
+KAIROS.wAddEventListener = window.addEventListener
+window.addEventListener = function (type, listener, options) {
+    if (type === 'close-top') {
+        if (KAIROS._closeStack === undefined) { KAIROS._closeStack = [] }
+        KAIROS._closeStack.push(listener)
+        return
+    }
+    KAIROS.wAddEventListener(type, listener, options)
+}
+
 KAIROS.mouse = {}
 const kMouseFollow = event => {
     KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
@@ -144,9 +154,11 @@ KAIROS.closeNext = function (count = 0) {
 document.addEventListener('keyup', event => {
     if (event.key === 'Escape') {
         if (event.shiftKey) {
-            while (KAIROS.closeNext());
+            while (KAIROS._closeStack.length > 0) {
+                KAIROS._closeStack.pop()()
+            };
         } else {
-            KAIROS.closeNext()
+            KAIROS._closeStack.pop()()
         }
     }
 }, {capture: true})

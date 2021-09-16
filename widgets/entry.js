@@ -82,7 +82,8 @@ define([
             }
           }
           if (event.detail && event.detail.entry) {
-            this.KEntry.fixReservation(event.detail.entry).then (json => {
+            this.KEntry.fixReservation(event.detail.entry)
+            .then (json => {
               if (json) { this.createEntry(json) }
             })
           }
@@ -94,7 +95,8 @@ define([
         }
         let update = (event) => {
           if (event.detail && event.detail.entry) {
-            this.KEntry.fixReservation(event.detail.entry).then (json => {
+            this.KEntry.fixReservation(event.detail.entry)
+            .then (json => {
               if (json) { this.createEntry(json) }
             })
           }
@@ -127,11 +129,11 @@ define([
       return new Promise((resolve, reject) => {
         for (const [kEntry, currentEntry] of this.entries) {
           if (currentEntry.uuid === entry.uuid) {
-            this.destroyReservation(currentEntry).then(() => {
+            this.destroyReservation(currentEntry)
+            .then(() => {
               this.entries.delete(kEntry)
               this.resize()
               resolve()
-              return
             })
             break
           }
@@ -869,7 +871,10 @@ define([
         if (!reservation) { resolve(); return }
         const id = reservation.uuid || reservation.uid || reservation.id
         this.entries.delete(id)
-        reservation.destroy().then(() => resolve())
+        reservation.destroy()
+        .then(() => {
+          resolve()
+        })
       })
     },
 

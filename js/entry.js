@@ -168,8 +168,8 @@ KEntry.prototype.handleMessage = function (msg) {
     let msgData = msg.data
     switch (msgData.op) {
       case 'remove':
-        if (msgData.reservation) {
-            this.delete(msgData.reservation)
+        if (msgData.entry.reservation) {
+            this.delete(msgData.entry)
         }
         break
       case 'add':
@@ -178,7 +178,7 @@ KEntry.prototype.handleMessage = function (msg) {
         }
         break
       case 'entries':
-        let process = (deadline, origin = 0) => {
+        const process = (deadline, origin = 0) => {
             let i = origin;
             while(deadline.timeRemaining() > 5 && i < msgData.value.length) {
                 let entry = msgData.value[i]
@@ -194,7 +194,7 @@ KEntry.prototype.handleMessage = function (msg) {
                         this.add(entry)
                     }
                 } else {
-                    this.delete(id)
+                    this.delete(entry)
                 }
                 i++
             }

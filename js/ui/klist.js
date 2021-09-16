@@ -5,6 +5,7 @@ function KList (head, choices, headText = null) {
     this.head.addEventListener('click', (event) => { this.handleClickEvent(event) })
     this.head.classList.add('klist', 'head')
     this.selected = this.choices[0]
+    this.value = this.selected
     this.EvtTarget = new EventTarget()
 }
 
@@ -97,15 +98,15 @@ KList.prototype.selectItem = function (id) {
             }
         }
     }
-    let value = this.choices[id]
+    this.value = this.choices[id]
     if (this.choices[id] === '<input>') {
-        value = targetNode.querySelector('INPUT').value
+        this.value = targetNode.querySelector('INPUT').value
     }
 
     this.head.dataset.id = id
     this.selected = id
-    if (this.headText) { this.headText.innerHTML = value }
-    else { this.head.innerHTML = value }
+    if (this.headText) { this.headText.innerHTML = this.value }
+    else { this.head.innerHTML = this.value }
     this.closePopup()
     this.head.dataset.value = this.getSelected()
     this.EvtTarget.dispatchEvent(new CustomEvent('change', { detail: this.getSelected() }))

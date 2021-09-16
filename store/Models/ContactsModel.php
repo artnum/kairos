@@ -125,6 +125,7 @@ class ContactsModel extends artnum\LDAP {
   }
 
   function _read($dn) {
+    $this->local = false;
     $result = new \artnum\JStore\Result();
     try {
       $c = $this->DB->readable();
@@ -218,8 +219,8 @@ class ContactsModel extends artnum\LDAP {
       $data['cn'] = $data['sn'] . ' ' . $data['givenname'];
       if (!empty($data['organization'])) {
         $org = trim($data['organization']);
-        if (substr($org, 0, 9) === 'Contacts/') {
-          $orgId = rawurldecode(substr($org, 9));
+        if (preg_match('/\/?Contacts\/.+/', $org)) {
+          $orgId = rawurldecode(array_pop(explode('/', $org)));
           $dn = $this->_dn($orgId);
           if ($this->_exists($orgId)) {
             $data['seeAlso;relation-worker'] = $dn;

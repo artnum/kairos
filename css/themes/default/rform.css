@@ -391,3 +391,7 @@
 .rForm.outofsync {
     background-color: var(--outofsyncform);
 }
+
+.rForm.deleted {
+    background-color: var(--deletedform);
+}

@@ -101,7 +101,7 @@ define([
       return new Promise((resolve, reject) => {
         if (!json) { resolve(); return }
         if (json.data) {
-          json = json.data
+          json = Array.isArray(json.data) ? json.data[0] : json.data
         }
         this.modifiedState = true
         if (this.get('_hash')) {
@@ -244,13 +244,18 @@ define([
           const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts`, {limit: 1})
           if (this.contacts && this.contacts['_client']) {
             if (this.contacts['_client'][0].target) {
+              hash.hash(this.contacts['_client'][0].target.IDent)
               contactStore.get(this.contacts['_client'][0].target.IDent)
               .then(kcontact => {
                 this.dbContact = kcontact
-                resolve()
+                this.dbContact.load()
+                .then(_ => {
+                  resolve()
+                })
               })
             } else {
               if (this.contacts['_client'][0].freeform) {
+                hash.hash(this.contacts['_client'][0].freeform)
                 this.dbContact = new KContactText(this.contacts['_client'][0].id, this.contacts['_client'][0].freeform)
               }
               resolve()
@@ -263,14 +268,9 @@ define([
         .then(() => {
           this.resize()
           krLoad.then(kres => {
-            let hasKReservation = this.KReservation
             delete this.KReservation
             this.KReservation = kres
-            let state = hash.result()
-            if (this.stateHash && this.stateHash !== state && hasKReservation) {
-              this.EventTarget.dispatchEvent(new CustomEvent('synced'))
-            }
-            this.stateHash = state
+            this.stateHash = hash.result()
             resolve()
           })
         })
@@ -1098,7 +1098,11 @@ define([
 
     destroy: function () {
       return new Promise((resolve, reject) => {
-        this.hide().then(() => {
+        if (this.myForm) {
+          this.myForm.remoteDelete()
+        }
+        this.hide()
+        .then(() => {
           this.destroyed = true
           this.inherited(arguments)
           resolve()

@@ -32,6 +32,7 @@
     --message-warn-border-color: hsla(var(--warn-color-base), 0.7);
     --message-info-border-color: hsla(var(--info-color-base), 0.7);
     --outofsyncform: hsla(var(--warn-color-base), 0.2);
+    --deletedform: red;
 }
 
 span.error {

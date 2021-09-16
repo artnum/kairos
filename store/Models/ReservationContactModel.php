@@ -13,11 +13,41 @@ class ReservationContactModel extends artnum\SQL {
    }
 
    function _write($data, $id = NULL) {
+      global $MSGSrv;
+
       if (!empty($data['target'])) {
          if ($data['target'][0] !== '/') { $data['target'] = '/' . $data['target']; }
       }
 
-      return parent::_write($data, $id);
+      $result = parent::_write($data, $id);
+      $item = $result->getItem(0);
+      if ($item !== null) {
+      $MSGSrv->send(json_encode([
+            'operation' => 'write',
+            'type' => 'contact',
+            'id' => $item['id']
+         ]));
+      }
+
+      return $result;
+   }
+
+   function _delete($id) {
+      global $MSGSrv;
+      $oldEntry = $this->_read($id);
+      $result = parent::_delete($id);
+      $item = $oldEntry->getItem(0);
+      if ($item !== null) {
+         if ($item['reservation']) {
+            $MSGSrv->send(json_encode([
+               'operation' => 'delete',
+               'type' => 'contact',
+               'reservation' => $item['reservation'],
+               'id' => $item['id']
+            ]));
+         }
+      }
+      return $result;
    }
 }
 ?>

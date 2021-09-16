@@ -308,8 +308,8 @@ KReservation.prototype.addContact = function (address, type) {
   return new Promise((resolve, reject) => {
     const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
     url.searchParams.append('search.reservation', this.data.reservation.id)
-    url.searchParams.append('search.target', address.getId())
-    url.searchParams.append('search.comment', type.getSelected())
+    url.searchParams.append('search.target', typeof address === 'object' ? address.getId() : address)
+    url.searchParams.append('search.comment', typeof type === 'object' ? type.getSelected() : type)
     fetch(url)
     .then(response => {
       if (!response.ok) { return null }
@@ -328,9 +328,9 @@ KReservation.prototype.addContact = function (address, type) {
         method: 'POST',
         body: JSON.stringify({
           reservation: this.data.reservation.id,
-          comment: type.getSelected(),
+          comment: typeof type === 'object' ? type.getSelected() : type,
           freeform: null,
-          target: address.getId()
+          target: typeof address === 'object' ? address.getId() : address
         })
       })
       .then(response => {
@@ -338,8 +338,9 @@ KReservation.prototype.addContact = function (address, type) {
         return response.json()
       })
       .then(result => {
-        console.log(result)
-        resolve()
+        if (!result.success) { throw new Error('Erreur pour l\'ajout du contact') }
+        const data = Array.isArray(result.data) ? result.data[0] : result.data
+        resolve(data.id)
       })
     })
   })

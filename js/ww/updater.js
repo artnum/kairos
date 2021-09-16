@@ -13,6 +13,56 @@ const Symlinks = new Map()
 let Range = null
 let PostPoned = {}
 
+const evtsource = new EventSource(new URL(`${KAIROS.getBase()}/events-srv.php`))
+evtsource.onmessage = event => {
+  const msg = JSON.parse(event.data)
+  switch(msg.operation) {
+    case 'write':
+      switch (msg.type) {
+        case 'reservation':
+          targetMessages({'data': {'op': 'reload', 'reservation': msg.id}}, true)
+          break
+        case 'arrival':
+          fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json() 
+          })
+          .then(result => {
+            if (result === null) { return }
+            if (!result.success) { return }
+            const data = Array.isArray(result.data) ? result.data[0] : result.data
+            targetMessages({'data': {'op': 'reload', 'reservation': data.target}}, true)
+          })
+          break
+        case 'contact':
+          fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact/${msg.id}`))
+          .then(response => {
+            if (!response.ok) { return null }
+            return response.json() 
+          })
+          .then(result => {
+            if (result === null) { return }
+            if (!result.success) { return }
+            const data = Array.isArray(result.data) ? result.data[0] : result.data
+            targetMessages({'data': {'op': 'reload', 'reservation': data.reservation}}, true)
+          })
+          break
+        }
+        break
+      case 'delete':
+        switch(msg.type) {
+          case 'reservation':
+            deleteEntry(msg.id)
+            break;
+        }
+        break
+    }
+}
+evtsource.onerror = event => {
+  console.log(event)
+}
+
 self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
@@ -20,7 +70,7 @@ self.onmessage = function (msg) {
         const targetId = msg.data.target
         Channels.set(targetId,  msg.ports[0])
         Channels.get(targetId).onmessage = (m) => {
-          targetMessages(m, targetId)
+          targetMessages(m)
         }
         if (PostPoned[targetId]) {
           Channels.get(targetId).postMessage({op: 'entries', value: PostPoned[targetId]})
@@ -79,7 +129,7 @@ function  dstamp (date) {
   return date
 }
 
-function targetMessages (msg, targetId = null) {
+function targetMessages (msg, force = false) {
   if (!msg.data.op) { return }
   switch (msg.data.op) {
     case 'uncache':
@@ -91,14 +141,15 @@ function targetMessages (msg, targetId = null) {
       break
     case 'reload':
       if (msg.data.reservation) {
-        fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${msg.data.reservation}`)).then((response) => {
-          if (response.ok) {
-            response.json().then((json) => {
-              if (json.length > 0 && json.success) {
-                cacheAndSend([json.data], newVTimeLine())
-              }
-            })
-          }
+        fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${msg.data.reservation}`))
+        .then((response) => {
+          if (!response.ok) { return null; }
+          return response.json()
+        })
+        .then(json => {
+          if (!json) { return; }
+          if (!json.success) { return ;}
+          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], newVTimeLine(), force)
         })
       }
       break
@@ -157,9 +208,24 @@ function processDays (vTimeLine, options) {
   }
 }
 
-function cacheAndSend (data, vTimeLine) {
+function deleteEntry (entryId) {
+  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
+  .then(response => {
+    if (!response.ok) { return null }
+    return response.json()
+  })
+  .then(result => {
+    if (!result) { return }
+    if (!result.success) { return }
+    const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    if (channel) { channel.postMessage({op: 'remove', entry: Array.isArray(result.data) ? result.data[0] : result.data}) }
+  })
+}
+
+function cacheAndSend (data, vTimeLine, force = false) {
   new Promise((resolve, reject) => {
-    let entries = {}
+    const entries = new Map()
     let promises = []
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
@@ -180,14 +246,14 @@ function cacheAndSend (data, vTimeLine) {
           if (Symlinks.has(channel)) {
             channel = Symlinks.get(channel)
           }
-          if (!entries[channel]) {
+          if (entries[channel] === undefined) {
             entries[channel] = []
           }
           if (Entries.has(entry.id)) {
             const storedEntry = Entries.get(entry.id)
-            if (entry.version !== storedEntry[0]) {
+            if ((entry.version !== storedEntry[0]) || force) {
               if (storedEntry[1] !== channel) {
-                if (!entries[storedEntry[1]]) {
+                if (entries[storedEntry[1]] === undefined) {
                   entries[storedEntry[1]] = []
                 }
                 let remChannel = storedEntry[1] 
@@ -223,11 +289,6 @@ function cacheAndSend (data, vTimeLine) {
           PostPoned[k] = []
         }
         PostPoned[k] = [...PostPoned[k], ...entries[k]]
-      }
-    }
-    for (const [key, channel] of Channels) {
-      if (processed.indexOf(key) === -1) {
-        channel.postMessage({op: 'entries', value: []})
       }
     }
 

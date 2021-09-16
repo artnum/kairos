@@ -5,7 +5,9 @@ require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
 require('../lib/get-entry.php');
+require('wesrv/lib/msg.php');
 
+$MSGSrv = new \wesrv\msg();
 $ini_conf = load_ini_configuration();
 $KConf = new KConf($ini_conf);
 
