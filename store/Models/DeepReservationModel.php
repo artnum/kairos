@@ -362,7 +362,7 @@ class DeepReservationModel extends ReservationModel {
     $client = array_pop($parts);
   
     $query = 'SELECT 
-                  "reservation".*,
+                  "reservation"."reservation_id",
                   "contacts"."contacts_target" AS "reservation_contact",
                   "contacts"."contacts_comment" AS "reservation_contactType"
                 FROM "reservation"
@@ -370,12 +370,8 @@ class DeepReservationModel extends ReservationModel {
                 WHERE (CAST("reservation_begin" AS DATETIME) < CAST(:end AS DATETIME)
                     AND CAST("reservation_end" AS DATETIME) > CAST(:begin AS DATETIME))
                     AND "reservation_deleted" IS NULL
-                    AND "reservation_id" IN (
-                        SELECT "contacts_reservation" 
-                        FROM "contacts" 
-                        WHERE BINARY idFromUrl("contacts_target") = BINARY :client
-                        AND ("contacts_comment" = \'_client\' OR "contacts_comment" = \'_responsable\')
-                      )
+                    AND BINARY idFromUrl2("contacts"."contacts_target") = BINARY :client
+                    AND "contacts"."contacts_comment"= \'_client\'
                   ';
     $stmt = $this->DB->prepare($query);
     
