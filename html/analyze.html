@@ -1,0 +1,109 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Analyse</title>
+    <script src="../js/index.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 1.5cm !important;
+        }
+        address {
+            font-style: normal;
+        }
+        .even {
+            background-color: lightblue;
+        }
+        .header {
+            font-weight: bold;
+        }
+    </style>
+  </head>
+  <body>
+      <table id="results"></table>
+  </body>
+  <script>
+    window.addEventListener('kairos-ready', () => {
+        const id = window.location.hash.substr(1)
+        const form = document.createElement('FORM')
+        form.innerHTML = `<input type="hidden" name="client" value="${decodeURIComponent(id)}" />
+            <label>Début <input type="date" name="begin" /></label>
+            <label>Fin <input type="date" name="end" /></label>
+            <button type="submit">Analyser</button>
+            `
+        document.body.insertBefore(form, document.getElementById('results'))
+
+        Address.load({target: `/Contacts/${decodeURIComponent(id)}`})
+        .then(address => {
+            const div = document.createElement('DIV')
+            div.innerHTML = `<h2>Client</h2>${address.toHtml()}`
+            document.body.insertBefore(div, document.getElementById('results'))
+
+        })
+
+        form.addEventListener('submit', event => {
+            const form = new FormData(event.target)
+            event.preventDefault()
+            const url = new URL(`${KAIROS.getBase()}/store/DeepReservation/.analyze`)
+            url.searchParams.append('client', form.get('client'))
+            url.searchParams.append('begin', form.get('begin'))
+            url.searchParams.append('end', form.get('end'))
+            const begin = new Date(form.get('begin'))
+            const end = new Date(form.get('end'))
+            fetch(url)
+            .then(response => {
+                if (!response.ok) { return null }
+                return response.json()
+            })
+            .then(result => {
+                const reservations = []
+                for (let i = 0; i < result.length; i++) {
+                    reservations.push(KReservation.load(result.data[i].id))
+                }
+                return Promise.all(reservations)
+            })
+            .then(reservations => {
+                const containser = document.getElementById('results')
+                results.innerHTML = '<h2>Résultats</h2>'
+                const header = document.createElement('TR')
+                header.classList.add('header')
+                header.innerHTML = `
+                        <td class="machine">Machine</td>
+                        <td class="id">Réservation</td>
+                        <td class="reference">Référence client</td>
+                        <td class="begin">Début de réservation</td>
+                        <td class="end">Fin de réservation</td>
+                        <td class="begin">Début d'analyse</td>
+                        <td class="end">Fin d'analyse</td>
+                        <td class="endreported">Retour annoncé</td>
+                        <td class="enddone">Retour effectué</td>
+                        `
+                results.appendChild(header)
+                let i = 0;
+                const shown = []
+                for (const r of reservations) {
+                    const x = r.data
+                    if (shown.indexOf(x.reservation.id) !== -1) { continue }
+                    shown.push(x.reservation.id)
+                    const div = document.createElement('TR')
+                    div.classList.add(i % 2 ? 'odd' : 'even')
+                    div.innerHTML = `
+                        <td class="machine">${x.machine?.airref ?? ''} ${x.machine?.cn ?? ''}</td>
+                        <td class="id">${x.reservation.id}</td>
+                        <td class="reference">${x.reservation.reference ?? ''}</td>
+                        <td class="begin">${x.reservation.begin.toLocaleDateString()}</td>
+                        <td class="end">${x.reservation.end.toLocaleDateString()}</td>
+                        <td class="begin">${begin.getTime() < x.reservation.begin.getTime() ? x.reservation.begin.toLocaleDateString() : begin.toLocaleDateString()}</td>
+                        <td class="end">${end.getTime() < x.reservation.end.getTime() ? end.toLocaleDateString() : x.reservation.end.toLocaleDateString()}</td>
+                        <td class="endreported">${x.arrival?.reported?.toLocaleDateString() ?? ''}</td>
+                        <td class="enddone">${x.arrival?.done?.toLocaleDateString() ?? ''}</td>
+                        `
+                    results.appendChild(div)
+                    i++
+                }
+                
+            })
+        })
+    })
+  </script>
+</html>

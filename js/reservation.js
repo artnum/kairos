@@ -5,7 +5,8 @@ function KReservation (id) {
     machine: null,
     creator: null,
     technician: null,
-    addresses: {}
+    addresses: {},
+    arrival: {}
   }
 
   this.hash = {
@@ -14,7 +15,8 @@ function KReservation (id) {
     machine: {},
     creator: {},
     technician: {},
-    address : {}
+    address : {},
+    arrival: {}
   }
 
   this.promise = {
@@ -22,7 +24,8 @@ function KReservation (id) {
     machine: null,
     creator: null,
     technician: null,
-    addresses: null
+    addresses: null,
+    arrival: null
   }
 }
 
@@ -55,6 +58,7 @@ KReservation.load = function (id) {
             r.loadTechnician(),
             r.loadLocality(),
             r.loadContact(),
+            r.loadArrival(),
           ])
           .then(_ => { 
             resolve(r)
@@ -231,6 +235,37 @@ KReservation.prototype.loadContact = function () {
           resolve(this.data.addresses)
         })
       })
+    })
+  })
+}
+
+KReservation.prototype.loadArrival = function () {
+  this.promise.arrival = new Promise((resolve, reject) => {
+    let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
+    url.searchParams.append('search.target', this.data.reservation.id)
+    url.searchParams.append('search.deleted', '-')
+    fetch(url)
+    .then(response => {
+      if (!response.ok) { return null }
+      return response.json()
+    })
+    .then(result => {
+      if (!result) { resolve() }
+      const data = Array.isArray(result.data) ? result.data[0] : result.data
+      for (const k in data) {
+        switch(k) {
+          case 'reported':
+          case 'done':
+          case 'inprogress':
+            if (!data[k]) { continue }
+            this.data.arrival[k] = new Date(data[k])
+            break
+          default:
+            this.data.arrival[k] = data[k]
+            break
+        }
+      }
+      resolve()
     })
   })
 }

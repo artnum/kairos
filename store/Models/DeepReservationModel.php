@@ -363,7 +363,7 @@ class DeepReservationModel extends ReservationModel {
   
     $query = 'SELECT 
                   "reservation".*,
-                  COALESCE("contacts"."contacts_freeform", "contacts"."contacts_target") AS "reservation_contact",
+                  "contacts"."contacts_target" AS "reservation_contact",
                   "contacts"."contacts_comment" AS "reservation_contactType"
                 FROM "reservation"
                 LEFT JOIN "contacts" ON "contacts_reservation" = "reservation_id"
@@ -373,19 +373,15 @@ class DeepReservationModel extends ReservationModel {
                     AND "reservation_id" IN (
                         SELECT "contacts_reservation" 
                         FROM "contacts" 
-                        WHERE (BINARY idFromUrl("contacts_target") = BINARY :client OR "contacts_freeform" LIKE :client2)
+                        WHERE BINARY idFromUrl("contacts_target") = BINARY :client
                         AND ("contacts_comment" = \'_client\' OR "contacts_comment" = \'_responsable\')
                       )
                   ';
     $stmt = $this->DB->prepare($query);
-
-    $e = str_replace(':client', rawurlencode($client), $query);
-    $e = str_replace(':begin', $begin->format('c'), $e);
-    $e = str_replace(':end', $end->format('c'), $e);
+    
     $stmt->bindValue(':end', $end->format('c'), PDO::PARAM_STR);
     $stmt->bindValue(':begin', $begin->format('c'), PDO::PARAM_STR);
     $stmt->bindValue(':client', rawurlencode($client), PDO::PARAM_STR);
-    $stmt->bindValue(':client2', "%$client%", PDO::PARAM_STR);
 
 
     $stmt->execute();
