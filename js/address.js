@@ -5,6 +5,7 @@ function Address (addr) {
   this.fields = []
   this.id = null
   this.type = '_client'
+  this.dbid = null
 
   if (addr.comment) {
     this.type = addr.comment
@@ -16,6 +17,7 @@ function Address (addr) {
   } else {
     let a = addr.target === undefined ? addr : addr.target
     this.id = a.IDent
+    this.dbid = this.id
     if (a.o) {
       this.address.push(`<span class="organization">${a.o}</span>`)
       this.fields.push('organization')

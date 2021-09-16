@@ -75,7 +75,7 @@ ClientSearch.prototype.clickHandler = function (event) {
     }
 
     let head = event.target
-    while (head && (head.dataset?.type !== 'result-head' && !head.classList.contains('rcontains'))) { head = head.parentNode }
+    while (head && (head.dataset?.type !== 'result-head' && !head?.classList?.contains('rcontains'))) { head = head.parentNode }
     if (head.classList.contains('rcontains')) { head = head.previousElementSibling }
     if (!head) { console.log('no head'); return }
 
@@ -179,7 +179,7 @@ ClientSearch.prototype.search = function (val) {
                             const div = doc.createElement('DIV')
                             div.classList.add('searchResult')
                             div.innerHTML = `<h1 data-type="result-head" data-setid="${i}">${addr.address.toString()}</h1>
-                                <div class="rcontains folded"></div>`
+                                <div class="rcontains folded">${addr.address.dbid ? `<div><a target="_blank" href="analyze.html#${addr.address.dbid}">Analyser</a></div>` : ''}</div>`
                             div.addEventListener('click', this.clickHandler.bind(this))
                             win.appendChild(div)
 
