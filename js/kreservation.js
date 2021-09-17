@@ -1,8 +1,9 @@
-function KReservation () {
+function KReservation (opts) {
+  this.opts = opts
   this.data = {
     reservation: null,
     locality: null,
-    machine: null,
+    resource: null,
     creator: null,
     technician: null,
     addresses: {},
@@ -12,7 +13,7 @@ function KReservation () {
   this.hash = {
     reservation: {},
     locality: {},
-    machine: {},
+    resource: {},
     creator: {},
     technician: {},
     address : {},
@@ -21,7 +22,7 @@ function KReservation () {
 
   this.promise = {
     locality: null,
-    machine: null,
+    resource: null,
     creator: null,
     technician: null,
     addresses: null,
@@ -82,7 +83,8 @@ KReservation.prototype.get = function (attr) {
 
 KReservation.prototype.init = function (id) {
   return new Promise((resolve, reject) => {
-    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
+    fetch(KAIROS.URL(`${this.opts.store}/${id}`))
+    .then(response => {
       if (!response.ok) { return null }
       return response.json()
     })
@@ -104,7 +106,7 @@ KReservation.prototype.init = function (id) {
       this.data.reservation.reference = this.data.reservation.reference ? this.data.reservation.reference : ''
       this.ok = true
       Promise.all([
-        this.loadMachine(),
+        this.loadResource(),
         this.loadCreator(),
         this.loadTechnician(),
         this.loadLocality(),
@@ -200,20 +202,15 @@ KReservation.prototype.serverCompare = function () {
   })
 }
 
-KReservation.prototype.loadMachine = function () {
-  this.promise.machine = new Promise((resolve, reject) => {
-    if (!this.ok) { resolve(); return }
-    fetch(new URL(`${KAIROS.getBase()}/store/Machine/${this.data.reservation.target}`)).then(response => {
-      if (!response.ok) { resolve(); return }
-      response.json().then(result => {
-        if (result.length !== 1) { resolve(); return }
-        this.data.machine = Array.isArray(result.data) ? result.data[0] : result.data
-        this.hash.machine._complete = this.hashJson(this.data.machine, [ 'airref' ])
-        resolve(this.data.machine)
-      })
+KReservation.prototype.loadResource = function () {
+  return new Promise((resolve, reject) => {
+    this.promise.resource = KEntry.load(this.data.reservation.target)
+    this.promise.resource
+    then(resource => {
+      this.data.resource = resource
+      resolve(this.data.resource)
     })
   })
-  return this.promise.machine
 }
 
 KReservation.prototype.getYear = function () {
@@ -366,8 +363,8 @@ KReservation.prototype.oneLine = function () {
     div.innerHTML = `
       <span class="ident">${this.data.reservation.id}</span>
       ${this.data.reservation.reference !== '' ? '<span class="reference">/' + this.data.reservation.reference  + '</span>' : ''}
-      <span class="mnumber">${this.data.machine.uid}</span>
-      <span class="machine">${this.data.machine.cn}</span>
+      <span class="rnumber">${this.data.resource.uid}</span>
+      <span class="resource">${this.data.resource.cn}</span>
       <span class="duration">${Math.ceil(this.data.reservation.duration / 86400000)} jours</span>
       <span class="address">${this.data.reservation.address ?? ''}</span>
       <span class="locality">${this.data.locality.label ?? ''}</span>

@@ -13,7 +13,7 @@ function KEntry (id) {
 }
 
 KEntry.load = function (id) {
-    let entry = new KEntry(id)
+    const entry = new KEntry(id)
     entry._loaded = new Promise((resolve, reject) => {
         kfetch(new URL(`${entry.URL.toString()}/${id}`))
         .then(response => {
