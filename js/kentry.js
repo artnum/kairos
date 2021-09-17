@@ -1,5 +1,5 @@
 function KEntry (id) {
-    this.data = {}
+    this.data = new Map()
     this.id = id
     this.ok = false
     this.channel = new MessageChannel()
@@ -8,34 +8,88 @@ function KEntry (id) {
     this.entries = new Map()
     this.wwInstance
     this._loaded
+    this.KUI = new KUIEntry(this, KAIROS.kentry.ui)
+    this.URL = KAIROS.URL(KAIROS.kentry.store)
 }
 
 KEntry.load = function (id) {
     let entry = new KEntry(id)
     entry._loaded = new Promise((resolve, reject) => {
-        kfetch(new URL(`${KAIROS.getBase()}/store/Machine/${id}`)).then(response => {
+        kfetch(new URL(`${entry.URL.toString()}/${id}`))
+        .then(response => {
             if (!response.ok) { return null }
             return response.json()
         }).then(result => {
             if (!result) { resolve(entry); return; }
             if (result.length !== 1) { resolve(entry); return}
-            entry.data = Array.isArray(result.data) ? result.data[0] : result.data
+            result.data = Array.isArray(result.data) ? result.data[0] : result.data
+            for (const k in result.data) {
+                entry.data.set(k, result.data[k])
+            }
             entry.ok = true
             resolve(entry)
+        })
+        .catch(reason =>{
+            console.log(reason)
         })
     })
     return entry._loaded
 }
 
+KEntry.prototype.render = function () {
+    return this.KUI.render()
+}
+
+KEntry.prototype.ready = function () {
+    return this._loaded
+}
+
 KEntry.prototype.set = function(name, value) {
-    this.data[name] = value
+    return new Promise((resolve, reject) => {
+        this.ready()
+        .then(_ => {
+            resolve(this.data.set(name, value))
+        })
+    })
 }
 
 KEntry.prototype.get = function(name) {
-    return this.data[name]
+    return new Promise((resolve, reject) => {
+        this.ready()
+        .then(_ => {
+            resolve(this.data.get(name))
+        })
+    })
 }
 
-KEntry.prototype.delete = function (entry) {
+KEntry.prototype.has = function(name) {
+    return new Promise((resolve, reject) => {
+        this.ready()
+        .then(_ => {
+            resolve(this.data.has(name))
+        })
+    })
+}
+
+KEntry.prototype.size = function(name) {
+    return new Promise((resolve, reject) => {
+        this.ready()
+        .then(_ => {
+            resolve(this.data.size(name))
+        })
+    })
+}
+
+KEntry.prototype.delete = function(name) {
+    return new Promise((resolve, reject) => {
+        this.ready()
+        .then(_ => {
+            resolve(this.data.delete(name))
+        })
+    })
+}
+
+KEntry.prototype.remove = function (entry) {
     let id = entry
     if (typeof entry === 'object') {
         id = entry.id
@@ -169,7 +223,7 @@ KEntry.prototype.handleMessage = function (msg) {
     switch (msgData.op) {
       case 'remove':
         if (msgData.reservation) {
-            this.delete(msgData.reservation)
+            this.remove(msgData.reservation)
         }
         break
       case 'add':
@@ -194,7 +248,7 @@ KEntry.prototype.handleMessage = function (msg) {
                         this.add(entry)
                     }
                 } else {
-                    this.delete(id)
+                    this.remove(id)
                 }
                 i++
             }

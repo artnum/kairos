@@ -3,14 +3,14 @@
     --compact-entry-height: 24px;
 }
 
-.reservationContainer .entry {
+.reservationContainer .kentry {
     margin: 0;
     padding: 0;
     height: var(--default-entry-height);
     min-height: var(--default-entry-height);
 }
 
-.reservationContainer .entry:nth-child(even) {
+.reservationContainer .kentry:nth-child(even) {
     background-color: hsla(var(--default-color-base), 0.05);
 }
 

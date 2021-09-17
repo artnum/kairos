@@ -34,7 +34,6 @@ define([
   'dijit/Calendar',
   'dijit/Dialog',
 
-  'location/entry',
   'location/timeline/popup',
   'location/timeline/keys',
   'location/timeline/filters',
@@ -78,8 +77,6 @@ define([
   DtPopupMenuItem,
   DtCalendar,
   Dialog,
-
-  Entry,
 
   tlPopup, tlKeys, Filters,
   Count,
@@ -1334,7 +1331,37 @@ define([
       }
     },
 
-    loadEntries: function (exclude = {}) {
+    loadEntries: function () {
+      return new Promise((resolve, reject) => {
+        const url = KAIROS.URL(KAIROS.kentry.store)
+        kfetch(url)
+        .then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        })
+        .then(result => {
+          if (!result || !result.success) { reject(new Error('ERR:server')); return }
+          const entries = Array.isArray(result.data) ? result.data : [result.data]
+          const load = []
+          for (const entry of entries) {
+            load.push(KEntry.load(entry.id))
+          }
+          return Promise.all(load)
+        })
+        .then(loadedEntries => {
+          for (const kentry of loadedEntries) {
+            kentry.register(this.Updater)
+            kentry.render()
+            .then(domNode => {
+              this.domEntries.appendChild(domNode)
+              console.log(domNode)
+            })
+          }
+        })
+      })
+    },
+
+    /*loadEntries: function (exclude = {}) {
       return new Promise((resolve, reject) => {
         let url = new URL('store/Machine', KAIROS.getBase())
         let category = {}
@@ -1417,7 +1444,7 @@ define([
           })
         })
       })
-    },
+    },*/
 
     run: function () {
       this.currentPosition = 0

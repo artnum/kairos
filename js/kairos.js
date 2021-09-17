@@ -11,8 +11,22 @@ KAIROS.getBase = function () {
   return `${window.location.origin}/${KAIROS.base}`
 }
 
+KAIROS.getServer = function () {
+  if (self) {
+    return `${self.location.origin}`
+  }
+  return `${window.location.origin}`
+}
+
 KAIROS.getBaseName = function () {
   return KAIROS.base.replace(/\//g, '')
+}
+
+KAIROS.URL = function (tpl) {
+  tpl = tpl.replace('%KBASE%', KAIROS.getBase())
+  tpl = tpl.replace('%KSERVER%', KAIROS.getServer())
+  tpl = tpl.replace('%KBASENAME%', KAIROS.getBaseName())
+  return new URL(tpl, KAIROS.getServer())
 }
 
 KAIROS.uuidV4 = function () {

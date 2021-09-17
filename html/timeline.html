@@ -68,9 +68,8 @@ dojoConfig = {
   window.addEventListener('kairos-ready', event => {
     require([
       "location/timeline",
-      "location/entry",
       "dojo/domReady!"
-    ], function (timeline, entry) {
+    ], function (timeline) {
       wantdb( () => {
         window.App = new timeline()
         window.App.DB = DB
