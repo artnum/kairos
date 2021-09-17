@@ -21,18 +21,6 @@ define([
   'dojo/dom-style',
   'dojo/dom-geometry',
   'dijit/registry',
-  'dijit/form/DateTextBox',
-  'dijit/MenuBar',
-  'dijit/MenuBarItem',
-  'dijit/PopupMenuBarItem',
-  'dijit/DropDownMenu',
-  'dijit/MenuItem',
-  'dijit/MenuSeparator',
-  'dijit/CheckedMenuItem',
-  'dijit/RadioMenuItem',
-  'dijit/PopupMenuItem',
-  'dijit/Calendar',
-  'dijit/Dialog',
 
   'location/timeline/popup',
   'location/timeline/keys',
@@ -65,19 +53,7 @@ define([
   djDomStyle,
   djDomGeo,
   dtRegistry,
-  DtDateTextBox,
-  dtMenuBar,
-  dtMenuBarItem,
-  dtPopupMenuBarItem,
-  DtDropDownMenu,
-  DtMenuItem,
-  DtMenuSeparator,
-  dtCheckedMenuItem,
-  DtRadioMenuItem,
-  DtPopupMenuItem,
-  DtCalendar,
-  Dialog,
-
+  
   tlPopup, tlKeys, Filters,
   Count,
   CountList,
@@ -138,7 +114,7 @@ define([
       this.Tooltips = {}
 
       this.zoomCss = document.createElement('style')
-      this.Updater = new Worker(Path.url('/js/ww/updater.js'))
+      this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js`)
       this.Updater.onmessage = function (e) {
         if (!e || !e.data || !e.data.op) { return }
         switch (e.data.op) {
@@ -292,22 +268,6 @@ define([
       this.Window.lastChild.setAttribute('src', '')
       this.Window.currentUrl = ''
       this.Window.setAttribute('style', 'display: none')
-    },
-
-    defaultStatus: function () {
-      var def = new DjDeferred()
-      var url = Path.url('store/Status')
-      url.searchParams.set('search.default', 1)
-      url.searchParams.set('search.type', 0)
-      Query.exec(url).then(function (result) {
-        if (result.length > 0) {
-          def.resolve(result.data[0].id)
-        } else {
-          def.resolve('0')
-        }
-      })
-
-      return def.promise
     },
 
     info: function (txt, code) {
@@ -754,134 +714,15 @@ define([
       }
     },
 
-    buildMenu: function () {
-      const menuLoaded = []
-      let item = new DtMenuItem({label: 'Tout', disabled: true})
-      djOn(item, 'click', this.filterNone.bind(this))
-
-      menuLoaded.push(new Promise((resolve, reject) => {
-        let userStore = new UserStore()
-        Promise.all( [
-          UserStore.getCurrentUser(), 
-          userStore.search({'function': 'admin', 'disabled': 0})
-        ] )
-        .then(([currentUser, users]) => {
-            users.forEach((user) => {
-            var radio = new DtRadioMenuItem({label: user.name, checked: currentUser !== null ? currentUser.getId() === user.getId() : false, group: 'user'})
-            radio.domNode.dataset.user = JSON.stringify(user)
-            this.userSelectMenu.addChild(radio)
-            radio.on('click', event => {
-              let node = event.target
-              while (node && !node.dataset.user) {
-                node = node.parentNode
-              }
-              if (node) {
-                window.localStorage.setItem(`/${KAIROS.getBaseName()}/user`, node.dataset.user)
-              }
-            })
-          })
-          resolve()
-        })
-        .catch(_ => resolve())
-      }))
-
-      this.searchMenu.addChild(item)
-      this.searchMenu.filterNone = item
-      this.searchMenu.addChild(new DtMenuSeparator())
-
-      menuLoaded.push(new Promise((resolve, reject) => {
-        kfetch(`${KAIROS.getBase()}/store/Category`)
-        .then(response => {
-          if (!response.ok) { KAIROS.warn('Problème à charger les catégories'); return }
-          response.json()
-          .then(result => {
-            if (result.length <= 0) { resolve() }
-            const names = new Map()
-            for (let i = 0; i < result.length; i++) {
-              names.set(result.data[i]['uniqueidentifier'], result.data[i]['cn;lang-fr'])
-            }
-
-            for (let key in this.categories) {
-              if (names.has(key)) {
-                const item = new DtPopupMenuItem({label: names.get(key), popup: new DtDropDownMenu()})
-                this.searchMenu.addChild(item)
-
-                const all = new DtMenuItem({ label: 'Tout', value: { name: key, content: [] } })
-                djOn(all, 'click', function (event) {
-                  this.filterApply(this.filterFamily(event))
-                }.bind(this))
-                item.popup.addChild(all)
-                item.popup.addChild(new DtMenuSeparator())
-
-                for (let subkey in this.categories[key]) {
-                  if (names.has(subkey)) {
-                    const subitem = new DtMenuItem({ label: names.get(subkey), value: {name: subkey, content: this.categories[key][subkey]} })
-                    djOn(subitem, 'click', function (event) {
-                      this.filterApply(this.filterFamily(event))
-                    }.bind(this))
-                    all.value.content = all.value.content.concat(this.categories[key][subkey])
-                    item.popup.addChild(subitem)
-                  }
-                }
-              }
-            }
-            this.searchMenu.addChild(new DtMenuSeparator())
-            
-            /* */
-
-            var now = djDateStamp.toISOString(djDate.add(new Date(), 'day', 1))
-
-            item = new DtMenuItem({label: 'Commence le '})
-            var x = new DtDateTextBox({value: now, id: 'menuStartDay'})
-            item.containerNode.appendChild(x.domNode)
-            item.own(x)
-            djOn(item, 'click', e => {
-              this.filterReset()
-              this.center = dtRegistry.byId('menuStartDay').get('value')
-              this.filterApply(this.filterDate(this.center))
-            })
-            this.searchMenu.addChild(item)
-
-            item = new DtMenuItem({label: 'Termine le '})
-            djOn(item, 'click', _ => {
-              this.filterReset()
-              this.center = dtRegistry.byId('menuEndDay').get('value')
-              this.filterApply(this.filterDate(this.center, 'trueEnd'))
-            })
-            x = new DtDateTextBox({ value: now, id: 'menuEndDay' })
-            item.containerNode.appendChild(x.domNode)
-            item.own(x)
-            this.searchMenu.addChild(item)
-
-            this.searchMenu.addChild(new DtMenuSeparator())
-
-            item = new DtMenuItem({label: 'À faire le '})
-            djOn(item, 'click', _ => {
-              var date = dtRegistry.byId('menuTodoDay').get('value')
-              this.filters.todo(date).then((entries) => {
-                this.filterApply(entries)
-              })
-            })
-            x = new DtDateTextBox({ value: now, id: 'menuTodoDay' })
-            item.containerNode.appendChild(x.domNode)
-            item.own(x)
-            this.searchMenu.addChild(item)
-            resolve()
-          })
-          .catch(_ => resolve())
-        })
-        .catch(_ => resolve())
-      }))
-
-      Promise.all(menuLoaded).then(_ => { this.menu.startup() })
-    },
-
     filters: {
       todo: (date) => {
         return new Promise((resolve, reject) => {
           date.setHours(12, 0, 0)
           let day = date.toISOString().split('T')[0]
-          Query.exec(Path.url('store/DeepReservation/.toprepare', {params: {'search.day': day}})).then((results) => {
+          const url = KAIROS.URL('%KBASE%/store/DeepReservation/.toprepare/')
+          url.searchParams.append('search.day', day)
+          Query.exec(day)
+          .then((results) => {
             if (results.success && results.length > 0) {
               let ids = []
               for (let i = 0; i < results.length; i++) {
@@ -1344,6 +1185,7 @@ define([
           const entries = Array.isArray(result.data) ? result.data : [result.data]
           const load = []
           for (const entry of entries) {
+            if (entry.disabled !== '0') { continue; }
             load.push(KEntry.load(entry.id))
           }
           return Promise.all(load)
@@ -1354,104 +1196,17 @@ define([
             kentry.render()
             .then(domNode => {
               this.domEntries.appendChild(domNode)
-              console.log(domNode)
             })
           }
         })
       })
     },
 
-    /*loadEntries: function (exclude = {}) {
-      return new Promise((resolve, reject) => {
-        let url = new URL('store/Machine', KAIROS.getBase())
-        let category = {}
-        for (let ex of Object.keys(exclude)) {
-          let values = exclude[ex]
-          if (!Array.isArray(values)) {
-            values = [values]
-          }
-          values.forEach(v => {
-            url.searchParams.append(`search.${ex}`, `!${v}`)
-          })
-        }
-
-        fetch(url).then(response => {
-          if (!response.ok) {
-            KAIROS.error('Chargement des machines échoués')
-            reject()
-            return;
-          }
-            
-          response.json().then(results => {
-            if (results.length <= 0) {
-              KAIROS.warn('Pas de machines sur le serveur')
-              reject()
-              return
-            }
-            let entriesLoaded = []
-            for (var i = 0; i < results.length; i++) {
-              let entry = results.data[i]
-
-              if (!entry|| !entry.cn || !entry.uid) { continue }
-              if (this.Entries.get(entry.uid) !== undefined) { 
-                entriesLoaded.push(entry.uid)
-                continue 
-              }
-              entriesLoaded.push(entry.uid)
-
-              let name = `${entry.uid} <div class="name">${entry.cn}</div>`
-              let e = new Entry({
-                name: name, 
-                sup: this, 
-                isParent: true, 
-                target: entry.uid, 
-                label: entry.cn, 
-                url: `/store/Machine/${entry.uid}`, 
-                //channel: new MessageChannel(),
-                wwInstance: this.Updater,
-                details: entry})
-              this.placeEntry(e)
-
-              let families = []
-              let types = []
-              if (entry.family && entry.type) {
-                families = String(entry.family).split(',')
-                types = String(entry.type).split(',')
-                if (!Array.isArray(families)) { families = [families] }
-                if (!Array.isArray(types)) { types = [types] }
-                for (let j = 0; j < families.length; j++) {
-                  if (!category[families[j]]) {
-                    category[families[j]] = {}
-                  }
-  
-                  for (var k = 0; k < types.length; k++) {
-                    if (!category[families[j]][types[k]]) {
-                      category[families[j]][types[k]] = []
-                    }
-                    category[families[j]][types[k]].push(e.target)
-                  }
-                }              
-              }
-            }
-            this.categories = category
-            for (const [key, entry] of this.Entries) {
-              if (entriesLoaded.indexOf(key) === -1) {
-                entry.destroy()
-                this.Entries.delete(key)
-              }
-            }
-            resolve()
-          })
-        })
-      })
-    },*/
-
     run: function () {
       this.currentPosition = 0
       this.update()
       this.loadEntries({state: 'SOLD'}).then(() => {
         this.sortAndDisplayEntries()
-        this.buildMenu()
         this.update()
         window.setInterval(function () { this.refresh() }.bind(this), 10000)
       })
@@ -1714,7 +1469,8 @@ define([
     doSearchLocation: function (loc, dontmove = true) {
       DoWait()
       return new Promise((resolve, reject) => {
-        let query = kfetch(Path.url('store/DeepReservation/' + loc)).then(response => {
+        kfetch(`${KAIROS.getBase()}/store/DeepReservation/${loc}`)
+        .then(response => {
           if (!response.ok) { reject(); return }
           response.json().then(result=> {
             if (result && result.length === 0) {
