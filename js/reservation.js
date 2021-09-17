@@ -1,4 +1,4 @@
-function KReservation (id) {
+function KReservation () {
   this.data = {
     reservation: null,
     locality: null,
@@ -25,47 +25,131 @@ function KReservation (id) {
     creator: null,
     technician: null,
     addresses: null,
-    arrival: null
   }
+
+  this.inited = new Promise((resolve) => {
+    this._initresolve = resolve
+  })
+  this.evttarget = new EventTarget()
+}
+
+KReservation._registry = new Map()
+
+KReservation.get = function (id) {
+  const r = KReservation._registry.get(id)
+  if (r) {
+    r.atime = new Date().getTime()
+    KReservation._registry.set(id, r)
+    return r.data
+  }
+  return undefined
 }
 
 KReservation.load = function (id) {
-  const r = new KReservation(id)
   return new Promise((resolve, reject) => {
-    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
-      if (!response.ok) { r.ok = false; resolve(r); return }
-      response.json()
-      .then(result => {
-          if (result.length !== 1) { r.ok = false; resolve(r);  return }
-          r.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
-          
-          r.hash.reservation._complete = r.hashJsonS(r.data.reservation, [ 'modification' ])
-
-          r.data.reservation.begin = new Date(r.data.reservation.begin)
-          r.data.reservation.end = new Date(r.data.reservation.end)
-          r.data.reservation.duration = r.data.reservation.end.getTime() - r.data.reservation.begin.getTime()
-          r.data.reservation.delivery = {
-            begin: r.data.reservation.deliveryBegin ? new Date(r.data.reservation.deliveryBegin) : r.data.reservation.begin,
-            end: r.data.reservation.deliveryEnd ? new Date(r.data.reservation.deliveryEnd) : r.data.reservation.end
-          }
-          r.data.reservation.created = KAIROS.DateFromTS(r.data.reservation.created)
-          r.data.reservation.modification = KAIROS.DateFromTS(r.data.reservation.modification)
-          r.data.reservation.reference = r.data.reservation.reference ? r.data.reservation.reference : ''
-          r.ok = true
-          Promise.all([
-            r.loadMachine(),
-            r.loadCreator(),
-            r.loadTechnician(),
-            r.loadLocality(),
-            r.loadContact(),
-            r.loadArrival(),
-          ])
-          .then(_ => { 
-            resolve(r)
-          })
-      })
+    let r = KReservation.get(id)
+    if (r) {
+      resolve(r)
+      return
+    }
+    r = new KReservation()
+    r.init(id)
+    .then(() => {
+      resolve(r)
+    })
+    .catch(reason => {
+      if (!(reason instanceof Error)) {
+        reject(new Error(reason))
+        return
+      }
+      reject(reason)
     })
   })
+}
+
+KReservation.prototype.get = function (attr) {
+  if (this.data.reservation[attr]) {
+    return this.data.reservation[attr]
+  }
+  if (attr.indexOf('.') !== -1) {
+    const [x, y] = attr.split('.', 2)
+    if (this.data[x][y]) {
+      return this.data[x][y]
+    }
+  }
+  return undefined
+}
+
+KReservation.prototype.init = function (id) {
+  return new Promise((resolve, reject) => {
+    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
+      if (!response.ok) { return null }
+      return response.json()
+    })
+    .then(result => {
+      if (!result || result.length !== 1) { this.ok = false; resolve(this);  return }
+      this.data.reservation = Array.isArray(result.data) ? result.data[0] : result.data
+      
+      this.hash.reservation._complete = this.hashJsonS(this.data.reservation, [ 'modification' ])
+
+      this.data.reservation.begin = new Date(this.data.reservation.begin)
+      this.data.reservation.end = new Date(this.data.reservation.end)
+      this.data.reservation.duration = this.data.reservation.end.getTime() - this.data.reservation.begin.getTime()
+      this.data.reservation.delivery = {
+        begin: this.data.reservation.deliveryBegin ? new Date(this.data.reservation.deliveryBegin) : this.data.reservation.begin,
+        end: this.data.reservation.deliveryEnd ? new Date(this.data.reservation.deliveryEnd) : this.data.reservation.end
+      }
+      this.data.reservation.created = KAIROS.DateFromTS(this.data.reservation.created)
+      this.data.reservation.modification = KAIROS.DateFromTS(this.data.reservation.modification)
+      this.data.reservation.reference = this.data.reservation.reference ? this.data.reservation.reference : ''
+      this.ok = true
+      Promise.all([
+        this.loadMachine(),
+        this.loadCreator(),
+        this.loadTechnician(),
+        this.loadLocality(),
+        this.loadContact(),
+      ])
+      .then(_ => {
+        this.register()
+        resolve(this)
+      })
+    })
+    .catch(reason => {
+      if (!(reason instanceof Error)) {
+        reject(new Error(reason))
+        return
+      }
+      reject(reason)
+    })
+  })
+}
+
+KReservation.prototype.register = function () {
+  KReservation._registry.set(this.getId(), {data: this, atime: new Date().getTime()})
+}
+
+KReservation.prototype.fromJson = function (json) {
+  this.data.reservation = Array.isArray(json) ? json[0] : json
+  this.affaire = new KAffaire()
+
+  this.loadAffaire = Promise.resolve()
+  if (this.data.reservation.affaire) {
+    this.loadAffaire = this.affaire.init(this.data.reservation.affaire)
+  }
+
+  this.hash.reservation._complete = this.hashJsonS(this.data.reservation, [ 'modification' ])
+
+  this.data.reservation.begin = new Date(this.data.reservation.begin)
+  this.data.reservation.end = new Date(this.data.reservation.end)
+  this.data.reservation.duration = this.data.reservation.end.getTime() - this.data.reservation.begin.getTime()
+  this.data.reservation.delivery = {
+    begin: this.data.reservation.deliveryBegin ? new Date(this.data.reservation.deliveryBegin) : this.data.reservation.begin,
+    end: this.data.reservation.deliveryEnd ? new Date(this.data.reservation.deliveryEnd) : this.data.reservation.end
+  }
+  this.data.reservation.created = KAIROS.DateFromTS(this.data.reservation.created)
+  this.data.reservation.modification = KAIROS.DateFromTS(this.data.reservation.modification)
+  this.data.reservation.reference = this.data.reservation.reference ? this.data.reservation.reference : ''
 }
 
 KReservation.prototype.hashJsonS = function (json, skip = [], topHash) {
@@ -99,13 +183,9 @@ KReservation.prototype.hashJson = function (json, only = [], topHash) {
   return h.result()
 }
 
-/* some json data obtained elsewhere are available */
-KReservation.prototype.extUpdate = function (json) {
-
-}
-
 KReservation.prototype.serverCompare = function () {
   return new Promise((resolve, reject) => {
+    console.log(this)
     KReservation.load(this.data.reservation.id)
     .then(srvVersion => {
       const cmpVal = ['reservation', 'locality', 'creator', 'technician']
@@ -146,6 +226,10 @@ KReservation.prototype.getMonth = function () {
 
 KReservation.prototype.getId = function () {
   return this.data.reservation.id
+}
+
+KReservation.prototype.getAffaire = function () {
+  return this.affaire.getId()
 }
 
 KReservation.prototype.loadCreator = function () {
@@ -268,6 +352,10 @@ KReservation.prototype.loadArrival = function () {
       resolve()
     })
   })
+}
+
+KReservation.prototype.getLabel = function () {
+    return `#${this.get('id')}/${this.get('machine.uid')}`
 }
 
 KReservation.prototype.oneLine = function () {

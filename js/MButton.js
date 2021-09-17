@@ -135,18 +135,26 @@ function MButton(button, choice = []) {
 
       /* Place */
       let p = button.parentNode
-      p.insertBefore(this.Button, button)
-      p.removeChild(button)
+      if (p) {
+        p.insertBefore(this.Button, button)
+        p.removeChild(button)
+      }
       this.Button.appendChild(button)
       if (!single) { this.Button.appendChild(this.CButton) }
 
       if (button.dataset.flavor) {
         this.setColorFlavor(button.dataset.flavor)
       }
-
-      resovle()
     })
   })
+}
+
+MButton.prototype.setLabel = function (label) {
+  this.MButton.innerHTML = label
+}
+
+MButton.prototype.getDomNode = function () {
+  return this.Button
 }
 
 MButton.prototype.doChangeEvent = function () {

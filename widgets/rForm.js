@@ -1138,6 +1138,50 @@ define([
       })
     },
 
+    affaireCreate: function (event) {
+      event.preventDefault()
+      KAffaire.create()
+      .then(affaire => {
+        window.KCurrentAffaire = affaire
+        return affaire.add(this.reservation.get('uid'))
+      })
+      .then(() => {
+        KAIROS.info(`Affaire #${window.KCurrentAffaire.get('uid')} créée`)
+        const affaireUI = new KAffaireUI(window.KCurrentAffaire)
+        affaireUI.render()
+        this.affaireButton()
+      })
+      .catch(reason => {
+        KAIROS.error(`Impossible de créer l'affaire, message "${reason instanceof Error ? reason.message : reason}"`)
+      })
+    },
+
+    affaireAdd: function (event) {
+      event.preventDefault()
+      if (!window.KCurrentAffaire) { return }
+      window.KCurrentAffaire.add(this.reservation.get('uid'))
+    },
+
+    affaireRemove: function (event) {
+      event.preventDefault()
+    },
+
+    affaireButton: function () {
+      const currentAffaire = window.KCurrentAffaire
+      if (!currentAffaire) {
+        KAIROSAnim.push(() => { this.nCreateAffaire.innerHTML = 'Créer une affaire' })
+        this.nCreateAffaire.addEventListener('click', this.affaireCreate.bind(this))
+      } else {
+        if (currentAffaire.has(this.reservation.get('uid'))) {
+          KAIROSAnim.push(() => { this.nCreateAffaire.innerHTML = `Retier de l'affaire` })
+          this.nCreateAffaire.addEventListener('click', this.affaireRemove.bind(this))
+        } else {
+          KAIROSAnim.push(() => { this.nCreateAffaire.innerHTML = `Ajouter à l'affaire` })
+          this.nCreateAffaire.addEventListener('click', this.affaireAdd.bind(this))
+        }
+      }
+    },
+
     postCreate: function () {
       if (!window.OpenedForm) {
         window.OpenedForm = {}
@@ -1298,6 +1342,29 @@ define([
         }
         resolve()
         this.load()
+        this.affaireButton()
+      })
+      this.reservation.KReservation.inited.then(kres => {
+        const affaireDom = this.domNode.querySelector('*[name="affaire"]')
+        const affaireId = kres.getAffaire()
+        if (affaireId === null) {
+          const newAffaireButton = new MButton(document.createElement('button'))
+          newAffaireButton.setLabel('Ouvrir une affaire')
+          affaireDom.appendChild(newAffaireButton.getDomNode())
+          newAffaireButton.addEventListener('click', event => {
+            this.reservation.KReservation.createAffaire()
+            .then(affaire => {
+              console.log(affaire, affaire.getId())
+              fetch(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`, {method: 'PUT', body: JSON.stringify({id: this.reservation.id, affaire: affaire.getId()})})
+              .then(result => {
+                console.log(result)
+              })
+            })
+          })
+        } else {
+          const legendDom = affaireDom.querySelector('legend')
+          window.requestAnimationFrame(() => legendDom.innerHTML = `Affaire ${affaireId}`)
+        }
       })
     },
 
@@ -1919,6 +1986,7 @@ define([
             this.reservation.set('vreport', this.nAddReport.value)
             this.reservation.set('padlock', this.nPadlock.value)
             this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
+            this.reservation.set('affaire', KCurrentAffaire.isMine(this.reservation.id))
 
             this.reservation.save()
             .then((id) => {

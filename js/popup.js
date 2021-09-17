@@ -61,26 +61,77 @@ KTaskBar.prototype.maximize = function (tid) {
     })
 }
 
-KTaskBar.prototype.list = function (titleNode, items) {
+KTaskBar.prototype.addListItem = function (listId, item) {
+    const list = this.lists.get(listId)
+    if (!list) { return }
+    list.items.push(item)
+    this.lists.set(listId, list)
+}
+
+KTaskBar.prototype.list = function (titleNode, items, actions = []) {
     const lid = `ktask-l-${++KTaskBar._id}`
     const list = document.createElement('DIV')
     list.classList.add('klist')
     list.id = lid
+    list.dataset.popped = '0'
     list.appendChild(titleNode)
     list.style.setProperty('left', 0)
-    list.addEventListener('click', this.popList.bind(this), {capture: true})
+    list.addEventListener('click', (event) => {
+        if (list.dataset.popped === '0') {
+            this.popList(event)
+            list.dataset.popped = '1'
+        } else {
+            this.unpopList(event)
+            list.dataset.popped = '0'
+        }
+    }, {capture: true})
 
     KAIROSAnim.push(() => { this.taskbar.appendChild(list) })
     .then(() => { this.dispose() })
 
-    this.lists.set(lid, {node: list, items: items})
+    this.lists.set(lid, {node: list, items: items, actions: actions, popped: null})
 
     return lid
+}
+
+KTaskBar.prototype.unpopList = function (event) {
+    let node = event.target
+    while (node && !node.classList.contains('klist')) { node = node.parentNode }
+    const list = this.lists.get(node.id)
+    KAIROSAnim.push(() => { list.popped.parentNode.removeChild(list.popped) })
 }
 
 KTaskBar.prototype.popList = function (event) {
     let node = event.target
     while (node && !node.classList.contains('klist')) { node = node.parentNode }
+    const listNode = document.createElement('DIV')
+    listNode.classList.add('klist', 'pop')
+    KAIROS.setAtTop(listNode)
+    const list = this.lists.get(node.id)
+    if (!list) { return }
+    console.log(list)
+    for (const action of list.actions) {
+        listNode.innerHTML += `<span class="kaction">${action.label}</span>`
+    }
+    listNode.innerHTML += `<span class="kseparator"> </span>`
+    for (const [id, item] of list.items) {
+        let label = ''
+        for (const prop of [ 'label', 'getLabel', 'title', 'getTitle' ]) {
+            if (prop in item) {
+                if (typeof item[prop] === 'function') {
+                    label = item[prop]()
+                } else {
+                    label = item[prop]
+                }
+                break
+            }
+        }
+        listNode.innerHTML += `<span class="kitem">${label}</span>`
+    }
+    list.popped = listNode
+    KAIROSAnim.push(() => {
+        document.body.appendChild(listNode)
+    })
 }
 
 function KPopup (title, opts = {}) {
@@ -256,9 +307,14 @@ KPopup.prototype.place = function () {
 KPopup.prototype.position = function () {
     if (!this.isWindow) { return; }
     
-    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+    let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
     const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
     const popup = this.popup.getClientRects()
+
+    if ((vw / 2) - 680 > 10) {
+        vw = vw - 680;
+    }
+
     KAIROSAnim.push(() => {
         this.popup.style.setProperty('top', `${vh / 2 - popup[0].height / 2}px`)
         this.popup.style.setProperty('left', `${vw / 2 - popup[0].width / 2}px`)

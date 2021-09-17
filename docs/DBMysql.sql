@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_address" TEXT DEFAULT NULL,
 	"reservation_locality" TEXT DEFAULT NULL,
 	"reservation_contact" TEXT DEFAULT NULL,
-	"reservation_comment" TEXT DEFAULT NULL,
+	"reservation_comment" TEXT DEFAULT NULL,m
 	"reservation_deliveryBegin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"reservation_deliveryEnd" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"reservation_special" INTEGER,

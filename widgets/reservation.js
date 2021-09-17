@@ -9,8 +9,7 @@ define([
 
   'dojo/date',
   'dojo/date/stamp',
-  'dojo/dom-construct',
-  'dojo/on',
+   'dojo/on',
   'dojo/dom-style',
 
 
@@ -31,7 +30,6 @@ define([
 
   djDate,
   djDateStamp,
-  djDomConstruct,
   djOn,
   djDomStyle,
 
@@ -71,6 +69,7 @@ define([
       this.duration = 0
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this.uuid = options.uuid
+      this.KReservation = new KReservation()
       this._gui = {
         hidden: false
       }
@@ -130,11 +129,9 @@ define([
           this.lastModified = parseInt(json['modification'])
         }
 
-        let krLoad = Promise.resolve()
         if (json['id']) {
           hash.hash(json.id)
           this.set('uid', json['id'])
-          krLoad = KReservation.load(json['id'])
         }
         djLang.mixin(this, json)
         this.dataOriginal = json
@@ -243,12 +240,9 @@ define([
         }
         this.modifiedState = true
         this.resize()
-        krLoad.then(kres => {
-          let hasKReservation = this.KReservation
-          delete this.KReservation
-          this.KReservation = kres
+        this.KReservation.init(this.get('uid')).then(_ => {
           let state = hash.result()
-          if (this.stateHash && this.stateHash !== state && hasKReservation) {
+          if (this.stateHash && this.stateHash !== state) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
           }
           this.stateHash = state
@@ -422,9 +416,8 @@ define([
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
           this._isolated = true
-          this._zindex = djDomStyle.get(this.domNode, 'z-index')
           this.highlight()
-          djDomStyle.set(this.domNode, 'z-index', '99999999')
+          this.domNode.style.setProperty('z-index', KAIROS.zMax())
           djOn(this.domNode, 'dblclick', djLang.hitch(this, this.cancelIsolation))
           window.App.mask(true, djLang.hitch(this, this.cancelIsolation))
         }), 250)
@@ -438,7 +431,7 @@ define([
 
       if (e.type !== 'mouseup' && e.type !== 'mousemove') {
         if (this._isolated) {
-          djDomStyle.set(this.domNode, 'z-index', this._zindex)
+          this.domNode.style.removeProperty('z-index')
           this._isolated = false
         }
       }
@@ -1403,11 +1396,6 @@ define([
       this.destroyReservation(this)
     },
 
-    _newCookie: function () {
-      let uuidv4 = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
-      return {uuid: uuidv4, timestamp: Date.now()}
-    },
-
     move: function (newTarget, oldTarget) {
       this.set('target', newTarget)
       this.previous = oldTarget
@@ -1480,6 +1468,7 @@ define([
                   if (!response.ok) { resolve(); return }
                   response.json()
                   .then(result => {
+                    if (result.length < 1) { resolve(); return }
                     let data = Array.isArray(result.data) ? result.data[0] : result.data
                     this.lastModified = parseInt(data.modification)
                     resolve()
