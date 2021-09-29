@@ -2,7 +2,6 @@
 /* global objectHash */
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
-importScripts('../localdb.js')
 importScripts('../object-hash/dist/object_hash.js')
 importScripts('/js/Path.js')
 importScripts('../stores/user.js')

@@ -5,6 +5,7 @@ function KTemplate () {
     if (self) {
         this.global = self
     }
+    this.templates = new Map()
     this.global = window
     this.global._KTemplateIntance = this
 }
@@ -28,6 +29,9 @@ KTemplate.prototype.get = function(template) {
                 resolve(toDom(template.content))
                 return
             case 'file':
+                if (this.templates.has(template.content)) {
+                    resolve(toDom(this.templates.get(template.content)))
+                }
                 fetch(KAIROS.URL(template.content))
                 .then(response => {
                     if (!response.ok) { reject(new Error('ERR:fetch')); return }
@@ -35,6 +39,7 @@ KTemplate.prototype.get = function(template) {
                 })
                 .then ((htmlstr) => {
                     resolve(toDom(htmlstr))
+                    this.templates.set(template.content, htmlstr)
                 })
                 
                 return

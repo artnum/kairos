@@ -1,9 +1,5 @@
 /* eslint-env worker */
-/* global wantdb, DB */
 'use strict'
-importScripts('../localdb.js')
-
-wantdb()
 
 function filterDate (value, params) {
   if (!params.date) { return false }

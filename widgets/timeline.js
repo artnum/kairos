@@ -140,19 +140,6 @@ define([
         }
       }.bind(this)
 
-      this.Filter = new Worker(Path.url('/js/ww/filter.js'))
-      this.Filter.onmessage = djLang.hitch(this, function (event) {
-        this.searchMenu.filterNone.set('disabled', false)
-        if (event.data) {
-          let filtered = []
-          for (let k in event.data) {
-            filtered.push(k)
-          }
-          this.filterApply(filtered)
-        }
-        this.unwait()
-      })
-
       document.body.appendChild(this.zoomCss)
 
       var sStore = window.sessionStorage
@@ -643,11 +630,11 @@ define([
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
-      this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this))
+      this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), {passive: true})
       this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
-      djOn(this.domNode, 'wheel', djLang.hitch(this, this.eWheel))
+      this.domNode.addEventListener('wheel', this.eWheel.bind(this), {passive: true})
       window.addEventListener('mousemove', this.showSight.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
