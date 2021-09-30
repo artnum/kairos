@@ -105,6 +105,7 @@ KLiveSearch.prototype.searchBoxHandleEvents = function (event) {
         return
     }
     switch (event.key) {
+        case 'Escape': return
         case 'Enter':
             this.store.query(this.domNode.value, 0)
             .then(result => {
@@ -217,7 +218,8 @@ KLiveSearch.prototype.moveInResult = function (event, direction, quantity) {
 }
 
 KLiveSearch.prototype.removeResult = function (replace = null) {
-    if (this.closableIdx) {
+    this.noMoreSearch = false
+    if (this.closableIdx && !replace) {
         KAIROS.removeClosableByIdx(this.closableIdx)
         delete this.closableIdx
     }

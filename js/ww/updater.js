@@ -16,11 +16,13 @@ let PostPoned = {}
 const evtsource = new EventSource(new URL(`${KAIROS.getBase()}/events-srv.php`))
 evtsource.onmessage = event => {
   const msg = JSON.parse(event.data)
+  if (msg.operation === undefined) { return }
+  if (msg.cid === undefined) { return }
   switch(msg.operation) {
     case 'write':
       switch (msg.type) {
         case 'reservation':
-          targetMessages({'data': {'op': 'reload', 'reservation': msg.id}}, true)
+          updateEntry(msg.id, msg.cid)
           break
         case 'arrival':
           fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
@@ -32,7 +34,7 @@ evtsource.onmessage = event => {
             if (result === null) { return }
             if (!result.success) { return }
             const data = Array.isArray(result.data) ? result.data[0] : result.data
-            targetMessages({'data': {'op': 'reload', 'reservation': data.target}}, true)
+            updateEntry(data.target, msg.cid)
           })
           break
         case 'contact':
@@ -45,7 +47,7 @@ evtsource.onmessage = event => {
             if (result === null) { return }
             if (!result.success) { return }
             const data = Array.isArray(result.data) ? result.data[0] : result.data
-            targetMessages({'data': {'op': 'reload', 'reservation': data.reservation}}, true)
+            updateEntry(data.reservation, msg.cid)
           })
           break
         }
@@ -53,7 +55,7 @@ evtsource.onmessage = event => {
       case 'delete':
         switch(msg.type) {
           case 'reservation':
-            deleteEntry(msg.id)
+            deleteEntry(msg.id, msg.cid)
             break;
         }
         break
@@ -149,7 +151,7 @@ function targetMessages (msg, force = false) {
         .then(json => {
           if (!json) { return; }
           if (!json.success) { return ;}
-          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], newVTimeLine(), force)
+          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], newVTimeLine(), force, msg.clientid)
         })
       }
       break
@@ -208,7 +210,28 @@ function processDays (vTimeLine, options) {
   }
 }
 
-function deleteEntry (entryId) {
+function updateEntry(entryId, clientid) {
+  fetch(`${KAIROS.getBase()}/store/DeepReservation/${entryId}`)
+  .then(response => {
+    if (!response.ok) { throw new Error('Net error')}
+    return response.json()
+  })
+  .then(result => {
+    if (!result.success) { throw new Error('Server error')}
+    if (result.length <= 0) { return }
+    return Array.isArray(result.data) ? result.data[0] : result.data
+  })
+  .then(reservation => {
+    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime()])
+    channel.postMessage({op: 'update-reservation', reservation, clientid})
+  })
+  .catch(reason => {
+    console.log(reason)
+  })
+}
+
+function deleteEntry (entryId, clientid) {
   fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
   .then(response => {
     if (!response.ok) { return null }
@@ -219,7 +242,7 @@ function deleteEntry (entryId) {
     if (!result.success) { return }
     const reservation = Array.isArray(result.data) ? result.data[0] : result.data
     const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
-    if (channel) { channel.postMessage({op: 'remove', entry: Array.isArray(result.data) ? result.data[0] : result.data}) }
+    if (channel) { channel.postMessage({op: 'remove', entry: Array.isArray(result.data) ? result.data[0] : result.data, clientid}) }
   })
 }
 
@@ -433,18 +456,22 @@ const updateTimer = 10
 function startUpdater () {
   if (LastMod > 0) {
     const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
-    url.searchParams.set('search.modification', '>' + LastMod)
-    fetch(url).then((response) => {
-      if (response.ok) {
-        response.json().then((json) => {
-          if (json.length > 0 && json.success) {
-            cacheAndSend(json.data, newVTimeLine())
-          }
-          setTimeout(startUpdater, updateTimer * 1000)
-        })
-      } else {
-        setTimeout(startUpdater, updateTimer * 1000)
-      }
+    url.searchParams.set('search.modification', `>${LastMod}`)
+    fetch(url)
+    .then((response) => {
+      if (!response.ok) { throw new Error('Net error') }
+      return response.json()
+    })
+    .then(result => {
+      if (!result.success) { throw new Error('Server error') }
+      if (result.length <= 0) { return }
+      return cacheAndSend(result.data, newVTimeLine())
+    })
+    .catch(reason => {
+      console.log(reason)
+    })
+    .finally(_ => {
+      setTimeout(startUpdater, updateTimer * 1000)
     })
   } else {
     setTimeout(startUpdater, updateTimer * 1000)

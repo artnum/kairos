@@ -31,4 +31,12 @@ function run () {
   })
 }
 
-run()
+self.onmessage(msg => {
+  if (msg.data.op === undefined) { return }
+  switch(msg.data.op) {
+    case 'setClientId':
+      KAIROS.setClientId(msg.data.cid)
+      run()
+      break
+  }
+})

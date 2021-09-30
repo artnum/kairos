@@ -22,6 +22,7 @@ class ArrivalModel extends artnum\SQL {
          $MSGSrv->send(json_encode([
             'operation' => 'write',
             'type' => 'arrival',
+            'cid' => $this->kconf->getVar('clientid'),
             'id' => $id['id']
          ]));
       }
@@ -37,6 +38,7 @@ class ArrivalModel extends artnum\SQL {
             $MSGSrv->send(json_encode([
                'operation' => 'delete',
                'type' => 'arrival',
+               'cid' => $this->kconf->getVar('clientid'),
                'id' => $id
             ]));
          }

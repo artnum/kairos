@@ -72,13 +72,16 @@ dojoConfig = {
       "dojo/domReady!"
     ], function (timeline, entry) {
       wantdb( () => {
-        window.App = new timeline()
-        window.App.DB = DB
-        KAIROS.timeline = window.App
-        document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
-        KAIROS.timeline.run()
-      });
-    });
+        KAIROS.getClientId()
+        .then(cid => {
+          window.App = new timeline()
+          window.App.DB = DB
+          KAIROS.timeline = window.App
+          document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
+          KAIROS.timeline.run()
+        })
+      })
+    })
   })
 </script>
 <div id="loadingOverlay">&nbsp;</div>

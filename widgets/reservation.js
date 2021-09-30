@@ -97,6 +97,27 @@ define([
       this.EventTarget.addEventListener(type, listener, options)
     },
     
+    resync () {
+      return new Promise((resolve, reject) => {
+        fetch(`${KAIROS.getBase()}/store/DeepReservation/${this.uid}`)
+        .then(response => {
+          if (!response.ok) { throw new Error('Erreur serveur') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('Erreur serveur') }
+          return this.fromJson(Array.isArray(result.data) ? result.data[0] : result.data)
+        })
+        .then(_ => {
+          this.syncForm()
+          resolve()
+        })
+        .catch(error => {
+          KAIROS.error(error)
+        })
+      })
+    },
+
     fromJson: function (json) {
       return new Promise((resolve, reject) => {
         if (!json) { resolve(); return }
@@ -871,6 +892,15 @@ define([
       })
     },
 
+    isOpen () {
+      if (this.myForm) { return true }
+      return false
+    },
+
+    signalRemoteModification () {
+      this.myForm.outOfSync()
+    },
+
     close: function () {
       KAIROS.removeClosableFromStack(this.close.bind(this))
       if (this.myForm) {
@@ -915,10 +945,6 @@ define([
         }))
         this.myForm.lastModified = this.lastModified
         this.myForm.load()
-      }
-
-      if (this.myContentPane) {
-        this.myContentPane.set('title', `Réservation ${this.uid}`)
       }
     },
 

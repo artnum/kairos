@@ -1,14 +1,4 @@
 
-KAIROS.wAddEventListener = window.addEventListener
-window.addEventListener = function (type, listener, options) {
-    if (type === 'close-top') {
-        if (KAIROS._closeStack === undefined) { KAIROS._closeStack = [] }
-        KAIROS._closeStack.push(listener)
-        return
-    }
-    KAIROS.wAddEventListener(type, listener, options)
-}
-
 KAIROS.mouse = {}
 const kMouseFollow = event => {
     KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
@@ -22,7 +12,7 @@ const K_WARN = 2
 const K_ERROR = 3
 
 window.addEventListener('mousemove', kMouseFollow)
-window.addEventListener('touchmove', kMouseFollow)
+window.addEventListener('touchmove', kMouseFollow)  
 
 KAIROS.clearSelection = function () {
     if (document.selection && document.selection.empty) {
@@ -43,8 +33,13 @@ KAIROS.warn = function (txt, code = 0) {
     this.log('warning', txt, code)
 }
 
-KAIROS.error = function (txt, code = 0) {
-    this.log('error', txt, code)
+KAIROS.error = function (msg, code = 0) {
+    const txt = msg instanceof Error ? msg.message : msg
+    if (KError[txt]) {
+        this.log('error', KError[txt].fr, code)
+    } else {
+        this.log('error', txt, code)
+    }
     console.group('Erreur')
     console.log(txt, code)
     console.trace()
@@ -154,11 +149,9 @@ KAIROS.closeNext = function (count = 0) {
 document.addEventListener('keyup', event => {
     if (event.key === 'Escape') {
         if (event.shiftKey) {
-            while (KAIROS._closeStack.length > 0) {
-                KAIROS._closeStack.pop()()
-            };
+            while (KAIROS.closeNext());
         } else {
-            KAIROS._closeStack.pop()()
+            KAIROS.closeNext()
         }
     }
 }, {capture: true})
@@ -293,9 +286,4 @@ KAIROS.confirm = function(title, message, opts) {
         win.setContentDiv(content)
         win.open()
     })
-}
-
-KAIROS.lang = function () {
-    const lang = navigator.language || navigator.userLanguage
-    return lang.toLowerCase().split('-')[0]
 }

@@ -133,7 +133,6 @@ define([
         this.Defaults = null
         this.isNew = false
       }
-      args.reservation.addEventListener('synced', this.outOfSync.bind(this))
     },
 
     outOfSync: function() {
@@ -638,9 +637,11 @@ define([
       }
 
       this.Buttons.resync.addEventListener('click', _ => {
-        this.reservation.syncForm()
-        this.domNode.classList.remove('outofsync')
-        this.Buttons.resync.setDisabled(true)
+        this.reservation.resync()
+        .then(_ => {
+          this.domNode.classList.remove('outofsync')
+          this.Buttons.resync.setDisabled(true)
+        })
       })
       this.Buttons.del.addEventListener('click', () => {
         this.doDelete()
@@ -1535,6 +1536,7 @@ define([
         this.doResetComplement()
         this.refresh()
         this.initRequests = []
+        this.reservation.updateVersionId()
       }))
 
       const inputs = this.domNode.getElementsByTagName('input')
@@ -1690,53 +1692,6 @@ define([
       const address = kfieldset.get('address')
       address.edit(kfieldset.domNode)
     },
-
-    /*
-    saveContact: function (id, options) {
-      var that = this
-      var type = options.type ? options.type : ''
-      if (options.type === '_autre') {
-        type = options.comment
-      }
-
-      if (id != null) {
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        url.searchParams.set('search.target', id)
-        url.searchParams.set('search.comment', type)
-        Query.exec(url).then(djLang.hitch(this, function (results) {
-          if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: that.reservation.uid, comment: type, freeform: null, target: id}}).then(djLang.hitch(this, function (result) {
-              if (!result.success) {
-                return
-              }
-              this.Stores.Contacts.get(id)
-              .then(kcontact => {
-                if (!kcontact) { return }
-                kcontact.set('linkId', result.data[0].id)
-                kcontact.set('linkType', type)
-                that.createContact(kcontact, type, true)
-              })
-            }))
-          }
-        }))
-      } else {
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        url.searchParams.set('search.target', id)
-        url.searchParams.set('search.freeform', options.freeform)
-        Query.exec(url).then(djLang.hitch(this, function (results) {
-          if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.uid, comment: type, freeform: options.freeform, target: null}}).then(function (result) {
-              if (result.success && result.length === 1) {
-                options.linkId = result.data[0].id
-                that.createContact(options, type, true)
-              }
-            })
-          }
-        }))
-      }
-    },*/
 
     show: function () {
       KAIROSAnim.push(() => { this.domNode.parentNode.style.setProperty('display', 'block') })
@@ -1965,13 +1920,14 @@ define([
               KAIROS.confirm(
                 `Réservation modifiée`,
                 `La réservation a été modifiée sur un autre poste, forcer l'enrgistrement`, {reference: this.Buttons.save, placement: 'top'})
-              .then(confirmed => resolve(confirmed))
+              .then(confirmed => resolve([confirmed, true]))
               return
             }
-            resolve(true)
+            resolve([true, false])
           })
         }))
-        .then(carryon => {
+        .then(([carryon, force]) => {
+          if (force) { this.reservation.set('version', 'force')}
           if (!carryon) { return {ok: false}; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)

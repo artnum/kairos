@@ -71,7 +71,8 @@ define([
         Locality: new KLocalityStore('warehouse')
       }
 
-      KEntry.load(args.target).then(kentry => {
+      KEntry.load(args.target)
+      .then(kentry => {
         this.KEntry = kentry
         this.displayLocation()
         let change = this.stateChange.bind(this)
@@ -84,20 +85,22 @@ define([
           if (event.detail && event.detail.entry) {
             this.KEntry.fixReservation(event.detail.entry)
             .then (json => {
-              if (json) { this.createEntry(json) }
+              if (json) { this.createEntry(json, event.detail.isMe) }
             })
           }
         }
         let remove = (event) => {
+          console.log(event)
           if (event.detail && event.detail.entry) {
             this.removeEntry(event.detail.entry)
           }
         }
         let update = (event) => {
+          console.log(entry)
           if (event.detail && event.detail.entry) {
             this.KEntry.fixReservation(event.detail.entry)
             .then (json => {
-              if (json) { this.createEntry(json) }
+              if (json) { this.createEntry(json, event.detail.isMe) }
             })
           }
         }
@@ -141,7 +144,7 @@ define([
         resolve()
       })
     },
-    createEntry: function (entry) {
+    createEntry: function (entry, isMe) {
       return new Promise((resolve, reject) => {
         const id = entry.uuid || entry.id
         if (!this.entries.has(id)) {
@@ -150,7 +153,13 @@ define([
             uuid: entry.uuid
           }))
         }
-        this.entries.get(id).fromJson(entry).then(() => {
+        const currentEntry = this.entries.get(id)
+        if (currentEntry.isOpen() && !isMe) {
+          currentEntry.signalRemoteModification()
+          return;
+        }
+        currentEntry.fromJson(entry)
+        .then(() => {
           if (this.entries[id]) { this.entries[id].waitStop() }
           this.resize()
           resolve(this.entries.get(id))

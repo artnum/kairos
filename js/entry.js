@@ -35,7 +35,7 @@ KEntry.prototype.get = function(name) {
     return this.data[name]
 }
 
-KEntry.prototype.delete = function (entry) {
+KEntry.prototype.delete = function (entry, isMe = false) {
     let id = entry
     if (typeof entry === 'object') {
         id = entry.id
@@ -43,19 +43,19 @@ KEntry.prototype.delete = function (entry) {
     KAIROS.unregister(`reservation/${id}`)
     if (this.entries.get(id) === undefined) { return }
     this.entries.delete(id)
-    this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry}}))
+    this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry, isMe}}))
 }
 
-KEntry.prototype.add = function (entry) {
+KEntry.prototype.add = function (entry, isMe = false) {
     this.entries.set(entry.id, entry)
     KAIROS.register(`reservation/${entry.id}`, entry)
-    this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry}}))
+    this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry, isMe}}))
 }
 
-KEntry.prototype.update = function (entry) {
+KEntry.prototype.update = function (entry, isMe = false) {
     this.entries.set(entry.id, entry)
     KAIROS.register(`reservation/${entry.id}`, entry)
-    this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry}}))
+    this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry, isMe}}))
 
 }
 
@@ -169,13 +169,32 @@ KEntry.prototype.handleMessage = function (msg) {
     switch (msgData.op) {
       case 'remove':
         if (msgData.entry.reservation) {
-            this.delete(msgData.entry)
+            this.delete(msgData.entry, msg.data.isMe)
         }
         break
       case 'add':
         if (msgData.reservation) {
-            this.add(msgData.reservation)
+            this.add(msgData.reservation, msg.data.isMe)
         }
+        break
+      case 'update-reservation':
+          KAIROS.getClientId()
+          .then(cid => {
+            const entry = msg.data.reservation
+            let id = entry.uuid
+            if (entry.uuid === undefined || entry.uuid === null) {
+                id = entry.id
+            }
+            if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
+                if (this.entries.get(id) !== undefined) {
+                    this.update(entry, msg.data.clientid === cid)
+                } else { 
+                    this.add(entry, msg.data.clientid === cid)
+                }
+            } else {
+                this.delete(entry, msg.data.clientid === cid)
+            }
+          })
         break
       case 'entries':
         const process = (deadline, origin = 0) => {
@@ -189,12 +208,12 @@ KEntry.prototype.handleMessage = function (msg) {
                 }
                 if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
                     if (this.entries.get(id) !== undefined) {
-                        this.update(entry)
+                        this.update(entry, msg.data.isMe)
                     } else { 
-                        this.add(entry)
+                        this.add(entry, msg.data.isMe)
                     }
                 } else {
-                    this.delete(entry)
+                    this.delete(entry, msg.data.isMe)
                 }
                 i++
             }

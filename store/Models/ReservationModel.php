@@ -289,6 +289,7 @@ class ReservationModel extends artnum\SQL
             'operation' => 'write',
             'type' => 'reservation',
             'id' => $item['id'],
+            'cid' => $this->kconf->getVar('clientid'),
             'version' => $item['version'],
          ]));
       }
@@ -306,6 +307,7 @@ class ReservationModel extends artnum\SQL
          $MSGSrv->send(json_encode([
             'operation' => 'delete',
             'type' => 'reservation',
+            'cid' => $this->kconf->getVar('clientid'),
             'id' => $_id
          ]));
       }

@@ -79,5 +79,11 @@ if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
   }
 }
 
+if (!empty($_SERVER['HTTP_X_CLIENT_ID'])) {
+  $KConf->setVar('clientid', $_SERVER['HTTP_X_CLIENT_ID']);
+} else {
+  $KConf->setVar('clientid', '');
+}
+
 $store->run($KConf);
 ?>

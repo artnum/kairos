@@ -8,7 +8,7 @@ $res = $JClient->get($_GET['id'], 'Count');
 if (!$res['success'] || $res['length'] != 1) {
    e404('décompte inexistant');
 }
-$count = $res['data'];
+$count = is_array($res['data']) ? $res['data'][0] : $res['data'];
 $res = $JClient->search(array('search.count' =>  $count['id']), 'CountReservation');
 if (!$res['success'] || $res['length'] <= 0) {
 }
@@ -16,7 +16,7 @@ $reservations = array();
 foreach($res['data'] as $item) {
    $_r = $JClient->get($item['reservation'], 'DeepReservation');
    if ($_r['success'] && $_r['length'] == 1) {
-      $reservations[] = FReservation($_r['data']);
+      $reservations[] = FReservation(is_array($_r['data']) ? $_r['data'][0] : $_r['data']);
    }
 }
 

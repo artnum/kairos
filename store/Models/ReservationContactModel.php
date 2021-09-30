@@ -25,6 +25,7 @@ class ReservationContactModel extends artnum\SQL {
       $MSGSrv->send(json_encode([
             'operation' => 'write',
             'type' => 'contact',
+            'cid' => $this->kconf->getVar('clientid'),
             'id' => $item['id']
          ]));
       }
@@ -43,6 +44,7 @@ class ReservationContactModel extends artnum\SQL {
                'operation' => 'delete',
                'type' => 'contact',
                'reservation' => $item['reservation'],
+               'cid' => $this->kconf->getVar('clientid'),
                'id' => $item['id']
             ]));
          }
