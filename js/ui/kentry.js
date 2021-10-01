@@ -12,7 +12,7 @@ KUIEntry.prototype.render = function () {
         this.html
         .then(khtml => {
             khtml.domNode.classList.add('kentry')
-            this.data.gets(['reference', 'name'])
+            this.data.gets(khtml.getProperties())
             .then(fields => {
                 for (const [k, v] of fields) {
                     khtml.set(k, v)

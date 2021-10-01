@@ -100,49 +100,26 @@ KAIROS.stackClosable = function (closeFunction) {
     if (!KAIROS._closables) {
         KAIROS._closables = []
     }
-    let idx = KAIROS._closables.length
     KAIROS._closables.push(closeFunction)
-    return idx
 }
 
 KAIROS.removeClosableFromStack = function (closeFunction) {
-    if (!KAIROS._closables) { return }
-    if (KAIROS._currentClosable && KAIROS._currentClosable === closeFunction) { return }
-    for (let i = 0; i < KAIROS._closables.length; i++) {
-        if (KAIROS._closables[i] === closeFunction) {
-            KAIROS._closables.splice(i, 1)
-            break
-        }
-    }
+    return
 }
 
 KAIROS.removeClosableByIdx = function (idx) {
-    if (!KAIROS._closables) { return }
-    KAIROS._closables.splice(idx, 1)
-    if (idx === KAIROS._closables.length) {
-        KAIROS._currentClosable = KAIROS._closables[idx - 1]
-    }
+    return
 }
 
 KAIROS.closeNext = function (count = 0) {
-    if (KAIROS._closables) {
-        let closeFunction = KAIROS._closables.pop()
-        if (closeFunction && closeFunction instanceof Function) {
-            KAIROS._currentClosable = closeFunction
-            try {
-                closeFunction()
-            } catch (e) {
-                if (count < 10) {
-                    KAIROS.closeNext(count++)
-                } else {
-                    console.log('too many closable')
-                }
-            }
-            KAIROS._currentClosable = null
-            return true
-        }
-    }
-    return false
+    if (!KAIROS._closables) { return false }
+    do {
+        if (KAIROS._closables.length <= 0) { return false }
+        const closeFunction = KAIROS._closables.pop()
+        if (!closeFunction || !(closeFunction instanceof Function)) { continue }
+        if (!closeFunction()) { continue; }
+        return true;
+    } while(1)
 }
 
 document.addEventListener('keyup', event => {

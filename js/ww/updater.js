@@ -372,8 +372,8 @@ function runUpdater () {
 const updateTimer = 10
 function startUpdater () {
   if (LastMod > 0) {
-    const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
-    url.searchParams.set('search.modification', '>' + LastMod)
+    const url = KAIROS.URL(KAIROS.kreservation.store)
+    url.searchParams.set(`search.${KAIROS.kreservation.mtime.remote}`, `>${LastMod}`)
     fetch(url).then((response) => {
       if (response.ok) {
         response.json().then((json) => {

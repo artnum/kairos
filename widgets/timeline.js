@@ -510,18 +510,18 @@ define([
       var n = document.createElement('DIV')
       n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px')
       switch (month + 1) {
-        case 1: n.innerHTML = 'Janvier&nbsp;' + year; break
-        case 2: n.innerHTML = 'Février&nbsp;' + year; break
-        case 3: n.innerHTML = 'Mars&nbsp;' + year; break
-        case 4: n.innerHTML = 'Avril&nbsp;' + year; break
-        case 5: n.innerHTML = 'Mai&nbsp;' + year; break
-        case 6: n.innerHTML = 'Juin&nbsp;' + year; break
-        case 7: n.innerHTML = 'Juillet&nbsp;' + year; break
-        case 8: n.innerHTML = 'Août&nbsp;' + year; break
-        case 9: n.innerHTML = 'Septembre&nbsp;' + year; break
-        case 10: n.innerHTML = 'Octobre&nbsp;' + year; break
-        case 11: n.innerHTML = 'Novembre&nbsp;' + year; break
-        case 12: n.innerHTML = 'Décembre&nbsp;' + year; break
+        case 1: n.innerHTML = `Janvier&nbsp;${year}`; break
+        case 2: n.innerHTML = `Février&nbsp;${year}`; break
+        case 3: n.innerHTML = `Mars&nbsp;${year}`; break
+        case 4: n.innerHTML = `Avril&nbsp;${year}`; break
+        case 5: n.innerHTML = `Mai&nbsp;${year}`; break
+        case 6: n.innerHTML = `Juin&nbsp;${year}`; break
+        case 7: n.innerHTML = `Juillet&nbsp;${year}`; break
+        case 8: n.innerHTML = `Août&nbsp;${year}`; break
+        case 9: n.innerHTML = `Septembre&nbsp;${year}`; break
+        case 10: n.innerHTML = `Octobre&nbsp;${year}`; break
+        case 11: n.innerHTML = `Novembre&nbsp;${year}`; break
+        case 12: n.innerHTML = `Décembre&nbsp;${year}`; break
       }
       if (month % 2) {
         n.setAttribute('class', 'monthName even')
@@ -1173,7 +1173,7 @@ define([
           const load = []
           for (const entry of entries) {
             if (entry.disabled !== '0') { continue; }
-            load.push(KEntry.load(entry.id))
+            load.push(KEntry.load(entry[KAIROS.kentry.uid.remote]))
           }
           return Promise.all(load)
         })

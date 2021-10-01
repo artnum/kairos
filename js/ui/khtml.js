@@ -19,30 +19,41 @@ KHTML.init = function (template) {
     })
 }
 
+KHTML.prototype.getProperties = function () {
+    const propsNode = this.domNode.querySelectorAll('*[data-name]')
+    const properties = []
+    for (const node of propsNode) {
+        if (properties.indexOf(node.dataset.name) !== -1) { continue }
+        properties.push(node.dataset.name)
+    }
+    return properties
+}
+
 KHTML.prototype.set = function (name, value) {
-    const node = this.domNode.querySelector(`*[name="${name}"]`)
-    if (!node) { return }
-    if (!value) { node.style.display = 'none'; return }
-    switch (typeof value) {
-        case 'string': node.innerHTML = value.sanitize(); return
-        case 'boolean': node.innerHTML = value ? 'Oui' : 'Non'; return 
-        case 'number': node.innerHTML = String(value); return
-        case 'object': 
-            if (Array.isArray(value)) {
-                node.innerHTML = value.join(', ').sanitize()
-            }
-            break
-        default: return
+    const nodes = this.domNode.querySelectorAll(`*[data-name="${name}"]`)
+    if (!nodes) { return }
+    for (const node of nodes) {
+        if (!value) { node.style.display = 'none'; break }
+        switch (typeof value) {
+            case 'string': node.innerHTML = value.sanitize(); break
+            case 'boolean': node.innerHTML = value ? 'Oui' : 'Non'; break 
+            case 'number': node.innerHTML = String(value); break
+            case 'object': 
+                if (Array.isArray(value)) {
+                    node.innerHTML = value.join(', ').sanitize()
+                }
+                break
+            default: return
+        }
     }
 }
 
 KHTML.prototype.has = function (name) {
-    return this.domNode.querySelector(`*[name="${name}"]`) !== null
-
+    return this.domNode.querySelector(`*[data-name="${name}"]`) !== null
 }
 
 KHTML.prototype.get = function (name) {
-    return this.domNode.querySelector(`*[name="${name}"]`)
+    return this.domNode.querySelector(`*[data-name="${name}"]`)
 }
 
 KHTML.prototype.addEventListener = function (event, listener, options) {

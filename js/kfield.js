@@ -7,9 +7,7 @@ KField.prototype.get = function(name) {
     return new Promise((resolve) => {
         this.data.ready()
         .then(_ => {
-            if (!this.opts[name]) { resolve(undefined); return }
-            if (!this.opts[name].remote) { resolve(undefined); return }
-            this.data.get(this.opts[name].remote)
+            this.data.get(name)
             .then(value => {
                 resolve(value)
             })
@@ -24,9 +22,7 @@ KField.prototype.get = function(name) {
 }
 
 KField.prototype.set = function(name, value) {
-    if (!this.opts[name]) { return undefined }
-    if (!this.opts[name].remote) { return undefined }
-    return this.data.set(this.opts[name].remote, value)
+    return this.data.set(name, value)
 }
 
 KField.prototype.gets = function (names) {

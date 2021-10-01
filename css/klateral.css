@@ -1,0 +1,103 @@
+.klateral {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 600px;
+    max-width: 100%;
+    min-height: 100%;
+    border-left: 1px solid black;
+    margin: 0;
+    padding: 0;
+}
+.klateral .khead {
+    background-color: lightgrey;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    height: 38px;
+}
+.klateral .khead .ktab {
+    width: calc(100% - 76px);
+    margin: 0 38px;
+    height: 38px;
+    background-color: transparent;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.klateral .kcontent {
+    min-height: calc(100% - 26px);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-top: midnightblue 2px solid;
+    z-index: 6;
+    background-color: lightblue;
+    position: absolute;
+}
+
+.klateral .kcontent .cwrapper {
+    padding: 8px;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    min-height: calc(100% - 40px);
+    min-width: calc(100% - 24px);
+    overflow-y: auto;
+    display: flex;
+    overflow-x: hidden;
+    background-color: white;
+}
+
+.klateral .khead .ktab div {
+    display: table-cell;
+    position: relative;
+    top: 0;
+    min-height: 38px;
+    height: 38px;
+    max-height: 30px;
+    min-width: 120px;
+    max-width: 120px;
+    vertical-align: middle;
+    background: teal;
+    background: linear-gradient(180deg, lightslategray 10%, white 30%);
+    border-left: 2px solid lightgray;
+    border-right: 2px solid lightgray;
+    padding: 6px 4px;
+    z-index: 1;
+}
+
+.klateral .khead .ktab div.selected {
+    background: teal;
+    background: linear-gradient(180deg, midnightblue 10%, lightblue 30%);
+    color: black;
+    font-weight: bold;
+}
+
+.klateral .khead .scroll {
+    min-height: 38px;
+    max-height: 38px;
+    max-width: 36px;    
+    min-width: 36px;
+    background: midnightblue;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    position: absolute;
+    top: 0;
+    z-index: 4;
+    padding: 12px 0 0 0;
+    margin: 0;
+    border: none;
+    user-select: none;
+    cursor: pointer;
+}
+
+.klateral .khead .scroll.right {
+    right: 0;
+}
+
+.klateral .khead .scroll.left {
+    left: 0;
+}

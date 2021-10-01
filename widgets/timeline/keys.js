@@ -51,24 +51,8 @@ define([
     constructor: function () {
       this.func = null
       this.suggest = null
-      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c' ]
+      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c', 'p' ]
 
-      /*if (this.CommandOverlay) {
-        this.suggest = null
-        if (this.func) {
-          this.func = null
-          document.activeElement.blur()
-          if (this.resultBox && this.resultBox.parentNode) {
-            this.resultBox.parentNode.removeChild(this.resultBox)
-          }
-          for (let n = this.CommandOverlay.firstChild; n; n = n.nextElementSibling) {
-            if (n.firstChild && n.firstChild.innerHTML) {
-              window.requestAnimationFrame(() => n.dataset.selected = '0')                      }
-          }
-        } else {
-          this.switchCommandMode()
-        }
-      }*/
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
           let node = event.target
@@ -153,20 +137,21 @@ define([
     },
 
     switchCommandMode: function (mouse = false) {
-      let closeCommandMode = () => {
+      const closeCommandMode = () => {
+        if (!document.getElementById('commandModeOverlay')) { return false }
         this.CommandOverlay = null
         window.requestAnimationFrame(() => { 
           if (document.getElementById('commandModeOverlay')) {
             document.body.removeChild(document.getElementById('commandModeOverlay'))
           }
         })
+        return true
       }
       return new Promise((resolve, reject) => {
         this.Mouse = mouse
         this.CommandMode = !this.CommandMode
         if (!this.CommandMode) {
           closeCommandMode()
-          KAIROS.removeClosableFromStack(closeCommandMode)
         } else {
           var o = document.createElement('DIV')
           o.setAttribute('id', 'commandModeOverlay')
@@ -223,6 +208,15 @@ define([
         case ':':
           this.goToSearchBox()
           this.func = this.cmdProcessor
+          break
+        case 'p':
+          const klateral = new KLateral().open()
+          klateral.add('<div>hello</div>', {title: 'Projet'})
+          klateral.add('<div>hello 2</div>', {title: 'Projet 2'})
+          klateral.add('<div>hello 3</div>', {title: 'Projet 3'})
+
+
+          done = true;
           break
       }
       return done
