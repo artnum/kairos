@@ -259,42 +259,87 @@ define([
     },
 
     addReservation: async function (reservation) {
-      var url = Path.url('store/CountReservation')
-      url.searchParams.set('search.count', this.get('data-id'))
-      url.searchParams.set('search.reservation', reservation)
-      var link = await Query.exec(url)
-      if (link.success && link.length <= 0) {
-        var rData = Query.exec(Path.url('store/Reservation/' + reservation))
-        var res = await Query.exec(Path.url('store/CountReservation'), {method: 'post', body: JSON.stringify({reservation: reservation, count: this.get('data-id')})})
-        if (res.success) {
-          var r = this.get('reservations')
-          if (r.indexOf(reservation) < 0) {
-            r.push(reservation)
-            this.set('reservations', r)
-          }
+      const url = new URL(`${KAIROS.getBase()}/store/CountReservation`)
+      url.searchParams.append('search.count', this.get('data-id'))
+      url.searchParams.append('search.reservation', reservation)
+      fetch(url)
+      .then(response =>{
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        if (result.length < 1) {
+          url.searchParams.delete('search.count')
+          url.searchParams.delete('search.reservation')
+          return fetch(url, {method: 'POST', body: JSON.stringify({reservation, count: this.get('data-id')})})
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            const reservations = this.get('reservations')
+            if (reservations.indexOf(reservation) === -1) {
+              reservations.push(reservation)
+              this.set('reservations', reservations)
+            }
+            return reservation
+          })
+        } else {
+          return 0
         }
+      })
+      .then(reservation => {
+        if (reservation === 0) { return }
 
-        rData.then(async function (result) {
-          let H = new Holiday()
-          if (result.success && result.length === 1) {
-            let state = 'vs'
-            if (/^PC\/[0-9a-f]{32,32}$/.test(result.data.locality)) {
-              let locality = await Query.exec(Path.url(`store/${result.data.locality}`))
-              if (locality.success && locality.length === 1) {
-                state = locality.data.state.toLowerCase()
-              }
-            }
-            if (!this.get('data').canton) {
-              this.setCanton(state)
-              this.data.canton = state
-            }
-            var unit = this.get('units').find(x => x.default > 0).id
-            var days = H.bdays(new Date(result.data.begin), new Date(result.data.end), H.hasState(state) ? state : 'vs')
-            this.Days[r] = {begin: new Date(result.data.begin), end: new Date(result.data.end), days: days, effectiveBegin: new Date(result.data.begin), effectiveEnd: new Date(result.data.end)}
-            this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days, state: state}, true), this.tbody.firstChild)
+        return fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${reservation}`))
+        .then(response =>{
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+          if (/^\/?PC\/[0-9a-f]{32,32}$/.test(reservation.locality)) {
+            const localityId = reservation.slit('/').pop()
+            return fetch(`${KAIROS.getBase()}/store/PC/${localityId}`)
+            .then(response => {
+              if (!response.ok) { throw new Error('ERR:Server') }
+              return response.json()
+            })
+            .then(result => {
+              if (!result.success) { throw new Error('ERR:Server') }
+              const locality = Array.isArray(result.data) ? result.data[0] : result.data
+              return [reservation, locality.state.toLowerCase()]
+            })
           }
-        }.bind(this))
-      }
+          return [reservation, 'vs']
+        })
+        .then(([reservation, state]) => {
+          if (!this.get('data').canton) { this.setCanton(state); this.data.canton = state }
+          const unit = this.get('units').find(x => x.default > 0).id
+          const holiday = new Holiday()
+          const days = holiday.bdays(new Date(reservation.begin), new Date(reservation.end), holiday.hasState(state) ? state : 'vs')
+          this.Days[this.get('reservations')] = {
+            begin: new Date(reservation.begin),
+            end: new Date(reservation.end),
+            days,
+            effectiveBegin: new Date(reservation.begin),
+            effectiveEnd: new Date(reservation.end)
+          }
+          this.tbody.insertBefore(
+            this.centry({
+                reservation, reference: reservation.target, unit: unit, quantity: days, state: state
+              }, 
+              true),
+            this.tbody.firstChild
+          )
+        })
+      })
+      .catch(reason => {
+        KAIROS.error(reason)
+      })
     },
 
     deleteCount: function (countId) {
@@ -1182,20 +1227,25 @@ define([
       data.printed = (new Date()).toISOString()
       this.set('data', data)
       return new Promise((resolve, reject) => {
-        this.save().then(() => {
-          Query.exec((Path.url('exec/auto-print.php', {
-            params: {
-              type: type, file: `pdfs/${file}/${this.get('data-id')}`
-            }
-          }))).then((result) => {
-            if (result.success) {
-              window.App.info(`Impression du décompte ${this.get('data-id')} en cours`)
-              resolve()
-            } else {
-              window.App.error(`Erreur d'impression du décompte ${this.get('data-id')}`)
-              reject(new Error('Print error'))
-            }
-          })
+        this.save()
+        .then(() => {
+          const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
+          url.searchParams.append('type', type)
+          url.searchParams.append('file', `pdfs/${file}/${this.get('data-id')}`)
+          return fetch(url)
+        })
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          KAIROS.info(`Impression du décompte ${this.get('data-id')} en cours`)
+          resolve()
+        })
+        .catch(reason => {
+          KAIROS.error(`Erreur d'impression du décompte ${this.get('data-id')}`)
+          reject(reason)
         })
       })
     },

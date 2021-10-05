@@ -31,7 +31,6 @@ if (is_file('../conf/location.ini') && is_readable('../conf/location.ini')) {
    }
    if ($ctx) {
       curl_setopt($ctx, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ctx, CURLOPT_BINARYTRANSFER, true);
       $content = curl_exec($ctx);
       curl_close($ctx);
       if ($content !== FALSE) {

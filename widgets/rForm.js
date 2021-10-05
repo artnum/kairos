@@ -1730,29 +1730,26 @@ define([
     },
 
     autoPrint: function (file, params = {}) {
-      let type = params.forceType ? params.forceType : file
+      const type = params.forceType ? params.forceType : file
       return new Promise((resolve, reject) => {
         this.doSave()
-        .then((done) => {
-          console.log(done)
-          if (done) {
-            Query.exec((Path.url('exec/auto-print.php', {
-              params: {
-                type: type, file: `pdfs/${file}/${this.reservation.uid}`
-              }
-            }))).then((result) => {
-              if (result.success) {
-                window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
-                resolve()
-              } else {
-                window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-                reject(new Error('Print error'))
-              }
-            })
-          }
-        }, () => {
-          window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-          reject(new Error('Print error'))
+        .then(done => {
+          if (!done) { throw new Error('ERR:Server') }
+          const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
+          url.searchParams.append('type', type)
+          url.searchParams.append('file', `pdfs/${file}/${this.reservation.uid}`)
+          return fetch(url)
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            KAIROS.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+          })
+        })
+        .catch(reason => {
+          KAIROS.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid} <${reason instanceof Error ? reason.message : reason}>`)
         })
       })
     },
@@ -1760,9 +1757,8 @@ define([
     showPrint: function (type, params = {}) {
       this.doSave()
       .then((done) => {
-        console.log(done)
         if (done) {
-          let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+          let url = new URL(`${KAIROS.getBase()}/pdfs/${type}/${this.reservation.uid}`)
           for (let k in params) {
             url.searchParams.append(k, params[k])
           }
@@ -2045,7 +2041,7 @@ define([
     },
 
     openCount: async function () {
-      new Count({reservation: this.reservation.uid}) // eslint-disable-line
+      new Count({reservation: this.reservation.uid})
     },
     openAddCount: async function () {
       new CountList({addReservation: this.reservation.uid, integrated: true}) // eslint-disable-line
@@ -2067,7 +2063,7 @@ define([
       })
     },
     doNumbering: async function () {
-      let parent = this.nMissionDisplay
+      const parent = this.nMissionDisplay
       for (let i = 0, n = parent.firstElementChild; n; n = n.nextElementSibling) {
         n.dataset.number = i
         Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`)).then((result) => {
@@ -2095,14 +2091,18 @@ define([
       }
     },
     deleteImage: function (hash) {
-      Query.exec(Path.url(`store/MissionFichier/${hash},${this.nMissionDisplay.dataset.uid}`), {method: 'delete'}).then((result) => {
-        if (result.success) {
-          for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
-            if (n.dataset.hash === hash) {
-              n.parentNode.removeChild(n)
-              break
-            }
-          }
+      const url = new URL(`${KAIROS.getBase()}/store/MissionFichier/${hash},${this.nMissionDisplay.dataset.uid}`)
+      fetch(url, {method: 'DELETE'})
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.hash !== hash) { continue }
+          n.parentNode.removeChild(n)
+          break
         }
       })
     },
