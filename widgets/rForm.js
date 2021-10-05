@@ -146,16 +146,6 @@ define([
       this.nLocality.value = value
     },
 
-    _setWarehouseAttr: function (value) {
-      if (!value) { return }
-      Query.exec(Path.url(`store/Warehouse/${value}`)).then((result) => {
-        if (result.success && result.length === 1) {
-          this._set('warehouse', value)
-          this._set('locality', `Warehouse/${value}`)
-          this.nLocality.value = `Warehouse/${value}`
-        }
-      })
-    },
     _setCreatorAttr: function (value) {
       this.nCreator.value = value
     },
@@ -2223,22 +2213,37 @@ define([
         }
       }
       if (!this.nMissionDisplay.dataset.uid) {
-        Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}}))
-          .then((result) => {
-            if (result.success && result.length <= 0) {
-              Query.exec(
-                Path.url('store/Mission'), {method: 'post', body: {reservation: this.reservation.uid}}
-              ).then((result) => {
-                if (result.success && result.length === 1) {
-                  this.nMissionDisplay.dataset.uid = result.data[0].id
-                }
-              })
-            } else {
-              if (result.success && result.length === 1) {
-                this.nMissionDisplay.dataset.uid = result.data[0].uid
-              }
-            }
+        const url = new URL(`${KAIROS.getBase()}/store/Mission`)
+        url.searchParams.append('search.reservation', this.reservation.uid)
+        fetch(url)
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length === 1) { 
+            const mission = Array.isArray(result.data) ? result.data[0] : result.data
+            return mission.id
+          }
+          url.searchParams.delete('search.reservation')
+          return fetch(url, {method: 'POST', body: JSON.stringify({reservation: this.reservation.uid})})
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
           })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            const mission = Array.isArray(result.data) ? result.data[0] : result.data
+            return mission.id
+          })
+        })
+        .then(id => {
+          this.nMissionDisplay.dataset.uid = id
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
+        })
       }
 
       let upload = (formData) => {
