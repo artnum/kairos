@@ -125,14 +125,6 @@ define([
       if (args && args.deleted) {
         this.deleted = args.deleted
       }
-
-      if (args.reservation && args.reservation.sup && args.reservation.isNew) {
-        this.Defaults = Query.exec(Path.url('store/Entry', {params: {'search.ref': args.reservation.sup.target, 'search.name': '~default.%'}}))
-        this.isNew = true
-      } else {
-        this.Defaults = null
-        this.isNew = false
-      }
     },
 
     outOfSync: function() {
@@ -1350,23 +1342,30 @@ define([
           this.Sections[i].bind(this)()
         }
 
-        if (this.isNew && this.Defaults) {
-          this.Defaults.then((results) => {
-            if (results.length > 0) {
-              results.data.forEach((def) => {
-                let name = def.name.split('.')[1]
-                if (!name) { return }
-                let node = this.domNode.querySelector(`[name=${name}]`)
-                if (!node) { return }
-                node.value = def.value
-              })
-            }
-          })
-        }
+        this.loadDefaults()
         resolve()
       })
       .then(() => {
         this.load()
+      })
+    },
+
+    loadDefaults: function () {
+      this.Stores.Machine.get(this.reservation.target)
+      .then(machine => {
+        for (const key in machine) {
+          if (key.substr(0, 8) !== 'default.') { continue }
+
+          const name = key.substr(8)
+          const node = this.domNode.querySelector(`[name="${name}"]`)
+          if (!node) { continue }
+          if (this.reservation.equipment !== null) { continue }
+          node.value = machine[key].value
+        }
+      })
+      .catch(reason => {
+        console.log(reason)
+        KAIROS.error('Impossible de charger l\'équipement par défaut pour la machine')
       })
     },
 
@@ -1991,7 +1990,7 @@ define([
           this.reservation.set('deliveryEnd', deliveryEnd)
           this.reservation.set('address', this.nAddress.value)
           this.reservation.set('reference', f.reference)
-          this.reservation.set('equipment', f.equipment)
+          this.reservation.set('equipment', f.equipment || '%')
           this.reservation.set('locality', this.nLocality.value)
           this.reservation.set('comment', f.comments)
           this.reservation.set('folder', f.folder)
