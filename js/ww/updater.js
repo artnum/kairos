@@ -2,9 +2,8 @@
 /* global objectHash */
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
-importScripts('../localdb.js')
-importScripts('/js/Path.js')
 importScripts('../stores/user.js')
+importScripts('lib/updater-count.js')
 
 let LastMod = 0
 const Entries = new Map()
@@ -21,6 +20,15 @@ evtsource.onmessage = event => {
   switch(msg.operation) {
     case 'write':
       switch (msg.type) {
+        case 'count':
+          countUpdateMessage(msg)
+          .then(([reservationId, clientId]) => {
+            updateEntry(reservationId, clientId)
+          })
+          .catch(reason => {
+            console.log(reason)
+          })
+          break
         case 'reservation':
           updateEntry(msg.id, msg.cid)
           break

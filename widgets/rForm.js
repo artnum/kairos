@@ -436,8 +436,7 @@ define([
 
     doRemoveComplement: function (event) {
       if (this.Disabled) { return }
-      var id = null
-      var that = this
+      let id = null
       for (var i = event.target; i; i = i.parentNode) {
         if (i.hasAttribute('data-artnum-id')) {
           id = i.getAttribute('data-artnum-id')
@@ -445,12 +444,24 @@ define([
         }
       }
 
-      if (id != null) {
-        var url = Path.url('store/Association/' + id)
-        Query.exec(url, {method: 'DELETE'}).then(function () {
-          that.associationRefresh().then(() => {}, () => {KAIROS.error('Reject de l\'opération') })
+      if (id === null) { return; }
+
+      const url = new URL(`${KAIROS.getBase()}/store/Association/${id}}`)
+      fetch(url, {method: 'DELETE'})
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        this.associationRefresh()
+        .catch(reason => {
+          throw new Error('ERR:Server')
         })
-      }
+      })
+      .catch(reason => {
+        KAIROS.error(reason)
+      })
     },
 
     associationRefresh: function () {
@@ -2285,55 +2296,80 @@ define([
       }
     },
 
-    refreshCount: async function () {
-      Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.uid}})).then(async function (counts) {
-        var frag = document.createDocumentFragment()
-        if (counts.success && counts.length > 0) {
-          var trs = []
-          for (var i = 0; i < counts.length; i++) {
-            var count = await Query.exec(Path.url('store/Count/' + counts.data[i].count))
-            if (count.success && count.length === 1) {
-              count = count.data
-              if (count.deleted) { continue }
-              var tr = document.createElement('TR')
-              tr.setAttribute('data-count-id', count.id)
-              count.period = ''
-              var sortBegin = '0'
-              if (count.begin) {
-                count.period = (new Date(count.begin)).shortDate(true)
-                sortBegin = (new Date(count.begin)).getTime()
-              }
-              if (count.end) {
-                if (count.period !== '') { count.period += ' - ' }
-                count.period += (new Date(count.end)).shortDate(true)
-              }
-              tr.innerHTML = `<td class="clickable" data-id="${count.id}">${count.id}</td><td>${(count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '')}</td><td>${count._status ? (count._status.name ? count._status.name : '') : ''}</td><td>${(count.period ? count.period : '')} ${count.state !== 'INTERMEDIATE' ? '⯁' : ''}</td>`
-              tr.setAttribute('data-sort', sortBegin)
-              trs.push(tr)
-
-              tr.addEventListener('click', function (event) {
-                if (event.target) {
-                  if (!event.target.getAttribute('data-id')) { return }
-                  new Count({'data-id': event.target.getAttribute('data-id')}) // eslint-disable-line
-                }
+    refreshCount: function () {
+      return new Promise((resolve, reject) => {
+        const url = new URL(`${KAIROS.getBase()}/store/CountReservation`)
+        url.searchParams.append('search.reservation', this.reservation.uid)
+        fetch(url)
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length === 0) { return }
+          const entries = result.data
+          const trs = []
+          for (const entry of entries) {
+            trs.push(new Promise((resolve, reject) => {
+              const url = new URL(`${KAIROS.getBase()}/store/Count/${entry.count}`)
+              fetch(url)
+              .then(response => {
+                if (!response.ok) { throw new Error('ERR:Server') }
+                return response.json()
               })
-            }
+              .then(result => {
+                if (!result.success) { throw new Error('ERR:Server') }
+                const entry = Array.isArray(result.data) ? result.data[0] : result.data
+                const tr = document.createElement('TR')
+                tr.dataset.countId = entry.id
+                const period = []
+
+                if (entry.begin) { period.push((new Date(entry.begin)).shortDate()) }
+                if (entry.end) { period.push((new Date(entry.end)).shortDate()) }
+                tr.innerHTML = `<td class="clickable" data-id="${entry.id}">${entry.id}</td>
+                  <td>${entry?._invoice?.winbiz || ''}</td>
+                  <td>${entry?._status?.name || ''}</td>
+                  <td>${period.length > 0 ? period.join(' - ') : ''}
+                      ${entry.state !== 'INTERMEDIATE' ? '⯁' : ''}</td>`
+                tr.dataset.sort = entry.begin ? String(new Date(entry.begin).getTime()) : '0'
+                tr.addEventListener('click', event => {
+                  if (!event.target) { return }
+                  if (!event.target.dataset.id) { return }
+                  new Count({
+                    'data-id': event.target.dataset.id
+                  })
+                })
+                resolve(tr)
+              })
+              .catch(reason => {
+                reject(reason)
+              })
+            }))
           }
 
-          trs.sort(function (a, b) {
-            a = parseInt(a.getAttribute('data-sort'))
-            b = parseInt(b.getAttribute('data-sort'))
-            return a - b
+          Promise.allSettled(trs)
+          .then(promises => {
+            const frag = document.createDocumentFragment()
+            const trs = []
+            for (const promise of promises) {
+              if (promise.status === 'fulfilled') { trs.push(promise.value) }
+            }
+            trs.sort((a, b) => {
+              return parseInt(a.dataset.sort) - parseInt(b.dataset.sort)
+            })
+
+            trs.forEach(n => {
+              frag.appendChild(n)
+            })
+            this.nCountList.innerHTML = ''
+            this.nCountList.appendChild(frag)
           })
-          trs.forEach(function (n) {
-            frag.appendChild(n)
-          })
-        }
-        KAIROSAnim.push(() => {
-          this.nCountList.innerHTML = ''
-          this.nCountList.appendChild(frag)
         })
-      }.bind(this))
+        .catch(reason => {
+          reject(reason)
+        })
+      })
     },
 
     handleFormEvent: function (event) {
