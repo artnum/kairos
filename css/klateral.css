@@ -25,8 +25,17 @@
     overflow: hidden;
 }
 
+.klateral .kaction {
+    padding: 6px 0px;
+    min-height: 34px;
+    min-width: 100%;
+    background: lightblue;
+    bottom: 0px;
+    position: fixed;
+}
+
 .klateral .kcontent {
-    min-height: calc(100% - 26px);
+    min-height: calc(100% - 86px);
     width: 100%;
     margin: 0;
     padding: 0;
@@ -41,10 +50,9 @@
     position: absolute;
     top: 4px;
     left: 4px;
-    min-height: calc(100% - 40px);
+    min-height: calc(100% - 28px);
     min-width: calc(100% - 24px);
     overflow-y: auto;
-    display: flex;
     overflow-x: hidden;
     background-color: white;
 }

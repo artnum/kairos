@@ -51,7 +51,7 @@ define([
     constructor: function () {
       this.func = null
       this.suggest = null
-      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c', 'p' ]
+      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c', 'p' , 'k' ]
 
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
@@ -214,10 +214,12 @@ define([
           klateral.add('<div>hello</div>', {title: 'Projet'})
           klateral.add('<div>hello 2</div>', {title: 'Projet 2'})
           klateral.add('<div>hello 3</div>', {title: 'Projet 3'})
-
-
           done = true;
           break
+        case 'k':
+          const klateral2 = new KLateral().open()
+          klateral2.add('<iframe style="border: none; width: 100%; height: 100%; min-height: 100%; min-width: 100%;" src="https://localhost/keditor/app/html/"></iframe>', {title: 'Wiki'})
+          done = true
       }
       return done
     },

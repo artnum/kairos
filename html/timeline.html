@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head profile="http://www.w3.org/2005/10/profile">
-<title>Location</title>
+<title>[KAIROS]</title>
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
 <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
@@ -66,6 +66,7 @@ dojoConfig = {
 </script>
 <script>
   window.addEventListener('kairos-ready', event => {
+    document.title = `[KAIROS] ${KAIROS.title}` 
     require([
       "location/timeline",
       "dojo/domReady!"

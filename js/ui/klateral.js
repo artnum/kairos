@@ -3,6 +3,7 @@ function KLateral () {
         return window._KLateralInstance
     }
     window._KLateralInstance = this
+    this.actions = new Map()
     this.tabIdx = 1
     this.tabOpen = 0
     this.tabCurrent = 0
@@ -12,13 +13,16 @@ function KLateral () {
     this.domNode.innerHTML = `
         <div class="khead"><div class="scroll left">&lt;</div><div class="ktab"></div><div class="scroll right">&gt;</div></div>
         <div class="kcontent"><div class="cwrapper"></div></div>
+        <div class="kaction"><button data-action="__close">Fermer</button></div>
         `
     this.tab = this.domNode.firstElementChild.firstElementChild.nextElementSibling
-    this.content = this.domNode.lastElementChild.firstElementChild
+    this.content = this.domNode.lastElementChild.previousElementSibling.firstElementChild
+    this.action = this.domNode.lastElementChild
     this.tab.addEventListener('click', this.handleSelectTab.bind(this), {passive: true})
     this.domNode.firstElementChild.firstElementChild.addEventListener('click', this.handleSelectTab.bind(this))
     this.domNode.firstElementChild.lastElementChild.addEventListener('click', this.handleSelectTab.bind(this))
     this.domNode.addEventListener('wheel', this.handleScrollEvent.bind(this), {capture: true})
+    this.action.addEventListener('click', this.handleActionEvent.bind(this), {passive: true, capture: true})
     document.body.appendChild(this.domNode)
 }
 
@@ -42,6 +46,16 @@ KLateral.prototype.handleScrollEvent = function (event) {
     } else {
         this.toRightTab()
     }
+}
+
+KLateral.prototype.handleActionEvent = function (event) {
+    if (!(event.target instanceof HTMLButtonElement)) { return }
+    const button = event.target
+
+    if (button.dataset.action === '__close') { return this.close() }
+    const action = button.dataset.action
+    if (!this.actions.has(action)) { return }
+    return this.actions.get(action)(event)
 }
 
 KLateral.prototype.handleSelectTab = function (event) {
@@ -90,6 +104,8 @@ KLateral.prototype.add = function (content, opt = {}) {
     } else {
         tabContent.innerHTML = content
     }
+    tabContent.style.position = 'absolute'
+    tabContent.style.inset = '8px'
 
     const tabTitle = document.createElement('DIV')
     if (opt.title) {
