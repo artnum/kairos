@@ -210,10 +210,22 @@ define([
           this.func = this.cmdProcessor
           break
         case 'p':
-          const klateral = new KLateral().open()
-          klateral.add('<div>hello</div>', {title: 'Projet'})
-          klateral.add('<div>hello 2</div>', {title: 'Projet 2'})
-          klateral.add('<div>hello 3</div>', {title: 'Projet 3'})
+          const kstore = new KStore(KAIROS.URL(KAIROS.kaffaire.store))
+          kstore.query({'#and': {closed: ['--'], deleted: ['--']}})
+          .then(result => {
+            const klateral = new KLateral().open()
+            
+            const container = document.createElement('DIV')
+            for (const key in result) {
+              const div = document.createElement('DIV')
+              div.innerHTML = `Référence : ${result[key].reference}<br>Nom : ${result[key].name}`
+              container.appendChild(div)
+            }
+            klateral.add(container, {title: 'Projet'})
+          })
+          .catch(reason => {
+            KAIROS.error(reason)
+          })
           done = true;
           break
         case 'k':
