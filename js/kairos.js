@@ -208,6 +208,13 @@ KAIROS.fetch = function (url, options = {}) {
         }
       })
     })
+    .catch(reason => {
+      if (KAIROS.error) { KAIROS.error(reason) }
+      console.group('KAIROS Fetch')
+      console.trace()
+      console.log(reason)
+      console.groupEnd()
+    })
     return query.then(response => { return response.clone() })
   }) 
 }
