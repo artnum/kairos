@@ -42,10 +42,7 @@ define([
   'location/Stores/Status',
   'location/Stores/Unit',
   'location/rform/handler',
-  'location/rform/section',
-  
-  'artnum/Path',
-  'artnum/Query'
+  'location/rform/section'
 ], function (
   djDeclare,
   djLang,
@@ -89,9 +86,6 @@ define([
   Unit,
   RFormHandler,
   RFormSection,
-  
-  Path,
-  Query
 ) {
   return djDeclare('location.rForm', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
                                       RFormHandler, RFormSection], {
@@ -1011,7 +1005,16 @@ define([
         fset = this.interventionGetDomNode()
         if (!fset) { return }
       }
-      Query.exec(Path.url('store/Evenement/.unified', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
+
+      const url = new URL(`${KAIROS.getBase()}/store/Evenement/.unified`)
+      url.searchParams.append('search.reservation', this.reservation.get('uid'))
+      url.searchParams.append('sort.date', 'DESC')
+      fetch(url)
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {     
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
           if (div[i].getAttribute('name') === 'iContent') {
@@ -1020,66 +1023,57 @@ define([
           }
         }
         if (!div) { return }
-        let frag = document.createDocumentFragment()
-        for (let i = 0; i < results.length; i++) {
-          let n = document.createElement('DIV')
-          n.classList.add('event')
-          n.dataset.id = results.data[i].id
-          let date = new Date(results.data[i].date)
-
-          let technician = results.data[i].technician
-          if (technician) {
-            try {
-              let t = await this.Stores.User.get(technician)
-              if (t !== null) {
-                technician = t.name
-              } else {
-                technician = ''
-              }
-            } catch (e) {
-              technician = ''
-            }
-          } else {
-            technician = ''
-          }
-          let type = results.data[i].type
-          let color = 'black'
-          if (type) {
-            t = await this.Stores.Status1.get(type)
-            if (t !== null) {
-              type = t.name
-              color = t.color
-            }
-          } else {
-            type = ''
-          }
-
-          let comment = results.data[i].comment
-          n.style.color = color
-          n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${type}</span><span class="technician">${technician}</span><span class="buttons"><span class="reply"><i class="fas fa-reply"></i></span><span class="delete"><i class="far fa-trash-alt"> </i></span></span>${comment === '' ? '' : '<span class="comment">' + comment + '</span>'}`
-          for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
-            if (s.classList.contains('buttons')) {
-              s.addEventListener('click', (event) => {
-                let node = event.target
-                while (node && node.nodeName !== 'SPAN') {
-                  node = node.parentNode
-                }
-                if(node.classList.contains('delete')) {
-                  this.interventionDelete(event)
-                } else if (node.classList.contains('reply')) {
-                  this.interventionReply(event)
-                }
-              })
-            }
-          }
-          frag.appendChild(n)
+        
+        const promises = []
+        for (let i = 0; i < result.length; i++) {
+          promises.push(new Promise((resolve, reject) => {
+            const evenement = result.data[i]
+            if (!evenement.technician) { resolve([evenement, null, null]); return }
+            Promise.allSettled([
+              this.Stores.User.get(evenement.technician),
+              this.Stores.Status1.get(evenement.type)
+            ])
+            .then(([pUser, pStatus]) => {
+              resolve([evenement, pUser.value, pStatus.value])
+            })
+          }))
         }
-        this.interventionSetCheckButton()
-        KAIROSAnim.push(() => {
+        
+        Promise.allSettled(promises)
+        .then(promises => {
+          let frag = document.createDocumentFragment()
+          for (const promise of promises) {
+            if (promise.status !== 'fulfilled') { continue }
+            const [evenement, technician, status] = promise.value
+            let n = document.createElement('DIV')
+            n.classList.add('event')
+            n.dataset.id = evenement.id
+            let date = new Date(evenement.date)
+
+            n.style.color = status?.color || 'black'
+            n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${status?.name || ''}</span><span class="technician">${technician?.name || ''}</span><span class="buttons"><span class="reply"><i class="fas fa-reply"></i></span><span class="delete"><i class="far fa-trash-alt"> </i></span></span>${evenement.comment === '' ? '' : '<span class="comment">' + evenement.comment + '</span>'}`
+            for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
+              if (s.classList.contains('buttons')) {
+                s.addEventListener('click', (event) => {
+                  let node = event.target
+                  while (node && node.nodeName !== 'SPAN') {
+                    node = node.parentNode
+                  }
+                  if(node.classList.contains('delete')) {
+                    this.interventionDelete(event)
+                  } else if (node.classList.contains('reply')) {
+                    this.interventionReply(event)
+                  }
+                })
+              }
+            }
+            frag.appendChild(n)
+          }
+          this.interventionSetCheckButton()
           div.innerHTML = ''
           div.appendChild(frag)
         })
-      }.bind(this))
+      })
     },
 
     interventionReply: function (event) {
@@ -1124,7 +1118,7 @@ define([
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      fetch(Path.url(`store/Evenement/${id}`), {
+      fetch(new URL(`${KAIROS.getBase()}/store/Evenement/${id}`), {
         method: 'delete'
       })
       .then((result) => {
@@ -2066,26 +2060,35 @@ define([
       const parent = this.nMissionDisplay
       for (let i = 0, n = parent.firstElementChild; n; n = n.nextElementSibling) {
         n.dataset.number = i
-        Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`)).then((result) => {
-          if (result.success && result.length <= 0) {
-            Query.exec(Path.url(`store/MissionFichier/`), {
-              method: 'post',
-              body: {
+        fetch(new URL(`${KAIROS.getBase()}store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`))
+        .then((response) => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length < 1) {
+            fetch(new URL(`${KAIROS.getBase()}/store/MissionFichier/`), {
+              method: 'POST',
+              body: JSON.stringify({
                 mission: this.nMissionDisplay.dataset.uid,
                 fichier: n.dataset.hash,
                 ordre: i
-              }
+              })
             })
           } else {
-            Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`), {
+            fetch(new URL(`${KAIROS.getBase()}/store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`), {
               method: 'patch',
-              body: {
+              body: JSON.stringify({
                 fichier: n.dataset.hash,
                 mission: this.nMissionDisplay.dataset.uid,
                 ordre: i
-              }
+              })
             })
           }
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
         })
         i++
       }
@@ -2154,7 +2157,7 @@ define([
           for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
           event.dataTransfer.effectAllowed = 'move'
           event.dataTransfer.setData('text/x-location-image-hash', n.dataset.hash)
-          event.dataTransfer.setData('text/uri-list', Path.url(`${APPConf.uploader}/${hash}`))
+          event.dataTransfer.setData('text/uri-list', new URL(`${KAIROS.getBase()}/${KAIROS.uploader}/${hash}`))
 
           let p = n.parentNode
           if (p.firstElementChild === n && !n.nextElementSibling) { return }
