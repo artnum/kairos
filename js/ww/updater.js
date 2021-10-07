@@ -12,62 +12,69 @@ const Symlinks = new Map()
 let Range = null
 let PostPoned = {}
 
+const EVTOperation = Object.freeze({
+  write: {
+    count (msg) {
+      countUpdateMessage(msg)
+      .then(([reservationId, clientId]) => {
+        updateEntry(reservationId, clientId)
+      })
+      .catch(reason => {
+        console.log(reason)
+      })
+    },
+    reservation (msg) {
+      updateEntry(msg.id, msg.cid)
+    },
+    arrival (msg) {
+      fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json() 
+      })
+      .then(result => {
+        if (result === null) { return }
+        if (!result.success) { return }
+        const data = Array.isArray(result.data) ? result.data[0] : result.data
+        updateEntry(data.target, msg.cid)
+      })
+    },
+    contact (msg) {
+      fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact/${msg.id}`))
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json() 
+      })
+      .then(result => {
+        if (result === null) { return }
+        if (!result.success) { return }
+        const data = Array.isArray(result.data) ? result.data[0] : result.data
+        updateEntry(data.reservation, msg.cid)
+      })
+    },
+    evenement (msg) {
+      checkMachineState()
+    }
+  },
+  delete: {
+    reservation (msg) {
+      deleteEntry(msg.id, msg.cid)
+    },
+    evenement (msg) {
+      checkMachineState()
+    }
+  }
+})
+
+
 const evtsource = new EventSource(new URL(`${KAIROS.getBase()}/events-srv.php`))
 evtsource.onmessage = event => {
   const msg = JSON.parse(event.data)
   if (msg.operation === undefined) { return }
   if (msg.cid === undefined) { return }
-  switch(msg.operation) {
-    case 'write':
-      switch (msg.type) {
-        case 'count':
-          countUpdateMessage(msg)
-          .then(([reservationId, clientId]) => {
-            updateEntry(reservationId, clientId)
-          })
-          .catch(reason => {
-            console.log(reason)
-          })
-          break
-        case 'reservation':
-          updateEntry(msg.id, msg.cid)
-          break
-        case 'arrival':
-          fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json() 
-          })
-          .then(result => {
-            if (result === null) { return }
-            if (!result.success) { return }
-            const data = Array.isArray(result.data) ? result.data[0] : result.data
-            updateEntry(data.target, msg.cid)
-          })
-          break
-        case 'contact':
-          fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact/${msg.id}`))
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json() 
-          })
-          .then(result => {
-            if (result === null) { return }
-            if (!result.success) { return }
-            const data = Array.isArray(result.data) ? result.data[0] : result.data
-            updateEntry(data.reservation, msg.cid)
-          })
-          break
-        }
-        break
-      case 'delete':
-        switch(msg.type) {
-          case 'reservation':
-            deleteEntry(msg.id, msg.cid)
-            break;
-        }
-        break
-    }
+  if (!EVTOperation[msg.operation]) { return }
+  if (!EVTOperation[msg.operation][msg.type]) { return }
+  EVTOperation[msg.operation][msg.type](msg)
 }
 evtsource.onerror = event => {
   console.log(event)
@@ -433,7 +440,6 @@ function checkMachineState () {
           Channels.get(k).postMessage({op: 'state', value: merged[k]})
         }
       }
-      setTimeout(checkMachineState, 5000)
     })
   })
   .catch(reason => {
