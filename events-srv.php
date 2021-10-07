@@ -1,5 +1,5 @@
 <?php
 require('wesrv/lib/client.php');
+require('conf/wesrv.php');
 
-$client = new \wesrv\client();
-$client->run();
+(new \wesrv\client())->run(WESERV_IP, WESRV_PORT, WESRV_KEY);
