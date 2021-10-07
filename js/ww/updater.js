@@ -370,7 +370,7 @@ function checkMachineState () {
     let prmses = []
     for (i = 0; i < result.length; i++) {
       prmses.push(new Promise((resolve, reject) => {
-        let entry = result.data[i]
+        const entry = result.data[i]
         let channel = entry.resolvedTarget
 
         if (Symlinks.has(channel)) {
@@ -389,18 +389,19 @@ function checkMachineState () {
           })
           .then(status => {
             if (status.length === 1) {
-              let severity = parseInt(status.data.severity)
+              const data = Array.isArray(status.data) ? status.data[0] : status.data
+              let severity = parseInt(data.severity)
               if (severity < 1000) {
-                status.data.color = 'black'
+                data.color = 'black'
               } else if (severity < 2000) {
-                status.data.color = 'blue'
+                data.color = 'blue'
               } else if (severity < 3000) {
-                status.data.color = 'darkorange'
+                data.color = 'darkorange'
               } else {
-                status.data.color = 'red'
+                data.color = 'red'
               }
-              Status.set(entry.type, status.data)
-              entry.type = status.data
+              Status.set(entry.type, data)
+              entry.type = data
               resolve([channel, entry])
             }
           })

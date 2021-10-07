@@ -75,8 +75,7 @@ define([
       .then(kentry => {
         this.KEntry = kentry
         this.displayLocation()
-        let change = this.stateChange.bind(this)
-        let create = (event) => {
+        const create = (event) => {
           for (const value of this.entries) {
             if (value.uuid === event.detail.entry.uuid) {
               return
@@ -89,13 +88,13 @@ define([
             })
           }
         }
-        let remove = (event) => {
+        const remove = (event) => {
           console.log(event)
           if (event.detail && event.detail.entry) {
             this.removeEntry(event.detail.entry)
           }
         }
-        let update = (event) => {
+        const update = (event) => {
           console.log(entry)
           if (event.detail && event.detail.entry) {
             this.KEntry.fixReservation(event.detail.entry)
@@ -107,7 +106,7 @@ define([
         kentry.addEventListener('update-entry', update)
         kentry.addEventListener('remove-entry', remove)
         kentry.addEventListener('create-entry', create)
-        kentry.addEventListener('state-change', change)
+        kentry.addEventListener('state-change', this.stateChange.bind(this))
         kentry.register(args.wwInstance)
       })
 
