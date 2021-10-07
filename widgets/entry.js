@@ -336,7 +336,7 @@ define([
           }
           for (const category in this.details[k]) {
             p.push(new Promise((resolve, reject) => {
-              fetch(`${KAIROS.getBase()}/store/Category/uniqueIdentifier=${this.details[k][category]}`)
+              fetch(new URL(`${KAIROS.getBase()}/store/Category/uniqueIdentifier=${this.details[k][category]}`))
               .then(response => {
                 if (!response.ok) { throw new Error('Erreur réseau')}
                 return response.json()
