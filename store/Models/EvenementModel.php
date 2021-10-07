@@ -286,5 +286,35 @@ class EvenementModel extends artnum\SQL {
     $this->LDAP = $dbs['ldap'];
     $this->SQL = $dbs['sql'];
   }
+
+  function _write($data, $id = NULL) {
+     global $MSGSrv;
+     $result = parent::_write($data, $id);
+     $item = $result->getItem(0);
+     if ($item !== null) {
+        $MSGSrv->send(json_encode([
+           'operation' => 'write',
+           'type' => 'evenement',
+           'id' => $item['id'],
+           'cid' => $this->kconf->getVar('clientid')
+          ]));
+     }
+     return $result;
+  }
+
+  function _delete($id) {
+     global $MSGSrv;
+      $result = parent::_delete($id);
+      $item = $result->getItem(0);
+      if ($item !== null) {
+        $MSGSrv->send(json_encode([
+          'operation' => 'delete',
+          'type' => 'evenement',
+          'id' => array_keys($item)[0],
+          'cid' => $this->kconf->getVar('clientid')
+         ]));
+      }
+      return $result;
+  }
 }
 ?>
