@@ -122,6 +122,32 @@ KAIROS.get = function (resource) {
 /* override fetch to add X-Request-Id automatically */
 const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch
+KAIROS._runningQueries = new Map()
+
+KAIROS.abortAllRequest = function () {
+  for (const [key, query] of KAIROS._runningQueries) {
+    query.abort()
+  }
+}
+
+KAIROS.abortRequest = function (rid) {
+  if (KAIROS._runningQueries.has(rid)) {
+    KAIROS._runningQueries.get(rid).abort()
+    KAIROS._runningQueries.delete(rid)
+  }
+}
+
+KAIROS.getRequestId = function () {
+  if (KAIROS.fetch.count === undefined) {
+    KAIROS.fetch.count = 0
+  }
+  if (KAIROS.fetch.uuid === undefined) {
+    KAIROS.fetch.uuid = KAIROS.uuidV4()
+  }
+  KAIROS.fetch.count++
+  return `${KAIROS.fetch.uuid}-${new Date().getTime()}-${KAIROS.fetch.count}`
+}
+
 KAIROS.fetch = function (url, options = {}) {
   const originalUrl = url instanceof URL ? url.toString() : url
   let bufferDelay = false
@@ -151,13 +177,8 @@ KAIROS.fetch = function (url, options = {}) {
       return currentRunning[0].then(response => { return response.clone() })
     }
   }
-
-  if (KAIROS.fetch.count === undefined) {
-    KAIROS.fetch.count = 0
-  }
-
-  KAIROS.fetch.count++
-  let rid =  `${KAIROS.fetch.uuid}-${new Date().getTime()}-${KAIROS.fetch.count}`
+  
+  const rid = options.rid || KAIROS.getRequestId()
   if (options.headers === undefined) {
     options.headers = new Headers({'X-Request-Id': rid})
   } else {
@@ -181,6 +202,9 @@ KAIROS.fetch = function (url, options = {}) {
       }
     }
 
+    const queryAbortCtrl = new AbortController()
+    options.signal = queryAbortCtrl.signal
+    KAIROS._runningQueries.set(rid, queryAbortCtrl)
     const query = __kairos_fetch(url, options)
     if (bufferDelay) {
       KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
@@ -188,6 +212,7 @@ KAIROS.fetch = function (url, options = {}) {
 
     query
     .then(response => {
+      KAIROS._runningQueries.delete(rid)
       if (response.ok) { return } // don't process good response
       const clonedResponse = response.clone()
       let headers = clonedResponse.headers
@@ -209,6 +234,8 @@ KAIROS.fetch = function (url, options = {}) {
       })
     })
     .catch(reason => {
+      /* abort is not ignored */
+      if (reason.name === 'AbortError') { return }
       if (KAIROS.error) { KAIROS.error(reason) }
       console.group('KAIROS Fetch')
       console.trace()

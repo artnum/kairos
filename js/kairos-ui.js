@@ -154,6 +154,9 @@ document.addEventListener('keyup', event => {
             KAIROS.closeNext()
         }
     }
+    if (event.key === 'F5' && event.ctrlKey) {
+        KAIROS.abortAllRequest()
+    }
 }, {capture: true})
 
 KAIROS.searchResults = function () {
