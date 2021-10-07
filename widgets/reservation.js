@@ -442,23 +442,6 @@ define([
       this.set('active', false)
     },
 
-    evTouchStart: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      if (window.App.touchTimeout) {
-        clearInterval(window.App.touchTimeout)
-      }
-      window.App.touchTimeout = setTimeout(function () {
-        this.popMeUp()
-      }.bind(this), 500)
-    },
-
-    evTouchEnd: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      clearTimeout(window.App.touchTimeout)
-    },
-
     isolateMe: function (e) {
       if (!this._isolated) {
         this._isolation = window.setTimeout(djLang.hitch(this, () => {
@@ -1140,10 +1123,6 @@ define([
       this._gui.hidden = false
       if (!this.domNode) {
         this.domNode = document.createElement('DIV')
-      }
-      if (!this.TouchEvents) {
-        this.TouchEvents = [djOn(this.domNode, 'touchstart', this.evTouchStart.bind(this)),
-          djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
       }
       if (!this.DblClick) {
         this.domNode.addEventListener('dblclick', (event) => {

@@ -190,9 +190,6 @@ define([
 
     postCreate: function () {
       this.domNode.addEventListener('dblclick', event => { this.evtDblClick(event) })
-      this.domNode.addEventListener('touchend', event=> { this.evTouchEnd(event) })
-      this.domNode.addEventListener('touchstart', event => { this.evTouchStart(event) })
-
       this.originalHeight = djDomStyle.get(this.domNode, 'height') ? djDomStyle.get(this.domNode, 'height') : 73 /* in chrome value here is 0, set default known value for now */
 
       this.view = { rectangle: getElementRect(this.domNode) }
@@ -640,23 +637,6 @@ define([
 
     defaultStatus: function () {
       return this.sup.defaultStatus()
-    },
-
-    evTouchStart: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      if (window.App.touchTimeout) {
-        clearTimeout(window.App.touchTimeout)
-      }
-      window.App.touchTimeout = setTimeout(() => {
-        this.evtDblClick(event)
-      }, 500)
-    },
-
-    evTouchEnd: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      clearTimeout(window.App.touchTimeout)
     },
 
     evtDblClick: function (event) {
