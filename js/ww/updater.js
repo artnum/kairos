@@ -107,7 +107,6 @@ self.onmessage = function (msg) {
     case 'move':
       if (Range === null) {
         Range = {begin: msg.data.begin, end: msg.data.end}
-        startUpdater()
       } else {
         Range.begin = msg.data.begin
         Range.end = msg.data.end
@@ -465,32 +464,6 @@ function runUpdater () {
     }
   })
   .catch(reason => console.log(reason))
-}
-
-const updateTimer = 10
-function startUpdater () {
-  if (LastMod > 0) {
-    const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
-    url.searchParams.set('search.modification', `>${LastMod}`)
-    fetch(url)
-    .then((response) => {
-      if (!response.ok) { throw new Error('Net error') }
-      return response.json()
-    })
-    .then(result => {
-      if (!result.success) { throw new Error('Server error') }
-      if (result.length <= 0) { return }
-      return cacheAndSend(result.data, newVTimeLine())
-    })
-    .catch(reason => {
-      console.log(reason)
-    })
-    .finally(_ => {
-      setTimeout(startUpdater, updateTimer * 1000)
-    })
-  } else {
-    setTimeout(startUpdater, updateTimer * 1000)
-  }
 }
 
 checkMachineState()
