@@ -145,7 +145,7 @@ define([
       var sStore = window.sessionStorage
       let url = new URL('store/Status/', KAIROS.getBase())
       url.searchParams.append('search.type', 0)
-      kfetch(url).then(response => {
+      fetch(url).then(response => {
         if (!response.ok) { return }
         response.json().then(results => {
           if (results.length <= 0) { return }
@@ -1453,57 +1453,63 @@ define([
       return current
     },
 
-    doSearchLocation: function (loc, dontmove = true) {
+    doSearchLocation: function (resourceId, dontmove = true) {
       DoWait()
-      return new Promise((resolve, reject) => {
-        kfetch(`${KAIROS.getBase()}/store/DeepReservation/${loc}`)
+      return new Promise((resolve) => {
+        fetch(`${KAIROS.getBase()}/store/DeepReservation/${resourceId}`)
         .then(response => {
-          if (!response.ok) { reject(); return }
-          response.json().then(result=> {
-            if (result && result.length === 0) {
-              resolve(false)
+          if (!response.ok) { throw new Error('Net Error') }
+          return response.json()
+        })
+        .then(result=> {
+          if (!result.success) { throw new Error('Server Error') }
+          if (result.length <= 0) { return }
+          
+            const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+            if (reservation.deleted) {
+              dontmove = true
+            }
+            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
+            this.update()
+            if (this.Entries.has(reservation.target)) {
+              const entry = this.Entries.get(reservation.target)
+              entry.createEntry(reservation, true)
+              .then(() => {
+                if (entry.openReservation(reservation.uuid || reservation.id)) {
+                  if (!dontmove) {
+                    let pos = djDomGeo.position(entry.domNode, true)
+                    window.scroll(0, pos.y - (window.innerHeight / 3))
+                  }
+                  resolve(true)
+                } else {
+                  resolve(false)
+                }
+              })
             } else {
-              const reservation = result.data
-              if (reservation.deleted) {
-                dontmove = true
-              }
-              if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
-              this.update()
-              const data = result.data
-              if (this.Entries.has(data.target)) {
-                const entry = this.Entries.get(data.target)
-                entry.createEntry(data)
-                .then(() => {
-                  if (entry.openReservation(data.uuid || data.id)) {
-                    if (!dontmove) {
-                      let pos = djDomGeo.position(entry.domNode, true)
-                      window.scroll(0, pos.y - (window.innerHeight / 3))
-                    }
+              let entry = null
+              for (const [_, currentEntry] of this.Entries) {
+                if (currentEntry.KEntry === undefined) { continue }
+                currentEntry.KEntry.is(reservation.target)
+                .then(is => {
+                  if (!entry && is) {
+                    entry = currentEntry
+                    const r = new Reservation({uid: data.id, uuid: data.uuid, sup: currentEntry, _json: data})
+                    r.popMeUp()
                     resolve(true)
-                  } else {
-                    resolve(false)
+                    return
                   }
                 })
-              } else {
-                let entry = null
-                for (const [_, currentEntry] of this.Entries) {
-                  currentEntry.KEntry.is(reservation.target)
-                  .then(is => {
-                    if (!entry && is) {
-                      entry = currentEntry
-                      const r = new Reservation({uid: data.id, uuid: data.uuid, sup: currentEntry, _json: data})
-                      r.popMeUp()
-                      resolve(true)
-                      return
-                    }
-                  })
-                }
               }
-              DoWait(false)
             }
-          })
-        }, () => { resolve(false); DoWait(false) })
-      }, () => { resolve(false); DoWait(false) })
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
+          resolve(false)
+        })
+        .finally(_ => {
+          DoWait(false)
+        })
+      })
     },
 
     print: function (url) {
@@ -1613,7 +1619,7 @@ define([
 
     autoprint: function (path) {
       if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        kfetch(Path.url('exec/auto-print.php', {params: {file: path}}))
+        fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
       }
     },
     openUncounted: function () {
@@ -1649,8 +1655,25 @@ define([
             }
           }
           if (found !== '1') {
-            if (regexp.test(entry.KEntry.get('location'))) {
+            if (regexp.test(entry.KEntry?.get('location'))) {
               found = '1'
+            }
+          }
+
+          if (found !== '1') {
+            for (let i = 0; i < entry.details?.motorization?.length; i++) {
+              if (regexp.test(entry.details?.motorization[i])) {
+                found = '1'
+                break
+              }
+            }
+          }
+          if (found !== '1') {
+            for (let i = 0; i < entry.details?.special?.length; i++) {
+              if (regexp.test(entry.details?.special[i])) {
+                found = '1'
+                break
+              }
             }
           }
           entry.domNode.dataset.active = found

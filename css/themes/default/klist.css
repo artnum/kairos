@@ -1,0 +1,39 @@
+.klist.head {
+    cursor: pointer;
+}
+
+.klist.popup {
+    background-color: white;
+    color: black;
+    border: 1px solid black;
+    padding: 2px;
+}
+
+.klist .item {
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.klist .item:hover {
+    background-color: hsla(var(--default-highlight-color-base), 0.2);
+    border: 1px solid hsla(var(--default-highlight-color-base), 0.4);
+    transition-delay: 10ms;
+}
+
+.klist .item[data-selected="1"] {
+    color: maroon;
+}
+
+.klist .item[data-selected="1"] input {
+    border-color: maroon;
+}
+
+.klist.flat {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.klist .item[data-selected="1"][data-icon="1"] {
+    text-decoration: underline;
+}

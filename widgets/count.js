@@ -19,7 +19,7 @@ define([
   Card
 ) {
   return djDeclare('location/count', [ _dtWidgetBase, djEvented ], {
-    constructor: function () {
+    constructor: async function () {
       this.inherited(arguments)
       this.Arguments = arguments
       this.Days = {}
@@ -43,27 +43,28 @@ define([
         } else {
           this.set('articles', [])
         }
-        var data
+        let data
         var create = true
         if (args[0]['data-id']) {
-          data = await Query.exec(Path.url('store/Count/' + args[0]['data-id']))
-          if (data.length === 1) {
-            this.set('data', data.data)
-            this.set('data-id', data.data.id)
+          const response = await Query.exec(Path.url('store/Count/' + args[0]['data-id']))
+          if (response.success) {
+            const result = Array.isArray(response.data) ? response.data[0] : response.data
+            this.set('data', result)
+            this.set('data-id', result.id)
             create = false
             resolve()
           }
         }
 
         if (create) {
-          data = await Query.exec(Path.url('store/Count'), {method: 'post', body: JSON.stringify({date: new Date().toISOString()})})
-          if (data.success) {
-            data = await Query.exec(Path.url('store/Count/' + data.data[0].id))
-            if (data.length === 1) {
-              this.set('data', data.data)
-              this.set('data-id', data.data.id)
-              resolve()
-            }
+          const response = await Query.exec(Path.url('store/Count'), {method: 'post', body: JSON.stringify({date: new Date().toISOString()})})
+          if (response.success) {
+            const result = Array.isArray(response.data) ? response.data[0] : response.data
+            const response2 = await Query.exec(Path.url(`store/Count/${result.id}`))
+            const result2 = Array.isArray(response2.data) ? response2.data[0] : response2.data
+            this.set('data', result2)
+            this.set('data-id', result2.id)
+            resolve()
           }
         }
 
@@ -76,11 +77,26 @@ define([
           let H = new Holiday()
           for (let i = 0; i < data.length; i++) {
             r.push(data.data[i].reservation)
-            Query.exec(Path.url(`store/Reservation/${data.data[i].reservation}`)).then((_r) => {
-              if (_r.success && _r.length === 1) {
-                let days = H.bdays(new Date(_r.data.begin), new Date(_r.data.end), this.data.canton ? this.data.canton : 'vs')
-                this.Days[data.data[i].reservation] = {begin: new Date(_r.data.begin), end: new Date(_r.data.end), days: days, effectiveBegin: new Date(_r.data.begin), effectiveEnd: new Date(_r.data.end)}
+            fetch(`${KAIROS.getBase()}/store/Reservation/${data.data[i].reservation}`)
+            .then(response => {
+              if (!response.ok) { throw new Error('Net error')}
+              return response.json()
+            })
+            .then((result) => {
+              if (!result.success) { throw new Error('Server error') }
+              if (result.length <= 0) { return }
+              const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+              let days = H.bdays(new Date(reservation.begin), new Date(reservation.end), this.data.canton ? this.data.canton : 'vs')
+              this.Days[data.data[i].reservation] = {
+                begin: new Date(reservation.begin), 
+                end: new Date(reservation.end),
+                days, 
+                effectiveBegin: new Date(reservation.begin),
+                effectiveEnd: new Date(reservation.end)
               }
+            })
+            .catch(reason => {
+              KAIROS.error(reason)
             })
           }
           if (this.AddReservationToCount && r.indexOf(this.AddReservationToCount) < 0) { r.push(this.AddReservationToCount) }
@@ -99,7 +115,6 @@ define([
             this.set('address-id', this.get('data')._invoice.address)
           }
         }
-
         this.refresh_contacts()
         this.start(arguments)
       }.bind(this))
@@ -244,42 +259,87 @@ define([
     },
 
     addReservation: async function (reservation) {
-      var url = Path.url('store/CountReservation')
-      url.searchParams.set('search.count', this.get('data-id'))
-      url.searchParams.set('search.reservation', reservation)
-      var link = await Query.exec(url)
-      if (link.success && link.length <= 0) {
-        var rData = Query.exec(Path.url('store/Reservation/' + reservation))
-        var res = await Query.exec(Path.url('store/CountReservation'), {method: 'post', body: JSON.stringify({reservation: reservation, count: this.get('data-id')})})
-        if (res.success) {
-          var r = this.get('reservations')
-          if (r.indexOf(reservation) < 0) {
-            r.push(reservation)
-            this.set('reservations', r)
-          }
+      const url = new URL(`${KAIROS.getBase()}/store/CountReservation`)
+      url.searchParams.append('search.count', this.get('data-id'))
+      url.searchParams.append('search.reservation', reservation)
+      fetch(url)
+      .then(response =>{
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        if (result.length < 1) {
+          url.searchParams.delete('search.count')
+          url.searchParams.delete('search.reservation')
+          return fetch(url, {method: 'POST', body: JSON.stringify({reservation, count: this.get('data-id')})})
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            const reservations = this.get('reservations')
+            if (reservations.indexOf(reservation) === -1) {
+              reservations.push(reservation)
+              this.set('reservations', reservations)
+            }
+            return reservation
+          })
+        } else {
+          return 0
         }
+      })
+      .then(reservation => {
+        if (reservation === 0) { return }
 
-        rData.then(async function (result) {
-          let H = new Holiday()
-          if (result.success && result.length === 1) {
-            let state = 'vs'
-            if (/^PC\/[0-9a-f]{32,32}$/.test(result.data.locality)) {
-              let locality = await Query.exec(Path.url(`store/${result.data.locality}`))
-              if (locality.success && locality.length === 1) {
-                state = locality.data.state.toLowerCase()
-              }
-            }
-            if (!this.get('data').canton) {
-              this.setCanton(state)
-              this.data.canton = state
-            }
-            var unit = this.get('units').find(x => x.default > 0).id
-            var days = H.bdays(new Date(result.data.begin), new Date(result.data.end), H.hasState(state) ? state : 'vs')
-            this.Days[r] = {begin: new Date(result.data.begin), end: new Date(result.data.end), days: days, effectiveBegin: new Date(result.data.begin), effectiveEnd: new Date(result.data.end)}
-            this.tbody.insertBefore(this.centry({reservation: reservation, reference: result.data.target, unit: unit, quantity: days, state: state}, true), this.tbody.firstChild)
+        return fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${reservation}`))
+        .then(response =>{
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+          if (/^\/?PC\/[0-9a-f]{32,32}$/.test(reservation.locality)) {
+            const localityId = reservation.slit('/').pop()
+            return fetch(`${KAIROS.getBase()}/store/PC/${localityId}`)
+            .then(response => {
+              if (!response.ok) { throw new Error('ERR:Server') }
+              return response.json()
+            })
+            .then(result => {
+              if (!result.success) { throw new Error('ERR:Server') }
+              const locality = Array.isArray(result.data) ? result.data[0] : result.data
+              return [reservation, locality.state.toLowerCase()]
+            })
           }
-        }.bind(this))
-      }
+          return [reservation, 'vs']
+        })
+        .then(([reservation, state]) => {
+          if (!this.get('data').canton) { this.setCanton(state); this.data.canton = state }
+          const unit = this.get('units').find(x => x.default > 0).id
+          const holiday = new Holiday()
+          const days = holiday.bdays(new Date(reservation.begin), new Date(reservation.end), holiday.hasState(state) ? state : 'vs')
+          this.Days[this.get('reservations')] = {
+            begin: new Date(reservation.begin),
+            end: new Date(reservation.end),
+            days,
+            effectiveBegin: new Date(reservation.begin),
+            effectiveEnd: new Date(reservation.end)
+          }
+          this.tbody.insertBefore(
+            this.centry({
+                reservation, reference: reservation.target, unit: unit, quantity: days, state: state
+              }, 
+              true),
+            this.tbody.firstChild
+          )
+        })
+      })
+      .catch(reason => {
+        KAIROS.error(reason)
+      })
     },
 
     deleteCount: function (countId) {
@@ -359,43 +419,28 @@ define([
       }.bind(this))
     },
 
-    getReservations: async function () {
-      var r = this.get('reservations')
-      var reservations = []
-      for (var i = 0; i < r.length; i++) {
-        var x = await Query.exec(Path.url('store/DeepReservation/' + r[i]))
-        if (x.success && x.length) {
-          x = x.data
-          x.state = 'vs'
-          if (x.locality) {
-            if (/^PC\/[0-9a-f]{32,32}$/.test(x.locality) || /^Warehouse\/[a-zA-Z0-9]*$/.test(x.locality)) {
-              let locality = await Query.exec(Path.url(`store/${x.locality}`))
-              if (locality.success && locality.length === 1) {
-                locality = locality.data
-                if (locality.np) {
-                  x.locality = `${locality.np} ${locality.name} (${locality.state.toUpperCase()})`
-                  x.canton = locality.state
-                } else {
-                  x.locality = `Dépôt ${locality.name}`
-                }
-              }
-            }
-            if (x.address && x.address.length > 0) {
-              x.address = x.address.trim() + ', ' + x.locality.trim()
-            } else {
-              x.address = x.locality.trim()
-            }
-          }
-          if (!x.reference && x.address) {
-            x.reference = x.address
-          } else if (x.reference && x.address) {
-            x.reference = x.reference + ' / ' + x.address.split('\n').join(', ')
-          }
-          reservations.push(x)
+    getReservations: function () {
+      return new Promise((resolve) => {
+        const r = this.get('reservations')
+        const promiseReservations = []
+        for (const reservationId of r) {
+          promiseReservations.push(KReservation.load(reservationId))
         }
-      }
-
-      return reservations
+        Promise.allSettled(promiseReservations)
+        .then(promises => {
+          const reservations = []
+          for(const promise of promises) {
+            if (promise.status === 'fulfilled') {
+              reservations.push(promise.value)
+            }
+          }
+          resolve(reservations)
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
+          reject(reason)
+        })
+      })
     },
 
     start: async function () {
@@ -447,54 +492,71 @@ define([
         }.bind(this))
       }.bind(this))
 
-      var reservations = await this.getReservations()
-      var references = '<fieldset name="reference"><legend>Référence</legend>'
-      var begin = null
-      var end = null
-      var machines = []
-      let refs = []
-      if (reservations.length > 0) {
-        for (var i = 0; i < reservations.length; i++) {
-          if (machines.indexOf(reservations[i].target) === -1) {
-            machines.push(reservations[i].target)
+      this.getReservations()
+      .then(reservations => {
+        return new Promise((resolve) => {
+          const url = new URL(`${KAIROS.getBase()}/store/Status`)
+          url.searchParams.append('search.type', 2)
+          fetch(url)
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            resolve([reservations, result.data])
+          })
+          .catch(reason => {
+            throw new Error(reason)
+          })
+        })
+      })
+      .then(([reservations, allStatus]) => {
+        let references = '<fieldset name="reference"><legend>Référence</legend>'
+        let begin = null
+        let end = null
+        const machines = []
+        const refs = []
+
+        for (const reservation of reservations) {
+          if (machines.indexOf(reservation.get('machine.airref')) === -1) {
+            machines.push(reservation.get('machine.airref'))
           }
-          if (reservations[i].reference) {
-            refs.push(`<div class="reference" data-action="select-reference" data-reservation-id="${reservations[i].id}" data-reference-value="${reservations[i].reference}"><b>Rés. ${reservations[i].id}</b>&nbsp;: ${reservations[i].reference}</div>`)
+          if (reservation.has('reference')) {
+            refs.push(`<div class="reference" data-action="select-reference" data-reservation-id="${reservation.get('id')}" data-reference-value="${reservation.get('reference')}"><b>Rés. ${reservation.get('id')}</b>&nbsp;: ${reservation.get('reference')}</div>`)
           }
-          if (begin === null || (new Date(begin)).getTime() > (new Date(reservations[i].begin)).getTime) {
-            begin = reservations[i].begin
+          if (begin === null || begin.getTime() > reservation.get('begin').getTime()) {
+            begin = reservation.get('begin')
           }
-          if (end === null || (new Date(end)).getTime() < (new Date(reservations[i].end)).getTime) {
-            end = reservations[i].end
+          if (end === null || end.getTime() < reservation.get('end').getTime()) {
+            end = reservation.get('end')
           }
         }
-      }
-      if (refs.length > 0) {
-        references += refs.join('<span class="separator"> | </span>')
-        references += '<br />'
-      }
-      if (reservations.length === 1 && !this.get('data').reference) {
-        references += `<input type="text" name="reference" value="${reservations[0].reference ? reservations[0].reference : ''}"></fieldset>`
-      } else {
-        references += `<input type="text" name="reference" value="${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
-      }
+        if (refs.length > 0) {
+          references += refs.join('<span class="separator"> | </span>')
+          references += '<br />'
+        }
+        if (reservations.length === 1 && !this.get('data').reference) {
+          references += `<input type="text" name="reference" value="${reservations[0].reference ? reservations[0].reference : ''}"></fieldset>`
+        } else {
+          references += `<input type="text" name="reference" value="${(this.get('data').reference ? this.get('data').reference : '')}"></fieldset>`
+        }
 
-      var div = document.createElement('DIV')
-      div.setAttribute('class', 'DocCount')
+        var div = document.createElement('DIV')
+        div.setAttribute('class', 'DocCount')
 
-      var htmlReservation = []
-      this.get('reservations').forEach(function (r) {
-        htmlReservation.push(`<span class="button" data-action="open-reservation" data-reservation-id="${r}">${r}<span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
-      })
-      this.get('deleted-reservation').forEach(function (d) {
-        htmlReservation.push(`<span class="button deleted" data-action="open-reservation" data-reservation-id="${d}"><del>${d}</del><span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
-      })
+        var htmlReservation = []
+        this.get('reservations').forEach(function (r) {
+          htmlReservation.push(`<span class="button" data-action="open-reservation" data-reservation-id="${r}">${r}<span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
+        })
+        this.get('deleted-reservation').forEach(function (d) {
+          htmlReservation.push(`<span class="button deleted" data-action="open-reservation" data-reservation-id="${d}"><del>${d}</del><span data-action="delete-reservation"><i class="fas fa-trash"> </i></span></span>`)
+        })
 
-      var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}}))
-      var txtStatus = ''
-      if (allStatus.success && allStatus.length > 0) {
+        /*var allStatus = await Query.exec(Path.url('store/Status', {params: {'search.type': 2}})) */
+        var txtStatus = ''
         txtStatus = '<label for="status">Statut</label><select form="details" name="status">'
-        allStatus.data.forEach(function (s) {
+        allStatus.forEach(function (s) {
           var checked = ''
           if (this.get('data').status && String(this.get('data').status) === String(s.id)) {
             checked = 'selected'
@@ -502,169 +564,174 @@ define([
           txtStatus += `<option value="${s.id}" ${checked}>${s.name}</option>`
         }.bind(this))
         txtStatus += '</select><br/>'
-      }
-      var domStatus = document.createRange().createContextualFragment(txtStatus)
+        var domStatus = document.createRange().createContextualFragment(txtStatus)
 
-      div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
-        <li><span data-action="add-invoice">${(this.get('data').invoice && (this.get('data')._invoice.winbiz) ? 'Facture N°' + this.get('data')._invoice.winbiz : ' <i class="fas fa-plus-circle"> </i> Ajouter une facture')}</span></li>
-        <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')} <span data-action="add-reservation"> <i class="fas fa-plus-circle"> </i> Ajouter une réservation</span></li>
-        <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
-        ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
-        <fieldset><legend>Période</legend><label for="begin">Début</label>
-        <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
-        <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" />
-        <label for="state"> Final <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/></label>
-        <label for="canton">Feriés : <select name="canton">
-        <option value="vs">Valais</option>
-        <option value="vd">Vaud</option>
-        <option value="ge">Genève</option>
-        <option value="fr">Fribourg (catholique)</option>
-        <option value="fr-prot">Fribourg (protestant)</option>
-        <option value="ne">Neuchâtel</option>
-        <option value="be">Berne</option>
-        <option value="ju">Jura</option>
-        </select>
-        </fieldset>
-        <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
-        <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
+        div.innerHTML = `<h1>Décompte N°${String(this.get('data-id'))}</h1><form name="details"><ul>
+          <li><span data-action="add-invoice">${(this.get('data').invoice && (this.get('data')._invoice.winbiz) ? 'Facture N°' + this.get('data')._invoice.winbiz : ' <i class="fas fa-plus-circle"> </i> Ajouter une facture')}</span></li>
+          <li>Réservation : ${(htmlReservation.length > 0 ? htmlReservation.join(' ') : '')} <span data-action="add-reservation"> <i class="fas fa-plus-circle"> </i> Ajouter une réservation</span></li>
+          <li>Machine : ${(machines.length > 0 ? machines.join(', ') : '')}</li>
+          ${(this.get('data').printed ? '<li>Dernière impression : ' + this._toHtmlDate(this.get('data').printed) + '</li>' : '')}</ul>
+          <fieldset><legend>Période</legend><label for="begin">Début</label>
+          <input type="date" value="${(this.get('data').begin ? this._toInputDate(this.get('data').begin) : this._toInputDate(begin))}" name="begin" /><label for="end">Fin</label>
+          <input type="date" name="end" value="${(this.get('data').end ? this._toInputDate(this.get('data').end) : this._toInputDate(end))}" />
+          <label for="state"> Final <input type="checkbox" ${this.get('data').state === 'FINAL' ? 'checked' : ''} name="state"/></label>
+          <label for="canton">Feriés : <select name="canton">
+          <option value="vs">Valais</option>
+          <option value="vd">Vaud</option>
+          <option value="ge">Genève</option>
+          <option value="fr">Fribourg (catholique)</option>
+          <option value="fr-prot">Fribourg (protestant)</option>
+          <option value="ne">Neuchâtel</option>
+          <option value="be">Berne</option>
+          <option value="ju">Jura</option>
+          </select>
+          </fieldset>
+          <label for="comment">Communication client</label><textarea name="comment">${(this.get('data').comment ? this.get('data').comment : '')}</textarea>${references}</form>
+          <form name="invoice" ${(this.get('data').invoice ? ' data-invoice="' + this.get('data').invoice + '" ' : '')}><fieldset name="contacts"><fieldset></form>`
 
-      let selects = div.getElementsByTagName('select')
-      for (let i = 0; i < selects.length; i++) {
-        if (selects[i].name === 'canton') {
-          /* for Fribourg, default to catholique Fribourg */
-          selects[i].value = this.get('data').canton
-          break
-        }
-      }
-
-      div.addEventListener('click', async function (event) {
-        var node = event.target
-        while (node && node.getAttribute) {
-          if (node.getAttribute('data-action')) {
+        let selects = div.getElementsByTagName('select')
+        for (let i = 0; i < selects.length; i++) {
+          if (selects[i].name === 'canton') {
+            /* for Fribourg, default to catholique Fribourg */
+            selects[i].value = this.get('data').canton
             break
           }
-          node = node.parentNode
         }
-        if (!node || !node.getAttribute) {
-          return
-        }
-        switch (node.dataset.action) {
-          case 'open-reservation':
-            if (node.dataset.reservationId) {
-              window.GEvent('reservation.open', {id: node.dataset.reservationId})
-            }
-            break
-          case 'delete-reservation':
-            DoWait()
-            var id
-            if (node.dataset.reservationId) {
-              id = node.dataset.reservationId
-            } else {
-              var n = node.parentNode
-              while (n && !n.dataset.reservationId) { n = n.parentNode }
-              id = n.dataset.reservationId
-            }
 
-            this.deleteReservation(this.get('data-id'), id).then(function (result) {
-              if (result.type === 'success-with-error' || result.type === 'success') {
-                if (result.type === 'success-with-error') {
-                  window.App.warn('Des erreurs bégnines se sont produites durant la suppression')
-                }
-                while (node && !node.classList.contains('button')) { node = node.parentNode }
-                window.requestAnimationFrame(function () {
-                  node.parentNode.removeChild(node)
-                })
-              } else if (result.type === 'count-deleted') {
-                this.doc.close()
-                window.GEvent('count.count-deleted', {id: result.id})
+        div.addEventListener('click', (event) => {
+          var node = event.target
+          while (node && node.getAttribute) {
+            if (node.getAttribute('data-action')) {
+              break
+            }
+            node = node.parentNode
+          }
+          if (!node || !node.getAttribute) {
+            return
+          }
+          switch (node.dataset.action) {
+            case 'open-reservation':
+              if (node.dataset.reservationId) {
+                window.GEvent('reservation.open', {id: node.dataset.reservationId})
               }
+              break
+            case 'delete-reservation':
+              DoWait()
+              var id
+              if (node.dataset.reservationId) {
+                id = node.dataset.reservationId
+              } else {
+                var n = node.parentNode
+                while (n && !n.dataset.reservationId) { n = n.parentNode }
+                id = n.dataset.reservationId
+              }
+
+              this.deleteReservation(this.get('data-id'), id)
+              .then(function (result) {
+                if (result.type === 'success-with-error' || result.type === 'success') {
+                  if (result.type === 'success-with-error') {
+                    window.App.warn('Des erreurs bégnines se sont produites durant la suppression')
+                  }
+                  while (node && !node.classList.contains('button')) { node = node.parentNode }
+                  window.requestAnimationFrame(function () {
+                    node.parentNode.removeChild(node)
+                  })
+                } else if (result.type === 'count-deleted') {
+                  this.doc.close()
+                  window.GEvent('count.count-deleted', {id: result.id})
+                }
+                DoWait(false)
+              }, (error) => { DoWait(false); window.App.error(error.message) })
+              break
+            case 'select-reference':
+              if (node.getAttribute('data-reference-value')) {
+                var value = node.getAttribute('data-reference-value')
+                while (node.tagName !== 'INPUT') { node = node.nextSibling }
+                node.value = value
+              }
+              break
+            case 'add-reservation':
+              this.manAddReservation(event)
+              break
+            case 'add-invoice':
+              this.manAddInvoice(event)
+              break
+          }
+        })
+
+        this.domNode = div
+        this.table = document.createElement('TABLE')
+
+        div.appendChild(this.table)
+        this.doc.content(this.domNode)
+        div.lastChild.focus()
+
+        this.thead = document.createElement('THEAD')
+        this.thead.innerHTML = '<tr><td class="short">Réservation</td><td class="short">Référence</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Rabais</td><td class="short">Total</td><td></td></tr>'
+        this.tbody = document.createElement('TBODY')
+        this.tfoot = document.createElement('TFOOT')
+
+        this.table.appendChild(this.thead)
+        this.table.appendChild(this.tbody)
+        this.table.appendChild(this.tfoot)
+
+        div.appendChild(domStatus)
+
+        var save = document.createElement('button')
+        save.innerHTML = 'Sauvegarder'
+        let sButton = new MButton(save)
+        sButton.addEventListener('click', this.save.bind(this))
+
+        var saveQuit = document.createElement('button')
+        saveQuit.innerHTML = 'Sauvegarder et quitter'
+        let sqButton = new MButton(saveQuit)
+        sqButton.addEventListener('click', this.saveQuit.bind(this))
+
+        var print = document.createElement('button')
+        print.innerHTML = 'Imprimer'
+        let pButton = new MButton(print, [
+          {label: 'Afficher', events: {click: () => this.print()}}
+        ])
+        pButton.addEventListener('click', () => this.autoPrint('count'))
+
+        var del = document.createElement('button')
+        del.innerHTML = 'Supprimer'
+        del.setAttribute('style', 'float: right')
+
+        let dButton = new MButton(del)
+        dButton.addEventListener('click', (event) => {
+          if (confirm(`Confirmez la suppression du décompte ${this.get('data-id')}`)) {
+            DoWait()
+            this.deleteCount(this.get('data-id'))
+            .then(() => {
+              this.doc.close()
               DoWait(false)
-            }, (error) => { DoWait(false); window.App.error(error.message) })
-            break
-          case 'select-reference':
-            if (node.getAttribute('data-reference-value')) {
-              var value = node.getAttribute('data-reference-value')
-              while (node.tagName !== 'INPUT') { node = node.nextSibling }
-              node.value = value
-            }
-            break
-          case 'add-reservation':
-            this.manAddReservation(event)
-            break
-          case 'add-invoice':
-            this.manAddInvoice(event)
-            break
+            }, () => {
+              DoWait(false)
+              window.App.error('Erreur de suppression du décompte')
+            })
+          }
+        })
+        this.domNode.appendChild(del)
+        this.domNode.appendChild(save)
+        this.domNode.appendChild(saveQuit)
+        this.domNode.appendChild(print)
+
+        this.refresh().then(() => {
+          if (this.AddReservationToCount) {
+            this.addReservation(this.AddReservationToCount)
+          }
+        })
+
+        var forms = this.domNode.getElementsByTagName('FORM')
+        for (i = 0; i < forms.length; i++) {
+          forms[i].addEventListener('submit', this.save.bind(this))
+          this['form_' + forms[i].getAttribute('name')] = forms[i]
         }
-      }.bind(this))
-
-      this.domNode = div
-      this.table = document.createElement('TABLE')
-
-      div.appendChild(this.table)
-      this.doc.content(this.domNode)
-      div.lastChild.focus()
-
-      this.thead = document.createElement('THEAD')
-      this.thead.innerHTML = '<tr><td class="short">Réservation</td><td class="short">Référence</td><td class="long">Description</td><td class="short">Quantité</td><td class="short">Unité</td><td class="short">Prix</td><td class="short">Rabais</td><td class="short">Total</td><td></td></tr>'
-      this.tbody = document.createElement('TBODY')
-      this.tfoot = document.createElement('TFOOT')
-
-      this.table.appendChild(this.thead)
-      this.table.appendChild(this.tbody)
-      this.table.appendChild(this.tfoot)
-
-      div.appendChild(domStatus)
-
-      var save = document.createElement('button')
-      save.innerHTML = 'Sauvegarder'
-      let sButton = new MButton(save)
-      sButton.addEventListener('click', this.save.bind(this))
-
-      var saveQuit = document.createElement('button')
-      saveQuit.innerHTML = 'Sauvegarder et quitter'
-      let sqButton = new MButton(saveQuit)
-      sqButton.addEventListener('click', this.saveQuit.bind(this))
-
-      var print = document.createElement('button')
-      print.innerHTML = 'Imprimer'
-      let pButton = new MButton(print, [
-        {label: 'Afficher', events: {click: () => this.print()}}
-      ])
-      pButton.addEventListener('click', () => this.autoPrint('count'))
-
-      var del = document.createElement('button')
-      del.innerHTML = 'Supprimer'
-      del.setAttribute('style', 'float: right')
-
-      let dButton = new MButton(del)
-      dButton.addEventListener('click', function () {
-        if (confirm(`Confirmez la suppression du décompte ${this.get('data-id')}`)) {
-          DoWait()
-          this.deleteCount(this.get('data-id')).then(function () {
-            this.doc.close()
-            DoWait(false)
-          }.bind(this), () => {
-            DoWait(false)
-            window.App.error('Erreur de suppression du décompte')
-          })
-        }
-      }.bind(this))
-      this.domNode.appendChild(del)
-      this.domNode.appendChild(save)
-      this.domNode.appendChild(saveQuit)
-      this.domNode.appendChild(print)
-
-      this.refresh().then(function () {
-        if (this.AddReservationToCount) {
-          this.addReservation(this.AddReservationToCount)
-        }
-      }.bind(this))
-
-      var forms = this.domNode.getElementsByTagName('FORM')
-      for (i = 0; i < forms.length; i++) {
-        forms[i].addEventListener('submit', this.save.bind(this))
-        this['form_' + forms[i].getAttribute('name')] = forms[i]
-      }
+      })
+      .catch(reason => {
+        KAIROS.error(reason)
+      })
     },
 
     refresh: async function () {
@@ -1160,20 +1227,25 @@ define([
       data.printed = (new Date()).toISOString()
       this.set('data', data)
       return new Promise((resolve, reject) => {
-        this.save().then(() => {
-          Query.exec((Path.url('exec/auto-print.php', {
-            params: {
-              type: type, file: `pdfs/${file}/${this.get('data-id')}`
-            }
-          }))).then((result) => {
-            if (result.success) {
-              window.App.info(`Impression du décompte ${this.get('data-id')} en cours`)
-              resolve()
-            } else {
-              window.App.error(`Erreur d'impression du décompte ${this.get('data-id')}`)
-              reject(new Error('Print error'))
-            }
-          })
+        this.save()
+        .then(() => {
+          const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
+          url.searchParams.append('type', type)
+          url.searchParams.append('file', `pdfs/${file}/${this.get('data-id')}`)
+          return fetch(url)
+        })
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          KAIROS.info(`Impression du décompte ${this.get('data-id')} en cours`)
+          resolve()
+        })
+        .catch(reason => {
+          KAIROS.error(`Erreur d'impression du décompte ${this.get('data-id')}`)
+          reject(reason)
         })
       })
     },

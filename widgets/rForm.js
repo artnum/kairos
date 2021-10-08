@@ -42,10 +42,7 @@ define([
   'location/Stores/Status',
   'location/Stores/Unit',
   'location/rform/handler',
-  'location/rform/section',
-  
-  'artnum/Path',
-  'artnum/Query'
+  'location/rform/section'
 ], function (
   djDeclare,
   djLang,
@@ -89,9 +86,6 @@ define([
   Unit,
   RFormHandler,
   RFormSection,
-  
-  Path,
-  Query
 ) {
   return djDeclare('location.rForm', [dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
                                       RFormHandler, RFormSection], {
@@ -99,10 +93,6 @@ define([
     templateString: _template,  
     contacts: {},
     isLayoutContainer: true,
-
-    resize: function () {
-      this.nContactsContainer.resize()
-    },
 
     constructor: function (args) {
       this.Disabled = false
@@ -129,21 +119,17 @@ define([
       if (args && args.deleted) {
         this.deleted = args.deleted
       }
-
-      if (args.reservation && args.reservation.sup && args.reservation.isNew) {
-        this.Defaults = Query.exec(Path.url('store/Entry', {params: {'search.ref': args.reservation.sup.target, 'search.name': '~default.%'}}))
-        this.isNew = true
-      } else {
-        this.Defaults = null
-        this.isNew = false
-      }
-      args.reservation.addEventListener('synced', this.outOfSync.bind(this))
     },
 
     outOfSync: function() {
       this.domNode.classList.add('outofsync')
       this.Buttons.resync.setDisabled(false)
     },
+
+    remoteDelete: function () {
+      this.domNode.classList.add('deleted')
+    },
+
 
     _setDescriptionAttr: function (value) {
       this.description = value
@@ -154,16 +140,6 @@ define([
       this.nLocality.value = value
     },
 
-    _setWarehouseAttr: function (value) {
-      if (!value) { return }
-      Query.exec(Path.url(`store/Warehouse/${value}`)).then((result) => {
-        if (result.success && result.length === 1) {
-          this._set('warehouse', value)
-          this._set('locality', `Warehouse/${value}`)
-          this.nLocality.value = `Warehouse/${value}`
-        }
-      })
-    },
     _setCreatorAttr: function (value) {
       this.nCreator.value = value
     },
@@ -436,8 +412,7 @@ define([
 
     doRemoveComplement: function (event) {
       if (this.Disabled) { return }
-      var id = null
-      var that = this
+      let id = null
       for (var i = event.target; i; i = i.parentNode) {
         if (i.hasAttribute('data-artnum-id')) {
           id = i.getAttribute('data-artnum-id')
@@ -445,12 +420,24 @@ define([
         }
       }
 
-      if (id != null) {
-        var url = Path.url('store/Association/' + id)
-        Query.exec(url, {method: 'DELETE'}).then(function () {
-          that.associationRefresh().then(() => {}, () => {KAIROS.error('Reject de l\'opération') })
+      if (id === null) { return; }
+
+      const url = new URL(`${KAIROS.getBase()}/store/Association/${id}}`)
+      fetch(url, {method: 'DELETE'})
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        this.associationRefresh()
+        .catch(reason => {
+          throw new Error('ERR:Server')
         })
-      }
+      })
+      .catch(reason => {
+        KAIROS.error(reason)
+      })
     },
 
     associationRefresh: function () {
@@ -637,9 +624,11 @@ define([
       }
 
       this.Buttons.resync.addEventListener('click', _ => {
-        this.reservation.syncForm()
-        this.domNode.classList.remove('outofsync')
-        this.Buttons.resync.setDisabled(true)
+        this.reservation.resync()
+        .then(_ => {
+          this.domNode.classList.remove('outofsync')
+          this.Buttons.resync.setDisabled(true)
+        })
       })
       this.Buttons.del.addEventListener('click', () => {
         this.doDelete()
@@ -1016,7 +1005,16 @@ define([
         fset = this.interventionGetDomNode()
         if (!fset) { return }
       }
-      Query.exec(Path.url('store/Evenement/.unified', {params: {'search.reservation': this.reservation.get('uid'), 'sort.date': 'DESC'}})).then(async function (results) {
+
+      const url = new URL(`${KAIROS.getBase()}/store/Evenement/.unified`)
+      url.searchParams.append('search.reservation', this.reservation.get('uid'))
+      url.searchParams.append('sort.date', 'DESC')
+      fetch(url)
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {     
         let div = fset.getElementsByTagName('DIV')
         for (let i = 0; i < div.length; i++) {
           if (div[i].getAttribute('name') === 'iContent') {
@@ -1025,66 +1023,57 @@ define([
           }
         }
         if (!div) { return }
-        let frag = document.createDocumentFragment()
-        for (let i = 0; i < results.length; i++) {
-          let n = document.createElement('DIV')
-          n.classList.add('event')
-          n.dataset.id = results.data[i].id
-          let date = new Date(results.data[i].date)
-
-          let technician = results.data[i].technician
-          if (technician) {
-            try {
-              let t = await this.Stores.User.get(technician)
-              if (t !== null) {
-                technician = t.name
-              } else {
-                technician = ''
-              }
-            } catch (e) {
-              technician = ''
-            }
-          } else {
-            technician = ''
-          }
-          let type = results.data[i].type
-          let color = 'black'
-          if (type) {
-            t = await this.Stores.Status1.get(type)
-            if (t !== null) {
-              type = t.name
-              color = t.color
-            }
-          } else {
-            type = ''
-          }
-
-          let comment = results.data[i].comment
-          n.style.color = color
-          n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${type}</span><span class="technician">${technician}</span><span class="buttons"><span class="reply"><i class="fas fa-reply"></i></span><span class="delete"><i class="far fa-trash-alt"> </i></span></span>${comment === '' ? '' : '<span class="comment">' + comment + '</span>'}`
-          for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
-            if (s.classList.contains('buttons')) {
-              s.addEventListener('click', (event) => {
-                let node = event.target
-                while (node && node.nodeName !== 'SPAN') {
-                  node = node.parentNode
-                }
-                if(node.classList.contains('delete')) {
-                  this.interventionDelete(event)
-                } else if (node.classList.contains('reply')) {
-                  this.interventionReply(event)
-                }
-              })
-            }
-          }
-          frag.appendChild(n)
+        
+        const promises = []
+        for (let i = 0; i < result.length; i++) {
+          promises.push(new Promise((resolve, reject) => {
+            const evenement = result.data[i]
+            if (!evenement.technician) { resolve([evenement, null, null]); return }
+            Promise.allSettled([
+              this.Stores.User.get(evenement.technician),
+              this.Stores.Status1.get(evenement.type)
+            ])
+            .then(([pUser, pStatus]) => {
+              resolve([evenement, pUser.value, pStatus.value])
+            })
+          }))
         }
-        this.interventionSetCheckButton()
-        KAIROSAnim.push(() => {
+        
+        Promise.allSettled(promises)
+        .then(promises => {
+          let frag = document.createDocumentFragment()
+          for (const promise of promises) {
+            if (promise.status !== 'fulfilled') { continue }
+            const [evenement, technician, status] = promise.value
+            let n = document.createElement('DIV')
+            n.classList.add('event')
+            n.dataset.id = evenement.id
+            let date = new Date(evenement.date)
+
+            n.style.color = status?.color || 'black'
+            n.innerHTML = `<span class="date">${date.fullDate()}</span><span class="type">${status?.name || ''}</span><span class="technician">${technician?.name || ''}</span><span class="buttons"><span class="reply"><i class="fas fa-reply"></i></span><span class="delete"><i class="far fa-trash-alt"> </i></span></span>${evenement.comment === '' ? '' : '<span class="comment">' + evenement.comment + '</span>'}`
+            for (let s = n.firstElementChild; s; s = s.nextElementSibling) {
+              if (s.classList.contains('buttons')) {
+                s.addEventListener('click', (event) => {
+                  let node = event.target
+                  while (node && node.nodeName !== 'SPAN') {
+                    node = node.parentNode
+                  }
+                  if(node.classList.contains('delete')) {
+                    this.interventionDelete(event)
+                  } else if (node.classList.contains('reply')) {
+                    this.interventionReply(event)
+                  }
+                })
+              }
+            }
+            frag.appendChild(n)
+          }
+          this.interventionSetCheckButton()
           div.innerHTML = ''
           div.appendChild(frag)
         })
-      }.bind(this))
+      })
     },
 
     interventionReply: function (event) {
@@ -1129,7 +1118,10 @@ define([
       let line = event.target
       for (; line && line.dataset.id === undefined; line = line.parentNode) ;
       let id = line.dataset.id
-      fetch(Path.url(`store/Evenement/${id}`), {method: 'delete', headers: new Headers({'X-Request-Id': `${new Date().getTime()}-${performance.now()}`})}).then((result) => {
+      fetch(new URL(`${KAIROS.getBase()}/store/Evenement/${id}`), {
+        method: 'delete'
+      })
+      .then((result) => {
         if (!result.ok) {
           KAIROS.error(`Suppression de l'évènmenent ${id} a échoué`)
         }
@@ -1209,23 +1201,25 @@ define([
           n.classList.remove('dragOver')
         }, { capture: true })
 
+        //const Contacts = new KContactStore(`${KAIROS.getBase()}/store/Contacts`)
         const L = new KLocalityStore()
-        const U = new UserStore()
         const M = new Machine()
         const S = new Status({type: '0'})
         this.Stores = {
+          Contacts: new KContactStore(`${KAIROS.getBase()}/store/Contacts`),
           Locality: L,
+          OnlyLocality: new KLocalityStore('locality'),
           User: new UserStore(),
-          Machine: M,
+          Machine: new Machine(),
           Unit: new Unit()
         }
         this.nLocality = new Select(this.nLocality, L, {allowFreeText: true, realSelect: true})
         this.nStatus = new Select(this.nStatus, S, {allowFreeText: false, realSelect: true})
         this.nArrivalLocality = new Select(this.nArrivalLocality, L)
-        this.nArrivalCreator = new Select(this.nArrivalCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nCreator = new Select(this.nCreator, new UserStore(), { allowFreeText: false, realSelect: true })
-        this.nTechnician = new Select(this.nTechnician, new UserStore(), { allowFreeText: true, realSelect: true })
-        this.nMachineChange = new Select(this.nMachineChange, M, { allowFreeText: false, realSelect: true })
+        this.nArrivalCreator = new Select(this.nArrivalCreator, this.Stores.User, { allowFreeText: false, realSelect: true })
+        this.nCreator = new Select(this.nCreator, this.Stores.User, { allowFreeText: false, realSelect: true })
+        this.nTechnician = new Select(this.nTechnician, this.Stores.User, { allowFreeText: true, realSelect: true })
+        this.nMachineChange = new Select(this.nMachineChange, this.Stores.Machine, { allowFreeText: false, realSelect: true })
         this.nAssociationType = new Select(this.nAssociationType, new Status({type: 1}), { allowFreeText: false, realSelect: true })
 
         this.interventionCreate()
@@ -1266,11 +1260,60 @@ define([
         djOn(this.beginDate, 'change', djLang.hitch(this, this.changeBegin))
         djOn(this.endDate, 'change', djLang.hitch(this, this.changeEnd))
 
-        this.nContactsContainer.addChild(new DtContentPane({ title: 'Nouveau contact', content: new Contacts({ target: this }) }))
-
         this.domNode.addEventListener('keyup', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('blur', this.handleFormEvent.bind(this), { capture: true })
         this.domNode.addEventListener('focus', this.handleFormEvent.bind(this), { capture: true })
+
+        const contactTypeSelect = new KFlatList(KAIROS.contact.type, '_client')
+        const cLiveSearch = this.domNode.querySelector('[name="contactLiveSearch"]')
+        const contactStore = new KContactStore(`${KAIROS.getBase()}/store/Contacts/`, {limit: 50})
+        cLiveSearch.parentNode.insertBefore(contactTypeSelect.domNode, cLiveSearch)
+        const contactLiveSearch = new KLiveSearch(
+          cLiveSearch,
+          contactStore,
+          this.Stores.OnlyLocality,
+          {typeSelect: true}
+        )
+        contactLiveSearch.setTargetType('_client')
+        contactTypeSelect.addEventListener('change', event => {
+          contactLiveSearch.setTargetType(event.detail)
+        })
+
+        contactLiveSearch.addEventListener('change', event => {
+          const address = event.detail
+          const target = this.domNode.querySelector('[name="contactEntries"]')
+          const fieldset = new KFieldset(contactTypeSelect.getSelected(), KAIROS.contact.type, false)
+          fieldset.addEventListener('delete', event => { 
+            this.deleteContact(event.detail)
+            .then(result => {
+              if (!result) { event.preventDefault() }
+            }) 
+          })
+          /*fieldset.addEventListener('modify', event => {
+            this.editContact(event.detail)
+          })*/
+          fieldset.addEventListener('change', event => {
+            this.changeContactType(event.detail)
+          })
+          if (KAIROS?.contact?.relation) {
+            const type = contactTypeSelect.getSelected()
+            this.extendWithRelation(address, type, [type], target)
+          }
+          
+          this.saveContact(address, contactTypeSelect)
+          .then(linkId => {
+            fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+            fieldset.set('address', address)
+            fieldset.set('type', contactTypeSelect.getSelected())
+            fieldset.set('link', linkId)
+            target.appendChild(fieldset.domNode)
+
+            contactTypeSelect.nextItem()
+          })
+          .catch(error => {
+            KAIROS.error(error)
+          })
+        })
 
         this.nMBeginDate.set('value', this.beginDate.get('value'))
         this.MBeginTime = new HourBox(this.nMBeginTime)
@@ -1327,20 +1370,10 @@ define([
           this.Sections[i].bind(this)()
         }
 
-        if (this.isNew && this.Defaults) {
-          this.Defaults.then((results) => {
-            if (results.length > 0) {
-              results.data.forEach((def) => {
-                let name = def.name.split('.')[1]
-                if (!name) { return }
-                let node = this.domNode.querySelector(`[name=${name}]`)
-                if (!node) { return }
-                node.value = def.value
-              })
-            }
-          })
-        }
+        this.loadDefaults()
         resolve()
+      })
+      .then(() => {
         this.load()
         this.affaireButton()
       })
@@ -1366,6 +1399,56 @@ define([
           window.requestAnimationFrame(() => legendDom.innerHTML = `Affaire ${affaireId}`)
         }
       })
+    },
+
+    loadDefaults: function () {
+      this.Stores.Machine.get(this.reservation.target)
+      .then(machine => {
+        for (const key in machine) {
+          if (key.substr(0, 8) !== 'default.') { continue }
+
+          const name = key.substr(8)
+          const node = this.domNode.querySelector(`[name="${name}"]`)
+          if (!node) { continue }
+          if (this.reservation.equipment !== null) { continue }
+          node.value = machine[key].value
+        }
+      })
+      .catch(reason => {
+        console.log(reason)
+        KAIROS.error('Impossible de charger l\'équipement par défaut pour la machine')
+      })
+    },
+
+    extendWithRelation: function (address, addrType, typeOrigin, target) {
+      if (KAIROS.contact.relation[addrType]) {
+        address.getRelated(KAIROS.contact.relation[addrType])
+        .then(addresses => {
+          for (const type in addresses) {
+            if (typeOrigin.indexOf(type) !== -1) { continue }
+            typeOrigin.push(type)
+            const nextFieldset = new KFieldset(type, KAIROS.contact.type, false)
+            nextFieldset.addEventListener('delete', event => { 
+              this.deleteContact(event.detail)
+              .then(result => {
+                if (!result) { event.preventDefault() }
+              }) 
+            })
+            nextFieldset.set('address', addresses[type])
+            nextFieldset.set('type', type)
+            nextFieldset.appendChild(addresses[type].getDOMLabel({postaladdress: true, locality: true}, true))
+            target.appendChild(nextFieldset.domNode)
+            this.saveContact(addresses[type], type).
+            then(e => {
+              this.extendWithRelation(addresses[type], type, typeOrigin, target)
+            })
+          }
+        })
+      }
+    },
+
+    saveContact: function (address, type) {
+      return this.reservation.addContact(address, type)
     },
 
     clickForm: function (event) {
@@ -1406,128 +1489,132 @@ define([
       }.bind(this))
     },
 
-    load: async function () {
-        this.initCancel()
-        this.nMachineChange.value = this.reservation.get('target')
-        this.nLocality.value = this.reservation.get('locality')
-        if (this.reservation.get('title') != null) {
-          this.nTitle.set('value', this.reservation.get('title'))
+    load: function () {
+      this.initCancel()
+      this.nMachineChange.value = this.reservation.get('target')
+      this.nLocality.value = this.reservation.get('locality')
+      if (this.reservation.get('title') != null) {
+        this.nTitle.set('value', this.reservation.get('title'))
+      }
+
+      if (this.reservation.get('folder')) {
+        var folder = this.reservation.get('folder')
+        this.nFolder.set('value', this.reservation.get('folder'))
+        let url = folder
+        if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
+          url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
         }
+        let node = this.nFolder.domNode.previousElementSibling
+        node.dataset.href = url
+      }
 
-        if (this.reservation.get('folder')) {
-          var folder = this.reservation.get('folder')
-          this.nFolder.set('value', this.reservation.get('folder'))
-          let url = folder
-          if (!folder.match(/^[a-zA-Z]*:\/\/.*/)) {
-            url = 'file://' + encodeURI(url.replace('\\', '/')).replace(',', '%2C')
-          }
-          let node = this.nFolder.domNode.previousElementSibling
-          node.dataset.href = url
-        }
+      if (this.reservation.get('gps')) {
+        this.nGps.set('value', this.reservation.get('gps'))
 
-        if (this.reservation.get('gps')) {
-          this.nGps.set('value', this.reservation.get('gps'))
-
-          let node = this.nGps.domNode.previousElementSibling
-          node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
-        } else {
-          let node = this.nGps.domNode.previousElementSibling
-          let addr = ''
-          let l = this.reservation.get('locality')
-          if (l && l !== undefined && l !== null) {
-            if (l.indexOf('PC/') === 0) {
-              this.Stores.Locality.get(l).then((locality) => {
-                if (!locality || locality === undefined || locality === null) { return }
-                if (this.reservation.get('address')) {
-                  addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
-                }
-                if (locality) {
-                  if (!locality.np) { return } // in warehouse
-                  if (addr !== '') {
-                    addr += ','
-                  }
-                  addr += `${locality.np.trim()}+${locality.name.trim()}`
-                }
-                if (addr) {
-                  node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
-                }
-              })
-            } else {
+        let node = this.nGps.domNode.previousElementSibling
+        node.dataset.href = KAIROS.maps.direction.replace('$FROM', KAIROS.maps.origin.replace("\s", '+')).replace('$TO', String(this.reservation.get('gps')).replace(/\s/g, '+'))
+      } else {
+        let node = this.nGps.domNode.previousElementSibling
+        let addr = ''
+        let l = this.reservation.get('locality')
+        if (l && l !== undefined && l !== null) {
+          if (l.indexOf('PC/') === 0) {
+            this.Stores.Locality.get(l).then((locality) => {
+              if (!locality || locality === undefined || locality === null) { return }
               if (this.reservation.get('address')) {
                 addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
               }
-              if (this.reservation.get('locality')) {
+              if (locality) {
+                if (!locality.np) { return } // in warehouse
                 if (addr !== '') {
                   addr += ','
                 }
-                addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+                addr += `${locality.np.trim()}+${locality.name.trim()}`
               }
               if (addr) {
                 node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
               }
+            })
+          } else {
+            if (this.reservation.get('address')) {
+              addr = this.reservation.get('address').trim().replace(/(?:\r\n|\r|\n)/g, ',').replace(/\s/g, '+')
+            }
+            if (this.reservation.get('locality')) {
+              if (addr !== '') {
+                addr += ','
+              }
+              addr += this.reservation.get('locality').trim().replace(/\s/g, '+')
+            }
+            if (addr) {
+              node.dataset.href = APPConf.maps.direction.replace('$FROM', 'Airnace+SA,Route+des+Iles+Vieilles+8-10,1902+Evionnaz').replace('$TO', addr)
             }
           }
         }
+      }
 
-        this.loaded.association = true
-        this.set('warehouse', this.reservation.get('warehouse'))
+      this.loaded.association = true
+      this.set('warehouse', this.reservation.get('warehouse'))
 
-        if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
-          this.nConfirmed.value = true
-        } else {
-          this.nConfirmed.value = false
+      if (this.reservation.is('confirmed') || (this.reservation.get('_arrival') && this.reservation.get('_arrival').id && !this.reservation.get('_arrival').deleted)) {
+        this.nConfirmed.value = true
+      } else {
+        this.nConfirmed.value = false
+      }
+
+      if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
+        this.nDelivery.set('checked', true)
+      } else {
+        this.nDelivery.set('checked', false)
+      }
+      this.toggleDelivery()
+
+      const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)
+      url.searchParams.set('search.reservation', this.reservation.uid)
+      fetch(url)
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json()
+      })
+      .then(result => {
+        if (!result) { return }
+        if (!result.length) { return }
+        if (!result.data) { return }
+        for (let i = 0; i < result.length; i++) {
+          const contact = result.data[i]
+          if (contact.freeform) {
+            this.createContact(new KContactText(contact.id, contact.freeform), contact.comment, contact.id)
+            continue
+          }
+          if (contact.target === null) { continue }
+          this.Stores.Contacts.get(contact.target)
+          .then(kcontact => {
+            this.createContact(kcontact, contact.comment, contact.id)
+          })
         }
+      })
 
-        if (this.reservation.get('deliveryBegin') || this.reservation.get('deliveryEnd')) {
-          this.nDelivery.set('checked', true)
-        } else {
-          this.nDelivery.set('checked', false)
-        }
-        this.toggleDelivery()
+      djAll(this.initRequests).then(djLang.hitch(this, () => {
+        this.doResetComplement()
+        this.refresh()
+        this.initRequests = []
+        this.reservation.updateVersionId()
+      }))
 
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        var res = await Query.exec(url)
-        if (res.length > 0) {
-          res.data.forEach(djLang.hitch(this, async function (contact) {
-            if (contact.freeform) {
-              contact.linkId = contact.id
-              this.createContact(contact, contact.comment)
+      const inputs = this.domNode.getElementsByTagName('input')
+      for (var j = 0; j < inputs.length; j++) {
+        const name = inputs[j].getAttribute('name')
+        if (name && name.substr(0, 2) === 'o-') {
+          const other = this.get('other')
+          if (other && other[name.substr(2)]) {
+            var w = dtRegistry.byNode(inputs[j])
+            if (w) {
+              w.set('value', other[name.substr(2)])
             } else {
-              var linkId = contact.id
-              var comment = contact.comment
-              let url = Path.url('store/' + contact.target)
-              results = await Query.exec(url)
-              if (results.length > 0) {
-                var e = results.data[0]
-                e.linkId = linkId
-                this.createContact(e, comment)
-              }
-            }
-          }))
-        }
-
-        djAll(this.initRequests).then(djLang.hitch(this, () => {
-          this.doResetComplement()
-          this.refresh()
-          this.initRequests = []
-        }))
-
-        var inputs = this.domNode.getElementsByTagName('input')
-        for (var j = 0; j < inputs.length; j++) {
-          var name = inputs[j].getAttribute('name')
-          if (name && name.substr(0, 2) === 'o-') {
-            var other = this.get('other')
-            if (other && other[name.substr(2)]) {
-              var w = dtRegistry.byNode(inputs[j])
-              if (w) {
-                w.set('value', other[name.substr(2)])
-              } else {
-                inputs[j].value = other[name.substr(2)]
-              }
+              inputs[j].value = other[name.substr(2)]
             }
           }
         }
+      }
     },
 
     refresh: function () {
@@ -1601,100 +1688,70 @@ define([
       this.nArrivalDone.value = true
     },
 
-    createContact: function (entry, type) {
-      var c = new Card('/Contacts/')
+    createContact: function (address, type, linkId) {
+      const target = this.domNode.querySelector('[name="contactEntries"]')
+      const previous = target.querySelector(`[name="${linkId}"]`)
+      const fieldset = new KFieldset(type, KAIROS.contact.type, false)
+      fieldset.domNode.setAttribute('name', linkId)
 
-      if (type === '') {
-        type = 'Autre'
-      }
-
-      c.entry(entry)
-
-      var contact = new DtContentPane({
-        title: '<i class="fa fa-user-circle-o" aria-hidden="true"></i> ' + c.getType(type),
-        content: c.domNode,
-        closable: !this.Disabled,
-        contactType: type,
-        contactCard: c,
-        contactLinkId: entry.linkId,
-        contactSup: this,
-        style: 'height: 80px;',
-        onClose: function (event) {
-          var sup = this.contactSup
-          if (confirm('Supprimer le contact ' + this.contactCard.getType(this.contactType))) {
-            var url = Path.url('store/ReservationContact/' + this.contactLinkId)
-            Query.exec(url, {method: 'delete'}).then(function () {
-              event.removeChild(this)
-              for (var i in sup.contacts) {
-                if (sup.contacts[i].contactLinkId === this.contactLinkId) {
-                  sup.contacts[i].destroy()
-                  delete sup.contacts[i]
-                  break
-                }
-              }
-            }.bind(this))
-          }
-        }
+      fieldset.appendChild(address.getDOMLabel({postaladdress: true, locality: true}, true))
+      fieldset.set('address', address)
+      fieldset.set('type', type)
+      fieldset.set('link', linkId)
+      fieldset.domNode.style.setProperty('order', `${KAIROS?.contact?.order[type] || 1000}`)
+      fieldset.addEventListener('delete', event => { 
+        this.deleteContact(event.detail)
+        .then(result => {
+          if (!result) { event.preventDefault() }
+        }) 
       })
-
-      for (var k in this.contacts) {
-        if (this.contacts[k].contactLinkId === contact.contactLinkId) {
-          this.nContactsContainer.removeChild(this.contacts[k])
-          this.contacts[k].destroy()
-          break
-        }
-      }
-      this.contacts[type + contact.contactLinkId] = contact
-      this.nContactsContainer.addChild(this.contacts[type + contact.contactLinkId])
-      if (type === '_client') {
-        this.nContactsContainer.selectChild(this.contacts[type + contact.contactLinkId])
+      /*fieldset.addEventListener('modify', event => {
+        this.editContact(event.detail)
+      })*/
+      fieldset.addEventListener('change', event => {
+        this.changeContactType(event.detail)
+      })
+      if (previous) {
+        target.replaceChild(fieldset.domNode, previous)
+      } else {
+        target.appendChild(fieldset.domNode)
       }
     },
 
-    saveContact: function (id, options) {
-      var that = this
-      var type = options.type ? options.type : ''
-      if (options.type === '_autre') {
-        type = options.comment
-      }
+    deleteContact: function (fieldset) {
+      return new Promise ((resolve) => {
+        this.reservation.delContact(fieldset.get('address'), fieldset.get('type'))
+        .then(result => {
+          resolve(result)
+        })
+        .catch(reason => {
+          KAIROS.syslog(reason)
+          KAIROS.error(reason)
+          resolve(false)
+        })
+      })
+    },
 
-      if (id != null) {
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        url.searchParams.set('search.target', id)
-        url.searchParams.set('search.comment', type)
-        Query.exec(url).then(djLang.hitch(this, function (results) {
-          if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: that.reservation.uid, comment: type, freeform: null, target: id}}).then(djLang.hitch(this, function (result) {
-              if (!result.success) {
-                return
-              }
-              Query.exec(Path.url('store/' + id)).then(djLang.hitch(this, function (c) {
-                if (c.success && c.length === 1) {
-                  var e = c.data[0]
-                  e.linkId = result.data[0].id
-                  that.createContact(e, type, true)
-                }
-              }))
-            }))
-          }
-        }))
-      } else {
-        let url = Path.url('store/ReservationContact')
-        url.searchParams.set('search.reservation', this.reservation.uid)
-        url.searchParams.set('search.target', id)
-        url.searchParams.set('search.freeform', options.freeform)
-        Query.exec(url).then(djLang.hitch(this, function (results) {
-          if (results.length === 0) {
-            Query.exec(Path.url('store/ReservationContact'), {method: 'post', body: {reservation: this.reservation.uid, comment: type, freeform: options.freeform, target: null}}).then(function (result) {
-              if (result.success && result.length === 1) {
-                options.linkId = result.data[0].id
-                that.createContact(options, type, true)
-              }
-            })
-          }
-        }))
-      }
+    changeContactType: function (kfieldset) {
+      console.log(kfieldset.get('address'))
+      const newType = kfieldset.getLegend()
+      const linkId = kfieldset.get('link')
+      fetch(`${KAIROS.getBase()}/store/ReservationContact/${linkId}`, {method: 'PUT', body: JSON.stringify({id: linkId, comment: newType})})
+      .then(response => {
+        if (!response.ok) { throw new Error('Erreur')}
+        return response.json()
+      })
+      .then(result => {
+        console.log(result)
+      })
+      .catch(error => {
+        KAIROS.error(error)
+      })
+    },
+
+    editContact: function (kfieldset) {
+      const address = kfieldset.get('address')
+      address.edit(kfieldset.domNode)
     },
 
     show: function () {
@@ -1734,28 +1791,26 @@ define([
     },
 
     autoPrint: function (file, params = {}) {
-      let type = params.forceType ? params.forceType : file
+      const type = params.forceType ? params.forceType : file
       return new Promise((resolve, reject) => {
         this.doSave()
-        .then((done) => {
-          if (done) {
-            Query.exec((Path.url('exec/auto-print.php', {
-              params: {
-                type: type, file: `pdfs/${file}/${this.reservation.uid}`
-              }
-            }))).then((result) => {
-              if (result.success) {
-                window.App.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
-                resolve()
-              } else {
-                window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-                reject(new Error('Print error'))
-              }
-            })
-          }
-        }, () => {
-          window.App.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid}`)
-          reject(new Error('Print error'))
+        .then(done => {
+          if (!done) { throw new Error('ERR:Server') }
+          const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
+          url.searchParams.append('type', type)
+          url.searchParams.append('file', `pdfs/${file}/${this.reservation.uid}`)
+          return fetch(url)
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            KAIROS.info(`Impression (${type}) pour la réservation ${this.reservation.uid} en cours`)
+          })
+        })
+        .catch(reason => {
+          KAIROS.error(`Erreur d'impression (${type}) pour la réservation ${this.reservation.uid} <${reason instanceof Error ? reason.message : reason}>`)
         })
       })
     },
@@ -1764,7 +1819,7 @@ define([
       this.doSave()
       .then((done) => {
         if (done) {
-          let url = new URL(`${window.location.origin}/${APPConf.base}/pdfs/${type}/${this.reservation.uid}`)
+          let url = new URL(`${KAIROS.getBase()}/pdfs/${type}/${this.reservation.uid}`)
           for (let k in params) {
             url.searchParams.append(k, params[k])
           }
@@ -1864,7 +1919,12 @@ define([
           this.hide()
         }
       })
+      .catch (reason => {
+        KAIROS.error(reason)
+        this.hide()
+      })
     },
+
     doSave: function (event) {
       return new Promise((resolve, reject) => {
         this.doNumbering()
@@ -1911,117 +1971,117 @@ define([
         }
 
         (new Promise((resolve, reject) => {
-          lastModificationTest.then(same => {
+          lastModificationTest
+          .then(same => {
             if (!same || this.domNode.classList.contains('outofsync')) {
               KAIROS.confirm(
                 `Réservation modifiée`,
                 `La réservation a été modifiée sur un autre poste, forcer l'enrgistrement`, {reference: this.Buttons.save, placement: 'top'})
-              .then(confirmed => resolve(confirmed))
+              .then(confirmed => resolve([confirmed, true]))
               return
             }
-            resolve(true)
+            resolve([true, false])
           })
         }))
-        .then(carryon => {
-          if (!carryon) { return; }
+        .then(([carryon, force]) => {
+          if (force) { this.reservation.set('version', 'force')}
+          if (!carryon) { return {ok: false}; }
           let url = new URL(`${KAIROS.getBase()}/store/Arrival`)
           url.searchParams.append('search.target', this.reservation.uid)
-          fetch(url)
-          .then(response => {
-            if (!response.ok) { return null }
-            return response.json()
-          }).then(res => {
-            if (!res) { return }
-            let arrival = {}
-            if(res.length > 0) {
-              arrival = Object.assign(arrival, res.data[0])
-            }
+          return fetch(url)
+        })
+        .then(response => {
+          if (!response.ok) { return null }
+          return response.json()
+        }).then(res => {
+          if (!res) { return }
+          let arrival = {}
+          if(res.length > 0) {
+            arrival = Object.assign(arrival, res.data[0])
+          }
 
-            if (this.Buttons.addEnd.getValue()) {
-              arrival.deleted = null
-              arrival.target = this.reservation.uid
-              if (f.arrivalDate) {
-                if (f.arrivalTime) {
-                  arrival.reported = f.arrivalDate.join(f.arrivalTime)
-                } else {
-                  arrival.reported = f.arrivalDate
-                }
+          if (this.Buttons.addEnd.getValue()) {
+            arrival.deleted = null
+            arrival.target = this.reservation.uid
+            if (f.arrivalDate) {
+              if (f.arrivalTime) {
+                arrival.reported = f.arrivalDate.join(f.arrivalTime)
+              } else {
+                arrival.reported = f.arrivalDate
               }
-              arrival.creator = this.nArrivalCreator.value
-              arrival.comment = f.arrivalComment
-              arrival.contact = f.arrivalAddress
-              arrival.locality = this.nArrivalLocality.value
-              arrival.other = f.arrivalKeys
-              arrival.done = this.Buttons.addArrivalDone.getValue()
-              arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
-              this.reservation.set('_arrival', arrival)
+            }
+            arrival.creator = this.nArrivalCreator.value
+            arrival.comment = f.arrivalComment
+            arrival.contact = f.arrivalAddress
+            arrival.locality = this.nArrivalLocality.value
+            arrival.other = f.arrivalKeys
+            arrival.done = this.Buttons.addArrivalDone.getValue()
+            arrival.inprogress = this.Buttons.addArrivalInProgress.getValue()
+            this.reservation.set('_arrival', arrival)
+          } else {
+            if (arrival.id) {
+              this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
             } else {
-              if (arrival.id) {
-                this.reservation.set('_arrival', {id: arrival.id, _op: 'delete'})
-              } else {
-                this.reservation.set('_arrival', {})
-              }
+              this.reservation.set('_arrival', {})
             }
+          }
 
-            let status = this.nStatus.value
-            if (isNaN(parseInt(status))) {
-              status = status.split('/').pop()
-            }
-            this.reservation.set('status', `${status}`)
-            this.reservation.set('begin', begin)
-            this.reservation.set('end', end)
-            this.reservation.set('deliveryBegin', deliveryBegin)
-            this.reservation.set('deliveryEnd', deliveryEnd)
-            this.reservation.set('address', this.nAddress.value)
-            this.reservation.set('reference', f.reference)
-            this.reservation.set('equipment', f.equipment)
-            this.reservation.set('locality', this.nLocality.value)
-            this.reservation.set('comment', f.comments)
-            this.reservation.set('folder', f.folder)
-            this.reservation.set('gps', f.gps)
-            this.reservation.set('title', f.title)
-            this.reservation.set('creator', this.nCreator.value)
-            this.reservation.set('technician', this.nTechnician.value)
-            this.reservation.set('visit', this.nAddVisit.value)
-            this.reservation.set('vreport', this.nAddReport.value)
-            this.reservation.set('padlock', this.nPadlock.value)
-            this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
-            this.reservation.set('affaire', KCurrentAffaire.isMine(this.reservation.id))
+          let status = this.nStatus.value
+          if (isNaN(parseInt(status))) {
+            status = status.split('/').pop()
+          }
+          this.reservation.set('status', `${status}`)
+          this.reservation.set('begin', begin)
+          this.reservation.set('end', end)
+          this.reservation.set('deliveryBegin', deliveryBegin)
+          this.reservation.set('deliveryEnd', deliveryEnd)
+          this.reservation.set('address', this.nAddress.value)
+          this.reservation.set('reference', f.reference)
+          this.reservation.set('equipment', f.equipment || '%')
+          this.reservation.set('locality', this.nLocality.value)
+          this.reservation.set('comment', f.comments)
+          this.reservation.set('folder', f.folder)
+          this.reservation.set('gps', f.gps)
+          this.reservation.set('title', f.title)
+          this.reservation.set('creator', this.nCreator.value)
+          this.reservation.set('technician', this.nTechnician.value)
+          this.reservation.set('visit', this.nAddVisit.value)
+          this.reservation.set('vreport', this.nAddReport.value)
+          this.reservation.set('padlock', this.nPadlock.value)
+          this.reservation.set('deliveryRemark', this.nDeliveryRemark.value)
 
-            this.reservation.save()
-            .then((id) => {
-              fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
-              .then(response => {
-                if (!response.ok) { return null }
-                return response.json()
-              }).then(result => {
-                if (!result) { return null }
-                let data = Array.isArray(result.data) ? result.data[0] : result.data
-                this.reservation.fromJson(data)
-                .then(_ => {
-                  this.domNode.classList.remove('outofsync')
-                  this.Buttons.resync.setDisabled(true)
-                })
-                if (data.modification) {
-                  this.lastModified = parseInt(data.modification)
-                  this.reservation.lastModified = parseInt(data.modification)
-                }
+          this.reservation.save()
+          .then((id) => {
+            fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${this.reservation.id}`))
+            .then(response => {
+              if (!response.ok) { return null }
+              return response.json()
+            }).then(result => {
+              if (!result) { return null }
+              let data = Array.isArray(result.data) ? result.data[0] : result.data
+              this.reservation.fromJson(data)
+              .then(_ => {
+                this.domNode.classList.remove('outofsync')
+                this.Buttons.resync.setDisabled(true)
               })
-              if (!move) {
-                this.resize()
-              } else {
-                this.reservation.toObject()
-                .then((reservation) => {
-                  this.reservation.sup.KEntry.move(reservation[0])
-                })
+              if (data.modification) {
+                this.lastModified = parseInt(data.modification)
+                this.reservation.lastModified = parseInt(data.modification)
               }
-              this.onSave = null
-              resolve(true)
             })
-            .catch(reason => {
-              this.onSave = null
-              resolve(false)
-            })
+            if (move) {
+              this.reservation.toObject()
+              .then((reservation) => {
+                this.reservation.sup.KEntry.move(reservation[0])
+              })
+            }
+            this.onSave = null
+            resolve(true)
+          })
+          .catch(reason => {
+            KAIROS.syslog(reason)
+            this.onSave = null
+            resolve(false)
           })
         })
       })
@@ -2042,7 +2102,7 @@ define([
     },
 
     openCount: async function () {
-      new Count({reservation: this.reservation.uid}) // eslint-disable-line
+      new Count({reservation: this.reservation.uid})
     },
     openAddCount: async function () {
       new CountList({addReservation: this.reservation.uid, integrated: true}) // eslint-disable-line
@@ -2064,42 +2124,55 @@ define([
       })
     },
     doNumbering: async function () {
-      let parent = this.nMissionDisplay
+      const parent = this.nMissionDisplay
       for (let i = 0, n = parent.firstElementChild; n; n = n.nextElementSibling) {
         n.dataset.number = i
-        Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`)).then((result) => {
-          if (result.success && result.length <= 0) {
-            Query.exec(Path.url(`store/MissionFichier/`), {
-              method: 'post',
-              body: {
+        fetch(new URL(`${KAIROS.getBase()}store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`))
+        .then((response) => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length < 1) {
+            fetch(new URL(`${KAIROS.getBase()}/store/MissionFichier/`), {
+              method: 'POST',
+              body: JSON.stringify({
                 mission: this.nMissionDisplay.dataset.uid,
                 fichier: n.dataset.hash,
                 ordre: i
-              }
+              })
             })
           } else {
-            Query.exec(Path.url(`store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`), {
+            fetch(new URL(`${KAIROS.getBase()}/store/MissionFichier/${n.dataset.hash},${this.nMissionDisplay.dataset.uid}`), {
               method: 'patch',
-              body: {
+              body: JSON.stringify({
                 fichier: n.dataset.hash,
                 mission: this.nMissionDisplay.dataset.uid,
                 ordre: i
-              }
+              })
             })
           }
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
         })
         i++
       }
     },
     deleteImage: function (hash) {
-      Query.exec(Path.url(`store/MissionFichier/${hash},${this.nMissionDisplay.dataset.uid}`), {method: 'delete'}).then((result) => {
-        if (result.success) {
-          for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
-            if (n.dataset.hash === hash) {
-              n.parentNode.removeChild(n)
-              break
-            }
-          }
+      const url = new URL(`${KAIROS.getBase()}/store/MissionFichier/${hash},${this.nMissionDisplay.dataset.uid}`)
+      fetch(url, {method: 'DELETE'})
+      .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+      })
+      .then(result => {
+        if (!result.success) { throw new Error('ERR:Server') }
+        for (let n = this.nMissionDisplay.firstElementChild; n; n = n.nextElementSibling) {
+          if (n.dataset.hash !== hash) { continue }
+          n.parentNode.removeChild(n)
+          break
         }
       })
     },
@@ -2151,7 +2224,7 @@ define([
           for (; n && n.nodeName !== 'DIV'; n = n.parentNode);
           event.dataTransfer.effectAllowed = 'move'
           event.dataTransfer.setData('text/x-location-image-hash', n.dataset.hash)
-          event.dataTransfer.setData('text/uri-list', Path.url(`${APPConf.uploader}/${hash}`))
+          event.dataTransfer.setData('text/uri-list', new URL(`${KAIROS.getBase()}/${KAIROS.uploader}/${hash}`))
 
           let p = n.parentNode
           if (p.firstElementChild === n && !n.nextElementSibling) { return }
@@ -2210,22 +2283,37 @@ define([
         }
       }
       if (!this.nMissionDisplay.dataset.uid) {
-        Query.exec(Path.url('store/Mission', {params: {'search.reservation': this.reservation.uid}}))
-          .then((result) => {
-            if (result.success && result.length <= 0) {
-              Query.exec(
-                Path.url('store/Mission'), {method: 'post', body: {reservation: this.reservation.uid}}
-              ).then((result) => {
-                if (result.success && result.length === 1) {
-                  this.nMissionDisplay.dataset.uid = result.data[0].id
-                }
-              })
-            } else {
-              if (result.success && result.length === 1) {
-                this.nMissionDisplay.dataset.uid = result.data[0].uid
-              }
-            }
+        const url = new URL(`${KAIROS.getBase()}/store/Mission`)
+        url.searchParams.append('search.reservation', this.reservation.uid)
+        fetch(url)
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length === 1) { 
+            const mission = Array.isArray(result.data) ? result.data[0] : result.data
+            return mission.id
+          }
+          url.searchParams.delete('search.reservation')
+          return fetch(url, {method: 'POST', body: JSON.stringify({reservation: this.reservation.uid})})
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
           })
+          .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            const mission = Array.isArray(result.data) ? result.data[0] : result.data
+            return mission.id
+          })
+        })
+        .then(id => {
+          this.nMissionDisplay.dataset.uid = id
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
+        })
       }
 
       let upload = (formData) => {
@@ -2282,55 +2370,80 @@ define([
       }
     },
 
-    refreshCount: async function () {
-      Query.exec(Path.url('store/CountReservation', {params: {'search.reservation': this.reservation.uid}})).then(async function (counts) {
-        var frag = document.createDocumentFragment()
-        if (counts.success && counts.length > 0) {
-          var trs = []
-          for (var i = 0; i < counts.length; i++) {
-            var count = await Query.exec(Path.url('store/Count/' + counts.data[i].count))
-            if (count.success && count.length === 1) {
-              count = count.data
-              if (count.deleted) { continue }
-              var tr = document.createElement('TR')
-              tr.setAttribute('data-count-id', count.id)
-              count.period = ''
-              var sortBegin = '0'
-              if (count.begin) {
-                count.period = (new Date(count.begin)).shortDate(true)
-                sortBegin = (new Date(count.begin)).getTime()
-              }
-              if (count.end) {
-                if (count.period !== '') { count.period += ' - ' }
-                count.period += (new Date(count.end)).shortDate(true)
-              }
-              tr.innerHTML = `<td class="clickable" data-id="${count.id}">${count.id}</td><td>${(count._invoice ? (count._invoice.winbiz ? count._invoice.winbiz : '') : '')}</td><td>${count._status ? (count._status.name ? count._status.name : '') : ''}</td><td>${(count.period ? count.period : '')} ${count.state !== 'INTERMEDIATE' ? '⯁' : ''}</td>`
-              tr.setAttribute('data-sort', sortBegin)
-              trs.push(tr)
-
-              tr.addEventListener('click', function (event) {
-                if (event.target) {
-                  if (!event.target.getAttribute('data-id')) { return }
-                  new Count({'data-id': event.target.getAttribute('data-id')}) // eslint-disable-line
-                }
+    refreshCount: function () {
+      return new Promise((resolve, reject) => {
+        const url = new URL(`${KAIROS.getBase()}/store/CountReservation`)
+        url.searchParams.append('search.reservation', this.reservation.uid)
+        fetch(url)
+        .then(response => {
+          if (!response.ok) { throw new Error('ERR:Server') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('ERR:Server') }
+          if (result.length === 0) { return }
+          const entries = result.data
+          const trs = []
+          for (const entry of entries) {
+            trs.push(new Promise((resolve, reject) => {
+              const url = new URL(`${KAIROS.getBase()}/store/Count/${entry.count}`)
+              fetch(url)
+              .then(response => {
+                if (!response.ok) { throw new Error('ERR:Server') }
+                return response.json()
               })
-            }
+              .then(result => {
+                if (!result.success) { throw new Error('ERR:Server') }
+                const entry = Array.isArray(result.data) ? result.data[0] : result.data
+                const tr = document.createElement('TR')
+                tr.dataset.countId = entry.id
+                const period = []
+
+                if (entry.begin) { period.push((new Date(entry.begin)).shortDate()) }
+                if (entry.end) { period.push((new Date(entry.end)).shortDate()) }
+                tr.innerHTML = `<td class="clickable" data-id="${entry.id}">${entry.id}</td>
+                  <td>${entry?._invoice?.winbiz || ''}</td>
+                  <td>${entry?._status?.name || ''}</td>
+                  <td>${period.length > 0 ? period.join(' - ') : ''}
+                      ${entry.state !== 'INTERMEDIATE' ? '⯁' : ''}</td>`
+                tr.dataset.sort = entry.begin ? String(new Date(entry.begin).getTime()) : '0'
+                tr.addEventListener('click', event => {
+                  if (!event.target) { return }
+                  if (!event.target.dataset.id) { return }
+                  new Count({
+                    'data-id': event.target.dataset.id
+                  })
+                })
+                resolve(tr)
+              })
+              .catch(reason => {
+                reject(reason)
+              })
+            }))
           }
 
-          trs.sort(function (a, b) {
-            a = parseInt(a.getAttribute('data-sort'))
-            b = parseInt(b.getAttribute('data-sort'))
-            return a - b
+          Promise.allSettled(trs)
+          .then(promises => {
+            const frag = document.createDocumentFragment()
+            const trs = []
+            for (const promise of promises) {
+              if (promise.status === 'fulfilled') { trs.push(promise.value) }
+            }
+            trs.sort((a, b) => {
+              return parseInt(a.dataset.sort) - parseInt(b.dataset.sort)
+            })
+
+            trs.forEach(n => {
+              frag.appendChild(n)
+            })
+            this.nCountList.innerHTML = ''
+            this.nCountList.appendChild(frag)
           })
-          trs.forEach(function (n) {
-            frag.appendChild(n)
-          })
-        }
-        KAIROSAnim.push(() => {
-          this.nCountList.innerHTML = ''
-          this.nCountList.appendChild(frag)
         })
-      }.bind(this))
+        .catch(reason => {
+          reject(reason)
+        })
+      })
     },
 
     handleFormEvent: function (event) {

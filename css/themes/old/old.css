@@ -21,6 +21,8 @@
 @import '../../color.css';
 @import '../../mbutton.css';
 @import '../../kbar.css';
+@import '../default/kfieldset.css';
+@import '../default/klist.css';
 
 #loadingOverlay { display: none; }
 

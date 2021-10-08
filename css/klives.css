@@ -1,0 +1,57 @@
+.kls-popup {
+    background-color: white;
+    min-width: 360px;
+    max-width: 360px;
+    overflow: hidden;
+    font-size: 18px;
+    border: solid 1px black;
+    box-shadow: 6px 6px 3px 0px rgba(0,0,0,0.75);
+}
+.kls-results {
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+    overflow: auto;
+    padding: 8px;
+}
+
+.kls-opts {
+    background-color: gray;
+}
+
+.kls-result {
+    margin: 12px 0 12px 0;
+    background-color: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.kls-result[data-hover="1"] {
+    background-color: hsla(var(--default-highlight-color-base), 0.2);
+    border: 1px solid hsla(var(--default-highlight-color-base), 0.4);
+    transition-delay: 10ms;
+}
+
+.kls-popup form {
+    padding: 5px;
+}
+
+.kls-popup form label {
+    display: inline-block;
+    min-width: 13ch;
+    max-width: 13ch;
+}
+
+.kls-popup form button {
+    min-width: 160px;
+    max-width: 160px;
+}
+
+.kls-type span {
+    cursor: pointer;
+    margin: 0 1ch;
+}
+
+.kls-type .kls-selected {
+    color: maroon;
+} 

@@ -268,9 +268,10 @@ class DeepReservationModel extends ReservationModel {
         $st->bindParam(':reservation', $id, \PDO::PARAM_INT);
         $st->execute();
         $CModel = new ContactsModel($this->dbs['ldap'], $this->kconf);
-        $contacts = array();
-        foreach($st->fetchAll(\PDO::FETCH_ASSOC) as $contact) {
+        $contacts = [];
+        while (($contact = $st->fetch(\PDO::FETCH_ASSOC)) !== FALSE) {
           $contact = $this->unprefix($contact, 'contacts');
+
           $contact['_displayname'] = '';
           $dname = array();
           
@@ -328,12 +329,10 @@ class DeepReservationModel extends ReservationModel {
               break;
           }
           if(!isset($contacts[$contact['comment']])) {
-            $contacts[$contact['comment']] = array($contact);
-          } else {
-            $contacts[$contact['comment']][] = $contact;
+            $contacts[$contact['comment']] = [];
           }
+          $contacts[$contact['comment']][] = $contact;
         }
-        
         $entry['contacts'] = $contacts;
       } catch (\Exception $e) {
         $result->addError($e->getMessage(), $e);

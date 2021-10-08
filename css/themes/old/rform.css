@@ -372,5 +372,9 @@ s.rForm .dualEntry .dijitTextBox {
     background-color: var(--outofsyncform);
 }
 
+.rForm.deleted {
+    background-color: var(--deletedform);
+}
+
 @import '../default/rformInputLine.css';
 @import '../default/rformTable.css';

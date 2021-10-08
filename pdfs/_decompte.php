@@ -21,7 +21,8 @@ foreach($addrs as $k => $v) {
    if($res['type'] == 'results') {
       if(!empty($res['data'][0]['target'])) {
          $c = explode('/', $res['data'][0]['target']);
-         $res = $JClient->get($c[2], $c[1]);
+         if (empty($c[0])) { array_shift($c); }
+         $res = $JClient->get($c[1], $c[0]);
          if($res['type'] == 'results') {
             $addrs[$k] = format_address(array('type' => 'db', 'data' => $res['data'][0]));
          }

@@ -5,3 +5,41 @@ address .organization {
 address a {
     text-decoration: none;
 }
+
+.rForm .kaddress, .rForm .kaddress.freeform {
+    min-width: 300px;
+    max-width: 300px;
+    margin: 16px 0 16px 0;
+}
+
+.kaddress.dynamic .name {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.rForm .kaddressGroup {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.kaddress [data-hidden="1"] {
+    display: none !important;
+}
+
+.kaddress.inline div, .kaddress.inline > span {
+    display: inline;
+    margin: 0 0.3ch;
+}
+
+.kaddress.inline div.group span {
+    margin: 0 0 0 0.2ch;
+}
+
+.kaddress.inline div.group span:first-child {
+    margin: 0 0;
+}
+
+.kaddress.inline br, .kaddress.inline i {
+    display: none !important;
+}

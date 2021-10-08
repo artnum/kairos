@@ -2,9 +2,8 @@
 /* global objectHash */
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
-importScripts('../object-hash/dist/object_hash.js')
-importScripts('/js/Path.js')
 importScripts('../stores/user.js')
+importScripts('lib/updater-count.js')
 
 let LastMod = 0
 const Entries = new Map()
@@ -13,6 +12,74 @@ const Symlinks = new Map()
 let Range = null
 let PostPoned = {}
 
+const EVTOperation = Object.freeze({
+  write: {
+    count (msg) {
+      countUpdateMessage(msg)
+      .then(([reservationId, clientId]) => {
+        updateEntry(reservationId, clientId)
+      })
+      .catch(reason => {
+        console.log(reason)
+      })
+    },
+    reservation (msg) {
+      updateEntry(msg.id, msg.cid)
+    },
+    arrival (msg) {
+      fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json() 
+      })
+      .then(result => {
+        if (result === null) { return }
+        if (!result.success) { return }
+        const data = Array.isArray(result.data) ? result.data[0] : result.data
+        updateEntry(data.target, msg.cid)
+      })
+    },
+    contact (msg) {
+      fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact/${msg.id}`))
+      .then(response => {
+        if (!response.ok) { return null }
+        return response.json() 
+      })
+      .then(result => {
+        if (result === null) { return }
+        if (!result.success) { return }
+        const data = Array.isArray(result.data) ? result.data[0] : result.data
+        updateEntry(data.reservation, msg.cid)
+      })
+    },
+    evenement (msg) {
+      checkMachineState()
+    }
+  },
+  delete: {
+    reservation (msg) {
+      deleteEntry(msg.id, msg.cid)
+    },
+    evenement (msg) {
+      checkMachineState()
+    }
+  }
+})
+
+
+const evtsource = new EventSource(new URL(`${KAIROS.getBase()}/events-srv.php`))
+evtsource.onmessage = event => {
+  const msg = JSON.parse(event.data)
+  if (msg.operation === undefined) { return }
+  if (msg.cid === undefined) { return }
+  if (!EVTOperation[msg.operation]) { return }
+  if (!EVTOperation[msg.operation][msg.type]) { return }
+  EVTOperation[msg.operation][msg.type](msg)
+}
+evtsource.onerror = event => {
+  console.log(event)
+}
+
 self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'newTarget':
@@ -20,7 +87,7 @@ self.onmessage = function (msg) {
         const targetId = msg.data.target
         Channels.set(targetId,  msg.ports[0])
         Channels.get(targetId).onmessage = (m) => {
-          targetMessages(m, targetId)
+          targetMessages(m)
         }
         if (PostPoned[targetId]) {
           Channels.get(targetId).postMessage({op: 'entries', value: PostPoned[targetId]})
@@ -40,7 +107,6 @@ self.onmessage = function (msg) {
     case 'move':
       if (Range === null) {
         Range = {begin: msg.data.begin, end: msg.data.end}
-        startUpdater()
       } else {
         Range.begin = msg.data.begin
         Range.end = msg.data.end
@@ -79,7 +145,7 @@ function  dstamp (date) {
   return date
 }
 
-function targetMessages (msg, targetId = null) {
+function targetMessages (msg, force = false) {
   if (!msg.data.op) { return }
   switch (msg.data.op) {
     case 'uncache':
@@ -91,14 +157,15 @@ function targetMessages (msg, targetId = null) {
       break
     case 'reload':
       if (msg.data.reservation) {
-        fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${msg.data.reservation}`)).then((response) => {
-          if (response.ok) {
-            response.json().then((json) => {
-              if (json.length > 0 && json.success) {
-                cacheAndSend([json.data], newVTimeLine())
-              }
-            })
-          }
+        fetch(new URL(`${KAIROS.getBase()}/store/DeepReservation/${msg.data.reservation}`))
+        .then((response) => {
+          if (!response.ok) { return null; }
+          return response.json()
+        })
+        .then(json => {
+          if (!json) { return; }
+          if (!json.success) { return ;}
+          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], newVTimeLine(), force, msg.clientid)
         })
       }
       break
@@ -157,9 +224,45 @@ function processDays (vTimeLine, options) {
   }
 }
 
-function cacheAndSend (data, vTimeLine) {
+function updateEntry(entryId, clientid) {
+  fetch(`${KAIROS.getBase()}/store/DeepReservation/${entryId}`)
+  .then(response => {
+    if (!response.ok) { throw new Error('Net error')}
+    return response.json()
+  })
+  .then(result => {
+    if (!result.success) { throw new Error('Server error')}
+    if (result.length <= 0) { return }
+    return Array.isArray(result.data) ? result.data[0] : result.data
+  })
+  .then(reservation => {
+    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime()])
+    channel.postMessage({op: 'update-reservation', reservation, clientid})
+  })
+  .catch(reason => {
+    console.log(reason)
+  })
+}
+
+function deleteEntry (entryId, clientid) {
+  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
+  .then(response => {
+    if (!response.ok) { return null }
+    return response.json()
+  })
+  .then(result => {
+    if (!result) { return }
+    if (!result.success) { return }
+    const reservation = Array.isArray(result.data) ? result.data[0] : result.data
+    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    if (channel) { channel.postMessage({op: 'remove', entry: Array.isArray(result.data) ? result.data[0] : result.data, clientid}) }
+  })
+}
+
+function cacheAndSend (data, vTimeLine, force = false) {
   new Promise((resolve, reject) => {
-    let entries = {}
+    const entries = new Map()
     let promises = []
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
@@ -180,30 +283,29 @@ function cacheAndSend (data, vTimeLine) {
           if (Symlinks.has(channel)) {
             channel = Symlinks.get(channel)
           }
-          if (!entries[channel]) {
+          if (entries[channel] === undefined) {
             entries[channel] = []
           }
-          let hash = objectHash.sha1(entry)
-          entry._hash = hash
-          if (Entries.get(entry.id)) {
-            if (hash !== Entries.get(entry.id)[0]) {
-              if (Entries.get(entry.id)[1] !== channel) {
-                if (!entries[Entries.get(entry.id)[1]]) {
-                  entries[Entries.get(entry.id)[1]] = []
+          if (Entries.has(entry.id)) {
+            const storedEntry = Entries.get(entry.id)
+            if ((entry.version !== storedEntry[0]) || force) {
+              if (storedEntry[1] !== channel) {
+                if (entries[storedEntry[1]] === undefined) {
+                  entries[storedEntry[1]] = []
                 }
-                let remChannel = Entries.get(entry.id)[1] 
+                let remChannel = storedEntry[1] 
                 if (Symlinks.has(remChannel)) {
                   remChannel = Symlinks.get(remChannel)
                 }
                 Channels.get(remChannel)?.postMessage({op: 'remove', reservation: entry})
-                entries[Entries.get(entry.id)[1]].push(entry)
+                entries[storedEntry[1]].push(entry)
                 Entries.delete(entry.id)
               }
-              Entries.set(entry.id, [hash, channel, new Date().getTime()])
+              Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
               entries[channel].push(entry)
             }
           } else {
-            Entries.set(entry.id, [hash, channel, new Date().getTime()])
+            Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
             entries[channel].push(entry)
           }
           resolve()
@@ -224,11 +326,6 @@ function cacheAndSend (data, vTimeLine) {
           PostPoned[k] = []
         }
         PostPoned[k] = [...PostPoned[k], ...entries[k]]
-      }
-    }
-    for (const [key, channel] of Channels) {
-      if (processed.indexOf(key) === -1) {
-        channel.postMessage({op: 'entries', value: []})
       }
     }
 
@@ -279,7 +376,7 @@ function checkMachineState () {
     let prmses = []
     for (i = 0; i < result.length; i++) {
       prmses.push(new Promise((resolve, reject) => {
-        let entry = result.data[i]
+        const entry = result.data[i]
         let channel = entry.resolvedTarget
 
         if (Symlinks.has(channel)) {
@@ -298,18 +395,19 @@ function checkMachineState () {
           })
           .then(status => {
             if (status.length === 1) {
-              let severity = parseInt(status.data.severity)
+              const data = Array.isArray(status.data) ? status.data[0] : status.data
+              let severity = parseInt(data.severity)
               if (severity < 1000) {
-                status.data.color = 'black'
+                data.color = 'black'
               } else if (severity < 2000) {
-                status.data.color = 'blue'
+                data.color = 'blue'
               } else if (severity < 3000) {
-                status.data.color = 'darkorange'
+                data.color = 'darkorange'
               } else {
-                status.data.color = 'red'
+                data.color = 'red'
               }
-              Status.set(entry.type, status.data)
-              entry.type = status.data
+              Status.set(entry.type, data)
+              entry.type = data
               resolve([channel, entry])
             }
           })
@@ -341,7 +439,6 @@ function checkMachineState () {
           Channels.get(k).postMessage({op: 'state', value: merged[k]})
         }
       }
-      setTimeout(checkMachineState, 5000)
     })
   })
   .catch(reason => {
@@ -367,28 +464,6 @@ function runUpdater () {
     }
   })
   .catch(reason => console.log(reason))
-}
-
-const updateTimer = 10
-function startUpdater () {
-  if (LastMod > 0) {
-    const url = KAIROS.URL(KAIROS.kreservation.store)
-    url.searchParams.set(`search.${KAIROS.kreservation.mtime.remote}`, `>${LastMod}`)
-    fetch(url).then((response) => {
-      if (response.ok) {
-        response.json().then((json) => {
-          if (json.length > 0 && json.success) {
-            cacheAndSend(json.data, newVTimeLine())
-          }
-          setTimeout(startUpdater, updateTimer * 1000)
-        })
-      } else {
-        setTimeout(startUpdater, updateTimer * 1000)
-      }
-    })
-  } else {
-    setTimeout(startUpdater, updateTimer * 1000)
-  }
 }
 
 checkMachineState()

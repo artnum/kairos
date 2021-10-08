@@ -50,12 +50,12 @@ Address.load = function (dbContactEntry) {
     if (dbContactEntry.freeform) {
       resolve(new Address(dbContactEntry))
     } else {
-      let url = new URL(`${KAIROS.getBase()}/store/${dbContactEntry.target}`)
+      const url = new URL(`${KAIROS.getBase()}/store/${dbContactEntry.target}`)
       kfetch(url).then(response => {
         if (!response.ok) { resolve(null); return }
         response.json().then(result => {
           if (result.length !== 1) { resolve(null); return }
-          let data = Array.isArray(result.data) ? result.data[0] : result.data
+          const data = Array.isArray(result.data) ? result.data[0] : result.data
           resolve(new Address(data))
         })
       })

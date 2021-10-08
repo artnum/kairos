@@ -13,5 +13,37 @@ class ArrivalModel extends artnum\SQL {
       $this->conf('create.ts', true); 
       $this->conf('datetime', array('reported', 'inprogress', 'done'));
    }
+
+   function _write($data, $id = NULL) {
+      global $MSGSrv;
+      $result = parent::_write($data, $id);
+      $id = $result->getItem(0);
+      if ($id !== null) {
+         $MSGSrv->send(json_encode([
+            'operation' => 'write',
+            'type' => 'arrival',
+            'cid' => $this->kconf->getVar('clientid'),
+            'id' => $id['id']
+         ]));
+      }
+      return $result;
+   }
+
+   function _delete($id) {
+      global $MSGSrv;
+      $result = parent::_delete($id);
+      $item = $result->getItem(0);
+      if ($item !== null) {
+         if ($item[$id]) {
+            $MSGSrv->send(json_encode([
+               'operation' => 'delete',
+               'type' => 'arrival',
+               'cid' => $this->kconf->getVar('clientid'),
+               'id' => $id
+            ]));
+         }
+      }
+      return $result;
+   }
 }
 ?>

@@ -47,7 +47,7 @@ KStore.prototype.query = function (query) {
 KStore.prototype.set = function (object, id = null) {
     return new Promise((resolve, reject) => {
         const url = new URL(`${this.url}${id === null ? '' : '/' + id}`)
-        fetch(url, {method: id === null ? 'POST' : 'PUT', body: JSON.stringify(object)})
+        fetch(url, {method: id === null ? 'POST' : 'PATCH', body: JSON.stringify(object)})
         .then(response => {
             if (!response.ok) { throw new Error('ERR:Server') }
             return response.json()

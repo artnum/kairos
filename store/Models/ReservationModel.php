@@ -1,8 +1,10 @@
 <?PHP
 
-class ReservationModel extends artnum\SQL {
+class ReservationModel extends artnum\SQL
+{
    protected $kconf;
-   function __construct($db, $config) {
+   function __construct($db, $config)
+   {
       $this->kconf = $config;
       parent::__construct($db, 'reservation', 'reservation_id', []);
       $this->conf('auto-increment', true);
@@ -24,9 +26,11 @@ class ReservationModel extends artnum\SQL {
          'reservation_locality' => 'string',
          'reservation_address' => 'string'
       ));
+      $this->set_req('update', 'UPDATE "\\Table" SET \\COLVALTXT, "reservation_version" = "reservation_version" + 1 WHERE "\\IDName" = :\\IDName');
    }
 
-   function getStats($options) {
+   function getStats($options)
+   {
       $result = new \artnum\JStore\Result();
       if (empty($options['from'])) {
          $from = new DateTime('now');
@@ -46,7 +50,7 @@ class ReservationModel extends artnum\SQL {
       }
 
       $options['fromSeven'] = $options['to'] - (86400 * 7);
-      
+
       /* SELECT "reservation_creator",
              COUNT("reservation_id") AS "reservation_totUser",
              MIN("reservation_created") AS "reservation_first",
@@ -88,7 +92,8 @@ class ReservationModel extends artnum\SQL {
       return $result;
    }
 
-   function getMachineStats($options) {
+   function getMachineStats($options)
+   {
       $result = new \artnum\JStore\Result();
       $from;
       if (empty($options['from'])) {
@@ -108,7 +113,7 @@ class ReservationModel extends artnum\SQL {
          $to = new DateTime($options['to']);
          $options['to'] = $to->format('U');
       }
-      
+
       $diffPeriod = $from->diff($to, true);
       $sundaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 7);
       $saturdaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 6);
@@ -185,7 +190,7 @@ class ReservationModel extends artnum\SQL {
                   if ($reservation['status'] == 1) {
                      $entry['daysReserved'] += $days - ($saturdays + $sundays);
                   } else if ($reservation['status'] == 3) {
-                     $entry['daysRepair'] += $days- ($saturdays + $sundays);
+                     $entry['daysRepair'] += $days - ($saturdays + $sundays);
                   }
                }
             }
@@ -198,6 +203,114 @@ class ReservationModel extends artnum\SQL {
       }
       return $result;
    }
+   function update($data)
+   {
+      $id = $data[$this->IDName];
+      if (isset($data[$this->IDName])) {
+         unset($data[$this->IDName]);
+      }
 
+      $previous_version = $data['reservation_version'];
+      unset($data['reservation_version']);
+      foreach (array_keys($data) as $c) {
+         if (strcmp($c, $this->IDName) != 0) {
+            $columns_values[] = '`' . $c . '` = :' . $c;
+         }
+      }
+      $columns_values_txt = implode(',', $columns_values);
+
+      try {
+         $db = $this->get_db(false);
+         if ($previous_version === 'force') {
+            $st = $db->prepare($this->req('update', array('COLVALTXT' => $columns_values_txt)));
+         } else {
+            $req = $this->req('update', array('COLVALTXT' => $columns_values_txt)) . ' AND "reservation_version" = :previous_version';
+            $st = $db->prepare($req);
+            $st->bindValue(':previous_version', intval($previous_version), \PDO::PARAM_INT);
+         }
+         foreach ($data as $k_data => &$v_data) {
+            $bind_type = $this->_type($k_data, $v_data);
+            if (is_null($bind_type)) {
+               $bind_type = \PDO::PARAM_STR;
+               if (is_null($v_data)) {
+                  $bind_type = \PDO::PARAM_NULL;
+               } else if (ctype_digit($v_data)) {
+                  $bind_type = \PDO::PARAM_INT;
+               } else if (is_bool($v_data)) {
+                  $bind_type = \PDO::PARAM_BOOL;
+               }
+            }
+
+            $st->bindParam(':' . $k_data, $v_data, $bind_type);
+         }
+         $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+         $st->bindParam(':' . $this->IDName, $id, $bind_type);
+         $ex = $st->execute();
+         if (!$ex) {
+            return false;
+         }
+         return $id;
+      } catch (\Exception $e) {
+         $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
+         return false;
+      }
+   }
+
+   function getVersion($id, &$result = null)
+   {
+      try {
+         $db = $this->get_db(true);
+         $st = $db->prepare('SELECT "reservation_version" FROM "reservation" WHERE "reservation_id" = :id');
+         $st->bindValue(':id', $id['id'], \PDO::PARAM_INT);
+         $st->execute();
+         $value = $st->fetch();
+
+         if ($result === null) {
+            $result = new \artnum\JStore\Result();
+            $result->addItem(['id' => $id['id'], 'version' => $value['reservation_version']]);
+         } else {
+            $result->setItem(0, ['id' => $id['id'], 'version' => $value['reservation_version']]);
+         }
+      } catch (\Exception $e) {
+         $result->addError($e->getMessage(), $e);
+      }
+      return $result;
+   }
+
+   function _write($data, $id = NULL)
+   {
+      global $MSGSrv;
+      $result = parent::_write($data, $id);
+      $id = $result->getItem(0);
+      if ($id !== null) {
+         $this->getVersion($id, $result);
+         $item = $result->getItem(0);
+         $MSGSrv->send(json_encode([
+            'operation' => 'write',
+            'type' => 'reservation',
+            'id' => $item['id'],
+            'cid' => $this->kconf->getVar('clientid'),
+            'version' => $item['version'],
+         ]));
+      }
+      return $result;
+   }
+
+   function _delete($id) {
+      global $MSGSrv;
+      $time = time();
+      $data = ['reservation_id' => $id, 'reservation_deleted' => $time, 'reservation_modification' => $time, 'reservation_version' => 'force'];
+      $_id = $this->update($data);
+      $result = new artnum\JStore\Result([$id => $id !== false], 1);
+      
+      if ($_id !== false) {
+         $MSGSrv->send(json_encode([
+            'operation' => 'delete',
+            'type' => 'reservation',
+            'cid' => $this->kconf->getVar('clientid'),
+            'id' => $_id
+         ]));
+      }
+      return $result;
+   }
 }
-?>

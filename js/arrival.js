@@ -31,6 +31,10 @@ var Arrival = function () {
   }
 
   this.ww = new Worker(`${KAIROS.getBase()}/js/ww/return.js`)
+  KAIROS.getClientId()
+  .then(cid => {
+    this.ww.postMessage({op: 'setClientId', cid})
+  })
   this.ww.onmessage = msg => {
     if (msg && msg.data) {
       if (msg.data.delete && msg.data.id) {

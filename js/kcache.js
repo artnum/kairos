@@ -75,6 +75,11 @@ function kfetch (url, options = { method: 'GET' }) {
                 case 'head':
                     break
             }
+            /* status that don't trigger cache */
+            switch (clonedResponse.status) {
+                case 404: return
+                case 500: return
+            }
             const clonedResponse = response.clone()
             clonedResponse.text()
             .then(body => {

@@ -5,7 +5,9 @@ require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
 require('../lib/get-entry.php');
+require('wesrv/lib/msg.php');
 
+$MSGSrv = new \wesrv\msg();
 $ini_conf = load_ini_configuration();
 $KConf = new KConf($ini_conf);
 
@@ -75,6 +77,12 @@ if (!empty($ini_conf['menshen']) && $ini_conf['menshen']['activate']) {
     artnum\HTTP\Response::code(403);
     exit(0);
   }
+}
+
+if (!empty($_SERVER['HTTP_X_CLIENT_ID'])) {
+  $KConf->setVar('clientid', $_SERVER['HTTP_X_CLIENT_ID']);
+} else {
+  $KConf->setVar('clientid', '');
 }
 
 $store->run($KConf);

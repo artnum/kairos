@@ -12,7 +12,7 @@ const K_WARN = 2
 const K_ERROR = 3
 
 window.addEventListener('mousemove', kMouseFollow)
-window.addEventListener('touchmove', kMouseFollow)
+window.addEventListener('touchmove', kMouseFollow)  
 
 KAIROS.clearSelection = function () {
     if (document.selection && document.selection.empty) {
@@ -33,8 +33,13 @@ KAIROS.warn = function (txt, code = 0) {
     this.log('warning', txt, code)
 }
 
-KAIROS.error = function (txt, code = 0) {
-    this.log('error', txt, code)
+KAIROS.error = function (msg, code = 0) {
+    const txt = msg instanceof Error ? msg.message : msg
+    if (KError[txt]) {
+        this.log('error', KError[txt].fr, code)
+    } else {
+        this.log('error', txt, code)
+    }
     console.group('Erreur')
     console.log(txt, code)
     console.trace()
@@ -129,6 +134,9 @@ document.addEventListener('keyup', event => {
         } else {
             KAIROS.closeNext()
         }
+    }
+    if (event.key === 'F5' && event.ctrlKey) {
+        KAIROS.abortAllRequest()
     }
 }, {capture: true})
 

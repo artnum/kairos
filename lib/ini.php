@@ -30,6 +30,20 @@ class KConf {
   function __construct($ini) {
     $this->IniValue = $ini;
     $this->dbs = [];
+    $this->vars = [];
+  }
+
+  function setVar($name, $value) {
+    $this->vars[$name] = $value;
+  }
+
+  function getVar($name) {
+    if (!isset($this->vars[$name])) { return null; }
+    return $this->vars[$name];
+  }
+
+  function delVar($name) {
+    unset($this->vars[$name]);
   }
 
   function get($path) {

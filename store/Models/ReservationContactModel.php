@@ -11,5 +11,45 @@ class ReservationContactModel extends artnum\SQL {
          'contacts_freeform' => 'string'
       ));
    }
+
+   function _write($data, $id = NULL) {
+      global $MSGSrv;
+
+      if (!empty($data['target'])) {
+         if ($data['target'][0] !== '/') { $data['target'] = '/' . $data['target']; }
+      }
+
+      $result = parent::_write($data, $id);
+      $item = $result->getItem(0);
+      if ($item !== null) {
+      $MSGSrv->send(json_encode([
+            'operation' => 'write',
+            'type' => 'contact',
+            'cid' => $this->kconf->getVar('clientid'),
+            'id' => $item['id']
+         ]));
+      }
+
+      return $result;
+   }
+
+   function _delete($id) {
+      global $MSGSrv;
+      $oldEntry = $this->_read($id);
+      $result = parent::_delete($id);
+      $item = $oldEntry->getItem(0);
+      if ($item !== null) {
+         if ($item['reservation']) {
+            $MSGSrv->send(json_encode([
+               'operation' => 'delete',
+               'type' => 'contact',
+               'reservation' => $item['reservation'],
+               'cid' => $this->kconf->getVar('clientid'),
+               'id' => $item['id']
+            ]));
+         }
+      }
+      return $result;
+   }
 }
 ?>

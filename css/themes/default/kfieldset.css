@@ -1,0 +1,9 @@
+.kfieldset legend {
+    background-color: lavender;
+    color: black;
+    min-width: 16ch;
+}
+
+.kfieldset legend i {
+    float: right;
+}

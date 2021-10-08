@@ -34,6 +34,29 @@ KAIROS.uuidV4 = function () {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
 }
 
+KAIROS.setClientId = function (cid) {
+  KAIROS.getClientId.__clienti = cid
+}
+
+KAIROS.getClientId = function () {
+  return new Promise((resolve, reject) => {
+    if (KAIROS.getClientId.__clientid !== undefined) { resolve(KAIROS.getClientId.__clientid); return }
+    let idString = (new Date()).toISOString()
+    for (const k of ['appCodeName', 'appName', 'appVersion', 'buildId', 'language', 'oscpu', 'platform', 'product', 'productSub', 'userAgent', 'vendor']) {
+      idString += String(navigator[k])
+    }
+    idString +=  crypto.getRandomValues(new Uint16Array(1)).toString(16)
+    crypto.subtle.digest('SHA-1', (new TextEncoder()).encode(idString))
+    .then(hash => {
+      KAIROS.getClientId.__clientid = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
+      resolve(KAIROS.getClientId.__clientid)
+    })
+    .catch(reason => {
+      throw new Error(reason)
+    })
+  })
+}
+
 KAIROS.eventTarget = new EventTarget()
 
 KAIROS.addEventListener = function (type, callback, options) {
@@ -113,6 +136,32 @@ KAIROS.get = function (resource) {
 /* override fetch to add X-Request-Id automatically */
 const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch
+KAIROS._runningQueries = new Map()
+
+KAIROS.abortAllRequest = function () {
+  for (const [key, query] of KAIROS._runningQueries) {
+    query.abort()
+  }
+}
+
+KAIROS.abortRequest = function (rid) {
+  if (KAIROS._runningQueries.has(rid)) {
+    KAIROS._runningQueries.get(rid).abort()
+    KAIROS._runningQueries.delete(rid)
+  }
+}
+
+KAIROS.getRequestId = function () {
+  if (KAIROS.fetch.count === undefined) {
+    KAIROS.fetch.count = 0
+  }
+  if (KAIROS.fetch.uuid === undefined) {
+    KAIROS.fetch.uuid = KAIROS.uuidV4()
+  }
+  KAIROS.fetch.count++
+  return `${KAIROS.fetch.uuid}-${new Date().getTime()}-${KAIROS.fetch.count}`
+}
+
 KAIROS.fetch = function (url, options = {}) {
   const originalUrl = url instanceof URL ? url.toString() : url
   let bufferDelay = false
@@ -142,13 +191,8 @@ KAIROS.fetch = function (url, options = {}) {
       return currentRunning[0].then(response => { return response.clone() })
     }
   }
-
-  if (KAIROS.fetch.count === undefined) {
-    KAIROS.fetch.count = 0
-  }
-
-  KAIROS.fetch.count++
-  let rid =  `${KAIROS.fetch.uuid}-${new Date().getTime()}-${KAIROS.fetch.count}`
+  
+  const rid = options.rid || KAIROS.getRequestId()
   if (options.headers === undefined) {
     options.headers = new Headers({'X-Request-Id': rid})
   } else {
@@ -161,43 +205,67 @@ KAIROS.fetch = function (url, options = {}) {
     }
   }
 
-  if (!(url instanceof URL)) {
-    let origin = GLOBAL.location.origin || GLOBAL.origin
-    if (origin) {
-      url = new URL(url, GLOBAL.location.origin)
-    }
-  }
+  return KAIROS.getClientId()
+  .then(cid => {
+    options.headers.set('X-Client-Id', cid)
 
-  const query = __kairos_fetch(url, options)
-  if (bufferDelay) {
-    KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
-  }
-
-  query
-  .then(response => {
-    if (response.ok) { return } // don't process good response
-    const clonedResponse = response.clone()
-    let headers = clonedResponse.headers
-    if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
-    clonedResponse.json().then(error => {
-      if (!error.message) { return }
-      switch(Math.trunc(clonedResponse.status / 100)) {
-        case 3:
-          KAIROS.log(`Message serveur : "${errror.message}"`)
-          break
-        case 4:
-          KAIROS.warn(`Attention serveur : "${errror.message}"`)
-          break;
-        default:
-        case 5:
-          KAIROS.error(`Erreur serveur : "${error.message}"`)
-          break
+    if (!(url instanceof URL)) {
+      let origin = GLOBAL.location.origin || GLOBAL.origin
+      if (origin) {
+        url = new URL(url, GLOBAL.location.origin)
       }
-    })
-  })
+    }
 
-  return query.then(response => { return response.clone() })
+    const queryAbortCtrl = new AbortController()
+    options.signal = queryAbortCtrl.signal
+    KAIROS._runningQueries.set(rid, queryAbortCtrl)
+    const query = __kairos_fetch(url, options)
+    if (bufferDelay) {
+      KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
+    }
+
+    query
+    .then(response => {
+      KAIROS._runningQueries.delete(rid)
+      if (response.ok) { return } // don't process good response
+      const clonedResponse = response.clone()
+      let headers = clonedResponse.headers
+      if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
+      clonedResponse.json().then(error => {
+        if (!error.message) { return }
+        switch(Math.trunc(clonedResponse.status / 100)) {
+          case 3:
+            KAIROS.log(`Message serveur : "${errror.message}"`)
+            break
+          case 4:
+            KAIROS.warn(`Attention serveur : "${errror.message}"`)
+            break;
+          default:
+          case 5:
+            KAIROS.error(`Erreur serveur : "${error.message}"`)
+            break
+        }
+      })
+    })
+    .catch(reason => {
+      /* abort is not ignored */
+      if (reason.name === 'AbortError') { return }
+      if (KAIROS.error) { KAIROS.error(reason) }
+      console.group('KAIROS Fetch')
+      console.trace()
+      console.log(reason)
+      console.groupEnd()
+    })
+    return query.then(response => { return response.clone() })
+  }) 
 }
+
+KAIROS.syslog = function(error) {
+  console.trace()
+  console.log(error)
+}
+
+KAIROS.bug = KAIROS.syslog
 
 KAIROS.DateFromTS = function(ts) {
   let d = new Date()

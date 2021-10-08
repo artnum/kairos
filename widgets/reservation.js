@@ -70,6 +70,7 @@ define([
       this.localid = 'R' + Math.random().toString(36).substr(2, 9)
       this.uuid = options.uuid
       this.KReservation = new KReservation()
+      this.version = 1
       this._gui = {
         hidden: false
       }
@@ -95,11 +96,32 @@ define([
       this.EventTarget.addEventListener(type, listener, options)
     },
     
+    resync () {
+      return new Promise((resolve, reject) => {
+        fetch(`${KAIROS.getBase()}/store/DeepReservation/${this.uid}`)
+        .then(response => {
+          if (!response.ok) { throw new Error('Erreur serveur') }
+          return response.json()
+        })
+        .then(result => {
+          if (!result.success) { throw new Error('Erreur serveur') }
+          return this.fromJson(Array.isArray(result.data) ? result.data[0] : result.data)
+        })
+        .then(_ => {
+          this.syncForm()
+          resolve()
+        })
+        .catch(error => {
+          KAIROS.error(error)
+        })
+      })
+    },
+
     fromJson: function (json) {
       return new Promise((resolve, reject) => {
         if (!json) { resolve(); return }
         if (json.data) {
-          json = json.data
+          json = Array.isArray(json.data) ? json.data[0] : json.data
         }
         this.modifiedState = true
         if (this.get('_hash')) {
@@ -129,6 +151,12 @@ define([
           this.lastModified = parseInt(json['modification'])
         }
 
+        if (json.version) {
+          this.version = parseInt(json.version)
+        }
+        this.updateVersionId()
+
+        let krLoad = Promise.resolve()
         if (json['id']) {
           hash.hash(json.id)
           this.set('uid', json['id'])
@@ -207,15 +235,6 @@ define([
           this.dataHash['uuid'] = crc32('')
         }
 
-        if (this.contacts && this.contacts['_client']) {
-          if (this.contacts['_client'][0].target) {
-            this.dbContact = this.contacts['_client'][0].target
-          } else {
-            this.dbContact = { freeform: this.contacts['_client'][0].freeform }
-          }
-        } else {
-          this.dbContact = {}
-        }
         if (!this.color) { this.color = 'FFF' }
         if (!this.complements) { this.complements = [] }
 
@@ -245,8 +264,15 @@ define([
           if (this.stateHash && this.stateHash !== state) {
             this.EventTarget.dispatchEvent(new CustomEvent('synced'))
           }
-          this.stateHash = state
-          resolve()
+        })
+        .then(() => {
+          this.resize()
+          krLoad.then(kres => {
+            delete this.KReservation
+            this.KReservation = kres
+            this.stateHash = hash.result()
+            resolve()
+          })
         })
       })
     },
@@ -393,23 +419,6 @@ define([
       this.domNode.dataset.uid = this.uid ? this.uid : null
       this._gui.hidden = true
       this.set('active', false)
-    },
-
-    evTouchStart: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      if (window.App.touchTimeout) {
-        clearInterval(window.App.touchTimeout)
-      }
-      window.App.touchTimeout = setTimeout(function () {
-        this.popMeUp()
-      }.bind(this), 500)
-    },
-
-    evTouchEnd: function (event) {
-      event.stopPropagation()
-      event.preventDefault()
-      clearTimeout(window.App.touchTimeout)
     },
 
     isolateMe: function (e) {
@@ -614,35 +623,13 @@ define([
     },
 
     contactDom: function () {
-      var contact = this.get('dbContact')
-      var content = document.createDocumentFragment()
-      if (contact) {
-        if (contact.freeform) {
-          content.appendChild(document.createTextNode(String(contact.freeform).replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1, $2')))
-        } else {
-          if (contact.displayname) {
-            content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'displayname names')
-            content.lastChild.appendChild(document.createTextNode(contact.displayname))
-          } else {
-            if (contact.o) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'o names')
-              content.lastChild.appendChild(document.createTextNode(contact.o))
-            }
-
-            if (contact.givenname) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'givenname names')
-              content.lastChild.appendChild(document.createTextNode(contact.givenname))
-            }
-
-            if (contact.sn) {
-              content.appendChild(document.createElement('SPAN')); content.lastChild.setAttribute('class', 'sn names')
-              content.lastChild.appendChild(document.createTextNode(contact.sn))
-            }
-          }
-        }
-      }
-
-      return content
+      const contact = this.get('dbContact')
+      const domNode = 
+        contact === null ? 
+          document.createElement('ADDRESS') : 
+          contact.getDOMLabel({postaladdress: true, o: true, mail: true, mobile: true, telephonenumber: true}, true)
+      domNode.classList.add('inline')
+      return domNode
     },
 
     _setTextDesc: function (root) {
@@ -709,8 +696,7 @@ define([
 
       frag.lastChild.appendChild(ident)
 
-      frag.lastChild.appendChild(document.createElement('address'))
-      frag.lastChild.lastChild.appendChild(this.contactDom())
+      frag.lastChild.appendChild(this.contactDom())
 
       /* Second line */
       frag.appendChild(document.createElement('DIV'))
@@ -747,7 +733,7 @@ define([
         locality = frag.lastChild.lastChild
         if (this.gps) {
           frag.lastChild.lastChild.appendChild(document.createElement('A'))
-          frag.lastChild.lastChild.lastChild.setAttribute('href', 'https://www.google.com/maps/place/' + String(this.gps).replace(/\s/g, ''))
+          frag.lastChild.lastChild.lastChild.setAttribute('href', KAIROS.maps.gps.replace('$GPS', String(this.gps).replace(/\s/g, '')))
           frag.lastChild.lastChild.lastChild.setAttribute('target', '_blank')
           locality = frag.lastChild.lastChild.lastChild
         }
@@ -843,7 +829,7 @@ define([
 
         window.App.setOpen(this.uid)
         var f = new RForm({reservation: this, htmlDetails: this.sup ? this.sup.htmlDetails : '<p></p>', deleted: this.deleted ? true : false})
-        var title = 'Réservation ' + this.uid
+        let title = `Réservation ${this.uid} V.${this.version}`
 
         var cp = new DtContentPane({
           title: title,
@@ -865,6 +851,15 @@ define([
           this.close.closableIdx = KAIROS.stackClosable(this.close.bind(this))
         })
       })
+    },
+
+    isOpen () {
+      if (this.myForm) { return true }
+      return false
+    },
+
+    signalRemoteModification () {
+      this.myForm.outOfSync()
     },
 
     close: function () {
@@ -911,10 +906,6 @@ define([
         }))
         this.myForm.lastModified = this.lastModified
         this.myForm.load()
-      }
-
-      if (this.myContentPane) {
-        this.myContentPane.set('title', `Réservation ${this.uid}`)
       }
     },
 
@@ -1094,7 +1085,11 @@ define([
 
     destroy: function () {
       return new Promise((resolve, reject) => {
-        this.hide().then(() => {
+        if (this.myForm) {
+          this.myForm.remoteDelete()
+        }
+        this.hide()
+        .then(() => {
           this.destroyed = true
           this.inherited(arguments)
           resolve()
@@ -1106,10 +1101,6 @@ define([
       this._gui.hidden = false
       if (!this.domNode) {
         this.domNode = document.createElement('DIV')
-      }
-      if (!this.TouchEvents) {
-        this.TouchEvents = [djOn(this.domNode, 'touchstart', this.evTouchStart.bind(this)),
-          djOn(this.domNode, 'touchend', this.evTouchEnd.bind(this))]
       }
       if (!this.DblClick) {
         this.domNode.addEventListener('dblclick', (event) => {
@@ -1320,6 +1311,12 @@ define([
       })
     },
 
+    updateVersionId: function () {
+      if (this.myContentPane) {
+        this.myContentPane.set('title', `Réservation ${this.id} V.${this.version}`)
+      }
+    },
+
     showIntervention: function (parentNode, moving) {
       if (!this.interventions || this.interventions.length <= 0) {
         return
@@ -1409,11 +1406,13 @@ define([
       }
       this.saveInProgress = true
       this.waitStart()
-      let savePromise = new Promise((resolve, reject) => {
-        this.toObject().then(obj => {
-          let dataHash = obj[1]
-          let reservation = object === null ? obj[0] : object
-          let modifiedLog = {type: 'Reservation', object: reservation.uid, attribute: [], original: this.dataOriginal}
+      const modifiedLog = {type: 'Reservation', object: null, attribute: [], original: this.dataOriginal}
+      const savePromise = new Promise((resolve, reject) => {
+        this.toObject()
+        .then(obj => {
+          const dataHash = obj[1]
+          const reservation = object === null ? obj[0] : object
+          modifiedLog.object = reservation.uid
           if (dataHash && this.dataHash) {
             for (let k in dataHash) {
               if (k === '_arrival') {
@@ -1431,11 +1430,35 @@ define([
               }
             }
           }
+          return reservation
+        })
+        .then(reservation => {
           let arrival = reservation.arrival
           delete reservation.arrival
-          fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${reservation.id ? reservation.id : ''}`), 
-              {method: reservation.id ? 'PUT' : 'POST', body: JSON.stringify(reservation)}).then(response => {
+          reservation.version = this.version
+          fetch(
+            new URL(
+              `${KAIROS.getBase()}/store/Reservation/${reservation.id ? reservation.id : ''}`
+            ), 
+            {
+              method: reservation.id ? 'PUT' : 'POST',
+              body: JSON.stringify(reservation)
+            }
+          )
+          .then(response => {
             if (!response.ok) { 
+              if (reservation.id) {
+                KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
+              } else {
+                KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
+              }
+              return null
+            }
+            return response.json()
+          })
+          .then(result => {
+            if (result === null) { }
+            if (result.length !== 1) {
               if (reservation.id) {
                 KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
               } else {
@@ -1443,53 +1466,46 @@ define([
               }
               return
             }
-            response.json().then(result => {
-              if (result.length !== 1) {
-                if (reservation.id) {
-                  KAIROS.error(`Ne peut pas enregistrer la réservation ${reservation.id}/${reservation.uuid}`)
-                } else {
-                  KAIROS.error(`Ne peut pas créer la réservation ${reservation.uuid}`)
-                }
-                return
-              }
-              let entry = Array.isArray(result.data) ? result.data[0] : result.data
-              let id = entry.id
-              this.id = id
-              let subQueries = []
-              this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
-              if (modifiedLog.attribute.length > 0 || duplicate) {
-                /* POST to mod log */
-                modifiedLog.object = id
-                Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
-              }
-              subQueries.push(new Promise((resolve, reject) => {
-                fetch(`${KAIROS.getBase()}/store/Reservation/${id}`)
-                .then(response => {
-                  if (!response.ok) { resolve(); return }
-                  response.json()
-                  .then(result => {
-                    if (result.length < 1) { resolve(); return }
-                    let data = Array.isArray(result.data) ? result.data[0] : result.data
-                    this.lastModified = parseInt(data.modification)
-                    resolve()
-                  })
-                })
-              }))
-           
-              if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
-                if (arrival._op && arrival._op.toLowerCase() === 'delete') {
-                  this.set('_arrival', null)
-                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
-                } else {
-                  arrival.target = id
-                  subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))
-                }
-              }
+            let entry = Array.isArray(result.data) ? result.data[0] : result.data
+            let id = entry.id
+            this.version = parseInt(entry.version)
+            this.id = id
 
-              Promise.all(subQueries)
-              .then(_ => {
-                resolve(id)
+            this.updateVersionId()
+            
+            let subQueries = []
+            this.EventTarget.dispatchEvent(new CustomEvent('id-received', {detail: {id: id, uuid: reservation.uuid}}))
+            if (modifiedLog.attribute.length > 0 || duplicate) {
+              /* POST to mod log */
+              modifiedLog.object = id
+              Histoire.LOG(modifiedLog.type, modifiedLog.object, modifiedLog.attribute, modifiedLog.original, duplicate ? {'action': 'duplicate', 'original': duplicate} : (reservation.id ? {'action': 'modify'} : {'action': 'create'}))
+            }
+            subQueries.push(new Promise((resolve, reject) => {
+              fetch(`${KAIROS.getBase()}/store/Reservation/${id}`)
+              .then(response => {
+                if (!response.ok) { resolve(); return }
+                response.json()
+                .then(result => {
+                  let data = Array.isArray(result.data) ? result.data[0] : result.data
+                  this.lastModified = parseInt(data.modification)
+                  resolve()
+                })
               })
+            }))
+          
+            if (arrival && Object.keys(arrival).length > 0 && !arrival.deleted) {
+              if (arrival._op && arrival._op.toLowerCase() === 'delete') {
+                this.set('_arrival', null)
+                subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id}`), {method: 'DELETE', body: JSON.stringify({id: arrival.id})}))
+              } else {
+                arrival.target = id
+                subQueries.push(fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${arrival.id ? arrival.id : ''}`), {method: arrival.id ? 'PUT' : 'POST', body: JSON.stringify(arrival)}))
+              }
+            }
+
+            Promise.all(subQueries)
+            .then(_ => {
+              resolve(id)
             })
           })
         })
@@ -1636,6 +1652,7 @@ define([
         let associations = []
         let contacts = []
         Promise.all([pContacts, pAssociations]).then((results) => {
+          console.log(results)
           if (results[1].length > 0) {
             results[1].data.forEach((a) => {
               delete a.reservation
@@ -1648,6 +1665,7 @@ define([
           }
           if (results[0].length > 0) {
             results[0].data.forEach((c) => {
+              console.log(c)
               delete c.reservation
               if (c.target) {
                 c.target = `store${c.target}`
@@ -1686,6 +1704,15 @@ define([
         this.deliveryEnd = newDeliveryEnd
         this.save()
       }.bind(this))
+    },
+
+    addContact: function (address, type) {
+      return this.KReservation.addContact(address, type)
+    },
+
+    delContact: function (address, type) {
+      return this.KReservation.delContact(address, type)
     }
+
   })
 })

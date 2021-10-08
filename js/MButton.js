@@ -2,12 +2,19 @@ function MButton(button, choice = []) {
   let single = true
   this.Button = document.createElement('DIV')
   this.domNode = this.Button
-  this.MButton = button
   this.Events = {}
   this.linkedState = []
   this._value = undefined
   this._oldValue = undefined
-  button.setAttribute('type', 'button')
+  
+  if (button instanceof HTMLElement) {
+    this.MButton = button
+  } else {
+    this.MButton = document.createElement('BUTTON')
+    this.MButton.innerHTML = button
+  }
+
+  this.MButton.setAttribute('type', 'button')
   this.initialized = new Promise((resovle, reject) => {
     this.MutObserver = new MutationObserver((mutList, observer) => {
       for (const mutation of mutList) {
@@ -97,7 +104,7 @@ function MButton(button, choice = []) {
         get: this.getValue.bind(this),
         set: this._setValue.bind(this)
       })
-      new Proxy(button, {
+      new Proxy(this.MButton, {
         set: function(target, property, value, receiver) {
           if (property === 'value') {
             this._setValue(value)
@@ -134,17 +141,21 @@ function MButton(button, choice = []) {
       }
 
       /* Place */
-      let p = button.parentNode
+      let p = this.MButton.parentNode
       if (p) {
-        p.insertBefore(this.Button, button)
-        p.removeChild(button)
+        p.insertBefore(this.Button, this.MButton)
+        p.removeChild(this.MButton)
       }
-      this.Button.appendChild(button)
+
+      this.Button.appendChild(this.MButton)
       if (!single) { this.Button.appendChild(this.CButton) }
 
-      if (button.dataset.flavor) {
-        this.setColorFlavor(button.dataset.flavor)
+      if (this.MButton.dataset.flavor) {
+        this.setColorFlavor(this.MButton.dataset.flavor)
       }
+
+
+      resovle()
     })
   })
 }

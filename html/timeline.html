@@ -71,10 +71,13 @@ dojoConfig = {
       "location/timeline",
       "dojo/domReady!"
     ], function (timeline) {
+      KAIROS.getClientId()
+      .then(cid => {
         window.App = new timeline()
         KAIROS.timeline = window.App
         document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
         KAIROS.timeline.run()
+      })
     });
   })
 </script>
