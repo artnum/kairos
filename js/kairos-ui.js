@@ -81,7 +81,7 @@ KAIROS.log = function (level, txt, code) {
         timeout = window.setTimeout(() => {
             if (div.parentNode) { div.parentNode.removeChild(div) }
             document.body.classList.remove('info', 'error', 'warning')
-            KAIROS.log._history.remove(txt)
+            KAIROS.log._history.delete(txt)
         }, timeout)
         div.addEventListener('click', event => {
             const history = KAIROS.log._history.get(event.target.dataset.txt)
