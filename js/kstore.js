@@ -11,6 +11,27 @@ function KStore(baseUrl) {
     return this
 }
 
+KStore.prototype.delete = function (id) {
+    return new Promise((resolve, reject) => {
+        const url = new URL(`${this.url}/${url}`)
+        fetch(url, {method: 'DELETE'})
+        .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+        })
+        .then(result => {
+            if (!result.success) { throw new Error('ERR:Server') }
+            if (!result.length) { throw new Error('ERR:NoResults') }
+            const data = Array.isArray(result.data) ? result.data[0] : result.data
+            if (!data[id]) { throw new Error('ERR:Server') }
+            resolve(data[id])
+        })
+        .catch(reason => {
+            reject(reason)
+        })
+    })
+}
+
 KStore.prototype.get = function (id) {
     return new Promise((resolve, reject) => {
         const url = new URL(`${this.url}/${id}`)
@@ -61,7 +82,6 @@ KStore.prototype.set = function (object, id = null) {
             if (!result.success) { throw new Error('ERR:Server') }
             if (result.length < 1) { throw new Error('ERR:Server') }
             const data = Array.isArray(result.data) ? result.data[0] : result.data
-            console.log(data)
             if (!data.id) { throw new Error('ERR:Server') }
             resolve(data.id)
         })
