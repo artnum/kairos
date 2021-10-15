@@ -53,11 +53,54 @@ KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {
 
 KAIROS.log = function (level, txt, code) {
     let timeout = 10000
-    const div = document.createElement('DIV')
+    let div 
+    if (!KAIROS.log._history) {
+        KAIROS.log._history = new Map()
+    }
+
+    let count = 0
+    if (KAIROS.log._history.has(txt)) {
+        const history = KAIROS.log._history.get(txt)
+        div = history.domNode
+        div.innerHTML = ''
+        count = ++history.count
+        clearTimeout(history.timeout)
+        timeout = window.setTimeout(() => {
+            if (div.parentNode) { div.parentNode.removeChild(div) }
+            document.body.classList.remove('info', 'error', 'warning')
+            KAIROS.log._history.delete  (txt)
+        }, timeout)
+        KAIROS.log._history.set(txt, {
+            domNode: div,
+            count,
+            timeout
+        })
+    } else {
+        div = document.createElement('DIV')
+        div.dataset.txt = txt
+        timeout = window.setTimeout(() => {
+            if (div.parentNode) { div.parentNode.removeChild(div) }
+            document.body.classList.remove('info', 'error', 'warning')
+            KAIROS.log._history.remove(txt)
+        }, timeout)
+        div.addEventListener('click', event => {
+            const history = KAIROS.log._history.get(event.target.dataset.txt)
+            window.clearTimeout(history.timeout)
+            history.domNode.parentNode.removeChild(history.domNode)
+            document.body.classList.remove('info', 'error', 'warning')
+            KAIROS.log._history.delete(event.target.dataset.txt)
+        })
+    
+        KAIROS.log._history.set(txt, {
+            domNode: div,
+            count: 1,
+            timeout
+        })
+    }
 
     switch (level) {
         case K_INFO:
-        case 'info': timeout = 3000
+        case 'info':
             div.appendChild(document.createElement('I'))
             div.lastChild.setAttribute('class', 'fas fa-info-circle')
             break
@@ -76,23 +119,10 @@ KAIROS.log = function (level, txt, code) {
     div.classList.add('message', level)
     if (!code) { code = '' }
     else { code = `(${code})` }
-    KAIROSAnim.push(() => {
-        div.appendChild(document.createTextNode(` ${txt} ${code}`))
-        document.body.classList.add(`${level}`)
-    })
 
-    window.setTimeout(() => {
-        KAIROSAnim.push(() => {
-            if (div.parentNode) { div.parentNode.removeChild(div) }
-            document.body.classList.remove('info', 'error', 'warning')
-        })
-    }, timeout)
+    div.innerHTML += count > 1 ? ` ${txt} ${code} (${count})` : ` ${txt} ${code}`
+    document.body.classList.add(`${level}`)
 
-    div.addEventListener('click', () => {
-        window.clearTimeout(timeout)
-        div.parentNode.removeChild(div)
-        document.body.classList.remove('info', 'error', 'warning')
-    })
     const logLine = document.getElementById('LogLine')
     const zmax = KAIROS.zMax()
     KAIROSAnim.push(() => { 
@@ -168,6 +198,9 @@ KAIROS.searchResults = function () {
 
 KAIROS.zMax = function (node = null) {
     if (KAIROS.zMax.current === undefined) {
+        KAIROS.zMax.current = 1000
+    }
+    if (KAIROS.zMax.current > 9999) {
         KAIROS.zMax.current = 1000
     }
 
