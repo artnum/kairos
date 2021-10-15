@@ -2,22 +2,20 @@ function KAffaire (uid) {
     this.data = new Map()
     this.reservation = new Map()
     this.data.set('uid', uid)
+    this.store = new KStore(KAIROS.URL(KAIROS.kaffaire.store))
 }
 
 KAffaire.create = function () {
     return new Promise((resolve, reject) => {
+        const kstore = new KStore(KAIROS.URL(KAIROS.kaffaire.store))
         UserStore.getCurrentUser()
         .then (user => {
+            if (!user) { throw new Error('ERR:NoAuth') }
             const body = {creator: user.getUrl()}
-            return fetch(`${KAIROS.getBase()}/store/Affaire`, {method: 'POST', body: JSON.stringify(body)})
+            return kstore.set(JSON.stringify(body))
         })
-        .then(response => {
-            if (!response.ok) { return null }
-            return response.json()
-        })
-        .then(result => {
-            if (!result || result.length <= 0) { reject(new Error('Pas de résultat')); return}
-            return KAffaire.load(Array.isArray(result.data) ? result.data[0].id : result.data.id)
+        .then(data => {
+            return KAffaire.load(data[KAIROS.kaffaire.uid.remote])
         })
         .then(kaffaire => {
             resolve(kaffaire)
@@ -30,15 +28,10 @@ KAffaire.create = function () {
 
 KAffaire.load = function (uid) {
     return new Promise((resolve, reject) => {
-        fetch(`${KAIROS.getBase()}/store/Affaire/${uid}`)
-        .then(response => {
-            if (!response) { return null }
-            return response.json()
-        })
-        .then(result => {
-            if (!result || result.length <= 0) { reject(new Error('Impossible de charger l\'affaire')); return }
-            const data = Array.isArray(result.data) ? result.data[0] : result.data
-            const kaffaire = new KAffaire(data.uid)
+        const kstore = new KStore(KAIROS.URL(KAIROS.kaffaire.store))
+        kstore.get(uid)
+        .then(data => {
+            const kaffaire = new KAffaire(KAIROS.kaffaire.uid.remote)
             for (const key in data) {
                 if (key === 'uid') { continue; }
                 kaffaire.set(key, data[key])
