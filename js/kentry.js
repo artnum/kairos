@@ -243,7 +243,6 @@ KEntry.prototype.handleMessage = function (msg) {
                 .then(([domNode, parentNode]) => {
                     parentNode.appendChild(domNode)
                 })
-                console.log(r)
             })
             let id = entry.uuid
             if (entry.uuid === undefined || entry.uuid === null) {
