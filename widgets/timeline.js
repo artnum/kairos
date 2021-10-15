@@ -113,6 +113,35 @@ define([
       this.Holidays = null
       this.Tooltips = {}
 
+      this.Viewport = new KView()
+      this.Viewport.setEntryHeight(76)
+      this.Viewport.setMargins(74, 14, 50, 240)
+
+      this.Viewport.addEventListener('EnterColumn', event => {
+        let i = 0;
+        for (let node = this.nVerticals.firstElementChild.firstElementChild; node; node = node.nextElementSibling) {
+          if (event.detail.currentColumn === i) {
+            node.classList.add('khover')
+          }
+          if (event.detail.currentColumn !== i) {
+            node.classList.remove('khover')
+          }
+          i++
+        }
+      })
+      this.Viewport.addEventListener('EnterRow', event => {
+        let i = 0;
+        for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
+          if (event.detail.currentRow === i) {
+            node.classList.add('khover')
+          }
+          if (event.detail.currentRow !== i) {
+            node.classList.remove('khover')
+          }
+          i++
+        }
+      })
+
       this.zoomCss = document.createElement('style')
       this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js`)
       this.Updater.onmessage = function (e) {
@@ -348,6 +377,7 @@ define([
           break
       }
 
+      this.Viewport.setDayCount(days)
       this.daysZoom = days
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
@@ -635,7 +665,7 @@ define([
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       this.domNode.addEventListener('wheel', this.eWheel.bind(this), {passive: true})
-      window.addEventListener('mousemove', this.showSight.bind(this))
+      //window.addEventListener('mousemove', this.showSight.bind(this))
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -1047,6 +1077,7 @@ define([
         }
       }
 
+      this.Viewport.setViewportWidth(this.timeline.clientWidth - this.get('offset'))
       var docFrag = document.createDocumentFragment()
       var hFrag = document.createDocumentFragment()
       var shFrag = document.createDocumentFragment()

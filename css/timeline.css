@@ -266,9 +266,18 @@ div.contact > div:first-child {
 .dijitReadOnly {
 	background-color: #ccc !important;	
 }
+
 .vertical {
 	pointer-events: none;
-	opacity: 0.2;
+}
+
+.vertical.khover {
+	background-color: hsla(120, 100%, 50%, 0.1) !important;
+}
+
+.vertical.even {
+	border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
 }
 
 .vertical.today {
@@ -276,8 +285,8 @@ div.contact > div:first-child {
 }
 
 .vertical.odd {
-	border-left: 1px solid  black;
-	border-right: 1px solid black;
+	border-left: 1px solid  lightgray;
+	border-right: 1px solid lightgray;
 	z-index: -1;
 }
 

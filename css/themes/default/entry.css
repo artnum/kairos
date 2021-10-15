@@ -10,6 +10,22 @@
     min-height: var(--default-entry-height);
 }
 
+.kentry .header {
+    min-width: 260px;
+    max-width: 260px;
+    display: inline-block;
+}
+
+.kentry .container {
+    min-width: calc(100% - 260px);
+    max-width: calc(100% - 260px);
+    display: inline-block;
+}
+
+.kentry.khover {
+	background-color: hsla(120, 100%, 50%, 0.1) !important;
+}
+
 .reservationContainer .kentry:nth-child(even) {
     background-color: hsla(var(--default-color-base), 0.05);
 }
