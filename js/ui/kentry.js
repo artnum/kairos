@@ -5,6 +5,7 @@ function KUIEntry (dataObject, opts = {}) {
     }, opts)
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
+    this.object = dataObject
 }
 
 KUIEntry.prototype.render = function () {
@@ -29,5 +30,35 @@ KUIEntry.prototype.render = function () {
 }
 
 KUIEntry.prototype.handleEvent = function (event) {
-    console.log(event, this)
+    const reservationStore = new KStore(KAIROS.URL(KAIROS.kreservation.store))
+    this.data.get('id')
+    .then(id => {
+        const now = new Date()
+        reservationStore.set({
+            begin: now.toISOString(),
+            end: new Date(now.getTime() + 86400).toISOString(),
+            target: id
+        })
+        .then(result => {
+            console.log(result)
+        })
+    })
+}
+
+KUIEntry.prototype.getContainerDomNode = function () {
+    return new Promise(resolve => {
+        this.getDomNode()
+        .then(domNode => {
+            resolve(domNode.querySelector('[data-dompart="container"]'))
+        })
+    })
+}
+
+KUIEntry.prototype.getDomNode = function () {
+    return new Promise(resolve => {
+        this.html
+        .then(uientry => {
+            resolve(uientry.domNode)
+        })
+    })
 }

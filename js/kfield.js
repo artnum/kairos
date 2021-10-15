@@ -7,13 +7,18 @@ KField.prototype.get = function(name) {
     return new Promise((resolve) => {
         this.data.ready()
         .then(_ => {
-            this.data.get(name)
-            .then(value => {
-                resolve(value)
-            })
-            .catch(reason => {
-                resolve(undefined)
-            })
+            const result = this.data.get(name)
+            if (result instanceof Promise) {
+                result
+                .then(value => {
+                    resolve(value)
+                })
+                .catch(reason => {
+                    resolve(undefined)
+                })
+            } else {
+                resolve(result)
+            }
         })
         .catch(reason => {
             resolve(undefined)
