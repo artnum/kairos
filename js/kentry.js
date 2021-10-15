@@ -165,17 +165,17 @@ KEntry.prototype.fixReservation = function (reservationJson) {
 
 KEntry.prototype.register = function (wwInstance) {
     this.wwInstance = wwInstance
-    wwInstance.postMessage({op: 'newTarget', target: this.data.uid}, [this.channel.port2])
+    wwInstance.postMessage({op: 'newTarget', target: this.data.get('id')}, [this.channel.port2])
     if (this.data.oldid) {
         if (Array.isArray(this.data.oldid)) {
             for (let i = 0; this.data.oldid.length; i++) {
                 if (this.data.oldid[i] !== this.data.uid) {
-                    wwInstance.postMessage({op: 'symlinkTarget', destination: this.data.uid, source: this.data.oldid[i] })
+                    wwInstance.postMessage({op: 'symlinkTarget', destination: this.data.get('id'), source: this.data.oldid[i] })
                 }
             }
         } else {
             if (this.data.oldid !== this.data.uid) {
-                wwInstance.postMessage({op: 'symlinkTarget', destination: this.data.uid, source: this.data.oldid })
+                wwInstance.postMessage({op: 'symlinkTarget', destination: this.data.get('id'), source: this.data.oldid })
             }
         }
     }
@@ -235,6 +235,16 @@ KEntry.prototype.handleMessage = function (msg) {
           KAIROS.getClientId()
           .then(cid => {
             const entry = msg.data.reservation
+            const Reservation = new KReservation()
+            Reservation.extUpdate(entry)
+            .then(r => {
+                let x = new KUIReservation(r)
+                Promise.all([x.render(), this.KUI.getContainerDomNode()])
+                .then(([domNode, parentNode]) => {
+                    parentNode.appendChild(domNode)
+                })
+                console.log(r)
+            })
             let id = entry.uuid
             if (entry.uuid === undefined || entry.uuid === null) {
                 id = entry.id

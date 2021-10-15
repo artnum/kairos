@@ -1,8 +1,13 @@
 function KStore(baseUrl) {
-    if (KStore._instance) { return KStore._instance}
+    if (!KStore._instance) { KStore._instance = new Map() }
+    else {
+        if (KStore._instance.has(baseUrl)) {
+            return KStore._instance.get(baseUrl)
+        }
+    }
 
     this.url = baseUrl
-    KStore._instance = this
+    KStore._instance.set(baseUrl, this)
     return this
 }
 
@@ -56,7 +61,9 @@ KStore.prototype.set = function (object, id = null) {
             if (!result.success) { throw new Error('ERR:Server') }
             if (result.length < 1) { throw new Error('ERR:Server') }
             const data = Array.isArray(result.data) ? result.data[0] : result.data
-            resolve(Object.keys(data)[0])
+            console.log(data)
+            if (!data.id) { throw new Error('ERR:Server') }
+            resolve(data.id)
         })
         .catch(reason => {
             reject(reason)

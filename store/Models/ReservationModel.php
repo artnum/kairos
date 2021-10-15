@@ -1,5 +1,9 @@
 <?PHP
 
+use Ramsey\Uuid\Nonstandard\Uuid;
+
+require('../vendor/autoload.php');
+
 class ReservationModel extends artnum\SQL
 {
    protected $kconf;
@@ -280,6 +284,9 @@ class ReservationModel extends artnum\SQL
    function _write($data, $id = NULL)
    {
       global $MSGSrv;
+      if ($id === null && !$data['uuid']) {
+         $data['uuid'] = Uuid::uuid4()->toString();
+      }
       $result = parent::_write($data, $id);
       $id = $result->getItem(0);
       if ($id !== null) {

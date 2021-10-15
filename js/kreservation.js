@@ -29,7 +29,7 @@ function KReservation (opts) {
 
 KReservation._registry = new Map()
 
-KReservation.get = function (id) {
+KReservation.getById = function (id) {
   const r = KReservation._registry.get(id)
   if (r) {
     r.atime = new Date().getTime()
@@ -41,79 +41,87 @@ KReservation.get = function (id) {
 
 KReservation.load = function (id) {
   return new Promise((resolve, reject) => {
-    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`)).then(response => {
-      if (!response.ok) { r.ok = false; resolve(r); return }
-      response.json()
-      .then(result => {
-          if (result.length !== 1) { r.ok = false; resolve(r);  return }
-          const reservation = Array.isArray(result.data) ? result.data[0] : result.data
-          for (const key in reservation) {
-            switch (key) {
-              case 'other':
-                try {
-                  const other = JSON.parse(reservation[key])
-                  for (const k in other) {
-                    other[k] = KSano.auto(other[k])
-                  }
-                  r.set('other', other)
-                } catch (reason) {
-                  throw new Error('DATA:Corrupt')
-                }
-                break
-              case 'deliveryBegin':
-              case 'deliveryEnd':
-              case 'begin':
-              case 'end':
-                if (!reservation[key]) { break; }
-                r.set(key, new Date(reservation[key]))
-                break
-              case 'version':
-                r.set(key, KSano.num(reservation[key]))
-                break
-              case 'created':
-              case 'modification':
-                r.set(key, KAIROS.DateFromTS(reservation[key]))
-                break
-              default:
-                r.set(key, KSano.txt(reservation[key]))
-                break
-            }
-          }
-          r.set('duration', r.get('end').getTime() - r.get('begin').getTime())
-          r.set('delivery',
-            {
-              begin: r.has('deliveryBegin') ? r.get('deliveryBegin') : r.get('begin'),
-              end: r.has('deliveryEnd') ? r.get('deliveryEnd') : r.get('end')
-            }
-          )
-          r.ok = true
-          Promise.all([
-            r.loadMachine(),
-            r.loadCreator(),
-            r.loadTechnician(),
-            r.loadLocality(),
-            r.loadContact(),
-            r.loadArrival(),
-            r.loadStatus()
-          ])
-          .then(_ => { 
-            resolve(r)
-          })
-      })
+    fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${id}`))
+    .then(response => {
+      if (!response.ok) { throw new Error('ERR:Server') }
+      return response.json()
+    })
+    .then(result => {
+          if (result.length < 1) { throw new Error('DATA:Inexistant') }
+          const reservation = new KReservation()
+          return reservation.extUpdate(Array.isArray(result.data) ? result.data[0] : result.data)
+    })
+    .then(reservation => {
+      if (reservation.ok) { throw new Error('DATA:Unloadable') }
+      resolve(reservation)
     })
     .catch(reason => {
-      if (!(reason instanceof Error)) {
-        reject(new Error(reason))
-        return
-      }
       reject(reason)
     })
   })
 }
 
 /* some json data obtained elsewhere are available */
-KReservation.prototype.extUpdate = function (json) {
+KReservation.prototype.extUpdate = function (reservation) {
+  this._load = new Promise((resolve, reject) => {
+    for (const key in reservation) {
+      switch (key) {
+        case 'other':
+          try {
+            const other = JSON.parse(reservation[key])
+            for (const k in other) {
+              other[k] = KSano.auto(other[k])
+            }
+            this.set('other', other)
+          } catch (reason) {
+            throw new Error('DATA:Corrupt')
+          }
+          break
+        case 'deliveryBegin':
+        case 'deliveryEnd':
+        case 'begin':
+        case 'end':
+          if (!reservation[key]) { break; }
+          this.set(key, new Date(reservation[key]))
+          break
+        case 'version':
+          this.set(key, KSano.num(reservation[key]))
+          break
+        case 'created':
+        case 'modification':
+          this.set(key, KAIROS.DateFromTS(reservation[key]))
+          break
+        default:
+            this.set(key, KSano.txt(reservation[key]))
+          break
+      }
+    }
+    this.set('duration', this.get('end').getTime() - this.get('begin').getTime())
+    this.set('delivery',
+      {
+        begin: this.has('deliveryBegin') ? this.get('deliveryBegin') : this.get('begin'),
+        end: this.has('deliveryEnd') ? this.get('deliveryEnd') : this.get('end')
+      }
+    )
+    this.ok = true
+    Promise.allSettled([
+      this.loadMachine(),
+      this.loadCreator(),
+      this.loadTechnician(),
+      this.loadLocality(),
+      this.loadContact(),
+      this.loadArrival(),
+      this.loadStatus()
+    ])
+    .then(_ => { 
+      resolve(this)
+    })
+  })
+  return this._load
+}
 
+KReservation.prototype.ready = function () {
+  return this._load
 }
 
 KReservation.prototype.set = function (name, value) {

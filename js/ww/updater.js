@@ -225,7 +225,7 @@ function processDays (vTimeLine, options) {
 }
 
 function updateEntry(entryId, clientid) {
-  fetch(`${KAIROS.getBase()}/store/DeepReservation/${entryId}`)
+  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
   .then(response => {
     if (!response.ok) { throw new Error('Net error')}
     return response.json()
@@ -237,6 +237,7 @@ function updateEntry(entryId, clientid) {
   })
   .then(reservation => {
     const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    if (!channel) { return }
     Entries.set(reservation.id, [reservation.version, channel, new Date().getTime()])
     channel.postMessage({op: 'update-reservation', reservation, clientid})
   })
