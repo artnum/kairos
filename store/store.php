@@ -5,9 +5,10 @@ require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
 require('../lib/get-entry.php');
+require('../conf/wesrv.php');
 require('wesrv/lib/msg.php');
 
-$MSGSrv = new \wesrv\msg();
+$MSGSrv = new \wesrv\msg(WESRV_IP, WESRV_PORT, WESRV_KEY);
 $ini_conf = load_ini_configuration();
 $KConf = new KConf($ini_conf);
 
