@@ -4,6 +4,79 @@ KAIROS.Cache = {
   _timeout: 7200000 // 2h cache timeout
 } // global cache
 
+KAIROS.init = function () {
+  return new Promise((resolve, reject) => {
+    Promise.all([
+      KAIROS.getClientId(),
+      KAIROS.cacheInit()
+    ])
+    .then(([clientid, cache]) => {
+      resolve(clientid)
+    })
+    .catch(reason => {
+      reject(reason)
+    })
+  })
+}
+
+KAIROS.cacheInit = function () {
+  return new Promise((resolve, reject) => {
+    if (KAIROS.kache) { resolve(KAIROS.kache); return 3}
+
+    KAIROS.kache = {
+      c: new Map(),
+      reqid (request) {
+        return new Promise((resolve, reject) => {
+          const req = request.clone()
+          let id = `${String(request.method).toLowerCase()}-${request.url.toString()}`
+          req.arrayBuffer()
+          .then(body => {
+            return crypto.subtle.digest('SHA-1', body)
+          })
+          .then(hash => {
+            id += `-${Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')}`
+            resolve(id)
+          })
+        })
+      },
+      put (request, response) {
+        return new Promise((resolve) => {
+          const hCache = response.headers.get('Cache-Control')
+          if (!hCache) { resolve(false); return }
+          const argsCache = hCache.split(',').map(v => { return v.trim() })
+          if (argsCache.indexOf('public') === -1) { resolve(false); return }
+          let maxage = 3600
+          for (const arg of argsCache ) {
+            if (arg.toLowerCase().substr(0, 8) === 'max-age=') {
+              const txtMaxAge = arg.split('=', arg, 2).map(v => { return v.trim() })[1]
+              if (!isNaN(parseInt(txtMaxAge, 10))) {
+                maxage = parseInt(txtMaxAge, 10)
+              }
+            }
+          }
+          if (maxage === 0) { resolve(false); return }
+          this.reqid(request)
+          .then(id => {
+            resolve(this.c.set(id, {until: new Date().setTime(new Date().getTime() + maxage * 1000), response: response.clone()}))
+          })
+        })
+      },
+      match(request) {
+        return new Promise((resolve) => {
+          this.reqid(request)
+          .then(id => {
+            const response = this.c.get(id)
+            if (!response) { resolve(undefined); return }
+            if (response.until < new Date().getTime()) {  this.c.delete(id); resolve(undefined); return }
+            resolve(response.response.clone())
+          })
+        })
+      }
+    }
+    resolve(KAIROS.kache)
+  })
+}
+
 KAIROS.getBase = function () {
   if (self) {
     return `${self.location.origin}/${KAIROS.base}`
@@ -133,8 +206,10 @@ KAIROS.get = function (resource) {
   return KAIROS.register.table[resource];
 }
 
+const GLOBAL = new Function('return this')() || (42, eval)('this')
+KAIROS.global = GLOBAL
+
 /* override fetch to add X-Request-Id automatically */
-const GLOBAL = new Function('return this')()
 const __kairos_fetch = GLOBAL.fetch
 KAIROS._runningQueries = new Map()
 
@@ -204,9 +279,12 @@ KAIROS.fetch = function (url, options = {}) {
       options.headers.set('X-Request-Id', rid)
     }
   }
-
-  return KAIROS.getClientId()
-  .then(cid => {
+  
+  return Promise.all([
+    KAIROS.getClientId(),
+    KAIROS.cacheInit()
+  ])
+  .then(([cid, cache]) => {
     options.headers.set('X-Client-Id', cid)
 
     if (!(url instanceof URL)) {
@@ -216,47 +294,54 @@ KAIROS.fetch = function (url, options = {}) {
       }
     }
 
-    const queryAbortCtrl = new AbortController()
-    options.signal = queryAbortCtrl.signal
-    KAIROS._runningQueries.set(rid, queryAbortCtrl)
-    const query = __kairos_fetch(url, options)
-    if (bufferDelay) {
-      KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
-    }
+    const request = new Request(url, options)
+    return cache.match(request)
+    .then(cachedResponse => {
+      if (cachedResponse) { return Promise.resolve(cachedResponse) }
 
-    query
-    .then(response => {
-      KAIROS._runningQueries.delete(rid)
-      if (response.ok) { return } // don't process good response
-      const clonedResponse = response.clone()
-      let headers = clonedResponse.headers
-      if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
-      clonedResponse.json().then(error => {
-        if (!error.message) { return }
-        switch(Math.trunc(clonedResponse.status / 100)) {
-          case 3:
-            KAIROS.log(`Message serveur : "${errror.message}"`)
-            break
-          case 4:
-            KAIROS.warn(`Attention serveur : "${errror.message}"`)
-            break;
-          default:
-          case 5:
-            KAIROS.error(`Erreur serveur : "${error.message}"`)
-            break
-        }
+      const queryAbortCtrl = new AbortController()
+      options.signal = queryAbortCtrl.signal
+      KAIROS._runningQueries.set(rid, queryAbortCtrl)
+      const query = __kairos_fetch(request)
+      if (bufferDelay) {
+        KAIROS.fetch.current.set(originalUrl, [query, Date.now()])
+      }
+
+      query
+      .then(response => {
+        KAIROS._runningQueries.delete(rid)
+        cache.put(request, response.clone())
+        if (response.ok) { return } // don't process good response
+        const clonedResponse = response.clone()
+        const headers = clonedResponse.headers
+        if (!(headers.has('Content-Type') && headers.get('Content-Type') === 'application/json')) { return } // wait for json response
+        clonedResponse.json().then(error => {
+          if (!error.message) { return }
+          switch(Math.trunc(clonedResponse.status / 100)) {
+            case 3:
+              KAIROS.log(`Message serveur : "${errror.message}"`)
+              break
+            case 4:
+              KAIROS.warn(`Attention serveur : "${errror.message}"`)
+              break;
+            default:
+            case 5:
+              KAIROS.error(`Erreur serveur : "${error.message}"`)
+              break
+          }
+        })
       })
+      .catch(reason => {
+        /* abort is not ignored */
+        if (reason.name === 'AbortError') { return }
+        if (KAIROS.error) { KAIROS.error(reason) }
+        console.group('KAIROS Fetch')
+        console.trace()
+        console.log(reason)
+        console.groupEnd()
+      })
+      return query.then(response => { return response.clone() })
     })
-    .catch(reason => {
-      /* abort is not ignored */
-      if (reason.name === 'AbortError') { return }
-      if (KAIROS.error) { KAIROS.error(reason) }
-      console.group('KAIROS Fetch')
-      console.trace()
-      console.log(reason)
-      console.groupEnd()
-    })
-    return query.then(response => { return response.clone() })
   }) 
 }
 
