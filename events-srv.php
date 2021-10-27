@@ -2,4 +2,4 @@
 require('wesrv/lib/client.php');
 require('conf/wesrv.php');
 
-(new \wesrv\client())->run(WESERV_IP, WESRV_PORT, WESRV_KEY);
+(new \wesrv\client(WESRV_IP, WESRV_PORT, WESRV_KEY))->run();
