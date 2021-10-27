@@ -2,6 +2,7 @@
 /* global objectHash */
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
+importScripts('../kstore.js')
 importScripts('../stores/user.js')
 importScripts('lib/updater-count.js')
 
@@ -85,6 +86,7 @@ self.onmessage = function (msg) {
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
         const targetId = msg.data.target
+        console.log(targetId)
         Channels.set(targetId,  msg.ports[0])
         Channels.get(targetId).onmessage = (m) => {
           targetMessages(m)
@@ -330,11 +332,12 @@ function cacheAndSend (data, vTimeLine, force = false) {
       }
     }
 
-    const url = new URL(`${KAIROS.getBase()}/store/User`)
-    url.searchParams.set('search.function', 'machiniste')
-    url.searchParams.set('search.disabled', '0')
-    url.searchParams.set('search.temporary', '0')
-    fetch(url)
+    const ksUser = new KStore('kuser')
+    ksUser.query({'#and': {
+      function: 'machiniste',
+      disabled: 0,
+      temporary: 0
+    }})
     .then((response) => {
       if (!response.ok) { return {length: 0, data: null}}
       return response.json()
