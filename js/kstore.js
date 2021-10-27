@@ -1,4 +1,6 @@
-function KStore(baseUrl) {
+function KStore(type) {
+    if (!KAIROS[type]) { return null }
+    const baseUrl = KAIROS.URL(KAIROS[type].store)
     if (!KStore._instance) { KStore._instance = new Map() }
     else {
         if (KStore._instance.has(baseUrl)) {
@@ -7,8 +9,58 @@ function KStore(baseUrl) {
     }
 
     this.url = baseUrl
+    this.type = type
     KStore._instance.set(baseUrl, this)
     return this
+}
+
+KStore.prototype.relateEntry = function (kobject, stack) {
+    return new Promise((resolve, reject) => {
+        const promises = []
+        if (!kobject.get('uid')) { resolve(kobject); return }
+        if (!KAIROS[kobject.getType()].relation) { resolve(kobject); return }
+
+        for (const relation of KAIROS[kobject.getType()].relation) {
+            if (stack.indexOf(relation.target) !== -1) { 
+                if (!relation.multiple) {
+                    const ko = new KObjectGStore().get(relation.target, kobject.get(relation.attr))
+                    if (ko) { promises.push(Promise.resolve(ko)) }
+                } else {
+                    const ko = new KObjectGStore().search(relation.target, relation.attr, kobject.get('uid'))
+                    if (ko) { promises.push(Promise.resolve(ko)) }
+                }
+                continue
+            }
+            const kstore = new KStore(relation.target)
+            if (relation.multiple) {
+                promises.push(kstore.query({[relation.attr]: kobject.get('uid')}, [...stack, this.type]))
+            } else {
+                if (kobject.get(relation.attr)) {
+                    promises.push(kstore.get(kobject.get(relation.attr), [...stack, this.type]))
+                }
+            }
+        }
+        if (promises.length === 0) { resolve(kobject); return }
+        Promise.allSettled(promises)
+        .then(relations => {
+            for (const relation of relations) {
+                if (relation.status !== 'fulfilled') { continue }
+                if (!relation.value) { continue }       
+                if (Array.isArray(relation.value)) {
+                    for(const rel of relation.value) {
+                        kobject.addRelation(rel.getType(), rel)
+                    }
+                } else {
+                    kobject.setRelation(relation.value.getType(), relation.value)
+                }
+            }
+            resolve(kobject)
+        })
+        .catch(reason => {
+            console.log(reason)
+            resolve(kobject)
+        })
+    })
 }
 
 KStore.prototype.delete = function (id) {
@@ -32,8 +84,12 @@ KStore.prototype.delete = function (id) {
     })
 }
 
-KStore.prototype.get = function (id) {
+KStore.prototype.get = function (id, stack = []) {
     return new Promise((resolve, reject) => {
+        /* in some part, store/id is used, remove the store part */
+        if (id.indexOf('/') !== -1) {
+            id = id.split('/').pop() 
+        }
         const url = new URL(`${this.url}/${id}`)
         fetch(url)
         .then(response => {
@@ -43,7 +99,11 @@ KStore.prototype.get = function (id) {
         .then(result => {
             if (!result.success) { throw new Error('ERR:Server') }
             if (!result.length) { throw new Error('ERR:NoResults') }
-            resolve(Array.isArray(result.data) ? result.data[0] : result.data)
+            const kobject = Array.isArray(result.data) ? new KObject(this.type, result.data[0]) : new KObject(this.type, result.data)
+            return this.relateEntry(kobject, stack)
+        })
+        .then(k => {
+            resolve(k)
         })
         .catch(reason => {
             reject(reason)
@@ -51,7 +111,7 @@ KStore.prototype.get = function (id) {
     })
 }
 
-KStore.prototype.query = function (query) {
+KStore.prototype.query = function (query, stack = []) {
     return new Promise((resolve, reject) => {
         const url = new URL(`${this.url}/_query`)
         fetch(url, {method: 'POST', body: JSON.stringify(query)})
@@ -62,7 +122,22 @@ KStore.prototype.query = function (query) {
         .then (result => {
             if (!result.success) { throw new Error('ERR:Server') }
             if (result.length === 0) { resolve([]) }
-            resolve(Array.isArray(result.data) ? result.data : [result.data])
+            if (!result.data) { resolve([]) }
+            const promises = []
+            for (const data of Array.isArray(result.data) ? result.data : [result.data]) {
+                const kobject = new KObject(this.type, data)
+                promises.push(this.relateEntry(kobject, stack))
+            }
+            Promise.allSettled(promises)
+            .then(results => {
+                const kobjects = []
+                for (const promise of results) {
+                    if (promise.status === 'fulfilled') {
+                        kobjects.push(promise.value)
+                    }
+                }
+                resolve(kobjects)
+            })
         })
         .catch(reason => {
             reject(reason)
