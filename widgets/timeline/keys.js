@@ -210,20 +210,44 @@ define([
           this.func = this.cmdProcessor
           break
         case 'p':
-          const kstore = new KStore(KAIROS.URL(KAIROS.kaffaire.store))
-          kstore.query({'#and': {closed: ['--'], deleted: ['--']}})
-          .then(result => {
+          const kstore = new KStore('kproject')
+          kstore.query({closed: '--'})
+          .then(results => {
             const klateral = new KLateral().open()
             
             const container = document.createElement('DIV')
-            for (const key in result) {
+            for (const project of results) {
               const div = document.createElement('DIV')
-              div.innerHTML = `Référence : ${result[key].reference}<br>Nom : ${result[key].name}`
+              const affaire = project.getRelation('kaffaire')
+              div.id = project.get('uid')
+              div.innerHTML = `
+                <h1>${project.getCn()}</h1>
+                <div><span class="klabel">Client</span> ${project.getRelation('kcontact')?.getCn() || ''}</div>
+                <div><span class="klabel">Travaux</span> ${affaire?.length || '0' }</div>
+              `
+              if (affaire) {
+                for (const aff of Array.isArray(affaire) ? affaire : [affaire]) {
+                  div.innerHTML = `<div>AFFAIRE : ${aff.getCn()}</div>`
+                }
+              }
               container.appendChild(div)
+            /*div.addEventListener('click', event => {
+                KAffaire.load(event.target.dataset.id)
+                .then(kaffaire => {
+                  return new KAffaireUI(kaffaire)
+                })
+                .then(kaffaireui => {
+
+                })
+                .catch(reason => {
+                  KAIROS.error(reason)
+                })
+              })*/
             }
             klateral.add(container, {title: 'Projet'})
           })
           .catch(reason => {
+            console.log(reason)
             KAIROS.error(reason)
           })
           done = true;

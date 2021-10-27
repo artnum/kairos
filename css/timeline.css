@@ -4,6 +4,17 @@
 @import '../exec/css.php';
 
 body, html { margin: 0; padding: 0; }
+*[draggable] {
+	-khtml-user-drag: element;
+}
+
+body.KWAIT {
+	cursor: wait !important;
+}
+
+.kdragged {
+	background-color: hsla(203,92%,75%, 0.2) !important;
+}
 
 .timeline {
 	font-family: 'Roboto', sans-serif;
@@ -205,9 +216,6 @@ span.day.anniversary {
 	color: rgb(80,80,80);
 }
 
-.reservationContainer {
-	padding-top: 120px !important;	
-}
 .reservation .reserved {
   background-color: #8B0025;
   color: white;
@@ -376,9 +384,4 @@ button {
 
 span.spanReset {
 	display: inline !important;
-}
-
-div.subline {
-	background-color: white;
-	border-top: 2px solid black;
 }

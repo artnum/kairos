@@ -287,50 +287,16 @@ define([
     },
 
     info: function (txt, code) {
-      this.log('info', txt, code)
+      KAIROS.info(txt, code)
     },
     warn: function (txt, code) {
-      this.log('warning', txt, code)
+      KAIROS.warn(txt, code)
     },
     error: function (txt, code) {
-      this.log('error', txt, code)
+      KAIROS.error(txt, code)
     },
     log: function (level, txt, code) {
-      var timeout = 10000
-      var div = document.createElement('DIV')
-
-      switch (level) {
-        case 'info': timeout = 3000
-          div.appendChild(document.createElement('I'))
-          div.lastChild.setAttribute('class', 'fas fa-info-circle')
-          break
-        case 'error':
-          div.appendChild(document.createElement('I'))
-          div.lastChild.setAttribute('class', 'fas fa-times-circle')
-          break
-        case 'warning':
-          div.appendChild(document.createElement('I'))
-          div.lastChild.setAttribute('class', 'fas fa-exclamation-circle')
-          break
-      }
-
-      div.setAttribute('class', 'message ' + level)
-      div.appendChild(document.createTextNode(' ' + txt))
-
-      window.setTimeout(() => {
-        KAIROSAnim.push(() => {
-          div.parentNode?.removeChild(div)
-        })
-      }, timeout)
-
-      djOn(div, 'click', () => {
-        window.clearTimeout(timeout)
-        div.parentNode.removeChild(div)
-      })
-
-      KAIROSAnim.push(() => {
-        this.logline?.appendChild(div)
-      })
+      KAIROS.log(level, txt, code)
     },
 
     _setBlockSizeAttr: function (value) {
@@ -345,7 +311,6 @@ define([
 
     _setZoomAttr: function (zoomValue) {
       var style = ''
-      var page = getPageRect()
       var days = 1
       var classname = ''
 
@@ -950,36 +915,33 @@ define([
 
     moveXRight: function (x) {
       this.center = djDate.add(this.center, 'day', Math.abs(x))
+      this.Viewport.move(-x)
       this.update()
     },
     moveOneRight: function () {
-      this.center = djDate.add(this.center, 'day', 1)
-      this.update()
+      this.moveXRight(1)
     },
     moveRight: function () {
       var move = 1
       if (this.days.length > 7) {
         move = Math.floor(this.days.length / 7)
       }
-      this.center = djDate.add(this.center, 'day', move)
-      this.update()
+      this.moveXRight(move)
     },
     moveXLeft: function (x) {
       this.center = djDate.add(this.center, 'day', -Math.abs(x))
+      this.Viewport.move(x)
       this.update()
     },
     moveOneLeft: function () {
-      this.center = djDate.add(this.center, 'day', -1)
-      this.update()
+      this.moveXLeft(1)
     },
     moveLeft: function () {
       var move = 1
       if (this.days.length > 7) {
         move = Math.floor(this.days.length / 7)
       }
-
-      this.center = djDate.add(this.center, 'day', -move)
-      this.update()
+      this.moveXLeft(move)
     },
 
     /* insert into linked list */
@@ -1211,8 +1173,8 @@ define([
         .then(loadedEntries => {
           for (const kentry of loadedEntries) {
             kentry.register(this.Updater)
-            kentry.render()
-            .then(domNode => {
+            Promise.all([kentry.render(), kentry.set('origin', this.firstDay)])
+            .then(([domNode, setResult]) => {
               this.domEntries.appendChild(domNode)
             })
           }

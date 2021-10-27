@@ -33,6 +33,10 @@ KView.prototype.compute = function () {
     }
 }
 
+KView.prototype.move = function (days) {
+    this.eventTarget.dispatchEvent(new CustomEvent('move', {detail: {left: days * this.data.get('day-width')}}))
+}
+
 KView.prototype.setMargins = function (top, right, bottom, left) {
     this.data.set('margin-left', left)
     this.data.set('margin-right', right)

@@ -218,10 +218,45 @@ KEntry.prototype.getEvents = function () {
     })
 }
 
+KEntry.prototype.processReservationList = function (list, start = 0) {
+    window.requestIdleCallback(deadline => {
+        while (deadline.timeRemaining() > 5 && start < list.length) {
+            const entry = list[start]
+            const uuid = entry.uuid
+            if (this.entries.has(uuid)) {
+                const reservation = this.entries.get(uuid)
+                reservation.instance.extUpdate(entry)
+                .then(result => {
+                })
+                continue
+            } else {
+                const reservation = new KReservation()
+                reservation.extUpdate(entry)
+                .then(result => {
+                    this.entries.set(entry.uuid, {
+                        instance: reservation
+                    })
+                    this.KUI.placeReservation(result)
+                })
+            }
+            start++
+        }
+        if (start < list.length) { return this.processReservationList(list, start) }
+    }, {timeout: 1000})
+}
+
 KEntry.prototype.handleMessage = function (msg) {
-    let msgData = msg.data
+    const msgData = msg.data
     switch (msgData.op) {
-      case 'remove':
+        case 'remove':
+        case 'update-reservation':
+        case 'add':
+            this.processReservationList([msgData.reservation])
+            break
+        case 'entries':
+            this.processReservationList(msgData.value)
+            break
+      /*case 'remove':
         if (msgData.reservation) {
             this.remove(msgData.reservation)
         }
@@ -238,11 +273,7 @@ KEntry.prototype.handleMessage = function (msg) {
             const Reservation = new KReservation()
             Reservation.extUpdate(entry)
             .then(r => {
-                let x = new KUIReservation(r)
-                Promise.all([x.render(), this.KUI.getContainerDomNode()])
-                .then(([domNode, parentNode]) => {
-                    parentNode.appendChild(domNode)
-                })
+                this.KUI.placeReservation(r)
             })
             let id = entry.uuid
             if (entry.uuid === undefined || entry.uuid === null) {
@@ -290,7 +321,7 @@ KEntry.prototype.handleMessage = function (msg) {
         window.requestIdleCallback((deadline) => {
             process(deadline, 0)
         })
-        break
+        break*/
       case 'state':
         window.requestIdleCallback(() => {
             if (!msgData.value) { return }

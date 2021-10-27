@@ -31,7 +31,7 @@ const KSano = {
     },
     txt: function (txt) {
         if (txt === undefined || txt === null) { return '' }
-        return txt.replace(/&/g, "&amp;")
+        return txt.toString().replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
@@ -44,6 +44,19 @@ const KSano = {
             return KSano.txt(value)
         }
         return isNaN(int) ? float : int
+    },
+    toString: function (value) {
+        if (value === undefined) { return '' }
+        if (value === null) { return '' }
+        if (Array.isArray(value)) {
+            const result = []
+            for (const v of value) {
+                result.push(KSano.toString(v))
+            }
+            return result.join(', ')
+        }
+        return KSano.txt(value.toString())
     }
-
 }
+
+$S = function (txt) { return KSano.toString(txt) }
