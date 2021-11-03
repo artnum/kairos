@@ -225,19 +225,29 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             const uuid = entry.uuid
             if (this.entries.has(uuid)) {
                 const reservation = this.entries.get(uuid)
-                reservation.instance.extUpdate(entry)
+                reservation.update(entry)
+                /*reservation.instance.extUpdate(entry)
                 .then(result => {
-                })
+                })*/
                 continue
             } else {
-                const reservation = new KReservation()
-                reservation.extUpdate(entry)
+                const reservation = new KObject('kreservation', entry)
+                reservation.addEventListener('update', event => { console.log(event) })
+                new KStore('kreservation').relateEntry(reservation)
+                .then(kobject => {
+                  
+                    this.KUI.placeReservation(kobject)
+                })
+                .catch(reason => {
+                    KAIROS.error(reason)
+                })
+                /*reservation.extUpdate(entry)
                 .then(result => {
                     this.entries.set(entry.uuid, {
                         instance: reservation
                     })
                     this.KUI.placeReservation(result)
-                })
+                })*/
             }
             start++
         }

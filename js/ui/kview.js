@@ -79,6 +79,10 @@ KView.prototype.setEntryCount = function (entries) {
     this.compute()
 }
 
+KView.prototype.computeXBox = function (xpos) {
+    return Math.floor(xpos / this.data.get('day-width'))
+}
+
 KView.prototype.handleMouseMove = function (event) {
     const marginLeft = this.data.get('margin-left') || 0
     const marginRight = this.data.get('margin-right') || 0

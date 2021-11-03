@@ -14,7 +14,7 @@ function KStore(type) {
     return this
 }
 
-KStore.prototype.relateEntry = function (kobject, stack) {
+KStore.prototype.relateEntry = function (kobject, stack = []) {
     return new Promise((resolve, reject) => {
         const promises = []
         if (!kobject.get('uid')) { resolve(kobject); return }

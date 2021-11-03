@@ -1,5 +1,12 @@
 .kreservation {
-    background-color: lavender;
+    background-color: hsla(100, 100%, 50%, 0.25);
+    border: 2px solid transparent;
+    font-family: 'B612';
+    font-size: 10px
+}
+
+.kreservation.selected {
+    border: 2px solid var(--selected-color);
 }
 
 .reservation.highlight {

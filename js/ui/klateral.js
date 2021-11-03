@@ -1,9 +1,29 @@
+function KLateralTab (id, klateral) {
+    this.tabIdx = id
+    this.klateral = klateral
+    this.destroyed = false
+}
+
+KLateralTab.prototype.destroy = function () {
+    this.destroyed = true
+}
+
+KLateralTab.prototype.addEventListener = function (type, listener, options) {
+    return this.klateral.addEventListener(`${type}-tab-${this.tabIdx}`, listener, options)
+}
+
+KLateralTab.prototype.removeEventListener = function (type, listener, options) {
+    return this.klateral.removeEventListener(`${type}-tab-${this.tabIdx}`, listener, options)
+}
+
 function KLateral () {
     if (window._KLateralInstance) {
         return window._KLateralInstance
     }
     window._KLateralInstance = this
+    this.tabs = new Map()
     this.actions = new Map()
+    this.evtTarget = new EventTarget()
     this.tabIdx = 1
     this.tabOpen = 0
     this.tabCurrent = 0
@@ -24,6 +44,14 @@ function KLateral () {
     this.domNode.addEventListener('wheel', this.handleScrollEvent.bind(this), {capture: true})
     this.action.addEventListener('click', this.handleActionEvent.bind(this), {passive: true, capture: true})
     document.body.appendChild(this.domNode)
+}
+
+KLateral.prototype.addEventListener = function (type, listener, options) {
+    return this.evtTarget.addEventListener(type, listener, options)
+}
+
+KLateral.prototype.removeEventListener = function (type, listener, options) {
+    return this.evtTarget.removeEventListener(type, listener, options)
 }
 
 /* 
@@ -125,7 +153,10 @@ KLateral.prototype.add = function (content, opt = {}) {
 
     this.showTab(index)
     this.tabOpen++
-    return index
+    const tab = new KLateralTab(index, this)
+    this.tabs.set(index, tab)
+    this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${index}`, {detail: {tab}}))
+    return tab
 }
 
 KLateral.prototype.toLeftTab = function () {
@@ -154,8 +185,13 @@ KLateral.prototype.getTab = function (idx) {
 }
 
 KLateral.prototype.remove = function (idx) {
+    const tab = this.tabs.get(idx)
+    if (!this.evtTarget.dispatchEvent(new CustomEvent(`destroy-tab-${idx}`, {detail: {tab}}))) {
+        return
+    }
     const [tabTitle, tabContent] = this.getTab(idx)
     const sibling = tabTitle.nextElementSibling || tabTitle.previousElementSibling
+    if (tab) { tab.destroy() }
     this.tab.removeChild(tabTitle)
     this.content.removeChild(tabContent)
     this.tabCurrent = 0
@@ -170,6 +206,8 @@ KLateral.prototype.remove = function (idx) {
 }
 
 KLateral.prototype.hideTab = function (idx) {
+    const tab = this.tabs.get(idx)
+    this.evtTarget.dispatchEvent(new CustomEvent(`hide-tab-${idx}`, {detail: {tab}}))
     const [tabTitle, tabContent] = this.getTab(idx)
     tabContent.style.display = 'none'
     tabTitle.classList.remove('selected')
@@ -177,6 +215,8 @@ KLateral.prototype.hideTab = function (idx) {
 }
 
 KLateral.prototype.showTab = function (idx) {
+    const tab = this.tabs.get(idx)
+    this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
     if (this.tabCurrent !== 0) {
         this.tabPrevSelected = this.tabCurrent
         this.hideTab(this.tabCurrent)

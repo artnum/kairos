@@ -40,6 +40,7 @@ function KObject (type, data) {
     this.type = type
     this.data = new Map()
     this.relation = new Map()
+    this.evtTarget = new EventTarget()
 
     for (const key in data) {
         this.setItem(key, data[key])
@@ -61,6 +62,8 @@ function KObject (type, data) {
                 case 'setRelation': return object.setRelation.bind(object)
                 case 'addRelation': return object.addRelation.bind(object)
                 case 'getType': return object.getType.bind(object)
+                case 'addEventListener': return object.addEventListener.bind(object)
+                case 'removeEventListener': return object.removeEventListener.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -85,6 +88,8 @@ function KObject (type, data) {
                 case 'setRelation':
                 case 'addRelation':
                 case 'getType':
+                case 'addEventListener':
+                case 'removeEventListener':
                     return {
                         writable: false,
                         enumerable: false,
@@ -119,8 +124,37 @@ function KObject (type, data) {
     return kobject
 }
 
+KObject.prototype.addEventListener = function (type, listener, options) {
+    this.evtTarget.addEventListener(type, listener, options)
+}
+
+KObject.prototype.removeEventListener = function (type, listener, options) {
+    this.evtTarget.removeEventListener(type, listener, options)
+}
+
+KObject.prototype.update = function (data) {
+    for (const key in data) {
+        if (!this.hasItem(key)) {
+            this.evtTarget.dispatchEvent(new CustomEvent('add-item', {detail: {kobject: this, name: key, value: data}}))
+            this.setItem(key, data[key])
+            continue
+        }
+        if (this.getItem(key) !== data) {
+            this.evtTarget.dispatchEvent(new CustomEvent('update-item', {detail: {kobject: this, name: key, value: data}}))
+            this.setItem(key, data[key])
+            continue
+        }
+    }
+    this.evtTarget.dispatchEvent(new CustomEvent('update', {detail: {kobject: this}}))
+}
+
+
 KObject.prototype.deleteItem = function (name) {
-    if (this.hasItem(name)) { this.data.delete(name); return true; }
+    if (this.hasItem(name)) { 
+        this.data.delete(name);
+        this.evtTarget.dispatchEvent(new CustomEvent('delete-item', {detail: {kobject: this, item: name}}))
+        return true; 
+    }
     return false
 }
 
