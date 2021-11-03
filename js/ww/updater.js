@@ -86,7 +86,6 @@ self.onmessage = function (msg) {
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
         const targetId = msg.data.target
-        console.log(targetId)
         Channels.set(targetId,  msg.ports[0])
         Channels.get(targetId).onmessage = (m) => {
           targetMessages(m)
