@@ -283,6 +283,10 @@ div.contact > div:first-child {
 	background-color: hsla(120, 100%, 50%, 0.1) !important;
 }
 
+.kdragging .vertical.khover {
+	background-color: hsla(240, 100%, 50%, 0.1) !important;
+}
+
 .vertical.even {
 	border-left: 1px solid transparent;
     border-right: 1px solid transparent;

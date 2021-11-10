@@ -249,13 +249,12 @@ define([
                     const reservations = affaire.getRelation('kreservation')
                     if (!reservations) { continue }
                     const color = `hsla(${360 - (40 * selected++)}, 100%, 50%, 1)`
-                    for (const reservation of reservations)  {
+                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations])  {
                       const dom = document.getElementById(reservation.get('uuid'))
                       if (!dom) { continue }
                       dom.style.setProperty('--selected-color', color)
-                      dom.style.zIndex = KAIROS.zMax()
                       dom.dataset.affaire = affaire.get('id')
-                      window.requestAnimationFrame(() => { dom.classList.add(`selected`) })
+                      window.requestAnimationFrame(() => { if (!dom) { return }; dom.classList.add(`selected`) })
                     }
                   }
                 })
@@ -264,7 +263,7 @@ define([
                   for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
                     const reservations = affaire.getRelation('kreservation')
                     if (!reservations) { continue }
-                    for (const reservation of reservations)  {
+                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations])  {
                       const dom = document.getElementById(reservation.get('uuid'))
                       if (!dom) { continue }
                       window.requestAnimationFrame(() => { dom.classList.remove('selected') })

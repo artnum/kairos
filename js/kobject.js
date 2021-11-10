@@ -17,6 +17,10 @@ KObjectGStore.prototype.put = function (kobject) {
 }
 
 KObjectGStore.prototype.get = function (type, uid) {
+    if (uid === undefined) {
+        [type, uid] = type.split('/', 2)
+    }
+
     const tstore = this.store.get(type)
     if (tstore) {
         return tstore.get(uid)
@@ -41,10 +45,18 @@ function KObject (type, data) {
     this.data = new Map()
     this.relation = new Map()
     this.evtTarget = new EventTarget()
+    this.UINode = null
+    const kgstore =  new KObjectGStore()
 
     for (const key in data) {
         this.setItem(key, data[key])
     }
+    const previous = kgstore.get(type, this.getItem('uid'))
+    if (previous) {
+        previous.update(data)
+        return previous
+    }
+
     const kobject = new Proxy(this, {
         set (object, name, value) {
             if (name === 'relation') { return false }
@@ -64,6 +76,10 @@ function KObject (type, data) {
                 case 'getType': return object.getType.bind(object)
                 case 'addEventListener': return object.addEventListener.bind(object)
                 case 'removeEventListener': return object.removeEventListener.bind(object)
+                case 'toString': return object.toString.bind(object)
+                case 'bindUINode': return object.bindUINode.bind(object)
+                case 'getUINode': return object.getUINode.bind(object)
+                case 'update': return object.update.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -90,6 +106,10 @@ function KObject (type, data) {
                 case 'getType':
                 case 'addEventListener':
                 case 'removeEventListener':
+                case 'toString':
+                case 'bindUINode':
+                case 'getUINode':
+                case 'update':
                     return {
                         writable: false,
                         enumerable: false,
@@ -120,7 +140,7 @@ function KObject (type, data) {
             return false
         }
     })
-    new KObjectGStore().put(kobject)
+    kgstore.put(kobject)
     return kobject
 }
 
@@ -242,4 +262,36 @@ KObject.prototype.getRelation = function (type) {
 
 KObject.prototype.getType = function () {
     return this.type
+}
+
+KObject.prototype.bindUINode = function (uinode) {
+    this.UINode = uinode
+}
+
+KObject.prototype.getUINode = function () {
+    return this.UINode
+}
+
+KObject.prototype.toString = function () {
+    function oToStr (object, level = 0) {
+        let str = ''
+        for (const key of Object.keys(object)) {
+            switch (typeof object[key]) {
+                case 'undefined': str += `${"    ".repeat(level)}[${key}] => ""\n`; break
+                case 'object': 
+                    if (object[key] === null) { str += `${"    ".repeat(level)}[${key}] => ""\n` }
+                    if (object[key] instanceof Object) { str += `${"    ".repeat(level)}[${key}] => {\n${oToStr(object[key], ++level)}\n}\n` }
+                    break
+                case 'boolean':
+                    str += `${"    ".repeat(level)}[${key}] => "${object[key] ? 'vrai' : 'faux'}"\n`; break
+                case 'number':
+                    str += `${"    ".repeat(level)}[${key}] => ${object[key].toString()}\n`; break
+                case 'symbol':
+                case 'function':
+                default:
+                    str += `${"    ".repeat(level)}[${key}] => "${object[key]}"\n`; break
+            }
+        }
+    }
+    return oToStr(Object.fromEntries(this.data.entries()), 0)
 }

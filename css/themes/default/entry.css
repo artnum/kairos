@@ -26,6 +26,10 @@
 	background-color: hsla(120, 100%, 50%, 0.1) !important;
 }
 
+.kdragging .kentry.khover {
+    background-color: hsla(240, 100%, 50%, 0.1) !important;
+}
+
 .reservationContainer .kentry:nth-child(even) {
     background-color: hsla(var(--default-color-base), 0.05);
 }

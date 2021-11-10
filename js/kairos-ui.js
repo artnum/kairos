@@ -1,10 +1,14 @@
 
 KAIROS.mouse = {}
 const kMouseFollow = event => {
-    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
-    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? event.clientY
-    KAIROS.mouse.clientX = event.clientX
-    KAIROS.mouse.clientY = event.clientY
+    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? (event.pageY || event.clientX)
+    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
+    const diplaysCoords = document.querySelector('input[data-dojo-attach-point="nSearchMachineLive"]')
+    if (diplaysCoords){
+        diplaysCoords.value = `${event.clientX},${event.clientY} [${KAIROS.mouse.lastX},${KAIROS.mouse.lastY}]`
+    }
+    KAIROS.mouse.clientX = event.pageX || event.clientX 
+    KAIROS.mouse.clientY = event.pageY || event.clientY
 }
 
 const K_INFO = 1
@@ -12,7 +16,8 @@ const K_WARN = 2
 const K_ERROR = 3
 
 window.addEventListener('mousemove', kMouseFollow)
-window.addEventListener('touchmove', kMouseFollow)  
+window.addEventListener('touchmove', kMouseFollow)
+window.addEventListener('dragover', kMouseFollow)  
 
 KAIROS.clearSelection = function () {
     if (document.selection && document.selection.empty) {

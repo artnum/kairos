@@ -36,6 +36,10 @@ KEntry.load = function (id) {
     return entry._loaded
 }
 
+KEntry.prototype.resize = function () {
+    return this.KUI.resize()
+}
+
 KEntry.prototype.render = function () {
     return this.KUI.render()
 }
@@ -48,6 +52,9 @@ KEntry.prototype.set = function(name, value) {
     return new Promise((resolve, reject) => {
         this.ready()
         .then(_ => {
+            if (name === 'origin') {
+                this.KUI.moveOrigin(value, this.data.get(name))
+            }
             resolve(this.data.set(name, value))
         })
     })
@@ -232,22 +239,13 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                 continue
             } else {
                 const reservation = new KObject('kreservation', entry)
-                reservation.addEventListener('update', event => { console.log(event) })
                 new KStore('kreservation').relateEntry(reservation)
                 .then(kobject => {
-                  
                     this.KUI.placeReservation(kobject)
                 })
                 .catch(reason => {
                     KAIROS.error(reason)
                 })
-                /*reservation.extUpdate(entry)
-                .then(result => {
-                    this.entries.set(entry.uuid, {
-                        instance: reservation
-                    })
-                    this.KUI.placeReservation(result)
-                })*/
             }
             start++
         }

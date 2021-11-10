@@ -27,13 +27,12 @@ function KReservation (opts) {
   this.evttarget = new EventTarget()
 }
 
-KReservation._registry = new Map()
-
 KReservation.getById = function (id) {
-  const r = KReservation._registry.get(id)
+  const kGStore = new KObjectGStore()
+  const r = kGStore.get('kreservation', id)
   if (r) {
     r.atime = new Date().getTime()
-    KReservation._registry.set(id, r)
+    kGStore.set(r)
     return r.data
   }
   return undefined
@@ -113,7 +112,9 @@ KReservation.prototype.extUpdate = function (reservation) {
       this.loadArrival(),
       this.loadStatus()
     ])
-    .then(_ => { 
+    .then(_ => {
+      const kGStore = new KObjectGStore()
+      kGStore.put(this)      
       resolve(this)
     })
   })
@@ -147,8 +148,13 @@ KReservation.prototype.set = function (name, value) {
   } 
 }
 
+KReservation.prototype.getType = function () {
+  return 'kreservation'
+}
+
 KReservation.prototype.get = function (name) {
   try {
+    if (name === 'uid') { return this.data.reservation.get('uuid') }
     const tree = name.split('.')
     if (tree.length === 1) {
       return this.data.reservation.get(tree.pop())
@@ -416,7 +422,11 @@ KReservation.prototype.loadArrival = function () {
 }
 
 KReservation.prototype.getLabel = function () {
-    return `#${this.get('id')}/${this.get('machine.uid')}`
+  return `#${this.get('id')}/${this.get('machine.uid')}`
+}
+
+KReservation.prototype.toString = function() {
+  return this.getLabel()
 }
 
 KReservation.prototype.oneLine = function () {
@@ -495,7 +505,6 @@ KReservation.prototype.addContact = function (address, type) {
         KAIROS.error('...')
       }
       if (result.length === 1) {
-        console.log(result)
         return
       }
       const url = new URL(`${KAIROS.getBase()}/store/ReservationContact`)

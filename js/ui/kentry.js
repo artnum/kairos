@@ -3,6 +3,7 @@ function KUIEntry (dataObject, opts = {}) {
         'reference': {remote: 'id'},
         'name': {remote: 'name'}
     }, opts)
+    this.dataObject = dataObject
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
     this.kview = new KView()
@@ -11,16 +12,13 @@ function KUIEntry (dataObject, opts = {}) {
     for (let i = 0; i < this.boxes.length; i++) {
         this.boxes[i] = new Array()
     }
-    /*this.html
-    .then(khtml => {
-        khtml.domNode.setAttribute('draggable', true)
-        khtml.domNode.addEventListener('dragstart', (event) => {
-            event.target.classList.add('kdragged')
+    this.getDomNode()
+    .then(domNode => {
+        dataObject.get('id')
+        .then(uid => {
+            domNode.id = uid
         })
-        khtml.domNode.addEventListener('dragend', (event) => {
-            event.target.classList.remove('dragend')
-        })
-    })*/
+    })
     this.object = dataObject
 }
 
@@ -61,39 +59,77 @@ KUIEntry.prototype.render = function () {
     })
 }
 
-KUIEntry.prototype.placeReservation = function (reservation) {
-    const uireservation = new KUIReservation(reservation)
-    Promise.all([
-        uireservation.render(),
-        this.getContainerDomNode(),
-        this.getDomNode(),
-        this.object.get('origin')
-    ])
-    .then(([domNode, parentNode, refNode, origin]) => {
-        const sec = Math.round(Math.abs(origin.getTime() - new Date(reservation.get('begin')).getTime()) / 1000)
-        domNode.style.position = 'absolute'
-        domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
-        const left = this.kview.get('second-width') * sec + this.kview.get('margin-left')
-        domNode.style.left = `${left}px`
-        let max = 1
+KUIEntry.prototype.removeReservation = function (reservation) {
+    return new Promise((resolve, reject) => {
         let boxes = []
-        for (let i = this.kview.computeXBox(left); i < this.kview.computeXBox(left + uireservation.props.get('width')); i++) {
-            boxes.push(this.boxes[i])
-            this.boxes[i].push(domNode)
-            if (max < this.boxes[i].length) { max = this.boxes[i].length }
-        }
-        const entryHeight = this.kview.get('entry-height') / max
-        domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * (max - 1))}px`
-        domNode.style.maxHeight = `${entryHeight}px`
-        for (const box of boxes) {
-            for (let i = 0; i < max; i++) {
-                if (box[i]) {
-                    box[i].style.top = `${refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i)}px`
-                    box[i].style.maxHeight = `${entryHeight}px`
+        let max = 1
+
+        for (let i = 0; i < this.boxes.length; i++) {
+            for (let j = 0; j < this.boxes[i].length; j++) {
+                if (this.boxes[i][j].id === reservation.id) {
+                    boxes.push(this.boxes[i])
+                    this.boxes[i].splice(j, 1)
+                    if (this.boxes[i].length > max) { max = this.boxes[i].length }
                 }
             }
         }
-        parentNode.appendChild(domNode)
+        this.getDomNode()
+        .then(refNode => {
+            const entryHeight = this.kview.get('entry-height') / max
+            for (const box of boxes) {
+                for (let i = 0; i < box.length; i++) {
+                    if (box[i]) {
+                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
+                        box[i].setHeight(entryHeight)
+                    }
+                }
+            }
+            resolve()
+        })
+    })
+}
+
+KUIEntry.prototype.placeReservation = function (reservation) {
+    return new Promise((resolve, reject) => {
+        const uireservation = new KUIReservation(reservation)
+        Promise.all([
+            uireservation.render(),
+            this.getContainerDomNode(),
+            this.getDomNode(),
+            this.object.get('origin'),
+            uireservation.setParent(this)
+        ])
+        .then(([domNode, parentNode, refNode, origin]) => {
+            const sec = Math.abs(origin.getTime() - new Date(reservation.get('begin')).getTime()) / 1000
+            domNode.style.position = 'absolute'
+            domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
+            const left = Math.round((this.kview.get('second-width') * sec) + this.kview.get('margin-left'))
+            domNode.style.left = `${left}px`
+            let max = 1
+            let boxes = []
+            let i = this.kview.computeXBox(left)
+            do {
+                boxes.push(this.boxes[i])
+                this.boxes[i].push(uireservation)
+                if (max < this.boxes[i].length) { max = this.boxes[i].length }
+                i++
+            } while (i < this.kview.computeXBox(left + uireservation.props.get('width')));
+            
+            const entryHeight = this.kview.get('entry-height') / max
+            for (const box of boxes) {
+                for (let i = 0; i < max; i++) {
+                    if (box[i]) {
+                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
+                        box[i].setHeight(entryHeight)
+                    }
+                }
+            }
+            window.requestAnimationFrame(() => {
+                if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
+                parentNode.appendChild(domNode)
+            })
+            resolve()
+        })
     })
 }
 
@@ -108,7 +144,6 @@ KUIEntry.prototype.handleEvent = function (event) {
             target: id
         })
         .then(result => {
-            console.log(result)
         })
     })
 }
@@ -129,4 +164,24 @@ KUIEntry.prototype.getDomNode = function () {
             resolve(uientry.domNode)
         })
     })
+}
+
+KUIEntry.prototype.resize = function () {
+}
+
+
+KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {
+    if (!oldOrigin) { return }
+    const kview = new KView()
+    const diff = Math.floor((newOrigin.getTime() - oldOrigin.getTime()) / 86400000)
+
+    for (i = 0; i < Math.abs(diff); i++) {
+        if (diff < 0) {
+            this.boxes.pop()
+            this.boxes.unshift([])
+        } else {
+            this.boxes.shift()
+            this.boxes.push([])
+        }
+    }
 }

@@ -115,7 +115,7 @@ define([
 
       this.Viewport = new KView()
       this.Viewport.setEntryHeight(76)
-      this.Viewport.setMargins(74, 14, 50, 240)
+      this.Viewport.setMargins(74, 14, 50, 260)
 
       this.Viewport.addEventListener('EnterColumn', event => {
         let i = 0;
@@ -139,6 +139,12 @@ define([
             node.classList.remove('khover')
           }
           i++
+        }
+      })
+
+      this.Viewport.addEventListener('requestDayMove', event => {
+        if (event.detail.days) {
+          this.move(event.detail.days)
         }
       })
 
@@ -585,17 +591,17 @@ define([
     },
 
     postCreate: function () {
-      DisplayLoop(function (runId) {
+      DisplayLoop((runId) => {
         return new Promise((resolve, reject) => {
           let o = runId % 2
           let s = o + 1
           const keys = Array.from(this.Entries.keys())
           for (let i = o; i < keys.length; i += s) {
-            this.Entries.get(keys[i])._resize()
+            this.Entries.get(keys[i]).resize()
           }
           resolve()
         })
-      }.bind(this))
+      })
 
       this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
 
@@ -627,6 +633,43 @@ define([
       this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), {passive: true})
       this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
+      this.domNode.addEventListener('dragstart', event => {
+        window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
+      })
+      this.domNode.addEventListener('drop', event => {
+        event.preventDefault()
+        let entryNode = event.target
+        while (entryNode && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
+        if (!entryNode) { return ; }
+        const kident = event.dataTransfer.getData('application/kairos')
+        if (!kident) { return }
+        kGStore = new KObjectGStore()
+        const object = kGStore.get(kident)
+        const kstore = new KStore(object.getType())
+        const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
+        const duration = end.getTime() - begin.getTime()
+        const kview = new KView()
+        begin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
+        end.setTime(begin.getTime() + duration)
+        kstore.set({
+            begin: begin.toISOString(),
+            end: end.toISOString(),
+            target: entryNode.id, 
+            id: object.get('id'),
+            version: object.get('version')
+          }, 
+          object.get('id')  
+        )
+        .then(_ => {
+          window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
+        })
+        .catch(reason => {
+          KAIROS.error(reason)
+        })
+      })
+      this.domNode.addEventListener('dragover', event => {
+        event.preventDefault()
+      })
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       this.domNode.addEventListener('wheel', this.eWheel.bind(this), {passive: true})
@@ -913,6 +956,15 @@ define([
       }))
     },
 
+    move: function (x) {
+      if (x === 0) { return }
+      if (x < 0) {
+        this.moveXRight(Math.abs(x))
+      } else {
+        this.moveXLeft(x)
+      }
+    },
+
     moveXRight: function (x) {
       this.center = djDate.add(this.center, 'day', Math.abs(x))
       this.Viewport.move(-x)
@@ -1039,7 +1091,6 @@ define([
         }
       }
 
-      this.Viewport.setViewportWidth(this.timeline.clientWidth - this.get('offset'))
       var docFrag = document.createDocumentFragment()
       var hFrag = document.createDocumentFragment()
       var shFrag = document.createDocumentFragment()
@@ -1053,6 +1104,9 @@ define([
     
       this.firstDay = new Date()
       this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
+      for (const entry of this.Entries) {
+        entry[1].set('origin', this.firstDay)
+      }
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {
           this.todayOffset = i
@@ -1115,6 +1169,8 @@ define([
         this.line.appendChild(docFrag)
         this.header.appendChild(hFrag)
         this.supHeader.appendChild(shFrag)
+        const rect = this.line.getBoundingClientRect()
+        this.Viewport.setViewportWidth(rect.right - rect.left)
       })
     },
 
@@ -1166,11 +1222,21 @@ define([
           const load = []
           for (const entry of entries) {
             if (entry.disabled !== '0') { continue; }
-            load.push(KEntry.load(entry[KAIROS.kentry.uid.remote]))
+            load.push(
+              KEntry.load(entry[KAIROS.kentry.uid.remote])
+              .then(kentry => {
+                kentry.get('id')
+                .then(uid => {
+                  this.Entries.set(uid, kentry)
+                })
+                return kentry
+              })
+            )
           }
           return Promise.all(load)
         })
         .then(loadedEntries => {
+          this.Viewport.setEntryCount(loadedEntries.length)
           for (const kentry of loadedEntries) {
             kentry.register(this.Updater)
             Promise.all([kentry.render(), kentry.set('origin', this.firstDay)])
