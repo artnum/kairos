@@ -11,6 +11,22 @@ function KTaskBar () {
     this.taskbar.addEventListener('click', this.handleClickEvent.bind(this), {capture: true})
     KAIROS.keepAtTop(this.taskbar)
     document.body.appendChild(this.taskbar)
+    window.addEventListener('global-keypress', this.handleGlobalEvents.bind(this))
+}
+
+KTaskBar.prototype.handleGlobalEvents = function (globalEvent) {
+    const event = globalEvent.detail
+    const mod = (x, mod) => {
+        return ((x % mod) + mod) % mod
+    }
+
+    if (isNaN(parseInt(event.key, 10))) { return }
+    const id = parseInt(event.key, 10)
+    const keys = Array.from(this.lists.keys())
+
+    if (keys[mod(id - 1, 10)]) {
+        this.lists.get(keys[mod(id - 1, 10)]).select()
+    }
 }
 
 KTaskBar.prototype.handleClickEvent = function (event) {
@@ -135,6 +151,13 @@ KTaskBar.prototype.list = function (titleNode, items, itemCallback, actions = []
     return listInstance
 }
 
+KTaskBar.prototype.unselect = function () {
+    if (this.popped) {
+        this.unpopList(this.popped)
+    }
+    return true
+}
+
 KTaskBar.prototype.unpopList = function (target) {
     if (target instanceof Event) {        
         let node = target.target
@@ -152,6 +175,7 @@ KTaskBar.prototype.unpopList = function (target) {
 }
 
 KTaskBar.prototype.popList = function (event) {
+    KAIROS.stackClosable(this.unselect.bind(this))
     let node
     if (event instanceof Event) {
         node = event.target
@@ -183,7 +207,6 @@ KTaskBar.prototype.popList = function (event) {
     for (const k of Object.keys(list.items)) {
         const item = list.items[k]
         let label = ''
-        console.log(item)
         for (const prop of [ 'id', 'label', 'getLabel', 'title', 'getTitle' ]) {
             if (prop in item) {
                 if (typeof item[prop] === 'function') {
