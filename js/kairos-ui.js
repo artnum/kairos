@@ -18,6 +18,21 @@ const K_ERROR = 3
 window.addEventListener('mousemove', kMouseFollow)
 window.addEventListener('touchmove', kMouseFollow)
 window.addEventListener('dragover', kMouseFollow)  
+window.addEventListener('keyup', (event) => {
+    if (
+        event.target instanceof HTMLInputElement
+        || event.target instanceof HTMLTextAreaElement
+        || event.target instanceof HTMLButtonElement
+        || event.target instanceof HTMLFormElement
+       ) 
+    {
+        event.target.blur()
+        return
+    }
+    event.preventDefault()
+    window.dispatchEvent(new CustomEvent('global-keypress', {detail: event}))
+})
+
 
 KAIROS.clearSelection = function () {
     if (document.selection && document.selection.empty) {
@@ -162,7 +177,8 @@ KAIROS.closeNext = function (count = 0) {
     } while(1)
 }
 
-document.addEventListener('keyup', event => {
+window.addEventListener('global-keypress', globalEvent => {
+    const event = globalEvent.detail
     if (event.key === 'Escape') {
         if (event.shiftKey) {
             while (KAIROS.closeNext());
@@ -173,7 +189,7 @@ document.addEventListener('keyup', event => {
     if (event.key === 'F5' && event.ctrlKey) {
         KAIROS.abortAllRequest()
     }
-}, {capture: true})
+})
 
 KAIROS.searchResults = function () {
     let closeSearchResult = function () {
