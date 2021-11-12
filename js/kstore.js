@@ -21,15 +21,20 @@ KStore.prototype.relateEntry = function (kobject, stack = []) {
         if (!KAIROS[kobject.getType()].relation) { resolve(kobject); return }
 
         for (const relation of KAIROS[kobject.getType()].relation) {
-            if (stack.indexOf(relation.target) !== -1) { 
-                if (!relation.multiple) {
-                    const ko = new KObjectGStore().get(relation.target, kobject.get(relation.attr))
-                    if (ko) { promises.push(Promise.resolve(ko)) }
-                } else {
-                    const ko = new KObjectGStore().search(relation.target, relation.attr, kobject.get('uid'))
-                    if (ko) { promises.push(Promise.resolve(ko)) }
+            if (!relation.multiple) {
+                const ko = new KObjectGStore().get(relation.target, kobject.get(relation.attr))
+                if (ko) {
+                    ko.addRelation(kobject.getType(), kobject)
+                    promises.push(Promise.resolve(ko))
+                    continue
                 }
-                continue
+            } else {
+                const ko = new KObjectGStore().search(relation.target, relation.attr, kobject.get('uid'))
+                if (ko) {
+                    ko.addRelation(kobject.getType(), kobject)
+                    promises.push(Promise.resolve(ko))
+                    continue
+                }
             }
             const kstore = new KStore(relation.target)
             if (relation.multiple) {

@@ -237,7 +237,7 @@ KObject.prototype.setRelation = function(type, kobject) {
     if (!(kobject instanceof KObject)) {
         kobject = new KObject(type, kobject)
     }
-    return this.relation.set(type, kobject)
+    return this.relation.set(type, kobject.get('uid'))
 }
 
 KObject.prototype.addRelation = function (type, kobject) {
@@ -247,15 +247,23 @@ KObject.prototype.addRelation = function (type, kobject) {
     }
     const currentRelation = this.relation.get(type)
     if (!Array.isArray(currentRelation)) {
-        return this.relation.set(type, [currentRelation, kobject])
+        if (currentRelation === kobject.get('uid')) { return true }
+        return this.relation.set(type, [currentRelation, kobject.get('uid')])
     }
-    currentRelation.push(kobject)
+    if (currentRelation.indexOf(kobject.get('uid')) !== -1) { return true }
+    currentRelation.push(kobject.get('uid'))
     return this.relation.set(type, currentRelation)
 }
 
 KObject.prototype.getRelation = function (type) {
     if (this.relation.has(type)) {
-        return this.relation.get(type)
+        const relations = this.relation.get(type)
+        if (!Array.isArray(relations)) { return new KObjectGStore().get(type, relations) }
+        const result = []
+        for (const relation of relations) {
+            result.push(new KObjectGStore().get(type, relation))
+        }
+        return result
     }
     return undefined
 }
