@@ -115,6 +115,7 @@ define([
 
       this.Viewport = new KView()
       this.Viewport.setEntryHeight(78)
+      this.Viewport.setEntryInnerHeight(74)
       this.Viewport.setMargins(74, 14, 50, 260)
 
       this.Viewport.addEventListener('EnterColumn', event => {
@@ -670,9 +671,10 @@ define([
       this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
       })
-      window.addEventListener('dblclick', event => {
+      const addReservationEvent = event => {
         const {x, y} = this.Viewport.getCurrentBox()
         const entryContainer = document.querySelector('.reservationContainer')
+        if (!entryContainer.children[y]) { return }
         const entry = this.Entries.get(entryContainer.children[y].id)
         const ktask = new KTaskBar()
         const travail = ktask.getCurrentList()
@@ -688,15 +690,26 @@ define([
         }
 
         const reservationStore = new KStore('kreservation')
-          reservationStore.set({
-              begin: date.toISOString(),
-              end: new Date(date.getTime() + KAIROS.defaults.reservation.duration * 3600).toISOString(),
-              target: entry.id,
-              affaire: travail.data.get('uid')
-          })
-          .then(result => {
-            KAIROS.info(`Nouvelle réservation`)
-          })
+        reservationStore.set({
+            begin: date.toISOString(),
+            end: new Date(date.getTime() + KAIROS.defaults.reservation.duration * 3600).toISOString(),
+            target: entry.id,
+            affaire: travail.data.get('uid')
+        })
+        .then(result => {
+          KAIROS.info(`Nouvelle réservation`)
+        })
+      }
+      const deleteReservation = event => {
+
+      }
+      window.addEventListener('dblclick', addReservationEvent)
+      window.addEventListener('global-keypress', globalEvent => {
+        const event = globalEvent.detail
+        switch(event.key) {
+          case 'Enter': return addReservationEvent(event)
+          case 'Delete': return deleteReservation(event)
+        }
       })
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})

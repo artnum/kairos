@@ -60,6 +60,7 @@ KUIEntry.prototype.removeReservation = function (reservation) {
         let max = 1
 
         for (let i = 0; i < this.boxes.length; i++) {
+            if (!this.boxes[i]) { continue }
             for (let j = 0; j < this.boxes[i].length; j++) {
                 if (this.boxes[i][j].id === reservation.id) {
                     boxes.push(this.boxes[i])
@@ -70,7 +71,7 @@ KUIEntry.prototype.removeReservation = function (reservation) {
         }
         this.getDomNode()
         .then(refNode => {
-            const entryHeight = this.kview.get('entry-height') / max
+            const entryHeight = this.kview.get('entry-inner-height') / max
             for (const box of boxes) {
                 for (let i = 0; i < box.length; i++) {
                     if (box[i]) {
@@ -105,17 +106,19 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             let i = this.kview.computeXBox(left)
             do {
                 boxes.push(this.boxes[i])
+                if (!this.boxes[i]) { this.boxes[i] = [] }
                 this.boxes[i].push(uireservation)
                 if (max < this.boxes[i].length) { max = this.boxes[i].length }
                 i++
             } while (i < this.kview.computeXBox(left + uireservation.props.get('width')));
             
-            const entryHeight = this.kview.get('entry-height') / max
+            const entryHeight = this.kview.get('entry-inner-height') / max
             for (const box of boxes) {
+                if (!box) { continue }
                 for (let i = 0; i < max; i++) {
                     if (box[i]) {
                         box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
-                        box[i].setHeight(entryHeight)
+                        box[i].setHeight(entryHeight - 4)
                     }
                 }
             }

@@ -86,6 +86,11 @@ KView.prototype.setEntryHeight = function (height) {
     this.compute()
 }
 
+KView.prototype.setEntryInnerHeight = function (height) {
+    this.data.set('entry-inner-height', height)
+    this.compute()
+}
+
 KView.prototype.setEntryCount = function (entries) {
     this.data.set('entry-count', entries)
     this.compute()
