@@ -151,6 +151,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kview.js', 'script'],
         ['../js/ui/klives.js', 'script'],
         ['../js/ui/kfieldset.js', 'script'],
+        ['../js/ui/kproject.js', 'script'],
+        ['../js/ui/kcolor.js', 'script'],
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],
         ['../js/stores/kcontact.js', 'script'],

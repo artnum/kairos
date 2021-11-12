@@ -1,8 +1,8 @@
 <?PHP
 class CacheID {
     function __construct() {
-        $this->mcache = new Memcache();
-        $this->mcache->connect('localhost', 11211);
+        $this->mcache = new Memcached();
+        $this->mcache->addServer('localhost', 11211);
     }
 
     function get ($rid) {
@@ -14,7 +14,7 @@ class CacheID {
     }
 
     function set ($rid, $duration) {
-        $this->mcache->set($rid, 1, 0, $duration);
+        $this->mcache->set($rid, 0, $duration);
     }
 }
 ?>

@@ -24,6 +24,8 @@
 @import '../../kbar.css';
 @import 'kfieldset.css';
 @import 'klist.css';
+@import 'kproject.css';
+
 
 
 #loadingOverlay { display: none; }

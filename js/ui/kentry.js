@@ -48,11 +48,6 @@ KUIEntry.prototype.render = function () {
                 for (const [k, v] of fields) {
                     khtml.set(k, v)
                 }
-                khtml.setEventListener('CreateReservation', 
-                {
-                    type: 'dblclick',
-                    listener: this.handleEvent.bind(this)
-                })
                 resolve(khtml.domNode)
             })
         })

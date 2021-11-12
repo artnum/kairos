@@ -33,6 +33,9 @@
     --message-info-border-color: hsla(var(--info-color-base), 0.7);
     --outofsyncform: hsla(var(--warn-color-base), 0.2);
     --deletedform: red;
+    --cross-highligth-base-color: hsla(250, 50%, 50%, 0.2);
+    --cross-highlight-color-h: linear-gradient(180deg, var(--cross-highligth-base-color) 0%, transparent 20%, transparent 80%, var(--cross-highligth-base-color) 100%);
+    --cross-highlight-color-v: linear-gradient(90deg, var(--cross-highligth-base-color) 0%, transparent 20%, transparent 80%, var(--cross-highligth-base-color) 100%);
 }
 
 span.error {

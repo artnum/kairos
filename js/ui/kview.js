@@ -229,9 +229,10 @@ KView.prototype.handleKeyMove = function (event) {
         window.scroll(0, scrollY)
     }
 
-
-
-
     this.eventTarget.dispatchEvent(new CustomEvent('EnterRow', {detail: {currentRow: this.currentBox[1], previousRow: this.currentBox[1] - nextBox[1]}}))
     this.eventTarget.dispatchEvent(new CustomEvent('EnterColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: this.currentBox[0] - nextBox[0]}}))
+}
+
+KView.prototype.getCurrentBox = function () {
+    return {x: this.currentBox[0], y: this.currentBox[1]}
 }

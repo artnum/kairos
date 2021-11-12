@@ -216,66 +216,14 @@ define([
             const klateral = new KLateral().open()
             
             const container = document.createElement('DIV')
+            klateral.add(container, {title: 'Projet'})
             for (const project of results) {
-              const div = document.createElement('DIV')
-              const affaire = project.getRelation('kaffaire')
-              div.id = project.get('uid')
-              div.innerHTML = `
-                <h1>${project.getCn()}</h1>
-                <div><span class="klabel">Client</span> ${project.getRelation('kcontact')?.getCn() || ''}</div>
-                <ul>
-              `
-              if (affaire) {
-                for (const aff of Array.isArray(affaire) ? affaire : [affaire]) {
-                  let time = 0
-                  const reservations = aff.getRelation('kreservation')
-                  if (reservations) {
-                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-                      time += new Date(reservation.get('end')).getTime() - new Date(reservation.get('begin')).getTime()
-                    }
-                  }
-                  div.innerHTML += `<li>${aff.getCn()}, ${(time / 60 /60).toFixed(2)} heures planifiées</li>`
-                }
-              }
-              div.innerHTML += '</ul>'
-              container.appendChild(div)
-              div.addEventListener('click', event => {
-                const klateral = new KLateral().open()
-                const tab = klateral.add('', {title: `${project.getCn()}`}) 
-                tab.addEventListener('show', (event) => {
-                  const affaires = project.getRelation('kaffaire')
-                  let selected = 0
-                  for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                    const reservations = affaire.getRelation('kreservation')
-                    if (!reservations) { continue }
-                    const color = `hsla(${360 - (40 * selected++)}, 100%, 50%, 1)`
-                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations])  {
-                      const dom = document.getElementById(reservation.get('uuid'))
-                      if (!dom) { continue }
-                      dom.style.setProperty('--selected-color', color)
-                      dom.dataset.affaire = affaire.get('id')
-                      window.requestAnimationFrame(() => { if (!dom) { return }; dom.classList.add(`selected`) })
-                    }
-                  }
-                })
-                tab.addEventListener('hide', (event) => {
-                  const affaires = project.getRelation('kaffaire')
-                  for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                    const reservations = affaire.getRelation('kreservation')
-                    if (!reservations) { continue }
-                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations])  {
-                      const dom = document.getElementById(reservation.get('uuid'))
-                      if (!dom) { continue }
-                      window.requestAnimationFrame(() => { dom.classList.remove('selected') })
-                    }
-                  }
-                })
-                tab.addEventListener('destroy', (event) => {
-                  console.log(event)
-                })
+              const projectUi = new KProject(project)
+              projectUi.render()
+              .then(domNode => {
+                window.requestAnimationFrame(() => { container.appendChild(domNode) })
               })
             }
-            klateral.add(container, {title: 'Projet'})
           })
           .catch(reason => {
             console.log(reason)

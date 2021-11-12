@@ -54,9 +54,16 @@ KUIReservation.prototype.setHeight = function (height) {
 }
 
 KUIReservation.prototype.render = function () {
+    const kcolor = new KColor()
     return new Promise((resolve, reject) => {
         window.requestAnimationFrame(() => {
             const affaire = this.object.getRelation('kaffaire')
+            const project = affaire.getRelation('kproject')
+            let color = kcolor.get(`kproject:${project.get('uid')}`)
+            if (!color) {
+                const gcolor = kcolor.generate('kproject')
+                color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.25)`)
+            }
             this.domNode.innerHTML = `${affaire.getCn()}`
             let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
 
@@ -70,6 +77,7 @@ KUIReservation.prototype.render = function () {
             this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
             this.props.set('length', this.props.get('max') - this.props.get('min'))
             this.props.set('width', this.Viewport.get('second-width') * this.props.get('length'))
+            this.domNode.style.setProperty('--kreservation-project-color', `var(${color})`)
             this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
             if (this.height !== undefined) {
                 this.domNode.style.height = `${this.height}px`

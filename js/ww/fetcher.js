@@ -52,8 +52,7 @@ self.onmessage = function (msgEvent) {
                         error: true,
                         content: msg,
                         headers: {
-                            'Content-Type': 'text/plain',
-                            'X-Request-Id': requestId
+                            'Content-Type': 'text/plain'
                         }
                     })
                 })

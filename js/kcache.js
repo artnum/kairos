@@ -100,7 +100,6 @@ function kfetch (url, options = { method: 'GET' }) {
 }
 
 function KCacheReduce () {
-    console.log('Forced reduce')
     for (let i = 0; i < localStorage.length; i++) {
         const url = localStorage.key(i)
         if (!(url.startsWith('http://') || url.startsWith('https://'))) { continue }

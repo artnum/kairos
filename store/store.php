@@ -21,6 +21,10 @@ $store = new \artnum\JStore\Generic(
   ]
 );
 
+$memcache = new Memcached();
+$memcache->addServer('localhost', 11211);
+$KConf->setVar('cache', $memcache);
+
 $pdo = init_pdo($ini_conf);
 if (is_null($pdo)) {
   throw new Exception('Storage database not reachable');

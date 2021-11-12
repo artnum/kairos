@@ -1387,10 +1387,8 @@ define([
           newAffaireButton.addEventListener('click', event => {
             this.reservation.KReservation.createAffaire()
             .then(affaire => {
-              console.log(affaire, affaire.getId())
               fetch(`${KAIROS.getBase()}/store/Reservation/${this.reservation.id}`, {method: 'PUT', body: JSON.stringify({id: this.reservation.id, affaire: affaire.getId()})})
               .then(result => {
-                console.log(result)
               })
             })
           })
@@ -1733,7 +1731,6 @@ define([
     },
 
     changeContactType: function (kfieldset) {
-      console.log(kfieldset.get('address'))
       const newType = kfieldset.getLegend()
       const linkId = kfieldset.get('link')
       fetch(`${KAIROS.getBase()}/store/ReservationContact/${linkId}`, {method: 'PUT', body: JSON.stringify({id: linkId, comment: newType})})
@@ -1742,7 +1739,6 @@ define([
         return response.json()
       })
       .then(result => {
-        console.log(result)
       })
       .catch(error => {
         KAIROS.error(error)

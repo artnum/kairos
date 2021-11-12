@@ -114,7 +114,7 @@ define([
       this.Tooltips = {}
 
       this.Viewport = new KView()
-      this.Viewport.setEntryHeight(76)
+      this.Viewport.setEntryHeight(78)
       this.Viewport.setMargins(74, 14, 50, 260)
 
       this.Viewport.addEventListener('EnterColumn', event => {
@@ -670,10 +670,61 @@ define([
       this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
       })
+      window.addEventListener('dblclick', event => {
+        const {x, y} = this.Viewport.getCurrentBox()
+        const entryContainer = document.querySelector('.reservationContainer')
+        const entry = this.Entries.get(entryContainer.children[y].id)
+        const ktask = new KTaskBar()
+        const travail = ktask.getCurrentList()
+        const date = new Date()
+        date.setTime(this.firstDay.getTime())
+        date.setTime(date.getTime() + (x * 86400000))
+
+        if (!entry || !travail || !date || isNaN(date.getTime())) { 
+          if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
+          else if (!travail) { KAIROS.error('Pas de travail sélectionné') }
+          else { KAIROS.error('Date invalide') }
+          return
+        }
+
+        const reservationStore = new KStore('kreservation')
+          reservationStore.set({
+              begin: date.toISOString(),
+              end: new Date(date.getTime() + KAIROS.defaults.reservation.duration * 3600).toISOString(),
+              target: entry.id,
+              affaire: travail.data.get('uid')
+          })
+          .then(result => {
+            KAIROS.info(`Nouvelle réservation`)
+          })
+      })
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       this.domNode.addEventListener('wheel', this.eWheel.bind(this), {passive: true})
-      //window.addEventListener('mousemove', this.showSight.bind(this))
+      this.wheelStopSignal = null
+      window.addEventListener('keydown', event => {
+        if (event.key === 'Control') {
+          if (this.wheelStopSignal) { this.wheelStopSignal.abort() }
+          this.wheelStopSignal = new AbortController()
+          this.domNode.addEventListener('wheel', this.wheelZoom.bind(this), {signal: this.wheelStopSignal.signal})
+        }
+      })
+
+      window.addEventListener('keyup', event => {
+        if (event.key === 'Control') {
+          if (this.wheelStopSignal) {
+            this.wheelStopSignal.abort()
+            this.wheelStopSignal = null
+          }
+        }
+      })
+      window.addEventListener('blur', event => {
+        if (this.wheelStopSignal) {
+          this.wheelStopSignal.abort()
+          this.wheelStopSignal = null
+        }
+      })
+
       djOn(window, 'hashchange, load', djLang.hitch(this, () => {
         var that = this
         window.setTimeout(() => { /* hack to work in google chrome */
@@ -909,6 +960,15 @@ define([
       }
     },
 
+    wheelZoom: function (event) {
+      event.preventDefault()
+      if (event.deltaY < 0) {
+        this.zoomInN(event.deltaY)
+      } else {
+        this.zoomOutN(-event.deltaY)
+      }
+    },
+
     eWheel: function (event) {
       this.toolTip_hide()
       if (this._mask) { return }
@@ -917,15 +977,6 @@ define([
         this.moveXLeft(move)
       } else if (event.deltaX > 0) {
         this.moveXRight(move)
-      }
-      this.wheelTo = null
-      if (event.ctrlKey) {
-        event.preventDefault()
-        if (event.deltaY < 0) {
-          this.zoomInN(event.deltaY)
-        } else {
-          this.zoomOutN(-event.deltaY)
-        }
       }
     },
 

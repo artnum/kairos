@@ -1652,7 +1652,6 @@ define([
         let associations = []
         let contacts = []
         Promise.all([pContacts, pAssociations]).then((results) => {
-          console.log(results)
           if (results[1].length > 0) {
             results[1].data.forEach((a) => {
               delete a.reservation
@@ -1665,7 +1664,6 @@ define([
           }
           if (results[0].length > 0) {
             results[0].data.forEach((c) => {
-              console.log(c)
               delete c.reservation
               if (c.target) {
                 c.target = `store${c.target}`

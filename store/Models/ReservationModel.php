@@ -284,7 +284,7 @@ class ReservationModel extends artnum\SQL
    function _write($data, $id = NULL)
    {
       global $MSGSrv;
-      if ($id === null && !$data['uuid']) {
+      if ($id === null && empty($data['uuid'])) {
          $data['uuid'] = Uuid::uuid4()->toString();
       }
       $result = parent::_write($data, $id);
