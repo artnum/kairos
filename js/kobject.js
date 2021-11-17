@@ -77,10 +77,10 @@ function KObject (type, data) {
                 case 'addEventListener': return object.addEventListener.bind(object)
                 case 'removeEventListener': return object.removeEventListener.bind(object)
                 case 'toString': return object.toString.bind(object)
-                case 'bindUINode': return object.bindUINode.bind(object)
-                case 'getUINode': return object.getUINode.bind(object)
-                case 'update': return object.update.bind(object)
-                case 'toXML': return object.toXML.bind(object)
+                case 'bindUINode': return object.doBindUINode.bind(object)
+                case 'getUINode': return object.doGetUINode.bind(object)
+                case 'update': return object.doUpdate.bind(object)
+                case 'toXML': return object.doToXML.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -155,7 +155,7 @@ KObject.prototype.removeEventListener = function (type, listener, options) {
     this.evtTarget.removeEventListener(type, listener, options)
 }
 
-KObject.prototype.update = function (data) {
+KObject.prototype.doUpdate = function (data) {
     for (const key in data) {
         if (!this.hasItem(key)) {
             this.evtTarget.dispatchEvent(new CustomEvent('add-item', {detail: {kobject: this, name: key, value: data}}))
@@ -275,11 +275,11 @@ KObject.prototype.getType = function () {
     return this.type
 }
 
-KObject.prototype.bindUINode = function (uinode) {
+KObject.prototype.doBindUINode = function (uinode) {
     this.UINode = uinode
 }
 
-KObject.prototype.getUINode = function () {
+KObject.prototype.doGetUINode = function () {
     return this.UINode
 }
 
@@ -307,7 +307,7 @@ KObject.prototype.toString = function () {
     return oToStr(Object.fromEntries(this.data.entries()), 0)
 }
 
-KObject.prototype.toXML = function (stack = []) {
+KObject.prototype.doToXML = function (stack = []) {
     const xmlDoc = document.implementation.createDocument('', '', null)
 
     const v2node = function (doc, key, value) {

@@ -1,4 +1,8 @@
 /* global view object */
+function KViewCell () {
+    return new Map()
+}
+
 function KView () {
     if (KView._instance) { return KView._instance }
     this.data = new Map()
@@ -7,6 +11,17 @@ function KView () {
     this.mouseHandlerRun = false
     window.addEventListener('keydown', this.handleKeyMove.bind(this), {capture: true})
     window.addEventListener('mousemove', this.startMouseHandler.bind(this), {capture: true, passive: true})
+    /* rowDescription is used to move around row and hide them. As, in the 
+     * grid, row are not contiguous, they stay in place and the actual index
+     * of the row is set in rowDescription. If the index is lower than 0, row
+     * is hidden.
+     * rowDescription indexes starts at 1 as to hide by reversing their value
+     * (6 -> -6, we keep their index while hidding). As 0 === -0 is true, it
+     * is not possible to use 0 index.
+     */
+    this.rowDescription = null
+    this.grid = null
+    this.gridOffset = 0
     KView._instance = this
 }
 
@@ -43,9 +58,160 @@ KView.prototype.compute = function () {
         const count = this.data.get('entry-count')
         this.data.set('viewport-height', entries * count)
     }
+
+    if (this.data.has('entry-count') && this.data.has('day-count')) {
+        if (this.grid === null) {
+            const height = this.data.get('entry-count')
+            const width = this.data.get('day-count')
+            const newGrid = new Array(width * height)
+            
+            /* copy old grid into new grid */
+            for (i = 0; i < newGrid.length; i++) {
+                newGrid[i] = new KViewCell()
+            }
+            this.rowDescription = new Array(height)
+            for (let i = 0; i < height; i++) {
+                this.rowDescription[i] = [i + 1, null]
+            }
+            this.grid = newGrid
+        }
+    }
+
+}
+
+/* convert visual y to grid y */
+KView.prototype.getY = function (y) {
+    let i = 0
+    let j = 0
+    while (i < y) {
+        if (this.rowDescription[i + j][0] < 0) { 
+            i--
+            j++
+        }
+        i++
+    }
+
+    return this.rowDescription[i + j][0] - 1
+}
+
+KView.prototype.getObjectRow = function (object) {
+    let i = 0
+    for (const row of this.rowDescription) {
+        if (row[1] === object) {
+            return i
+        }
+        i++
+    }
+    return -1
+}
+
+KView.prototype.getRowObject = function (row) {
+    return this.rowDescription[this.getY(row)][1]
+}
+
+KView.prototype.bindObjectToRow = function (row, object) {
+    const y = this.getY(row)
+    this.rowDescription[y][1] = object
+}
+
+KView.prototype.getEffectiveHeight = function () {
+    let size = 0
+    for (i = 0; i < this.rowDescription.length; i++) {
+        if (this.rowDescription[i][0] > 0) { size++ }
+    }
+    return size
+}
+
+/* swap visual row */
+KView.prototype.swapRow = function (y1, y2) {
+    const idx = this.rowDescription[y1]
+    this.rowDescription[y1] = this.rowDescription[y2]
+    this.rowDescription[y1] = idx
+}
+
+/* gpos wrap around on X */
+KView.prototype.getGPos = function (x, y) {
+    y = this.getY(y)
+    while (x >= this.get('day-count')) { x -= this.get('day-count') }
+    while (x < 0) { x += this.get('day-count') }
+    const gpos = x * this.get('entry-count') + y + (this.gridOffset * this.get('entry-count'))
+    return gpos
+}
+
+KView.prototype.getCell = function (x, y) {
+    return this.grid[this.getGPos(x, y)]
+}
+
+/* we use 12:00 when calculate date, we work at the day level so hour don't count */
+KView.prototype.getCellFromDate = function (date, y) {
+    const origin = this.get('date-origin')
+    date = new Date().setTime(date.getTime()).setHours(12, 0, 0, 0)
+    if (date.getTime() <= origin.getTime()) {
+        return this.getCell(0, y)
+    } else {
+        const x = Math.round(origin.getTime() - date.getTime() / 8640000)
+        return this.getCell(x, y)
+    }
+}
+
+KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
+    const origin = this.get('date-origin')
+    dateStart = new Date(dateStart.getTime())
+    dateStart.setHours(12, 0, 0, 0)
+    dateEnd = new Date(dateEnd.getTime())
+    dateEnd.setHours(12, 0, 0, 0)
+    const row = []
+    let xs, xe
+
+    xs = Math.round((dateStart.getTime() - origin.getTime()) / 86400000)
+    xe = xs + Math.round((dateEnd.getTime() - dateStart.getTime()) / 86400000)
+
+    for (let i = xs; i <= xe; i++) {
+        if (i < 0) { continue }
+        if (i > this.get('day-count')) { break }
+        row.push(this.getCell(i, y))
+    }
+    return row
 }
 
 KView.prototype.move = function (days) {
+    /* negative value add a row in front to create place for the new day in the futur 
+     * positive value add a row at the back to create place for the new day in the past
+     */
+    const gridDays = Math.abs(days)
+    if (days > 0) {
+        if (-gridDays + this.gridOffset < 0) {
+            const cellAdd = Math.abs(gridDays - this.gridOffset) * this.get('entry-count')
+            for (i = 0; i < cellAdd; i++) {
+                this.grid.unshift(new KViewCell())
+            }
+            this.gridOffset = 0
+        } else {
+            this.gridOffset -= gridDays
+        }
+        /* 365 is one year */
+        while (this.grid.length > 365 * this.get('entry-count')) {
+            for (i = 0; i < this.get('entry-count'); i++) {
+                this.grid.pop()
+            }
+        }
+    } else if (gridDays > 0) {
+        const moveCell = gridDays * this.get('entry-count')
+        if (this.gridOffset * this.get('entry-count') + this.get('day-count') * this.get('entry-count') + moveCell > this.grid.length) {
+            const cellAdd = this.gridOffset * this.get('entry-count') + this.get('day-count') * this.get('entry-count') + moveCell - this.grid.length
+            for (i = 0; i < cellAdd; i++) {
+                this.grid.push(new KViewCell())
+            }
+        }
+        this.gridOffset += gridDays
+        /* 365 is one year */
+        while (this.grid.length > 365 * this.get('entry-count')) {
+            for (i = 0; i < this.get('entry-count'); i++) {
+                this.grid.shift()
+            }
+        }
+    }
+
     this.eventTarget.dispatchEvent(new CustomEvent('move', {detail: {left: days * this.data.get('day-width')}}))
 }
 
@@ -56,8 +222,17 @@ KView.prototype.setMargins = function (top, right, bottom, left) {
     this.data.set('margin-bottom', bottom)
 }
 
+KView.prototype.set = function (name, value) {
+    return this.data.set(name, value)
+}
+
 KView.prototype.get = function (name) {
     return this.data.get(name)
+}
+
+KView.prototype.setOrigin = function (date) {
+    date.setHours(12, 0, 0, 0)
+    this.data.set('date-origin', date)
 }
 
 KView.prototype.setDayCount = function (days) {

@@ -227,18 +227,37 @@ KEntry.prototype.getEvents = function () {
 
 KEntry.prototype.processReservationList = function (list, start = 0) {
     window.requestIdleCallback(deadline => {
+        const viewport = new KView()
         while (deadline.timeRemaining() > 5 && start < list.length) {
             const entry = list[start]
             const uuid = entry.uuid
+            const y = viewport.getObjectRow(this)
             if (this.entries.has(uuid)) {
                 const reservation = this.entries.get(uuid)
+                /* remove from viewport before update */
+                {
+                    const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                    for (const row of rows) {
+                        row.delete(`${reservation.getType()}:${reservation.get('uid')}`)
+                    }
+                }
+                
                 reservation.update(entry)
-                /*reservation.instance.extUpdate(entry)
-                .then(result => {
-                })*/
+
+                /* re-add to viewport after update */
+                {
+                    const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                    for (const row of rows) {
+                        row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
+                    }
+                }
                 continue
             } else {
                 const reservation = new KObject('kreservation', entry)
+                const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                for (const row of rows) {
+                    row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
+                }
                 new KStore('kreservation').relateEntry(reservation)
                 .then(kobject => {
                     this.KUI.placeReservation(kobject)

@@ -673,9 +673,7 @@ define([
       })
       const addReservationEvent = event => {
         const {x, y} = this.Viewport.getCurrentBox()
-        const entryContainer = document.querySelector('.reservationContainer')
-        if (!entryContainer.children[y]) { return }
-        const entry = this.Entries.get(entryContainer.children[y].id)
+        const entry = this.Viewport.getRowObject(y)
         const ktask = new KTaskBar()
         const travail = ktask.getCurrentList()
         const date = new Date()
@@ -704,8 +702,7 @@ define([
 
       }
       window.addEventListener('dblclick', addReservationEvent)
-      window.addEventListener('global-keypress', globalEvent => {
-        const event = globalEvent.detail
+      window.addEventListener('global-keypress', event => {
         switch(event.key) {
           case 'Enter': return addReservationEvent(event)
           case 'Delete': return deleteReservation(event)
@@ -1171,6 +1168,7 @@ define([
       for (const entry of this.Entries) {
         entry[1].set('origin', this.firstDay)
       }
+      this.Viewport.setOrigin(this.firstDay)
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
         if (djDate.compare(day, new Date(), 'date') === 0) {
           this.todayOffset = i
@@ -1301,13 +1299,41 @@ define([
         })
         .then(loadedEntries => {
           this.Viewport.setEntryCount(loadedEntries.length)
+          let i = 0
+          const entriesLoaded = []
           for (const kentry of loadedEntries) {
+            const row = i
             kentry.register(this.Updater)
-            Promise.all([kentry.render(), kentry.set('origin', this.firstDay)])
-            .then(([domNode, setResult]) => {
-              this.domEntries.appendChild(domNode)
-            })
+            entriesLoaded.push(new Promise((resolve) => {
+              kentry.set('origin', this.firstDay)
+              .then(_ => {
+                this.Viewport.bindObjectToRow(row, kentry)
+                resolve(kentry)
+              })
+            }))
+            i++
           }
+          return Promise.all(entriesLoaded)
+        })
+        .then(kentries => {
+          const next = Promise.resolve()
+          for (const kentry of kentries) {
+            next.then(_ => {
+              return kentry.render()
+            })
+            .then(domNode => {
+              return new Promise((resolve) => {
+                window.requestAnimationFrame(() => {
+                  this.domEntries.appendChild(domNode)
+                  resolve()
+                })
+              })
+            })
+          }  
+          return next
+        })
+        .then(_ => {
+          resolve()
         })
       })
     },
@@ -1315,10 +1341,9 @@ define([
     run: function () {
       this.currentPosition = 0
       this.update()
-      this.loadEntries({state: 'SOLD'}).then(() => {
-        this.sortAndDisplayEntries()
+      this.loadEntries({state: 'SOLD'})
+      .then(() => {
         this.update()
-        window.setInterval(function () { this.refresh() }.bind(this), 10000)
       })
     },
 
@@ -1411,38 +1436,6 @@ define([
       })
 
       return sortedEntries
-    },
-
-    sortAndDisplayEntries: function () {
-      let sortedEntries = this._sort_default()
-      sortedEntries.forEach((k) => {
-        const e = this.Entries.get(k)
-        let inType = false
-        let insertBefore = null
-        if (e.domNode.dataset.pushToEnd) {
-          this.domEntries.appendChild(e.domNode)
-          return
-        }
-        for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
-          if (n.dataset.groupId === e.domNode.dataset.groupId && n.dataset.type === e.domNode.dataset.type && !inType) { inType = true }
-          if (n.dataset.type !== e.domNode.dataset.type && inType) { insertBefore = n; inType = false; break }
-        }
-        if (insertBefore) {
-          this.domEntries.insertBefore(e.domNode, insertBefore)
-        } else {
-          this.domEntries.appendChild(e.domNode)
-        }
-      })
-
-      /* as we display we modify the order, so check the final order by using the DOM */
-      let i = 0
-      for (let n = this.domEntries.firstElementChild; n; n = n.nextElementSibling) {
-        const entry = this.Entries.get(n.dataset.target)
-        if (entry !== undefined){
-          entry.setHPos(i)
-          i++
-        }
-      }
     },
 
     sortEntries: function (orderedKeys, linear = false) {
