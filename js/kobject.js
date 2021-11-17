@@ -80,6 +80,7 @@ function KObject (type, data) {
                 case 'bindUINode': return object.bindUINode.bind(object)
                 case 'getUINode': return object.getUINode.bind(object)
                 case 'update': return object.update.bind(object)
+                case 'toXML': return object.toXML.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -110,6 +111,7 @@ function KObject (type, data) {
                 case 'bindUINode':
                 case 'getUINode':
                 case 'update':
+                case 'toXML':
                     return {
                         writable: false,
                         enumerable: false,
@@ -140,6 +142,7 @@ function KObject (type, data) {
             return false
         }
     })
+    kobject.toXML()
     kgstore.put(kobject)
     return kobject
 }
@@ -302,4 +305,105 @@ KObject.prototype.toString = function () {
         }
     }
     return oToStr(Object.fromEntries(this.data.entries()), 0)
+}
+
+KObject.prototype.toXML = function (stack = []) {
+    const xmlDoc = document.implementation.createDocument('', '', null)
+
+    const v2node = function (doc, key, value) {
+        if (value === null) {
+            const node = doc.createElement('value')
+            node.setAttribute('name', key)
+            node.setAttribute('type', 'null')
+
+            return node
+        }
+
+        if (value instanceof Object) {   
+            if (Array.isArray(value)) {
+                const node = doc.createElement('value')
+                node.setAttribute('name', key)
+                node.setAttribute('type', 'array')
+                let i = 0
+                for (const element of value) {
+                    node.appendChild(v2node(i++, element))
+                }
+                return node
+            }
+         
+            const node = doc.createElement('value')
+            node.setAttribute('name', key)
+            node.setAttribute('type', 'object')
+            const okeys = Object.keys(value)
+            okeys.sort((a, b) => { return String(a).localeCompare(String(b)) })
+            for (const x of okeys) {
+                node.appendChild(v2node(doc, x, value[x]))
+            }
+        }
+        switch (typeof value) {
+            case 'boolean':
+                {
+                    const node = doc.createElement('value')
+                    node.setAttribute('name', key)
+                    node.setAttribute('type', 'boolean')
+                    node.setAttribute('value', value ? 'true' : 'false')
+                    return node
+                }
+            case 'string':
+                {       
+                    const node = doc.createElement('value')
+                    node.setAttribute('name', key)
+                    node.setAttribute('type', 'string')
+                    node.appendChild(doc.createTextNode(String(value).normalize('NFC')))
+                    return node
+                }
+            case 'number':
+                {
+                    const node = doc.createElement('value')
+                    node.setAttribute('name', key)
+                    node.setAttribute('type', 'number')
+                    node.setAttribute('value', Number.toString(value))
+                    return node
+                }
+        }
+    }
+
+    const keys = Array.from(this.data.keys())
+    keys.sort((a, b) => { return String(a).localeCompare(String(b)) })
+    const root = xmlDoc.createElement('kexport')
+    root.setAttribute('date', new Date().toISOString())
+    const mainObject = xmlDoc.createElement('kobject')
+    root.appendChild(mainObject)
+    xmlDoc.appendChild(root)
+    mainObject.setAttribute('type', this.getType())
+    mainObject.setAttribute('id', this.getItem('uid'))
+    for (const key of keys) {
+        const node =v2node(xmlDoc, key, this.data.get(key))
+        mainObject.appendChild(node)
+    }
+
+    const relationsNode = xmlDoc.createElement('relation')
+    mainObject.appendChild(relationsNode)
+    const relationKeys = Array.from(this.relation.keys())
+    relationKeys.sort((a, b) => { return String(a).localeCompare(b) })
+    const gkstore = new KObjectGStore()
+    stack.push(`${this.getType()}:${this.getItem('uid')}`)
+    for (const relationKey of relationKeys) {
+        const relation = Array.isArray(this.relation.get(relationKey)) ? this.relation.get(relationKey) : [this.relation.get(relationKey)]
+        relation.sort((a, b) => { String(a).localeCompare(String(b)) })
+        for (const relationId of relation) {
+            const rel = xmlDoc.createElement('item')
+            rel.setAttribute('type', relationKey)
+            rel.setAttribute('object', relationId)
+            relationsNode.appendChild(rel)
+            object = gkstore.get(relationKey, relationId)
+            if (stack.indexOf(`${relationKey}:${relationId}`) !== -1) { continue }
+            const subDoc = object.toXML(stack)
+            for (const node of subDoc.firstElementChild.children) {
+                const subNode = node.cloneNode(true)
+                root.appendChild(subNode)
+            }
+        }
+    }
+    return xmlDoc
 }
