@@ -15,22 +15,76 @@ const K_INFO = 1
 const K_WARN = 2
 const K_ERROR = 3
 
+KAIROS.lastInputBlured = []
+
 window.addEventListener('mousemove', kMouseFollow)
-window.addEventListener('touchmove', kMouseFollow)
+window.addEventListener('touchmove', kMouseFollow)  
 window.addEventListener('dragover', kMouseFollow)  
-window.addEventListener('keyup', (event) => {
+window.addEventListener('keydown', (event) => {
     if (
         event.target instanceof HTMLInputElement
         || event.target instanceof HTMLTextAreaElement
         || event.target instanceof HTMLButtonElement
         || event.target instanceof HTMLFormElement
        ) 
-    {
-        event.target.blur()
-        return
+    {       
+        switch(event.key) {
+            case 'Escape':
+                KAIROS.lastInputBlured.push(event.target)
+                event.target.blur()
+                return
+            case 'Tab':
+                if (KAIROS.lastInputBlured.length > 0) {
+                    let node
+                    do { 
+                        node = KAIROS.lastInputBlured.pop()
+                    } while(!document.body.contains(node))
+                    if (node) {
+                        node.focus()
+                        event.preventDefault()
+                    }
+                }
+                return
+            default:
+                if (!event.target.dispatchEvent(
+                    new KeyboardEvent('global-keypress', event))
+                ) {
+                    event.preventDefault()
+                }
+                return
+        }
     }
-    event.preventDefault()
-    window.dispatchEvent(new CustomEvent('global-keypress', {detail: event}))
+    switch(event.key) {
+        case 'Tab':
+            if (KAIROS.lastInputBlured.length > 0) {
+                let node
+                do { 
+                    node = KAIROS.lastInputBlured.pop()
+                } while(!document.body.contains(node))
+                if (node) {
+                    node.focus()
+                    event.preventDefault()
+                }
+            }
+            return
+        case 'F5':
+            if (KAIROS.kache.c) {
+                KAIROS.kache.c = new Map()
+            }
+            if (event.ctrlKey) {
+                KAIROS.abortAllRequest()
+            } else {
+                event.preventDefault()
+            }
+            return
+        default:
+            if (!event.target.dispatchEvent(
+                new KeyboardEvent('global-keypress', event))
+            ) {
+                event.preventDefault()
+            }
+            return
+    }
 })
 
 
@@ -167,27 +221,36 @@ KAIROS.removeClosableByIdx = function (idx) {
 }
 
 KAIROS.closeNext = function (count = 0) {
-    if (!KAIROS._closables) { return false }
-    do {
-        if (KAIROS._closables.length <= 0) { return false }
-        const closeFunction = KAIROS._closables.pop()
-        if (!closeFunction || !(closeFunction instanceof Function)) { continue }
-        if (!closeFunction()) { continue; }
-        return true;
-    } while(1)
+    if (KAIROS._closables) {
+        let closeFunction = KAIROS._closables.pop()
+        if (closeFunction && closeFunction instanceof Function) {
+            KAIROS._currentClosable = closeFunction
+            try {
+                if (!closeFunction()) {
+                    KAIROS.closeNext(++count)
+                }
+            } catch (e) {
+                if (count < 10) {
+                    KAIROS.closeNext(++count)
+                } else {
+                    console.log('too many closable')
+                }
+            }
+            KAIROS._currentClosable = null
+            return true
+        }
+    }
+    return false
 }
 
-window.addEventListener('global-keypress', globalEvent => {
-    const event = globalEvent.detail
+window.addEventListener('global-keypress', event => {
     if (event.key === 'Escape') {
         if (event.shiftKey) {
             while (KAIROS.closeNext());
         } else {
             KAIROS.closeNext()
         }
-    }
-    if (event.key === 'F5' && event.ctrlKey) {
-        KAIROS.abortAllRequest()
+        event.preventDefault()
     }
 })
 
