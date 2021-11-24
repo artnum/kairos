@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
-CREATE INDEX "idxReservationModification" ON "reservation" "(reservation_modification");
+CREATE INDEX "idxReservationModification" ON "reservation" ("reservation_modification");
 CREATE INDEX "idxReservationTarget" ON "reservation" ("reservation_target");
 
 
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS "association"	(
 	ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";
 
-CREATE TABLE IF NOT EXISTS "warehouse"		(
-	"warehouse_id" SMALLINT INTEGER PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS "warehouse" (
+	"warehouse_id" SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"warehouse_name" CHAR(60),
 	"warehouse_color" CHAR(30) 
 ) CHARACTER SET "utf8mb4";
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS "extendedReservation" ( "extendedReservation_id" INTE
 -- Arrival progress
 CREATE TABLE IF NOT EXISTS "arrival" (
 	"arrival_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-	"arrival_target" INTEGER UNSIGNED DEFAULT 0,
+	"arrival_target" INTEGER UNSIGNED,
 	"arrival_reported" CHAR(32), -- ISO8601 datetime
 	"arrival_done" CHAR(32), -- ISO8601 datetime
 	"arrival_inprogress" CHAR(32), -- ISO8601 datetime
@@ -140,8 +140,8 @@ CREATE INDEX "arrivalTargetIdx" ON "arrival"("arrival_target");
 -- Invoices
 CREATE TABLE IF NOT EXISTS "invoice" (
 	"invoice_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-	"invoice_winbiz" TEXT NULL, -- used to sync with an external invoicing software if any.
-	"invoice_address" INTEGER NULL,
+	"invoice_winbiz" VARCHAR(200) DEFAULT '', -- used to sync with an external invoicing software if any.
+	"invoice_address" INTEGER UNSIGNED,
 	"invoice_sent" CHAR(32) DEFAULT NULL, -- ISO8601
 	"invoice_paid" CHAR(32) DEFAULT NULL, -- ISO8601
 	"invoice_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
@@ -155,14 +155,15 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 -- Basis for invoice creation
 CREATE TABLE IF NOT EXISTS "count" (
 	"count_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-	"count_invoice" INTEGER NULL,
-	"count_status" SMALLINT UNSIGNED DEFAULT 0,
+	"count_invoice" INTEGER UNSIGNED, 
+	"count_status" SMALLINT UNSIGNED,
 	"count_date" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"count_begin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"count_end" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"count_total" FLOAT DEFAULT 0,
 	"count_reference" TEXT DEFAULT NULL,
 	"count_comment" TEXT,
+	"count_state" ENUM('INTERMEDIATE', 'FINAL') DEFAULT 'INTERMEDIATE',
 	"count_printed" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"count_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	"count_created" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
@@ -199,10 +200,10 @@ CREATE TABLE IF NOT EXISTS "collection" (
 
 -- Units ...
 CREATE TABLE IF NOT EXISTS "unit" (
-	"unit_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"unit_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"unit_name" CHAR(60) NOT NULL,
 	"unit_names" CHAR(60) DEFAULT NULL, -- plural of name
-	"unit_collection" INTEGER DEFAULT NULL,
+	"unit_collection" SMALLINT UNSIGNED,
 	"unit_symbol" CHAR(8) DEFAULT NULL,
 	"unit_deleted" INTEGER DEFAULT NULL,
 	"unit_created" INTEGER DEFAULT NULL,
@@ -215,13 +216,13 @@ CREATE TABLE IF NOT EXISTS "unit" (
 
 -- Articles 
 CREATE TABLE IF NOT EXISTS "article" (
-	"article_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"article_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"article_name" CHAR(60) NOT NULL,
 	"article_names" CHAR(60) DEFAULT NULL, -- plural of name
 	"article_price" FLOAT DEFAULT 0, -- default price
 	"article_description" TEXT DEFAULT NULL,
-	"article_collection" INTEGER DEFAULT NULL,
-	"article_ucollection" INTEGER DEFAULT NULL, -- link to collection of unit to use for this article
+	"article_collection" SMALLINT UNSIGNED,
+	"article_ucollection" SMALLINT UNSIGNED, -- link to collection of unit to use for this article
 	"article_deleted" INTEGER DEFAULT NULL,
 	"article_created" INTEGER DEFAULT NULL,
 	"article_modified" INTEGER DEFAULT NULL,
@@ -234,18 +235,18 @@ CREATE TABLE IF NOT EXISTS "article" (
 	) CHARACTER SET "utf8mb4";
 -- Entries for count
 CREATE TABLE IF NOT EXISTS "centry" (
-	"centry_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"centry_count" INTEGER NOT NULL,
-	"centry_article" INTEGER DEFAULT NULL,
+	"centry_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"centry_count" INTEGER UNSIGNED,
+	"centry_article" INTEGER UNSIGNED,
 	"centry_reference" TEXT DEFAULT NULL,
 	"centry_description" TEXT,
 	"centry_price" FLOAT DEFAULT NULL,
 	"centry_discount" FLOAT DEFAULT NULL, -- percent value
 	"centry_quantity" FLOAT DEFAULT NULL,
 	"centry_total" FLOAT DEFAULT NULL,
-	"centry_unit" INTEGER DEFAULT NULL,
-	"centry_group" INTEGER DEFAULT NULL,
-	"centry_reservation" INTEGER DEFAULT NULL,
+	"centry_unit" INTEGER UNSIGNED,
+	"centry_group" INTEGER UNSIGNED,
+	"centry_reservation" INTEGER UNSIGNED,
 	FOREIGN KEY("centry_count") REFERENCES "count"("count_id")
 		ON UPDATE CASCADE
 		ON DELETE CASCADE,
@@ -304,12 +305,12 @@ CREATE TABLE IF NOT EXISTS "evenement" (
        "evenement_duration" INTEGER DEFAULT 0, -- in seconds
        "evenement_technician" CHAR(64) DEFAULT NULL,
        "evenement_target" CHAR(32) DEFAULT NULL,
-       "evenement_previous" INTEGER DEFAULT NULL,
-	   "evenement_process" CHAR(32) DEFAULT '', -- for automatic process to add identifying information
-       FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+       "evenement_previous" INTEGER UNSIGNED DEFAULT NULL,
+       "evenement_process" CHAR(32) DEFAULT '', -- for automatic process to add identifying information
+       FOREIGN KEY ("evenement_reservation") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE,
        FOREIGN KEY ("evenement_previous") REFERENCES "evenement"("evenement_id") ON UPDATE CASCADE ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";
-CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_previous");
+CREATE INDEX "idxEvenementPrevious" ON "evenement"("evenement_previous");
 CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_reservation");
 
 CREATE TABLE IF NOT EXISTS "histoire" (
@@ -340,10 +341,10 @@ CREATE INDEX idxLocaliteTownship ON localite (localite_township);
 CREATE INDEX idxLocaliteNP ON localite (localite_np);
 
 CREATE TABLE IF NOT EXISTS "fichier" (
-       "fichier_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+       "fichier_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
        "fichier_name" CHAR(64) NOT NULL DEFAULT '',
-       "fichier_hash" CHAR(50) NOT NULL UNIQUE INDEX,
-       "fichier_size" INT DEFAULT 0,
+       "fichier_hash" CHAR(50) NOT NULL UNIQUE,
+       "fichier_size" INT UNSIGNED DEFAULT 0,
        "fichier_mime" CHAR(127) NOT NULL DEFAULT 'application/octet-stream'
        );
 CREATE INDEX "idxHash" ON "fichier" ("fichier_hash");
