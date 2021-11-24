@@ -233,7 +233,7 @@ define([
           break
         case 'k':
           const klateral2 = new KLateral().open()
-          klateral2.add('<iframe style="border: none; width: 100%; height: 100%; min-height: 100%; min-width: 100%;" src="https://localhost/keditor/app/html/"></iframe>', {title: 'Wiki'})
+          klateral2.add(`<iframe style="border: none; width: 100%; height: 100%; min-height: 100%; min-width: 100%;" src="${KAIROS.URL(KAIROS.kedURL)}"></iframe>`, {title: 'Wiki'})
           done = true
       }
       return done
