@@ -22,7 +22,10 @@ KProject.prototype.render = function () {
         div.classList.add('kproject-list')
         div.innerHTML = `
         <h1>${project.getCn()}</h1>
-        <div><span class="klabel">Client</span> ${project.getRelation('kcontact')?.getCn() || ''}</div>
+        <div>
+        <div class="kpair"><span class="klabel">Nom</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'name') || ''}</span></div>
+        <div class="kpair"><span class="klabel">Client</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''}</span></div>
+        </div>
         <ul>
         `
         if (affaire) {
@@ -34,7 +37,7 @@ KProject.prototype.render = function () {
                         time += new Date(reservation.get('end')).getTime() - new Date(reservation.get('begin')).getTime()
                     }
                 }
-                div.innerHTML += `<li>${aff.getCn()}, ${(time / 60 / 60).toFixed(2)} heures planifiées</li>`
+                div.innerHTML += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60 / 1000).toFixed(2)} planifiées</strong></li>`
             }
         }
         div.innerHTML += '</ul>'
@@ -98,12 +101,13 @@ KProject.prototype.lowlight = function () {
 }
 
 KProject.prototype.kaffaire = function (affaire) {
-    return `<div><h2>${affaire.getCn()}</h2>
+    return `<div><h1>${affaire.getCn()}</h1>
         <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
         <div class="kpair"><span class="klabel">Description</span><span class="kvalue">${$S(affaire.get('description'))}</span></div>
         <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
         <div class="kpair"><span class="klabel">Rendez-vous</span><span class="kvalue">${$S(affaire.get('meeting'))}</span></div>
         <div class="kapir"><span class="klabel">Fin souhaitée</span><span class="kvalue">${$S(affaire.get('end'))}</span></div>
+        <div class="kapir"><span class="klabel">Durée nécessaire</span><span class="kvalue">${$S(affaire.get('time'))}</span></div>
         <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button>
     </div>`
 }
@@ -123,20 +127,19 @@ KProject.prototype.form = function () {
             <div class="affaires">
             ${affaireHTML}
             </div>
-            <fieldset>
-            <legend data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</legend>
+            <h1 data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</h1>
             <form>
-            Référence: <input name="reference"><br>
-            Rendez-vous: <input name="meeting"><br>
-            Personne de contact: <input name="contact"><br>
-            Téléphone: <input name="phone"><br>
-            Fin souhaitée: <input name="end" type="date"><br>
-            Description:<br>
+            <div class="kpair"><label class="klabel">Référence</label><span class="kvalue"><input autocomplete="off" name="reference"></span></div>
+            <div class="kpair"><label class="klabel">Rendez-vous</label><span class="kvalue"><input autocomplete="off" name="meeting"></span></div>
+            <div class="kpair"><label class="klabel">Personne de contact</label><span class="kvalue"><input autocomplete="off" name="contact"></span></div>
+            <div class="kpair"><label class="klabel">Téléphone</label><span class="kvalue"><input autocomplete="off" name="phone"></span></div>
+            <div class="kpair"><label class="klabel">Fin souhaitée</label><span class="kvalue"><input autocomplete="off" name="end" type="date"></span></div>
+            <div class="kpair"><label class="klabel">Durée nécessaire</label><span class="kvalue"><input autocomplete="off" name="time" type="text"> [h]</span></div>
+            <span class="klabel">Description</span><br>
             <textarea name="description"></textarea>
             <br>
             <button >Nouveau travail</button>
             </form>
-            </fieldset>
         `
         node.addEventListener('submit', (event) => {
             event.preventDefault()

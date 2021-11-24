@@ -734,10 +734,20 @@ define([
           return
         }
 
+        const end = new Date()
+        date.setHours(KAIROS.defaults.reservation.hour, KAIROS.defaults.reservation.minute, 0, 0)
+
+        const ttime = travail.data.get('time')
+        if (!isNaN(parseFloat(ttime))) {
+          end.setTime(date.getTime() + parseFloat(ttime) * 3600000)
+        } else {
+          end.setTime(date.getTime() + KAIROS.defaults.reservation.duration * 3600000)
+        }
+
         const reservationStore = new KStore('kreservation')
         reservationStore.set({
             begin: date.toISOString(),
-            end: new Date(date.getTime() + KAIROS.defaults.reservation.duration * 3600).toISOString(),
+            end: end.toISOString(),
             target: entry.id,
             affaire: travail.data.get('uid')
         })

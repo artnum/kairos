@@ -211,7 +211,7 @@ define([
           break
         case 'p':
           const kstore = new KStore('kproject')
-          kstore.query({closed: '--'})
+          kstore.query({'#and': { closed: '--', deleted: '--' }})
           .then(results => {
             const klateral = new KLateral().open()
             

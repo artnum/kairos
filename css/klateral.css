@@ -109,3 +109,29 @@
 .klateral .khead .scroll.left {
     left: 0;
 }
+
+.klateral {
+    font-family: 'Roboto';
+    font-size: 14px;
+}
+
+.klateral .kpair {
+    margin: 0.5ex 0;
+}
+
+.klateral .klabel {
+    display: inline-block;
+    min-width: 16ch;
+    margin-right: 1ch;
+}
+
+.klateral .kvalue {
+    font-family: 'B612';
+    font-weight: bold;
+}
+
+.klateral h1 {
+    padding: 0.5ex 0.2ch;
+    color: white;
+    background-color: black;
+}
