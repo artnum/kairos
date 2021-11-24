@@ -586,6 +586,7 @@ define([
     },
 
     postCreate: function () {
+      this.fixedHeader.style.zIndex = KAIROS.zMax()
       DisplayLoop((runId) => {
         return new Promise((resolve, reject) => {
           let o = runId % 2
@@ -662,34 +663,66 @@ define([
           KAIROS.error(reason)
         })
       })
+
       this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
       })
+      
+      const selectReservationEvent = event => {
+        const {x, y} = this.Viewport.getCurrentBox()
+        const entry = this.Viewport.getRowObject(y)
+        const cell = this.Viewport.getCell(x, y)
+
+        if (!(event instanceof KeyboardEvent) && event.target.id) {
+          const kgstore = new KObjectGStore()
+          const reservation = kgstore.search('kreservation', 'uuid', event.target.id)
+          if (!reservation) {
+            return
+          }
+          const ui = reservation.getUINode()
+          if (!ui) {
+            return
+          }
+          ui.renderForm()
+          .then(domNode => {
+            const klateral = new KLateral()
+            const ktab = klateral.add(domNode, {title: `Réservation ${reservation.get('uid')}:${reservation.get('version')}`, })
+            ui.addEventListener('close', event => {
+              ktab.close()
+            })
+          })
+          return 
+        }
+
+        if (cell.size === 1 && event instanceof KeyboardEvent) {
+          const [_, open] = cell.entries().next().value
+          console.log(open)
+          open.getUINode().getDomNode()
+          .then(domNode => {
+            domNode.style.border = '2px solid blue'
+          })
+        } else if (event instanceof KeyboardEvent) {
+          for (const entry of cell) {
+            entry[1].getUINode().getDomNode()
+            .then(domNode => {
+              domNode.style.border = '2px solid blue'
+            })
+          }
+        }
+      }
+    
+
       const addReservationEvent = event => {
         const {x, y} = this.Viewport.getCurrentBox()
         const entry = this.Viewport.getRowObject(y)
         const cell = this.Viewport.getCell(x, y)
-        if (cell.size > 0) {
-          if (cell.size === 1 && event instanceof KeyboardEvent) {
-            const [_, open] = cell.entries().next().value
-            console.log(open)
-            open.getUINode().getDomNode()
-            .then(domNode => {
-              domNode.style.border = '2px solid blue'
-            })
-          } else if (event instanceof KeyboardEvent) {
-            for (const entry of cell) {
-              entry[1].getUINode().getDomNode()
-              .then(domNode => {
-                domNode.style.border = '2px solid blue'
-              })
-            }
-          }
-          console.log(event, event instanceof KeyboardEvent, event instanceof MouseEvent)
-          console.log('something')
-        }
         const ktask = new KTaskBar()
         const travail = ktask.getCurrentList()
+
+        if (cell.size > 0 && !travail) {
+          return selectReservationEvent(event)
+        }
+
         const date = new Date()
         date.setTime(this.firstDay.getTime())
         date.setTime(date.getTime() + (x * 86400000))
@@ -774,10 +807,6 @@ define([
       this.bc.onmessage = function (event) {
         this.handleBCMessage(event)
       }.bind(this)
-
-      window.setTimeout(function () {
-        this.update()
-      }.bind(this), 5000)
 
       document.addEventListener('click', (event) => {
         for (let [key, entry] of this.Entries) {

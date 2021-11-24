@@ -1,14 +1,18 @@
 function MButton(button, choice = []) {
   let single = true
+  this.name = ''
   this.Button = document.createElement('DIV')
   this.domNode = this.Button
   this.Events = {}
   this.linkedState = []
   this._value = undefined
   this._oldValue = undefined
-  
+
   if (button instanceof HTMLElement) {
     this.MButton = button
+    if (button.hasAttribute('name')) {
+      this.name = button.getAttribute('name')
+    }
   } else {
     this.MButton = document.createElement('BUTTON')
     this.MButton.innerHTML = button
@@ -158,6 +162,17 @@ function MButton(button, choice = []) {
       resovle()
     })
   })
+}
+
+MButton.parse = function (dom) {
+  if (!(dom instanceof HTMLElement)) { return }
+  const buttons = dom.querySelectorAll('.mbutton')
+  const results = []
+  for (const button of buttons) {
+    const mbutton = new MButton(button)
+    results.push(mbutton)
+  }
+  return results
 }
 
 MButton.prototype.setLabel = function (label) {

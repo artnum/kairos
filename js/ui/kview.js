@@ -242,12 +242,20 @@ KView.prototype.move = function (days) {
     for (let i = range[0] - displacement; i <= range[1] + displacement; i++) {
         const cell = this.grid[i]
         if (i >= range[0] && i <= range[1]) {
-            for (const [_, object] of cell.entries()) {                
+            for (const [key, object] of cell.entries()) {        
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }        
                 const p = this.getRowObject(Math.round((i - (range[0] - displacement))  % this.get('entry-count')))
                 p.KUI.placeReservation(object)
             }
         } else {
-            for (const [_, object] of cell.entries()) {
+            for (const [key, object] of cell.entries()) {
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }        
                 if (!object.getUINode) { continue }
                 const ui = object.getUINode()
                 if (!ui) { continue }

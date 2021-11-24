@@ -8,6 +8,11 @@ KLateralTab.prototype.destroy = function () {
     this.destroyed = true
 }
 
+KLateralTab.prototype.close = function () {
+    this.klateral.remove(this.tabIdx)
+    this.destroy()
+}
+
 KLateralTab.prototype.addEventListener = function (type, listener, options) {
     return this.klateral.addEventListener(`${type}-tab-${this.tabIdx}`, listener, options)
 }
@@ -17,10 +22,11 @@ KLateralTab.prototype.removeEventListener = function (type, listener, options) {
 }
 
 function KLateral () {
-    if (window._KLateralInstance) {
-        return window._KLateralInstance
+    if (KLateral.instance) {
+        return KLateral.instance
     }
-    window._KLateralInstance = this
+    KLateral.instance = this
+    this.isOpen = false
     this.tabs = new Map()
     this.actions = new Map()
     this.evtTarget = new EventTarget()
@@ -30,6 +36,7 @@ function KLateral () {
     this.tabPrevSelected = 0
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('klateral')
+    this.domNode.style.zIndex = KAIROS.zMax()
     this.domNode.innerHTML = `
         <div class="khead"><div class="scroll left">&lt;</div><div class="ktab"></div><div class="scroll right">&gt;</div></div>
         <div class="kcontent"><div class="cwrapper"></div></div>
@@ -107,6 +114,7 @@ KLateral.prototype.handleSelectTab = function (event) {
 KLateral.prototype.open = function () {
     this.domNode.style.zIndex = KAIROS.zMax()
     this.domNode.style.display = 'block'
+    this.isOpen = true
     KAIROS.stackClosable(this.close.bind(this))
     return this
 }
@@ -120,6 +128,7 @@ KLateral.prototype.close = function () {
             return true
         }
     }
+    this.isOpen = false
     this.domNode.style.zIndex = -1
     this.domNode.style.display = 'none'
     return true
@@ -153,6 +162,9 @@ KLateral.prototype.add = function (content, opt = {}) {
 
     this.showTab(index)
     this.tabOpen++
+    if (this.tabOpen > 0 && !this.isOpen) {
+        this.open()
+    }
     const tab = new KLateralTab(index, this)
     this.tabs.set(index, tab)
     this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${index}`, {detail: {tab}}))
@@ -196,6 +208,7 @@ KLateral.prototype.remove = function (idx) {
     this.content.removeChild(tabContent)
     this.tabCurrent = 0
     this.tabOpen--
+    if (this.tabOpen <= 0) { this.close() }
     if (this.tabPrevSelected !== 0) {
         this.showTab(this.tabPrevSelected)
         this.tabPrevSelected = 0

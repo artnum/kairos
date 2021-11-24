@@ -1,7 +1,7 @@
 function KUIReservation (object) {
     const uiNode = object.getUINode()
     if (uiNode) { return uiNode }
-
+    this.EvtTarget = new EventTarget()
     this.object = object
     this.props = new Map()
     this.Viewport = new KView()
@@ -23,6 +23,18 @@ function KUIReservation (object) {
     })
     object.bindUINode(this)
 }
+
+KUIReservation.prototype.dispatchEvent = function (event) {
+    this.EvtTarget.dispatchEvent(event)
+}
+
+KUIReservation.prototype.addEventListener = function (type, listener, options) {
+    this.EvtTarget.addEventListener(type, listener, options)
+}
+
+ KUIReservation.prototype.removeEventListener = function (type, listener, options) {
+     this.EvtTarget.removeEventListener(type, listener, options)
+ }
 
 KUIReservation.prototype.setParent = function (parent) {
     return new Promise((resolve, reject) => {
@@ -69,6 +81,37 @@ KUIReservation.prototype.unrender = function () {
         window.requestAnimationFrame(() => {
             if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
         })
+    })
+}
+
+KUIReservation.prototype.renderForm = function () {
+    return new Promise((resolve, reject) => {
+        const reservation = this.object
+        const form = document.createElement('DIV')
+        form.classList.add('kreservationForm')
+        form.innerHTML = `
+        <fieldset><legend>Date</legend>
+        <label>Début : <input type="text" value="${reservation.get('begin')}"></input></label>
+        <label>Fin : <input type="text" value="${reservation.get('end')}"></input></label>
+        </fieldset>
+        <button name="delete" class="mbutton">Supprimer</button>
+        `
+        const buttons = MButton.parse(form)
+        for (const button of buttons) {
+            switch(button.name) {
+                case 'delete': button.addEventListener('click', () => { 
+                    const kstore = new KStore('kreservation')
+                    kstore.delete(reservation.get('uid')) 
+                    .then(result => {
+                        if (!result) { KAIROS.error('ERR:Server'); return; }
+                        reservation.getUINode().unrender()
+                        reservation.destroy()
+                        this.dispatchEvent(new CustomEvent('close', {detail: this}))
+                    })
+                }); break
+            }
+        }
+        resolve(form)
     })
 }
 

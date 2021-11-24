@@ -70,7 +70,7 @@ KStore.prototype.relateEntry = function (kobject, stack = []) {
 
 KStore.prototype.delete = function (id) {
     return new Promise((resolve, reject) => {
-        const url = new URL(`${this.url}/${url}`)
+        const url = new URL(`${this.url}/${id}`)
         fetch(url, {method: 'DELETE'})
         .then(response => {
             if (!response.ok) { throw new Error('ERR:Server') }

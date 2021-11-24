@@ -40,12 +40,25 @@ KObjectGStore.prototype.search = function (type, attr, value) {
     return undefined
 }
 
+KObjectGStore.prototype.delete = function (type, uid) {
+    if (uid === undefined) {
+        [type, uid] = type.split('/', 2)
+    }
+
+    const tstore = this.store.get(type)
+    if (tstore) {
+        return tstore.delete(uid)
+    }
+    return false
+}
+
 function KObject (type, data) {
     this.type = type
     this.data = new Map()
     this.relation = new Map()
     this.evtTarget = new EventTarget()
     this.UINode = null
+    this.deleted = false
     const kgstore =  new KObjectGStore()
 
     for (const key in data) {
@@ -64,6 +77,8 @@ function KObject (type, data) {
         },
         get (object, name) {
             switch(name) {
+                case 'isDestroyed': return object.isObjectDestroyed.bind(object)
+                case 'destroy': return object.destroyObject.bind(object)
                 case 'get': return object.getItem.bind(object)
                 case 'set': return object.setItem.bind(object)
                 case 'has': return object.hasItem.bind(object)
@@ -97,6 +112,8 @@ function KObject (type, data) {
         },
         getOwnPropertyDescriptor (object, name) {
             switch (name) {
+                case 'isDestroyed':
+                case 'destroy':
                 case 'get':
                 case 'set':
                 case 'has':
@@ -147,6 +164,16 @@ function KObject (type, data) {
     kobject.toXML()
     kgstore.put(kobject)
     return kobject
+}
+
+KObject.prototype.isObjectDestroyed = function () {
+    return this.deleted
+}
+
+KObject.prototype.destroyObject = function () {
+    const kgstore =  new KObjectGStore()
+    this.deleted = true
+    kgstore.delete(this.getType(), this.getItem('uid'))
 }
 
 KObject.prototype.addEventListener = function (type, listener, options) {

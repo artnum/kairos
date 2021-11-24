@@ -112,7 +112,6 @@ body.waiting * {
 
 /* Menu */
 #AppHeader {
-	z-index: 460;
 	max-height: 89px;
 	height: 89px;
 	background-color: var(--default-bg-color);
