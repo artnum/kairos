@@ -1,35 +1,38 @@
 /* MySQL schema */
 SET SQL_MODE=ANSI_QUOTES;
-CREATE DATABASE IF NOT EXISTS "location" CHARACTER SET "utf8mb4" COLLATE "utf8mb4_unicode_ci";
-USE "location";
+CREATE DATABASE IF NOT EXISTS "kairos" CHARACTER SET "utf8mb4" COLLATE "utf8mb4_unicode_ci";
+USE "kairos";
 
-CREATE TABLE IF NOT EXISTS "status" 		( "status_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "status_name" TEXT,
-						  "status_description" TEXT DEFAULT NULL,
-						  "status_color" VARCHAR(8) DEFAULT NULL,
-						  "status_bgcolor" VARCHAR(8) DEFAULT NULL,
-						  "status_default" BOOL,
-						  "status_type" INTEGER DEFAULT 0, -- kind of object it apply
-						  "status_symbol" VARCHAR(16) DEFAULT NULL
-						) CHARACTER SET "utf8mb4";
+CREATE TABLE IF NOT EXISTS "status" (
+		"status_id" SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+		"status_name" CHAR(60) DEFAULT '',
+		"status_description" VARCHAR(200) DEFAULT '',
+		"status_color" CHAR(8) DEFAULT '',
+		"status_bgcolor" CHAR(8) DEFAULT '',
+		"status_default" BOOL,
+		"status_type" INTEGER DEFAULT 0, -- kind of object it apply
+		"status_symbol" CHAR(16) DEFAULT NULL
+) CHARACTER SET "utf8mb4";
 
-CREATE TABLE IF NOT EXISTS "contacts" 		( "contacts_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "contacts_reservation" INTEGER,
-						  "contacts_target" TEXT,
-						  "contacts_comment" TEXT,
-						  "contacts_freeform" TEXT
-						) CHARACTER SET "utf8mb4";
+CREATE TABLE IF NOT EXISTS "contacts" 		(
+	"contacts_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"contacts_reservation" INTEGER,
+	"contacts_target" CHAR(120),
+	"contacts_comment" TEXT,
+	"contacts_freeform" CHAR(1) DEFAULT NULL -- not used anymore but some code rely on it being present
+) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "reservation" (
-	"reservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"reservation_begin" VARCHAR(32) NOT NULL, -- ISO8601 datetime
-	"reservation_end" VARCHAR(32) NOT NULL, -- ISO8601 datetime
-	"reservation_target" TEXT DEFAULT NULL,
-	"reservation_status" INTEGER,
-	"reservation_address" TEXT DEFAULT NULL,
-	"reservation_locality" TEXT DEFAULT NULL,
+	"reservation_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"reservation_uuid" CHAR(36) NOT NULL,
+	"reservation_begin" CHAR(32) NOT NULL DEFAULT '', -- ISO8601 datetime
+	"reservation_end" CHAR(32) NOT NULL DEFAULT '', -- ISO8601 datetime
+	"reservation_target" CHAR(36) NOT NULL DEFAULT '',
+	"reservation_status" SMALLINT UNSIGNED DEFAULT 0,
+	"reservation_address" VARCHAR(250) DEFAULT '',
+	"reservation_locality" CHAR(60) DEFAULT '',
 	"reservation_contact" TEXT DEFAULT NULL,
-	"reservation_comment" TEXT DEFAULT NULL,m
+	"reservation_comment" TEXT DEFAULT NULL,
 	"reservation_deliveryBegin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"reservation_deliveryEnd" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"reservation_special" INTEGER,
@@ -39,84 +42,95 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_title" TEXT DEFAULT NULL,
 	"reservation_folder" TEXT DEFAULT NULL,
 	"reservation_gps" TEXT DEFAULT NULL,
-	"reservation_creator" TEXT DEFAULT NULL,
-	"reservation_technician" TEXT DEFAULT NULL,
+	"reservation_creator" CHAR(100) DEFAULT '',
+	"reservation_technician" CHAR(100) DEFAULT '',
 	"reservation_previous" TEXT DEFAULT NULL,
-	"reservation_warehouse" TEXT DEFAULT NULL,
+	"reservation_warehouse" CHAR(100) DEFAULT '',
 	"reservation_note" TEXT DEFAULT NULL,
-	"reservation_padlock" CHAR(10) DEFAULT NULL,
-	"reservation_deliveryRemark" CHAR(100) DEFAULT NULL,
+	"reservation_padlock" CHAR(10) DEFAULT '',
+	"reservation_deliveryRemark" CHAR(100) DEFAULT '',
 	"reservation_other" TEXT DEFAULT NULL, -- json data
-	"reservation_created" INTEGER DEFAULT NULL, -- unix ts
-	"reservation_deleted" INTEGER DEFAULT NULL, -- unix ts
-	"reservation_modification" INTEGER DEFAULT NULL -- unix ts
+	"reservation_created" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"reservation_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"reservation_modification" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"reservation_version" INT(10) UNSIGNED DEFAULT 1,
+	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0
 	) CHARACTER SET "utf8mb4";
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
-
-CREATE TABLE IF NOT EXISTS "user" 		( "user_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "user_name" TEXT,
-						  "user_phone" VARCHAR(15) DEFAULT '',
-						  "user_color" VARCHAR(32) DEFAULT 'black',
-						  "user_function" VARCHAR(16) DEFAULT 'admin',
-						  "user_temporary" INT DEFAULT 0
-						) CHARACTER SET "utf8mb4";
-
-CREATE TABLE IF NOT EXISTS "association"	( "association_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "association_reservation" INTEGER,
-						  "association_target" TEXT,
-						  "association_begin" VARCHAR(32), -- ISO8601 datetime
-						  "association_end" VARCHAR(32), -- ISO8601 datetime
-						  "association_comment" TEXT,
-						  "association_type" TEXT,
-						  "association_number" INTEGER DEFAULT 1,
-						  "association_follow" INTEGER DEFAULT 0,
-						  FOREIGN KEY("association_reservation") REFERENCES "reservation"("reservation_id") 
-							ON UPDATE CASCADE
-							ON DELETE CASCADE
-						) CHARACTER SET "utf8mb4";
-
-CREATE TABLE IF NOT EXISTS "warehouse"		( "warehouse_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "warehouse_name" TEXT,
-						  "warehouse_color" TEXT ) CHARACTER SET "utf8mb4";
+CREATE INDEX "idxReservationModification" ON "reservation" "(reservation_modification");
+CREATE INDEX "idxReservationTarget" ON "reservation" ("reservation_target");
 
 
-CREATE TABLE IF NOT EXISTS "tags" 		( "tags_value" TEXT,
-						  "tags_target" TEXT
-						) CHARACTER SET "utf8mb4";
+CREATE TABLE IF NOT EXISTS "user" 		( 
+	"user_id" SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"user_name" CHAR(60),
+	"user_phone" CHAR(15) DEFAULT '',
+	"user_color" CHAR(32) DEFAULT 'black',
+	"user_function" CHAR(16) DEFAULT 'admin',
+	"user_temporary" TINYINT UNSIGNED DEFAULT 0
+) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "association"	( 
+	"association_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"association_reservation" INTEGER UNSIGNED DEFAULT 0,
+	"association_target" TEXT,
+	"association_begin" VARCHAR(32), -- ISO8601 datetime
+	"association_end" VARCHAR(32), -- ISO8601 datetime
+	"association_comment" TEXT,
+	"association_type" TEXT,
+	"association_number" INTEGER DEFAULT 1,
+	"association_follow" INTEGER DEFAULT 0,
+	FOREIGN KEY("association_reservation") REFERENCES "reservation"("reservation_id") 
+	ON UPDATE CASCADE
+	ON DELETE CASCADE
+) CHARACTER SET "utf8mb4";
+
+CREATE TABLE IF NOT EXISTS "warehouse"		(
+	"warehouse_id" SMALLINT INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"warehouse_name" CHAR(60),
+	"warehouse_color" CHAR(30) 
+) CHARACTER SET "utf8mb4";
+
+
+CREATE TABLE IF NOT EXISTS "tags" 		(
+	"tags_value" VARCHAR(200),
+	"tags_target" CHAR(60)
+) CHARACTER SET "utf8mb4";
 CREATE INDEX "tagsTargetIdx" ON "tags"("tags_target"(16)); -- target are reference which are, actually, up to 4 letters
 
-CREATE TABLE IF NOT EXISTS "entry"		( "entry_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-						  "entry_ref" TEXT, 
-						  "entry_name" TEXT,
-						  "entry_value" TEXT
-						) CHARACTER SET "utf8mb4";
+CREATE TABLE IF NOT EXISTS "entry"		(
+	"entry_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"entry_ref" CHAR(60), 
+	"entry_name" CHAR(60),
+	"entry_value" VARCHAR(200)
+) CHARACTER SET "utf8mb4";
 CREATE INDEX "entryRefIdx" ON "entry"("entry_ref"(16)); -- as tagsTargetIdx
 
 
 -- this table is not used yet and might never be
 CREATE TABLE IF NOT EXISTS "extendedReservation" ( "extendedReservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
 						  "extendedReservation_reservation" INTEGER,
-						  "extendedReservation_name" TEXT,
+						  "extendedReservation_name" CHAR(60),
 						  "extendedReservation_content" TEXT
 						) CHARACTER SET "utf8mb4";
 -- Arrival progress
 CREATE TABLE IF NOT EXISTS "arrival" (
-	"arrival_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"arrival_target" INTEGER,
-	"arrival_reported" VARCHAR(32), -- ISO8601 datetime
-	"arrival_done" VARCHAR(32), -- ISO8601 datetime
-	"arrival_inprogress" VARCHAR(32), -- ISO8601 datetime
+	"arrival_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"arrival_target" INTEGER UNSIGNED DEFAULT 0,
+	"arrival_reported" CHAR(32), -- ISO8601 datetime
+	"arrival_done" CHAR(32), -- ISO8601 datetime
+	"arrival_inprogress" CHAR(32), -- ISO8601 datetime
 	"arrival_contact" TEXT,
 	"arrival_where" TEXT,
 	"arrival_comment" TEXT,
 	"arrival_other" TEXT,
 	"arrival_locality" TEXT,
 	"arrival_creator" TEXT,
-	"arrival_created" INTEGER DEFAULT NULL, -- unix ts
-	"arrival_deleted" INTEGER DEFAULT NULL, -- unix ts
-	"arrival_modification" INTEGER DEFAULT NULL, -- unix ts
+	"arrival_created"INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"arrival_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"arrival_modification" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	FOREIGN KEY("arrival_target") REFERENCES "reservation"("reservation_id")
 		ON UPDATE CASCADE
 		ON DELETE CASCADE
@@ -125,14 +139,14 @@ CREATE INDEX "arrivalTargetIdx" ON "arrival"("arrival_target");
 
 -- Invoices
 CREATE TABLE IF NOT EXISTS "invoice" (
-	"invoice_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"invoice_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"invoice_winbiz" TEXT NULL, -- used to sync with an external invoicing software if any.
 	"invoice_address" INTEGER NULL,
-	"invoice_sent" VARCHAR(32) DEFAULT NULL, -- ISO8601
-	"invoice_paid" VARCHAR(32) DEFAULT NULL, -- ISO8601
-	"invoice_deleted" INTEGER DEFAULT NULL, -- unix ts
-	"invoice_created" INTEGER DEFAULT NULL, -- unix ts
-	"invoice_modified" INTEGER DEFAULT NULL, -- unix ts
+	"invoice_sent" CHAR(32) DEFAULT NULL, -- ISO8601
+	"invoice_paid" CHAR(32) DEFAULT NULL, -- ISO8601
+	"invoice_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"invoice_created" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"invoice_modified" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	FOREIGN KEY("invoice_address") REFERENCES "contacts"("contacts_id")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL
@@ -140,9 +154,9 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 
 -- Basis for invoice creation
 CREATE TABLE IF NOT EXISTS "count" (
-	"count_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"count_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"count_invoice" INTEGER NULL,
-	"count_status" INTEGER NULL,
+	"count_status" SMALLINT UNSIGNED DEFAULT 0,
 	"count_date" VARCHAR(32) NOT NULL, -- ISO8601 datetime
 	"count_begin" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
 	"count_end" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
@@ -150,9 +164,9 @@ CREATE TABLE IF NOT EXISTS "count" (
 	"count_reference" TEXT DEFAULT NULL,
 	"count_comment" TEXT,
 	"count_printed" VARCHAR(32) DEFAULT NULL, -- ISO8601 datetime
-	"count_deleted" INTEGER DEFAULT NULL, -- unix ts
-	"count_created" INTEGER DEFAULT NULL, -- unix ts
-	"count_modified" INTEGER DEFAULT NULL, -- unix ts
+	"count_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"count_created" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
+	"count_modified" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	FOREIGN KEY("count_invoice") REFERENCES "invoice"("invoice_id")
 		ON UPDATE CASCADE
 		ON DELETE CASCADE,
@@ -163,9 +177,9 @@ CREATE TABLE IF NOT EXISTS "count" (
 
 -- Associate reservation to count
 CREATE TABLE IF NOT EXISTS "countReservation" (
-	"countReservation_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"countReservation_count" INTEGER NOT NULL,
-	"countReservation_reservation" INTEGER NOT NULL,
+	"countReservation_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+	"countReservation_count" INTEGER UNSIGNED  NOT NULL,
+	"countReservation_reservation" INTEGER UNSIGNED  NOT NULL,
 	FOREIGN KEY("countReservation_count") REFERENCES "count"("count_id")
 		ON UPDATE CASCADE
 		ON DELETE CASCADE,
@@ -175,7 +189,7 @@ CREATE TABLE IF NOT EXISTS "countReservation" (
 
 -- Generic group to group things under a name
 CREATE TABLE IF NOT EXISTS "collection" (
-	"collection_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
+	"collection_id" SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"collection_name" TEXT NOT NULL,
 	"collection_description" TEXT NULL,
 	"collection_deleted" INTEGER DEFAULT NULL,
@@ -186,10 +200,10 @@ CREATE TABLE IF NOT EXISTS "collection" (
 -- Units ...
 CREATE TABLE IF NOT EXISTS "unit" (
 	"unit_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"unit_name" TEXT NOT NULL,
-	"unit_names" TEXT DEFAULT NULL, -- plural of name
+	"unit_name" CHAR(60) NOT NULL,
+	"unit_names" CHAR(60) DEFAULT NULL, -- plural of name
 	"unit_collection" INTEGER DEFAULT NULL,
-	"unit_symbol" VARCHAR(8) DEFAULT NULL,
+	"unit_symbol" CHAR(8) DEFAULT NULL,
 	"unit_deleted" INTEGER DEFAULT NULL,
 	"unit_created" INTEGER DEFAULT NULL,
 	"unit_modified" INTEGER DEFAULT NULL,
@@ -202,8 +216,8 @@ CREATE TABLE IF NOT EXISTS "unit" (
 -- Articles 
 CREATE TABLE IF NOT EXISTS "article" (
 	"article_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-	"article_name" TEXT NOT NULL,
-	"article_names" TEXT DEFAULT NULL, -- plural of name
+	"article_name" CHAR(60) NOT NULL,
+	"article_names" CHAR(60) DEFAULT NULL, -- plural of name
 	"article_price" FLOAT DEFAULT 0, -- default price
 	"article_description" TEXT DEFAULT NULL,
 	"article_collection" INTEGER DEFAULT NULL,
@@ -250,8 +264,8 @@ CREATE TABLE IF NOT EXISTS "centry" (
 
 -- Files linked to reservation
 CREATE TABLE IF NOT EXISTS "mission" (
-       "mission_uid" INTEGER PRIMARY KEY AUTO_INCREMENT,
-       "mission_reservation" INTEGER NOT NULL,
+       "mission_uid" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+       "mission_reservation" INTEGER UNSIGNED NOT NULL,
        FOREIGN KEY ("mission_reservation") REFERENCES "reservation"("reservation_id")
        	       ON UPDATE CASCADE ON DELETE CASCADE
 ) CHARACTER SET "utf8mb4";
@@ -265,8 +279,8 @@ CREATE TABLE IF NOT EXISTS "mission" (
 
 CREATE TABLE IF NOT EXISTS "missionFichier" (
        "missionFichier_fichier" CHAR(40),
-       "missionFichier_mission" INTEGER,
-       "missionFichier_ordre" INTEGER DEFAULT 0,
+       "missionFichier_mission" INTEGER UNSIGNED,
+       "missionFichier_ordre" SMALLINT UNSIGNED DEFAULT 0,
        PRIMARY KEY("missionFichier_fichier", "missionFichier_mission")
 ) CHARACTER SET "utf8mb4";
 
@@ -282,8 +296,8 @@ CREATE TABLE IF NOT EXISTS "missionFichier" (
 --) CHARACTER SET "utf8mb4";
 
 CREATE TABLE IF NOT EXISTS "evenement" (
-       "evenement_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-       "evenement_reservation" INTEGER DEFAULT NULL,
+       "evenement_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+       "evenement_reservation" INTEGER UNSIGNED DEFAULT 0,
        "evenement_type" CHAR(32) DEFAULT NULL,
        "evenement_comment" TEXT,
        "evenement_date" CHAR(32) NOT NULL, -- ISO8601
@@ -299,11 +313,11 @@ CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_previous");
 CREATE INDEX "idxEvenementReservation" ON "evenement"("evenement_reservation");
 
 CREATE TABLE IF NOT EXISTS "histoire" (
-       "histoire_id" INTEGER PRIMARY KEY AUTO_INCREMENT,
-       "histoire_object" INTEGER NOT NULL,
+       "histoire_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+       "histoire_object" INTEGER UNSIGNED NOT NULL,
        "histoire_type" ENUM('Reservation', 'Arrival', 'Association') NOT NULL,
        "histoire_date" CHAR(25) NOT NULL, -- iso8061 without ms
-       "histoire_creator" INTEGER NOT NULL,
+       "histoire_creator" SMALLINT UNSIGNED DEFAULT 0,
        "histoire_attribute" TEXT(1024) NOT NULL, -- attribute list
        "histoire_original" BLOB(4096) -- data (compressed)
        );
@@ -334,3 +348,56 @@ CREATE TABLE IF NOT EXISTS "fichier" (
        );
 CREATE INDEX "idxHash" ON "fichier" ("fichier_hash");
 
+CREATE FUNCTION IdFromURL(s TEXT) RETURNS CHAR(50) DETERMINISTIC RETURN REVERSE(SUBSTR(REVERSE(s), 1, LOCATE('/', REVERSE(s)) - 1));
+CREATE FUNCTION IdFromURL2(s TEXT) RETURNS CHAR(250) DETERMINISTIC RETURN REVERSE(SUBSTR(REVERSE(s), 1, LOCATE('/', REVERSE(s)) - 1));
+
+DROP VIEW IF EXISTS "firstContactClient";
+CREATE VIEW "firstContactClient" AS
+       SELECT * FROM "contacts" WHERE "contacts_comment" = '_client' GROUP BY "contacts_reservation";
+
+DROP VIEW IF EXISTS "reservationWithFinalCount";
+CREATE VIEW "reservationWithFinalCount" AS
+       SELECT "countReservation_reservation" FROM "count"
+       	      LEFT JOIN "countReservation" ON "count_id" = "countReservation_count"
+       WHERE "count_state" = 'FINAL'
+       GROUP BY "countReservation_reservation";
+
+DROP VIEW IF EXISTS "uncounted";
+CREATE VIEW "uncounted" AS
+       SELECT
+         "arrival".*,
+         "reservation".*,
+         "count".*,
+	 "contact".*,
+         "creator"."user_name" AS "creator_name",
+         "creator"."user_phone" AS "creator_phone",
+         "technician"."user_name" AS "technician_name",
+         "technician"."user_phone" AS "technician_phone",
+	 MAX("count"."count_end") AS "lastcount"
+	FROM "reservation"
+	     LEFT JOIN "countReservation" ON "countReservation_reservation" = "reservation_id"
+	     LEFT JOIN "count" on "countReservation_count" = "count_id"
+	     LEFT JOIN "arrival" ON "arrival_target" = "reservation_id"
+	     LEFT JOIN "user" AS "creator" ON "creator"."user_id" = REVERSE(SUBSTR(REVERSE("reservation"."reservation_creator"), 1, LOCATE('/', REVERSE("reservation"."reservation_creator")) - 1))
+	     LEFT JOIN "user" AS "technician" ON "technician"."user_id" = REVERSE(SUBSTR(REVERSE("reservation"."reservation_technician"), 1, LOCATE('/', REVERSE("reservation"."reservation_technician")) - 1))
+	     LEFT JOIN "firstContactClient" AS contact ON "reservation_id" = "contact"."contacts_reservation"
+	WHERE "reservation_deleted" IS NULL AND "reservation_closed" IS NULL AND NOT EXISTS (SELECT 1 FROM reservationWithFinalCount WHERE countReservation_reservation = reservation_id)
+	GROUP BY "reservation_id";
+
+-- Tri par date de fin arrivant souvent
+CREATE INDEX "idxCountEndDate" ON "count" ("count_end");
+
+-- Un filtre venant souvent est de savoir l'état
+CREATE INDEX "idxCountState" ON "count" ("count_state");
+
+-- Avec deleted toujours utile
+CREATE INDEX "idxReservationClosed" ON "reservation" ("reservation_closed");
+
+-- Recherche par nom des contacts
+CREATE INDEX "idxContactsTarget" ON "contacts" ("contacts_target"(32));
+
+-- Recherche récurrentes par type (commentaire)
+CREATE INDEX "idxContactsComment" ON "contacts" ("contacts_comment"(16));
+
+-- Recherche récurrente par nom
+CREATE INDEX "idxEntryName" ON "entry" ("entry_name"(32));
