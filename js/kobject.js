@@ -81,6 +81,7 @@ function KObject (type, data) {
                 case 'getUINode': return object.doGetUINode.bind(object)
                 case 'update': return object.doUpdate.bind(object)
                 case 'toXML': return object.doToXML.bind(object)
+                case 'getFirstTextValue': return object.getFirstTextValue.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -112,6 +113,7 @@ function KObject (type, data) {
                 case 'getUINode':
                 case 'update':
                 case 'toXML':
+                case 'getFirstTextValue':
                     return {
                         writable: false,
                         enumerable: false,
@@ -281,6 +283,21 @@ KObject.prototype.doBindUINode = function (uinode) {
 
 KObject.prototype.doGetUINode = function () {
     return this.UINode
+}
+
+KObject.prototype.getFirstTextValue = function (defaultValue, ...attributes) {
+    for (const attribute of attributes) {
+        const value = this.getItem(attribute)
+        if (value === null || value === undefined) { continue }
+        if (value === 'null') { continue } // text 'null' is certainly an error somewhere
+        if (value === '') { continue } // we return '' if nothing found, so skip empty string
+        if (value === defaultValue) { continue }
+        if (typeof value.toString === 'function') {
+            return value.toString()
+        }
+        return value
+    }
+    return defaultValue
 }
 
 KObject.prototype.toString = function () {

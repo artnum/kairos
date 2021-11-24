@@ -7,7 +7,6 @@ function KUIEntry (dataObject, opts = {}) {
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
     this.kview = new KView()
-    this.kview.addEventListener('move', this.handleMove.bind(this))
     this.boxes = new Array(this.kview.get('day-count'))
     for (let i = 0; i < this.boxes.length; i++) {
         this.boxes[i] = new Array()
@@ -20,22 +19,6 @@ function KUIEntry (dataObject, opts = {}) {
         })
     })
     this.object = dataObject
-}
-
-KUIEntry.prototype.handleMove = function (event) {
-    this.getContainerDomNode()
-    .then(domNode => {
-        window.requestAnimationFrame(() => {
-            for (let child = domNode.firstElementChild; child; child = child.nextElementSibling) {
-                const left = child.getBoundingClientRect().left
-                if (left + event.detail.left < this.kview.get('margin-left')) {
-                    domNode.removeChild(child)
-                } else {
-                    child.style.left = `${left + event.detail.left}px`
-                }
-            }
-        })
-    })
 }
 
 KUIEntry.prototype.render = function () {
@@ -58,7 +41,6 @@ KUIEntry.prototype.removeReservation = function (reservation) {
     return new Promise((resolve, reject) => {
         let boxes = []
         let max = 1
-
         for (let i = 0; i < this.boxes.length; i++) {
             if (!this.boxes[i]) { continue }
             for (let j = 0; j < this.boxes[i].length; j++) {
@@ -96,11 +78,12 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             uireservation.setParent(this)
         ])
         .then(([domNode, parentNode, refNode, origin]) => {
-            const sec = Math.abs(origin.getTime() - new Date(reservation.get('begin')).getTime()) / 1000
+            const kview = new KView()
+            const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
+            if (leftbox < 0) { return }
             domNode.style.position = 'absolute'
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
-            const left = Math.round((this.kview.get('second-width') * sec) + this.kview.get('margin-left'))
-            domNode.style.left = `${left}px`
+            const left = leftbox * kview.get('day-width') + kview.get('margin-left')
             let max = 1
             let boxes = []
             let i = this.kview.computeXBox(left)
@@ -170,9 +153,7 @@ KUIEntry.prototype.resize = function () {
 
 KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {
     if (!oldOrigin) { return }
-    const kview = new KView()
     const diff = Math.floor((newOrigin.getTime() - oldOrigin.getTime()) / 86400000)
-
     for (i = 0; i < Math.abs(diff); i++) {
         if (diff < 0) {
             this.boxes.pop()

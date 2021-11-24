@@ -2,22 +2,25 @@
 /* global objectHash */
 importScripts('../../conf/app.js')
 importScripts('../kairos.js')
-importScripts('../kstore.js')
+importScripts('../gevent.js')
 importScripts('../stores/user.js')
 importScripts('lib/updater-count.js')
 
 let LastMod = 0
+const LoadStatus = new Map()
 const Entries = new Map()
 const Channels = new Map()
 const Symlinks = new Map()
 let Range = null
 let PostPoned = {}
+let Run = false
 
 const EVTOperation = Object.freeze({
   write: {
     count (msg) {
       countUpdateMessage(msg)
       .then(([reservationId, clientId]) => {
+        if (!reservationId || !clientId) { return }
         updateEntry(reservationId, clientId)
       })
       .catch(reason => {
@@ -37,6 +40,7 @@ const EVTOperation = Object.freeze({
         if (result === null) { return }
         if (!result.success) { return }
         const data = Array.isArray(result.data) ? result.data[0] : result.data
+        new GEvent().send('arrival.update', data)
         updateEntry(data.target, msg.cid)
       })
     },
@@ -68,21 +72,30 @@ const EVTOperation = Object.freeze({
 })
 
 
-const evtsource = new EventSource(new URL(`${KAIROS.getBase()}/events-srv.php`))
-evtsource.onmessage = event => {
-  const msg = JSON.parse(event.data)
-  if (msg.operation === undefined) { return }
-  if (msg.cid === undefined) { return }
-  if (!EVTOperation[msg.operation]) { return }
-  if (!EVTOperation[msg.operation][msg.type]) { return }
-  EVTOperation[msg.operation][msg.type](msg)
+function connectEventSource () {
+  const evtsource = new EventSource(KAIROS.URL(KAIROS.eventSource))
+  evtsource.onmessage = event => {
+    const msg = JSON.parse(event.data)
+    if (msg.operation === undefined) { return }
+    if (msg.cid === undefined) { return }
+    if (!EVTOperation[msg.operation]) { return }
+    if (!EVTOperation[msg.operation][msg.type]) { return }
+    EVTOperation[msg.operation][msg.type](msg)
+  }
+  evtsource.onerror = event => {
+    evtsource.close()
+    setTimeout(connectEventSource.bind(self), 1000)
+  }
 }
-evtsource.onerror = event => {
-  console.log(event)
-}
+connectEventSource()
 
 self.onmessage = function (msg) {
   switch (msg.data.op) {
+    case 'ready':
+      Run = true
+      runUpdater()
+      checkMachineState()
+      break
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
         const targetId = msg.data.target
@@ -94,6 +107,10 @@ self.onmessage = function (msg) {
           Channels.get(targetId).postMessage({op: 'entries', value: PostPoned[targetId]})
           delete PostPoned[targetId]
         }
+        if (LoadStatus.has(targetId)) {
+          msg.ports[0].postMessage({op: 'state', value: LoadStatus.get(targetId)})
+          LoadStatus.delete(targetId)
+        }
       }
       break
     case 'symlinkTarget':
@@ -103,6 +120,10 @@ self.onmessage = function (msg) {
       if (PostPoned[targetId]) {
         Channels.get(Symlinks.get(targetId)).postMessage({op: 'entries', value: PostPoned[targetId]})
         delete PostPoned[targetId]
+      }
+      if (LoadStatus.has(targetId)) {
+        Channels.get(Symlinks.get(targetId)).postMessage({op: 'state', value: LoadStatus.get(targetId)})
+        LoadStatus.delete(targetId)
       }
       break
     case 'move':
@@ -129,10 +150,10 @@ self.onmessage = function (msg) {
       if (newChannel === undefined) {
         newChannel = Symlinks.get(entry.target)
       }
-      oldChannel.postMessage({op: 'remove', reservation: entry})
+      oldChannel.postMessage({op: 'remove', reservation: entry, clientid: null})
       oldEntry[1] = newChannel
       Entries.set(entry.id, oldEntry)
-      newChannel.postMessage({op: 'add', reservation: entry})
+      newChannel.postMessage({op: 'add', reservation: entry, clientid: null})
       break
   }
 }
@@ -226,7 +247,7 @@ function processDays (vTimeLine, options) {
 }
 
 function updateEntry(entryId, clientid) {
-  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
+  fetch(`${KAIROS.getBase()}/store/DeepReservation/${entryId}`)
   .then(response => {
     if (!response.ok) { throw new Error('Net error')}
     return response.json()
@@ -238,8 +259,15 @@ function updateEntry(entryId, clientid) {
   })
   .then(reservation => {
     const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    const oldEntry = Entries.get(reservation.id)
+    if (oldEntry) {
+      const oldChannel = Channels.get(oldEntry[3]) || Channels.get(Symlinks.get(oldEntry[3]))
+      if (oldChannel !== channel) {
+        oldChannel.postMessage({op: 'remove', reservation, clientid})
+      }
+    }
     if (!channel) { return }
-    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime()])
+    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime(), reservation.target])
     channel.postMessage({op: 'update-reservation', reservation, clientid})
   })
   .catch(reason => {
@@ -258,7 +286,7 @@ function deleteEntry (entryId, clientid) {
     if (!result.success) { return }
     const reservation = Array.isArray(result.data) ? result.data[0] : result.data
     const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
-    if (channel) { channel.postMessage({op: 'remove', entry: Array.isArray(result.data) ? result.data[0] : result.data, clientid}) }
+    if (channel) { channel.postMessage({op: 'remove', reservation: Array.isArray(result.data) ? result.data[0] : result.data, clientid}) }
   })
 }
 
@@ -299,15 +327,15 @@ function cacheAndSend (data, vTimeLine, force = false) {
                 if (Symlinks.has(remChannel)) {
                   remChannel = Symlinks.get(remChannel)
                 }
-                Channels.get(remChannel)?.postMessage({op: 'remove', reservation: entry})
+                Channels.get(remChannel)?.postMessage({op: 'remove', reservation: entry, clientid: null})
                 entries[storedEntry[1]].push(entry)
                 Entries.delete(entry.id)
               }
-              Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
+              Entries.set(entry.id, [entry.version, channel, new Date().getTime(), entry.target])
               entries[channel].push(entry)
             }
           } else {
-            Entries.set(entry.id, [entry.version, channel, new Date().getTime()])
+            Entries.set(entry.id, [entry.version, channel, new Date().getTime(), entry.target])
             entries[channel].push(entry)
           }
           resolve()
@@ -331,12 +359,11 @@ function cacheAndSend (data, vTimeLine, force = false) {
       }
     }
 
-    const ksUser = new KStore('kuser')
-    ksUser.query({'#and': {
-      function: 'machiniste',
-      disabled: 0,
-      temporary: 0
-    }})
+    const url = new URL(`${KAIROS.getBase()}/store/User`)
+    url.searchParams.set('search.function', 'machiniste')
+    url.searchParams.set('search.disabled', '0')
+    url.searchParams.set('search.temporary', '0')
+    fetch(url)
     .then((response) => {
       if (!response.ok) { return {length: 0, data: null}}
       return response.json()
@@ -369,6 +396,7 @@ function newVTimeLine () {
 
 const Status = new Map()
 function checkMachineState () {
+  if (!Run) { return }
   const url = new URL(`${KAIROS.getBase()}/store/Evenement/.machinestate`)
   fetch(url)
   .then(response => {
@@ -440,6 +468,8 @@ function checkMachineState () {
       for (const k in merged) {
         if (Channels.has(k)) {
           Channels.get(k).postMessage({op: 'state', value: merged[k]})
+        } else {
+          LoadStatus.set(k, merged[k])
         }
       }
     })
@@ -451,6 +481,7 @@ function checkMachineState () {
 }
 
 function runUpdater () {
+  if (!Run) { return }
   const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
 
   url.searchParams.set('search.begin', '<' + Range.end.toISOString().split('T')[0])
@@ -468,5 +499,3 @@ function runUpdater () {
   })
   .catch(reason => console.log(reason))
 }
-
-checkMachineState()

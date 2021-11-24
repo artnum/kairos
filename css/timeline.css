@@ -385,3 +385,9 @@ button {
 span.spanReset {
 	display: inline !important;
 }
+
+#searchMachineLive {
+	width: 260px;
+	min-height: 32px;
+	font-size: 12px !important;
+}

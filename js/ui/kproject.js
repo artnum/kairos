@@ -97,6 +97,17 @@ KProject.prototype.lowlight = function () {
     }
 }
 
+KProject.prototype.kaffaire = function (affaire) {
+    return `<div><h2>${affaire.getCn()}</h2>
+        <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
+        <div class="kpair"><span class="klabel">Description</span><span class="kvalue">${$S(affaire.get('description'))}</span></div>
+        <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
+        <div class="kpair"><span class="klabel">Rendez-vous</span><span class="kvalue">${$S(affaire.get('meeting'))}</span></div>
+        <div class="kapir"><span class="klabel">Fin souhaitée</span><span class="kvalue">${$S(affaire.get('end'))}</span></div>
+        <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button>
+    </div>`
+}
+
 KProject.prototype.form = function () {
     return new Promise((resolve) => {
         const node = document.createElement('DIV')
@@ -105,21 +116,60 @@ KProject.prototype.form = function () {
         let affaireHTML = ''
         if (affaires) {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                affaireHTML += `<div><h2>${affaire.getCn()}</h2>
-                    <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
-                    <div class="kpair"><span class="klabel">Description</span><span class="kvalue">${$S(affaire.get('description'))}</span></div>
-                    <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
-                    <div class="kpair"><span class="klabel">Rendez-vous</span><span class="kvalue">${$S(affaire.get('meeting'))}</span></div>
-                    <div class="kapir"><span class="klabel">Fin souhaitée</span><span class="kvalue">${$S(affaire.get('end'))}</span></div>
-                    <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button>
-                </div>`
+                affaireHTML += this.kaffaire(affaire)
             }
         }
         node.innerHTML = `
+            <div class="affaires">
             ${affaireHTML}
-            <form></form>
-            <button data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</button>
+            </div>
+            <fieldset>
+            <legend data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</legend>
+            <form>
+            Référence: <input name="reference"><br>
+            Rendez-vous: <input name="meeting"><br>
+            Personne de contact: <input name="contact"><br>
+            Téléphone: <input name="phone"><br>
+            Fin souhaitée: <input name="end" type="date"><br>
+            Description:<br>
+            <textarea name="description"></textarea>
+            <br>
+            <button >Nouveau travail</button>
+            </form>
+            </fieldset>
         `
+        node.addEventListener('submit', (event) => {
+            event.preventDefault()
+            const formData = new FormData(event.target)
+            const request = {}
+            for (const [name, value] of formData.entries()) {
+                console.log(name, value)
+                if (value.length > 0) {
+                    if (name === 'end') {
+                        const end = new Date(value)
+                        console.log(end)
+                        request.end = end.toISOString()
+                        continue
+                    }
+                    request[name] = value
+                }
+            }
+            request.project = this.project.get('uid')
+            kstravail = new KStore('kaffaire')
+            kstravail.set(request)
+            .then(result => {
+                kstravail.get(result)
+                .then(value => {
+                    const dom = document.createElement('template')
+                    dom.innerHTML = this.kaffaire(value)
+                    const appendTo = node.querySelector('div.affaires')
+                    window.requestAnimationFrame(() => {
+                        appendTo.appendChild(dom.content)
+                        
+                    })
+                })
+            })
+        })
         node.addEventListener('click', this.handleFormClick.bind(this))
         resolve(node)
     })
@@ -128,6 +178,7 @@ KProject.prototype.form = function () {
 KProject.prototype.handleFormClick = function (event) {
     const target = event.target
 
+    console.log(event)
     if (!target.dataset || !target.dataset.action) { return }
     switch (target.dataset.action) {
         case 'plan-affaire':
@@ -156,16 +207,7 @@ KProject.prototype.handleFormClick = function (event) {
             listItem.select()
             return
         case 'new-travail':
-            const node = event.target.previousElementSibling
-            node.innerHTML = `
-                Référence: <input name="reference"><br>
-                Rendez-vous: <input name="meeting"><br>
-                Personne de contact: <input name="contact"><br>
-                Téléphone: <input name="phone"><br>
-                Fin souhaitée: <input name="end" type="date"><br>
-                Description:<br>
-                <textarea name="description"></textarea>
-            `
+  
             return
     }
 }

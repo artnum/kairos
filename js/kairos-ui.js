@@ -5,7 +5,10 @@ const kMouseFollow = event => {
     KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
     const diplaysCoords = document.querySelector('input[data-dojo-attach-point="nSearchMachineLive"]')
     if (diplaysCoords){
-        diplaysCoords.value = `${event.clientX},${event.clientY} [${KAIROS.mouse.lastX},${KAIROS.mouse.lastY}]`
+        const kview = new KView()
+        const localBox = kview.getCurrentBox()
+        const globalBox = kview.getCurrentGridBox()
+        diplaysCoords.value = `${event.clientX},${event.clientY} | ${localBox.x},${localBox.y} | ${globalBox.x},${globalBox.y}=>${globalBox.flat}`
     }
     KAIROS.mouse.clientX = event.pageX || event.clientX 
     KAIROS.mouse.clientY = event.pageY || event.clientY

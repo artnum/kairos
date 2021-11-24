@@ -66,7 +66,7 @@ define([
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
-    tlPopup, tlKeys, Filters, GEvent ], {
+    tlPopup, tlKeys, Filters ], {
     center: null,
     offset: 260,
     blockSize: 42,
@@ -200,14 +200,14 @@ define([
 
       window.UnloadCall = {}
 
-      window.GEvent.listen('reservation.open', function (event) {
+      new GEvent().listen('reservation.open', function (event) {
         if (event.detail.id) {
           this.doSearchLocation(event.detail.id).then(() => {
             let n = new Notification(`Réservation ${event.detail.id} ouverte`, {body: 'La réservation a été ouverte avec succès', tag: `reservationOpen${event.detail.id}`})
           })
         }
       }.bind(this))
-      window.GEvent.listen('reservation.attribute-click', function (event) {
+      new GEvent().listen('reservation.attribute-click', function (event) {
         if (!event.detail) {
           return
         }
@@ -216,7 +216,7 @@ define([
           this.doSearchLocation(event.detail.value)
         }
       }.bind(this))
-      window.GEvent.listen('count.attribute-click', function (event) {
+      new GEvent().listen('count.attribute-click', function (event) {
         if (!event.detail) {
           return
         }
@@ -225,7 +225,7 @@ define([
           new Count({'data-id': event.detail.value}) // eslint-disable-line
         }
       })
-      window.GEvent.listen('count.open', function (event) {
+      new GEvent().listen('count.open', function (event) {
         if (!event.detail) { return }
         if (event.detail.id) {
           new Count({'data-id': event.detail.id}) // eslint-disable-line
@@ -674,6 +674,26 @@ define([
       const addReservationEvent = event => {
         const {x, y} = this.Viewport.getCurrentBox()
         const entry = this.Viewport.getRowObject(y)
+        const cell = this.Viewport.getCell(x, y)
+        if (cell.size > 0) {
+          if (cell.size === 1 && event instanceof KeyboardEvent) {
+            const [_, open] = cell.entries().next().value
+            console.log(open)
+            open.getUINode().getDomNode()
+            .then(domNode => {
+              domNode.style.border = '2px solid blue'
+            })
+          } else if (event instanceof KeyboardEvent) {
+            for (const entry of cell) {
+              entry[1].getUINode().getDomNode()
+              .then(domNode => {
+                domNode.style.border = '2px solid blue'
+              })
+            }
+          }
+          console.log(event, event instanceof KeyboardEvent, event instanceof MouseEvent)
+          console.log('something')
+        }
         const ktask = new KTaskBar()
         const travail = ktask.getCurrentList()
         const date = new Date()
@@ -1308,6 +1328,7 @@ define([
               kentry.set('origin', this.firstDay)
               .then(_ => {
                 this.Viewport.bindObjectToRow(row, kentry)
+                kentry.set('row', row)
                 resolve(kentry)
               })
             }))
@@ -1344,6 +1365,7 @@ define([
       this.loadEntries({state: 'SOLD'})
       .then(() => {
         this.update()
+        this.Updater.postMessage({op: 'ready'})
       })
     },
 

@@ -21,6 +21,7 @@ function KUIReservation (object) {
     this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
     })
+    object.bindUINode(this)
 }
 
 KUIReservation.prototype.setParent = function (parent) {
@@ -53,13 +54,34 @@ KUIReservation.prototype.setHeight = function (height) {
     })
 }
 
+KUIReservation.prototype.getDomNode = function () {
+    return new Promise((resolve, reject) => {
+        this.rendered
+        .then(domNode => {
+            resolve(domNode)
+        })
+    })
+}
+
+KUIReservation.prototype.unrender = function () {
+    this.getDomNode()
+    .then(domNode => {
+        window.requestAnimationFrame(() => {
+            if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
+        })
+    })
+}
+
 KUIReservation.prototype.render = function () {
     const kcolor = new KColor()
-    return new Promise((resolve, reject) => {
+    this.rendered = new Promise((resolve, reject) => {
         const affaire = this.object.getRelation('kaffaire')
         if (!affaire) { return }
         const project = affaire.getRelation('kproject')
         if (!project) { return }
+        const leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
+        if (leftbox < 0) { return  }
+        const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
 
         let color = kcolor.get(`kproject:${project.get('uid')}`)
         if (!color) {
@@ -74,15 +96,21 @@ KUIReservation.prototype.render = function () {
         const begin = new Date(this.object.get('begin')).getTime()
         const end = new Date(this.object.get('end')).getTime()
 
+        this.props.set('left', left)
         this.props.set('min', begin < deliveryBegin ? begin : deliveryBegin)
         this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
         this.props.set('length', this.props.get('max') - this.props.get('min'))
-        this.props.set('width', this.Viewport.get('second-width') * this.props.get('length'))
+        this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
 
+        if (this.props.get('width') < 10) {
+            this.props.set('width', this.Viewport.get('day-width') / 2)
+        }
+        this.object.bindUINode(this)
         window.requestAnimationFrame(() => {
-            this.domNode.innerHTML = `${affaire.getCn()}`
+            this.domNode.innerHTML = `${affaire.getFirstTextValue('???', 'reference', 'description', 'cn')}`
             this.domNode.style.setProperty('--kreservation-project-color', `var(${color})`)
             this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
+            this.domNode.style.left = `${this.props.get('left')}px`
             if (this.height !== undefined) {
                 this.domNode.style.height = `${this.height}px`
             } else {
@@ -96,8 +124,8 @@ KUIReservation.prototype.render = function () {
             this.domNode.addEventListener('mousedown', (event) => {
                 event.stopPropagation()
             }, {passive: true})
-            this.object.bindUINode(this)
             resolve(this.domNode)
         })
     })
+    return this.rendered
 }   

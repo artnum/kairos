@@ -62,7 +62,7 @@ KView.prototype.compute = function () {
     if (this.data.has('entry-count') && this.data.has('day-count')) {
         if (this.grid === null) {
             const height = this.data.get('entry-count')
-            const width = this.data.get('day-count')
+            const width = 360
             const newGrid = new Array(width * height)
             
             /* copy old grid into new grid */
@@ -74,6 +74,8 @@ KView.prototype.compute = function () {
                 this.rowDescription[i] = [i + 1, null]
             }
             this.grid = newGrid
+            this.gridOffset = Math.round(width / 2)
+            console.log('GRID IS UP')
         }
     }
 
@@ -81,16 +83,19 @@ KView.prototype.compute = function () {
 
 /* convert visual y to grid y */
 KView.prototype.getY = function (y) {
+    if (y < 0) { return 0 }
     let i = 0
     let j = 0
+    if (!this.rowDescription) { return 0 }
     while (i < y) {
+        if (i + j >= this.rowDescription.length) { return 0 }
         if (this.rowDescription[i + j][0] < 0) { 
             i--
             j++
         }
         i++
     }
-
+    if (i + j >= this.rowDescription.length) { return 0 }
     return this.rowDescription[i + j][0] - 1
 }
 
@@ -132,8 +137,6 @@ KView.prototype.swapRow = function (y1, y2) {
 /* gpos wrap around on X */
 KView.prototype.getGPos = function (x, y) {
     y = this.getY(y)
-    while (x >= this.get('day-count')) { x -= this.get('day-count') }
-    while (x < 0) { x += this.get('day-count') }
     const gpos = x * this.get('entry-count') + y + (this.gridOffset * this.get('entry-count'))
     return gpos
 }
@@ -142,16 +145,24 @@ KView.prototype.getCell = function (x, y) {
     return this.grid[this.getGPos(x, y)]
 }
 
+KView.prototype.getRelativeColFromDate = function (dateStart, log = false) {
+    const origin = this.get('date-origin')
+    const date = new Date()
+    date.setTime(dateStart.getTime())
+    const box = Math.round(((date.getTime() - origin.getTime()) / 86400000))
+    if (box >= this.get('day-count')) { return -1 }
+    return box
+}
+
 /* we use 12:00 when calculate date, we work at the day level so hour don't count */
 KView.prototype.getCellFromDate = function (date, y) {
     const origin = this.get('date-origin')
-    date = new Date().setTime(date.getTime()).setHours(12, 0, 0, 0)
-    if (date.getTime() <= origin.getTime()) {
-        return this.getCell(0, y)
-    } else {
-        const x = Math.round(origin.getTime() - date.getTime() / 8640000)
-        return this.getCell(x, y)
-    }
+    date = new Date()
+    date.setTime(date.getTime())
+    date.setHours(12, 0, 0, 0)
+
+    const x = Math.round(origin.getTime() - date.getTime() / 86400000)
+    return this.getCell(x, y)
 }
 
 KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
@@ -167,17 +178,29 @@ KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
     xe = xs + Math.round((dateEnd.getTime() - dateStart.getTime()) / 86400000)
 
     for (let i = xs; i <= xe; i++) {
-        if (i < 0) { continue }
-        if (i > this.get('day-count')) { break }
         row.push(this.getCell(i, y))
     }
     return row
 }
 
+KView.prototype.getViewRange = function () {
+    return [this.gridOffset, this.gridOffset + this.get('day-count')]
+}
+
 KView.prototype.move = function (days) {
+    const dateOrigin = this.get('date-origin')
+    dateOrigin.setTime(dateOrigin.getTime() - (days * 86400000))
+    this.set('date-origin', dateOrigin)
+    this.eventTarget.dispatchEvent(new CustomEvent('move', {
+        detail: {
+            left: days * this.data.get('day-width')
+        }
+    }))
+
     /* negative value add a row in front to create place for the new day in the futur 
      * positive value add a row at the back to create place for the new day in the past
      */
+
     const gridDays = Math.abs(days)
     if (days > 0) {
         if (-gridDays + this.gridOffset < 0) {
@@ -212,7 +235,40 @@ KView.prototype.move = function (days) {
         }
     }
 
-    this.eventTarget.dispatchEvent(new CustomEvent('move', {detail: {left: days * this.data.get('day-width')}}))
+    const range = this.getViewRange()
+    const displacement = Math.abs(this.get('entry-count') * days * 2)
+    range[1] = range[1] * this.get('entry-count')
+    range[0] = range[0] * this.get('entry-count')
+    for (let i = range[0] - displacement; i <= range[1] + displacement; i++) {
+        const cell = this.grid[i]
+        if (i >= range[0] && i <= range[1]) {
+            for (const [_, object] of cell.entries()) {                
+                const p = this.getRowObject(Math.round((i - (range[0] - displacement))  % this.get('entry-count')))
+                p.KUI.placeReservation(object)
+            }
+        } else {
+            for (const [_, object] of cell.entries()) {
+                if (!object.getUINode) { continue }
+                const ui = object.getUINode()
+                if (!ui) { continue }
+                ui.unrender()
+            }
+        }
+    }
+}
+
+KView.prototype.resize = function () {
+    /*this.compute()  
+    const range = this.getViewRange()
+    range[0] *= this.get('entry-count')
+    range[1] *= this.get('entry-count')
+    for(let i = range[0]; i <= range[1]; i++) {
+        for (const [_, object] of this.grid[i]) {
+            if (object.getUINode()) {
+                object.getUINode().render()
+            }
+        }
+    }*/
 }
 
 KView.prototype.setMargins = function (top, right, bottom, left) {
@@ -415,4 +471,11 @@ KView.prototype.handleKeyMove = function (event) {
 
 KView.prototype.getCurrentBox = function () {
     return {x: this.currentBox[0], y: this.currentBox[1]}
+}
+
+KView.prototype.getCurrentGridBox = function () {
+    return {
+        x: this.currentBox[0] + this.gridOffset, 
+        y: this.getY(this.currentBox[1]), 
+        flat: ((this.currentBox[0] + this.gridOffset) * this.get('entry-count')) + this.getY(this.currentBox[1])}
 }

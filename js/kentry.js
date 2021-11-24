@@ -228,14 +228,15 @@ KEntry.prototype.getEvents = function () {
 KEntry.prototype.processReservationList = function (list, start = 0) {
     window.requestIdleCallback(deadline => {
         const viewport = new KView()
-        while (deadline.timeRemaining() > 5 && start < list.length) {
+        while (deadline.timeRemaining() > 1 && start < list.length) {
             const entry = list[start]
             const uuid = entry.uuid
             const y = viewport.getObjectRow(this)
             if (this.entries.has(uuid)) {
                 const reservation = this.entries.get(uuid)
                 /* remove from viewport before update */
-                {
+                {                
+                    console.log('remove')
                     const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                     for (const row of rows) {
                         row.delete(`${reservation.getType()}:${reservation.get('uid')}`)
@@ -243,21 +244,23 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                 }
                 
                 reservation.update(entry)
-
                 /* re-add to viewport after update */
                 {
+                    console.log('re-add')
                     const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                     for (const row of rows) {
                         row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
                     }
                 }
-                continue
+                this.KUI.placeReservation(reservation)
             } else {
                 const reservation = new KObject('kreservation', entry)
+                this.entries.set(entry.uuid, reservation)
                 const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                 for (const row of rows) {
                     row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
                 }
+ 
                 new KStore('kreservation').relateEntry(reservation)
                 .then(kobject => {
                     this.KUI.placeReservation(kobject)
@@ -276,6 +279,17 @@ KEntry.prototype.handleMessage = function (msg) {
     const msgData = msg.data
     switch (msgData.op) {
         case 'remove':
+            const viewport = new KView()
+            if (this.entries.has(msgData.reservation.uuid)) {
+                const reservation = this.entries.get(msgData.reservation.uuid)
+                const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                for (const row of rows) {
+                    console.log(row)
+                    row.delete(`${reservation.getType()}:${reservation.get('uid')}`)
+                }
+                this.entries.delete(msgData.reservation.uuid)
+            }
+            break
         case 'update-reservation':
         case 'add':
             this.processReservationList([msgData.reservation])
