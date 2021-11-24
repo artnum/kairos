@@ -29,9 +29,6 @@ define([
   'location/countList',
   'location/reservation',
 
-  'artnum/dojo/Request',
-  'artnum/Path',
-  'artnum/Query',
   'artnum/Doc'
 
 ], function (
@@ -59,9 +56,6 @@ define([
   CountList,
   Reservation,
 
-  Req,
-  Path,
-  Query,
   Doc
 ) {
   return djDeclare('location.timeline', [
@@ -827,7 +821,11 @@ define([
           let day = date.toISOString().split('T')[0]
           const url = KAIROS.URL('%KBASE%/store/DeepReservation/.toprepare/')
           url.searchParams.append('search.day', day)
-          Query.exec(day)
+          fetch(url)
+          .then(response => {
+            if (!response.ok) { throw new Error('ERR:Server') }
+            return response.json()
+          })
           .then((results) => {
             if (results.success && results.length > 0) {
               let ids = []
@@ -1126,10 +1124,10 @@ define([
           }
           break
         case 'autoprint':
-          if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-            window.localStorage.removeItem(Path.bcname('autoprint'))
+          if (window.localStorage.getItem(`${KAIROS.getBase()}/autoprint`)) {
+            window.localStorage.removeItem(`${KAIROS.getBase()}/autoprint`)
           } else {
-            window.localStorage.setItem(Path.bcname('autoprint'), '1')
+            window.localStorage.setItem(`${KAIROS.getBase()}/autoprint`, '1')
           }
           break
         case 'showDeleted':
@@ -1756,8 +1754,10 @@ define([
     },
 
     autoprint: function (path) {
-      if (window.localStorage.getItem(Path.bcname('autoprint'))) {
-        fetch(Path.url('exec/auto-print.php', {params: {file: path}}))
+      if (window.localStorage.getItem(`${KAIROS.getBase()}/autoprint`)) {
+        const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
+        url.searchParams.append('file', path)
+        return fetch(url)
       }
     },
     openUncounted: function () {
