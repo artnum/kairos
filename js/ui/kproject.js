@@ -26,7 +26,7 @@ KProject.prototype.render = function () {
         div.innerHTML = `
         <h1>${project.getCn()}</h1>
         <div>
-        <div class="kpair"><span class="klabel">Nom</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'name') || ''}</span></div>
+        <div class="kpair"><span class="klabel">Nom</span><span class="kvalue">${project.getFirstTextValue('', 'name') || ''}</span></div>
         <div class="kpair"><span class="klabel">Client</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''}</span></div>
         </div>
         <ul>
