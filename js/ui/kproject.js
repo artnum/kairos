@@ -19,7 +19,7 @@ KProject.prototype.render = function () {
             div.style.setProperty('--kproject-color', `var(${color})`)
         }
         
-        const txt = `${project.getRelation('kcontact')?.getFirstTextValue('', 'name') || ''} ${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''} ${project.getCn()}`
+        const txt = `${project.getFirstTextValue('', 'name') || ''} ${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''} ${project.getCn()}`
         const words =  txt.split(' ')
         div.classList.add('kproject-list')
         div.dataset.words = words.filter((w,i) => { return words.indexOf(w) === i}).map(v => { return v.toLowerCase()}).join(' ')
