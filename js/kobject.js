@@ -220,7 +220,6 @@ KObject.prototype.setItem = function (name, value) {
 
 KObject.prototype.getItem = function (name) {
     if (name === 'cn') { return this.getCn() }
-    if (name === 'name') { return this.getName() }
     if (KAIROS[this.type][name] && KAIROS[this.type][name].remote) {
         if (this.hasItem(KAIROS[this.type][name].remote)) {
             return this.data.get(KAIROS[this.type][name].remote)

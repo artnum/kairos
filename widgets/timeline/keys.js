@@ -216,6 +216,41 @@ define([
             const klateral = new KLateral().open()
             
             const container = document.createElement('DIV')
+
+            const search = document.createElement('DIV')
+            search.innerHTML = '<input type="text" placeholder="Recherche">'
+            container.appendChild(search)
+            search.firstElementChild.addEventListener('keyup', event => {
+              const searchSpace = event.target.parentNode
+              if (event.target.value.length <= 0) {
+                for (let node = searchSpace.nextElementSibling; node; node = node.nextElementSibling) {
+                  node.style.removeProperty('display')
+                }
+                return
+              }
+              const searchWords = event.target.value.split(' ')
+              for (let node = searchSpace.nextElementSibling; node; node = node.nextElementSibling) {
+                if (!node.dataset.words) { continue }
+                const words = node.dataset.words.split(' ')
+                let keep = false
+                for (const searchWord of searchWords) {
+                  for (const w of words) {
+                    if (w.startsWith(searchWord.toLowerCase())) {
+                      keep = true
+                      break
+                    }
+                  }
+                  if (keep) {
+                    break
+                  }
+                }
+                if (!keep) {
+                  node.style.setProperty('display', 'none')
+                } else {
+                  node.style.removeProperty('display')
+                }
+              }
+            })
             klateral.add(container, {title: 'Projet'})
             for (const project of results) {
               const projectUi = new KProject(project)
