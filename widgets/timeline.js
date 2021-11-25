@@ -738,7 +738,7 @@ define([
         date.setHours(KAIROS.defaults.reservation.hour, KAIROS.defaults.reservation.minute, 0, 0)
 
         const ttime = travail.data.get('time')
-        if (!isNaN(parseFloat(ttime))) {
+        if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
           end.setTime(date.getTime() + parseFloat(ttime) * 3600000)
         } else {
           end.setTime(date.getTime() + KAIROS.defaults.reservation.duration * 3600000)
