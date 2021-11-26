@@ -71,11 +71,11 @@ const EVTOperation = Object.freeze({
   }
 })
 
-
 function connectEventSource () {
   const evtsource = new EventSource(KAIROS.URL(KAIROS.eventSource))
   evtsource.onmessage = event => {
     const msg = JSON.parse(event.data)
+    self.postMessage({op: 'log', data: msg})
     if (msg.operation === undefined) { return }
     if (msg.cid === undefined) { return }
     if (!EVTOperation[msg.operation]) { return }

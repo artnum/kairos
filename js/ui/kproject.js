@@ -149,11 +149,9 @@ KProject.prototype.form = function () {
             const formData = new FormData(event.target)
             const request = {}
             for (const [name, value] of formData.entries()) {
-                console.log(name, value)
                 if (value.length > 0) {
                     if (name === 'end') {
                         const end = new Date(value)
-                        console.log(end)
                         request.end = end.toISOString()
                         continue
                     }
@@ -184,7 +182,6 @@ KProject.prototype.form = function () {
 KProject.prototype.handleFormClick = function (event) {
     const target = event.target
 
-    console.log(event)
     if (!target.dataset || !target.dataset.action) { return }
     switch (target.dataset.action) {
         case 'plan-affaire':

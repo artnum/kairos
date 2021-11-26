@@ -91,11 +91,12 @@ function KObject (type, data) {
                 case 'getType': return object.getType.bind(object)
                 case 'addEventListener': return object.addEventListener.bind(object)
                 case 'removeEventListener': return object.removeEventListener.bind(object)
-                case 'toString': return object.toString.bind(object)
+                case 'toString': return object.doToString.bind(object)
                 case 'bindUINode': return object.doBindUINode.bind(object)
                 case 'getUINode': return object.doGetUINode.bind(object)
                 case 'update': return object.doUpdate.bind(object)
                 case 'toXML': return object.doToXML.bind(object)
+                case 'toJSON': return object.doToJSON.bind(object)
                 case 'getFirstTextValue': return object.getFirstTextValue.bind(object)
                 case 'relation': return undefined
             }
@@ -130,6 +131,7 @@ function KObject (type, data) {
                 case 'getUINode':
                 case 'update':
                 case 'toXML':
+                case 'toJSON':
                 case 'getFirstTextValue':
                     return {
                         writable: false,
@@ -326,7 +328,7 @@ KObject.prototype.getFirstTextValue = function (defaultValue, ...attributes) {
     return defaultValue
 }
 
-KObject.prototype.toString = function () {
+KObject.prototype.doToString = function () {
     function oToStr (object, level = 0) {
         let str = ''
         for (const key of Object.keys(object)) {
@@ -348,6 +350,10 @@ KObject.prototype.toString = function () {
         }
     }
     return oToStr(Object.fromEntries(this.data.entries()), 0)
+}
+
+KObject.prototype.doToJSON = function () {
+    return JSON.stringify(Object.fromEntries(this.data))
 }
 
 KObject.prototype.doToXML = function (stack = []) {

@@ -167,6 +167,9 @@ define([
               KAIROSAnim.push(() => { node.innerHTML = html })
             }
             break
+          case 'log':
+            console.log(e.data.data)
+            break
         }
       }.bind(this)
 
@@ -745,14 +748,37 @@ define([
         }
 
         const reservationStore = new KStore('kreservation')
-        reservationStore.set({
-            begin: date.toISOString(),
-            end: end.toISOString(),
-            target: entry.id,
-            affaire: travail.data.get('uid')
-        })
-        .then(result => {
-          KAIROS.info(`Nouvelle réservation`)
+        const reservations = travail.data.getRelation('kreservation')
+        let updateAll = Promise.resolve()
+        if (reservations) {
+          const divide = Array.isArray(reservations) ? reservations.length + 1 : 2
+          let duration = 0
+          if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
+            duration = Math.round(parseFloat(ttime) * 3600000 / divide)
+          } else {
+            duration = Math.round(KAIROS.defaults.reservation.duration * 3600000 / divide)
+          }
+          end.setTime(date.getTime() + duration)
+          const p = []
+          for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
+            const begin = new Date(reservation.get('begin'))
+            const end = new Date()
+            end.setTime(begin.getTime() + duration)
+            p.push(reservationStore.set({id: reservation.get('uid'), end: end.toISOString(), version: reservation.get('version')}, reservation.get('uid')))
+          }
+          updateAll = Promise.allSettled(p)
+        }
+        updateAll
+        .then(_ => {
+          reservationStore.set({
+              begin: date.toISOString(),
+              end: end.toISOString(),
+              target: entry.id,
+              affaire: travail.data.get('uid')
+          })
+          .then(result => {
+            KAIROS.info(`Nouvelle réservation`)
+          })
         })
       }
       const deleteReservation = event => {
