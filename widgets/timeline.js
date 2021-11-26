@@ -90,8 +90,7 @@ define([
       this.lastDay = null
       this.firstDay = null
       this.odd = true
-      this.center = new Date()
-      this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
+  
       this.lastClientXY = []
       this.lastMod = ''
       this.xDiff = 0
@@ -106,6 +105,13 @@ define([
       this.FirstLoad = true
       this.Holidays = null
       this.Tooltips = {}
+
+      this.center = new Date()
+      this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
+
+      if (KAIROS.centerTodayRatio) {
+        this.center.setTime(this.center.getTime() + this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
+      }
 
       this.Viewport = new KView()
       this.Viewport.setEntryHeight(78)
