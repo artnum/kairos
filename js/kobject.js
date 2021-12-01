@@ -267,17 +267,14 @@ KObject.prototype.getCn = function () {
 }
 
 KObject.prototype.setRelation = function(type, kobject) {
-    if (!(kobject instanceof KObject)) {
-        kobject = new KObject(type, kobject)
-    }
-    return this.relation.set(type, kobject.get('uid'))
+    return this.addRelation(type, kobject)
 }
 
 KObject.prototype.addRelation = function (type, kobject) {
-    if (!this.relation.has(type)) { return this.setRelation(type, kobject) }
     if (!(kobject instanceof KObject)) {
-        kobject = new KObject(type, kobject)
+        throw new Error('kobject must be an instance of KObject')
     }
+    if (!this.relation.has(type)) { return this.relation.set(type, kobject.get('uid')) }
     const currentRelation = this.relation.get(type)
     if (!Array.isArray(currentRelation)) {
         if (currentRelation === kobject.get('uid')) { return true }

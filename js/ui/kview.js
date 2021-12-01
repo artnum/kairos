@@ -266,17 +266,34 @@ KView.prototype.move = function (days) {
 }
 
 KView.prototype.resize = function () {
-    /*this.compute()  
+    this.compute()  
     const range = this.getViewRange()
-    range[0] *= this.get('entry-count')
-    range[1] *= this.get('entry-count')
-    for(let i = range[0]; i <= range[1]; i++) {
-        for (const [_, object] of this.grid[i]) {
-            if (object.getUINode()) {
-                object.getUINode().render()
+    range[1] = range[1] * this.get('entry-count')
+    range[0] = range[0] * this.get('entry-count')
+    for (let i = range[0]; i <= range[1]; i++) {
+        const cell = this.grid[i]
+        if (i >= range[0] && i <= range[1]) {
+            for (const [key, object] of cell.entries()) {        
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }        
+                const p = this.getRowObject(Math.round((i - range[0])  % this.get('entry-count')))
+                p.KUI.placeReservation(object)
+            }
+        } else {
+            for (const [key, object] of cell.entries()) {
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }        
+                if (!object.getUINode) { continue }
+                const ui = object.getUINode()
+                if (!ui) { continue }
+                ui.unrender()
             }
         }
-    }*/
+    }
 }
 
 KView.prototype.setMargins = function (top, right, bottom, left) {

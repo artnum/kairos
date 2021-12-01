@@ -37,10 +37,10 @@ KProject.prototype.render = function () {
                 const reservations = aff.getRelation('kreservation')
                 if (reservations) {
                     for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-                        time += new Date(reservation.get('end')).getTime() - new Date(reservation.get('begin')).getTime()
+                        time += reservation.get('time')
                     }
                 }
-                div.innerHTML += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60 / 1000).toFixed(2)} planifiées</strong></li>`
+                div.innerHTML += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
             }
         }
         div.innerHTML += '</ul>'

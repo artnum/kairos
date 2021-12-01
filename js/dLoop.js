@@ -14,17 +14,5 @@ function DisplayLoop (func) {
 }
 
 async function RunDisplayLoop () {
-  do {
-    DisplayLoop.count++
-    const start = performance.now()
-    DisplayLoop.functions.forEach(async function (f) {
-      await f(DisplayLoop.count)
-    })
-    const stop = performance.now()
-    if (stop - start < RunTime) {
-      await new Promise ((resolve, reject) => {
-        setTimeout(() => {resolve()}, RunTime - (stop - start))
-      })
-    }
-  } while (true)
+
 }

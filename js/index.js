@@ -134,6 +134,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/string.js','script'],
         ['../js/address.js', 'script'],
         ['../js/kformdata.js', 'script'],
+        ['../js/kvdays.js', 'script'],
         ['../js/ui/hour.js', 'script'],
         ['../js/sanitize.js', 'script'],
         ['../js/ui/radiolike.js', 'script'],

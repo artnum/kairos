@@ -509,6 +509,7 @@ define([
       this.drawTimeline()
       this.drawVerticalLine()
       this.resizeEntries()
+      this.Viewport.resize()
     },
 
     createMonthName: function (month, year, days, frag) {
@@ -705,7 +706,6 @@ define([
 
         if (cell.size === 1 && event instanceof KeyboardEvent) {
           const [_, open] = cell.entries().next().value
-          console.log(open)
           open.getUINode().getDomNode()
           .then(domNode => {
             domNode.style.border = '2px solid blue'
@@ -742,21 +742,18 @@ define([
           else { KAIROS.error('Date invalide') }
           return
         }
-
-        const end = new Date()
-        date.setHours(KAIROS.defaults.reservation.hour, KAIROS.defaults.reservation.minute, 0, 0)
-
-        const ttime = travail.data.get('time')
+  
+        let ttime = travail.data.get('time')
         if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
-          end.setTime(date.getTime() + parseFloat(ttime) * 3600000)
+          ttime = parseFloat(ttime)
         } else {
-          end.setTime(date.getTime() + KAIROS.defaults.reservation.duration * 3600000)
+          ttime = KAIROS.defaults.reservation.duration
         }
-
+        const ranges = KVDays.getRanges(date, ttime, KAIROS.days)
         const reservationStore = new KStore('kreservation')
         const reservations = travail.data.getRelation('kreservation')
         let updateAll = Promise.resolve()
-        if (reservations) {
+       /* if (reservations) {
           const divide = Array.isArray(reservations) ? reservations.length + 1 : 2
           let duration = 0
           if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
@@ -773,18 +770,21 @@ define([
             p.push(reservationStore.set({id: reservation.get('uid'), end: end.toISOString(), version: reservation.get('version')}, reservation.get('uid')))
           }
           updateAll = Promise.allSettled(p)
-        }
+        }*/
         updateAll
         .then(_ => {
-          reservationStore.set({
-              begin: date.toISOString(),
-              end: end.toISOString(),
-              target: entry.id,
-              affaire: travail.data.get('uid')
-          })
-          .then(result => {
-            KAIROS.info(`Nouvelle réservation`)
-          })
+          for (const range of ranges) {
+            reservationStore.set({
+                time: range[2],
+                begin: range[0].toISO8601(),
+                end: range[1].toISO8601(),
+                target: entry.id,
+                affaire: travail.data.get('uid')
+            })
+            .then(result => {
+              KAIROS.info(`Nouvelle réservation`)
+            })
+          }
         })
       }
       const deleteReservation = event => {
