@@ -2,6 +2,7 @@ const KVDays = Object.freeze({
     Hs: 3600, // hours in seconds
     H: 3600000,
     D: 86400000,
+    holidays: new Holiday(new Date().getFullYear()), // init with current year
     dec2HM (dec) {
         const H = Math.trunc(dec)
         return [H, Math.round((dec - H) * 60)]
@@ -15,14 +16,13 @@ const KVDays = Object.freeze({
             const dayConf = conf[nextDay.getDay()]
             let dayTime = dayConf.chunks
             if (dayTime === null) { break }
+            if(this.holidays.isHolidayInAnyOf(nextDay, KAIROS.holidays)) { break }
             
             {
                 const  [endH, endM] = this.dec2HM(dayTime[0][0])
                 realEnd.setTime(nextDay.getTime())
                 realEnd.setHours(endH, endM, 0, 0)
             }
-
-            /* insert holidays and all here */
 
             /* chunks === null -> no time slot available for this day, forward 24h */
             let endAt
@@ -49,13 +49,33 @@ const KVDays = Object.freeze({
         return [realEnd, effectiveDuration * this.Hs]
     },
     getRanges (begin, duration, conf) {
-        let day0Conf = conf[begin.getDay()]
-        while (day0Conf.chunks === null) {
-            begin.setTime(begin.getTime() + this.D)
-            day0Conf = conf[begin.getDay()]
+        const skipDays = (begin) => {
+            let isHoliday = false
+            let isCloseDay = false
+
+            do {
+                isHoliday = false
+                while (this.holidays.isHolidayInAnyOf(begin, KAIROS.holidays)) {
+                    isHoliday = true
+                    begin.setTime(begin.getTime() + this.D)
+                }
+                
+                isCloseDay = false
+                let day0Conf = conf[begin.getDay()]
+                while (day0Conf.chunks === null) {
+                    isCloseDay = true
+                    begin.setTime(begin.getTime() + this.D)
+                    day0Conf = conf[begin.getDay()]
+                }
+            } while (isHoliday || isCloseDay)
+            return begin.getTime()
         }
+
         ranges = []
         do {
+            begin.setTime(skipDays(begin))
+            const day0Conf = KAIROS.days[begin.getDay()]
+
             const [beginH, beginM] = this.dec2HM(day0Conf.chunks[0][0])
             begin.setHours(beginH, beginM, 0, 0)
 
@@ -68,10 +88,7 @@ const KVDays = Object.freeze({
             ranges.push([rBegin, rEnd, effDuration])
             duration  -= effDuration / this.Hs
             if (duration > 0) {
-                begin.setTime(end.getTime())
-                do {
-                    begin.setTime(begin.getTime() + this.D)
-                } while (conf[begin.getDay()].chunks === null)
+                begin.setTime(end.getTime() + this.D)
             }
         } while (duration > 0)
         return ranges.reverse() // reverse so reservations number follow chronological order

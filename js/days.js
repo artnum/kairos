@@ -293,6 +293,19 @@
       return false
     }
 
+    Holiday.prototype.isHolidayInAnyOf = function (day, localities) {
+      const dayStr = typeof day === 'object' ? day.toISOString().split('T')[0] : day
+      if (!this.holidays[day.getFullYear()]) {
+        this.addYear(day.getFullYear())
+      }
+      const days = this.rHolidays[dayStr]
+      if (!days) { return false }
+      for (let i = 1; i < days.length; i++) {
+        for (const locality of localities) { if(days[i].indexOf(locality) !== -1) { return true }}
+      }
+      return false
+    }
+
     Holiday.prototype.searchHoliday = function (begin, end) {
       let b = begin.toISOString().split('T')[0]
       let e = end.toISOString().split('T')[0]
