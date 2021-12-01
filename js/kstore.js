@@ -14,7 +14,7 @@ function KStore(type) {
     return this
 }
 
-KStore.prototype.relateEntry = function (kobject, stack = []) {
+KStore.prototype.relateEntry = function (kobject) {
     return new Promise((resolve, reject) => {
         const promises = []
         if (!kobject.get('uid')) { resolve(kobject); return }
@@ -38,10 +38,10 @@ KStore.prototype.relateEntry = function (kobject, stack = []) {
             }
             const kstore = new KStore(relation.target)
             if (relation.multiple) {
-                promises.push(kstore.query({[relation.attr]: kobject.get('uid')}, [...stack, this.type]))
+                promises.push(kstore.query({[relation.attr]: kobject.get('uid')}))
             } else {
                 if (kobject.get(relation.attr)) {
-                    promises.push(kstore.get(kobject.get(relation.attr), [...stack, this.type]))
+                    promises.push(kstore.get(kobject.get(relation.attr)))
                 }
             }
         }
@@ -89,7 +89,7 @@ KStore.prototype.delete = function (id) {
     })
 }
 
-KStore.prototype.get = function (id, stack = []) {
+KStore.prototype.get = function (id) {
     return new Promise((resolve, reject) => {
         /* in some part, store/id is used, remove the store part */
         if (id.indexOf('/') !== -1) {
@@ -105,7 +105,7 @@ KStore.prototype.get = function (id, stack = []) {
             if (!result.success) { throw new Error('ERR:Server') }
             if (!result.length) { throw new Error('ERR:NoResults') }
             const kobject = Array.isArray(result.data) ? new KObject(this.type, result.data[0]) : new KObject(this.type, result.data)
-            return this.relateEntry(kobject, stack)
+            return this.relateEntry(kobject)
         })
         .then(k => {
             resolve(k)
@@ -116,7 +116,7 @@ KStore.prototype.get = function (id, stack = []) {
     })
 }
 
-KStore.prototype.query = function (query, stack = []) {
+KStore.prototype.query = function (query) {
     return new Promise((resolve, reject) => {
         const url = new URL(`${this.url}/_query`)
         fetch(url, {method: 'POST', body: JSON.stringify(query)})
@@ -131,7 +131,7 @@ KStore.prototype.query = function (query, stack = []) {
             const promises = []
             for (const data of Array.isArray(result.data) ? result.data : [result.data]) {
                 const kobject = new KObject(this.type, data)
-                promises.push(this.relateEntry(kobject, stack))
+                promises.push(this.relateEntry(kobject))
             }
             Promise.allSettled(promises)
             .then(results => {
