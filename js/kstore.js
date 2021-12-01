@@ -54,9 +54,11 @@ KStore.prototype.relateEntry = function (kobject) {
                 if (Array.isArray(relation.value)) {
                     for(const rel of relation.value) {
                         kobject.addRelation(rel.getType(), rel)
+                        rel.addRelation(kobject.getType(), kobject)
                     }
                 } else {
                     kobject.setRelation(relation.value.getType(), relation.value)
+                    relation.value.addRelation(kobject.getType(), kobject)
                 }
             }
             resolve(kobject)
