@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_modification" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	"reservation_version" INT(10) UNSIGNED DEFAULT 1,
 	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0
+	"reservation_time"    INT UNSIGNED NOT NULL DEFAULT 0, -- effective time (a 24h work spans over 3 days, this would be set de 24 * 60 * 60 (seconds))
+	                                                       -- while end - begin would be much more than 24h.
 	) CHARACTER SET "utf8mb4";
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
