@@ -368,12 +368,12 @@ KView.prototype.handleMouseMove = function () {
     const start = performance.now()
     new Promise(resolve => {
         if (KAIROS.mouse.clientX > marginLeft && KAIROS.mouse.clientX < window.innerWidth - marginRight) {
-            const xpos = (KAIROS.mouse.clientX + window.scrollX) - (marginLeft + marginRight)
-            currentBox[0] = Math.floor(xpos / this.data.get('day-width'))
+            const xpos = (KAIROS.mouse.clientX + window.scrollX) - marginLeft
+            currentBox[0] = parseInt(Math.trunc(xpos / this.data.get('day-width')))
         }
         
         const ypos = KAIROS.mouse.clientY - marginTop
-        currentBox[1] = Math.floor(ypos / this.data.get('entry-height'))
+        currentBox[1] = parseInt(Math.trunc(ypos / this.data.get('entry-height')))
 
         if (currentBox[0] !== this.currentBox[0]) {
             this.currentBox[0] = currentBox[0]

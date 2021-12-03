@@ -37,7 +37,8 @@ KProject.prototype.render = function () {
                 const reservations = aff.getRelation('kreservation')
                 if (reservations) {
                     for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-                        time += reservation.get('time')
+                        const rtime = parseInt(reservation.get('time'))
+                        if (!isNaN(rtime)) { time += rtime }
                     }
                 }
                 div.innerHTML += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`

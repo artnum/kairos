@@ -116,11 +116,11 @@ define([
       this.Viewport = new KView()
       this.Viewport.setEntryHeight(78)
       this.Viewport.setEntryInnerHeight(74)
-      this.Viewport.setMargins(74, 14, 50, 260)
 
       this.Viewport.addEventListener('EnterColumn', event => {
+        const frame = document.getElementById('VerticalLineFrame')
         let i = 0;
-        for (let node = this.nVerticals.firstElementChild.firstElementChild; node; node = node.nextElementSibling) {
+        for (const node of frame.children) {
           if (event.detail.currentColumn === i) {
             node.classList.add('khover')
           }
@@ -352,12 +352,21 @@ define([
           break
       }
 
+      if (days > 547) {
+        days = 547
+        KAIROS.warn('Zoom minimum atteint')
+      }
+      if (days < 2) {
+        days = 2
+        KAIROS.warn('Zoom maximum atteint')
+      }
+
       this.Viewport.setDayCount(days)
       this.daysZoom = days
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
-      this.set('blockSize', Math.floor((window.innerWidth - (this.get('offset') + 40)) / days))
+      this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset')) / days))
       this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
                                  .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
                                 .timeline .header .tools { width: ${this.get('offset')}px !important; }
@@ -437,13 +446,13 @@ define([
       var dayStamp = newDay.toISOString().split('T')[0]
 
       switch (newDay.getDay()) {
-        case 0: txtDate = 'Dim ' + newDay.getDate(); break
-        case 1: txtDate = 'Lun ' + newDay.getDate(); break
-        case 2: txtDate = 'Mar ' + newDay.getDate(); break
-        case 3: txtDate = 'Mer ' + newDay.getDate(); break
-        case 4: txtDate = 'Jeu ' + newDay.getDate(); break
-        case 5: txtDate = 'Ven ' + newDay.getDate(); break
-        case 6: txtDate = 'Sam ' + newDay.getDate(); break
+        case 0: txtDate = '<span class="dayname">Dim</span>' + newDay.getDate(); break
+        case 1: txtDate = '<span class="dayname">Lun</span>' + newDay.getDate(); break
+        case 2: txtDate = '<span class="dayname">Mar</span>' + newDay.getDate(); break
+        case 3: txtDate = '<span class="dayname">Mer</span>' + newDay.getDate(); break
+        case 4: txtDate = '<span class="dayname">Jeu</span>' + newDay.getDate(); break
+        case 5: txtDate = '<span class="dayname">Ven</span>' + newDay.getDate(); break
+        case 6: txtDate = '<span class="dayname">Sam</span>' + newDay.getDate(); break
       }
 
       var domDay = document.createElement('SPAN')
@@ -514,7 +523,7 @@ define([
 
     createMonthName: function (month, year, days, frag) {
       var n = document.createElement('DIV')
-      n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px')
+      n.setAttribute('style', 'width: ' + Math.floor((days * this.get('blockSize'))) + 'px')
       switch (month + 1) {
         case 1: n.innerHTML = `Janvier&nbsp;${year}`; break
         case 2: n.innerHTML = `Février&nbsp;${year}`; break
@@ -545,7 +554,8 @@ define([
 
     createWeekNumber: function (number, days, frag) {
       var n = document.createElement('DIV')
-      n.setAttribute('style', 'width: ' + (days * this.get('blockSize')) + 'px')
+      console.log(days,this.get('blockSize'))
+      n.setAttribute('style', 'width: ' + Math.floor(days * this.get('blockSize')) + 'px')
       n.innerHTML = 'Semaine ' + number
       if (days * this.get('blockSize') < 80) {
         n.innerHTML = number
@@ -658,8 +668,8 @@ define([
         begin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         end.setTime(begin.getTime() + duration)
         kstore.set({
-            begin: begin.toISOString(),
-            end: end.toISOString(),
+            begin: begin.toISO8601(),
+            end: end.toISO8601(),
             target: entryNode.id, 
             id: object.get('id'),
             version: object.get('version')
@@ -678,123 +688,11 @@ define([
         event.preventDefault()
       })
       
-      const selectReservationEvent = event => {
-        const {x, y} = this.Viewport.getCurrentBox()
-        const entry = this.Viewport.getRowObject(y)
-        const cell = this.Viewport.getCell(x, y)
-
-        if (!(event instanceof KeyboardEvent) && event.target.id) {
-          const kgstore = new KObjectGStore()
-          const reservation = kgstore.search('kreservation', 'uuid', event.target.id)
-          if (!reservation) {
-            return
-          }
-          const ui = reservation.getUINode()
-          if (!ui) {
-            return
-          }
-          ui.renderForm()
-          .then(domNode => {
-            const klateral = new KLateral()
-            const ktab = klateral.add(domNode, {title: `Réservation ${reservation.get('uid')}:${reservation.get('version')}`, })
-            ui.addEventListener('close', event => {
-              ktab.close()
-            })
-          })
-          return 
-        }
-
-        if (cell.size === 1 && event instanceof KeyboardEvent) {
-          const [_, open] = cell.entries().next().value
-          open.getUINode().getDomNode()
-          .then(domNode => {
-            domNode.style.border = '2px solid blue'
-          })
-        } else if (event instanceof KeyboardEvent) {
-          for (const entry of cell) {
-            entry[1].getUINode().getDomNode()
-            .then(domNode => {
-              domNode.style.border = '2px solid blue'
-            })
-          }
-        }
-      }
-    
-
-      const addReservationEvent = event => {
-        const {x, y} = this.Viewport.getCurrentBox()
-        const entry = this.Viewport.getRowObject(y)
-        const cell = this.Viewport.getCell(x, y)
-        const ktask = new KTaskBar()
-        const travail = ktask.getCurrentList()
-
-        if (cell.size > 0 && !travail) {
-          return selectReservationEvent(event)
-        }
-
-        const date = new Date()
-        date.setTime(this.firstDay.getTime())
-        date.setTime(date.getTime() + (x * 86400000))
-
-        if (!entry || !travail || !date || isNaN(date.getTime())) { 
-          if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
-          else if (!travail) { KAIROS.error('Pas de travail sélectionné') }
-          else { KAIROS.error('Date invalide') }
-          return
-        }
-  
-        let ttime = travail.data.get('time')
-        if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
-          ttime = parseFloat(ttime)
-        } else {
-          ttime = KAIROS.defaults.reservation.duration
-        }
-        const ranges = KVDays.getRanges(date, ttime, KAIROS.days)
-        const reservationStore = new KStore('kreservation')
-        const reservations = travail.data.getRelation('kreservation')
-        let updateAll = Promise.resolve()
-       /* if (reservations) {
-          const divide = Array.isArray(reservations) ? reservations.length + 1 : 2
-          let duration = 0
-          if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
-            duration = Math.round(parseFloat(ttime) * 3600000 / divide)
-          } else {
-            duration = Math.round(KAIROS.defaults.reservation.duration * 3600000 / divide)
-          }
-          end.setTime(date.getTime() + duration)
-          const p = []
-          for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-            const begin = new Date(reservation.get('begin'))
-            const end = new Date()
-            end.setTime(begin.getTime() + duration)
-            p.push(reservationStore.set({id: reservation.get('uid'), end: end.toISOString(), version: reservation.get('version')}, reservation.get('uid')))
-          }
-          updateAll = Promise.allSettled(p)
-        }*/
-        updateAll
-        .then(_ => {
-          for (const range of ranges) {
-            reservationStore.set({
-                time: range[2],
-                begin: range[0].toISO8601(),
-                end: range[1].toISO8601(),
-                target: entry.id,
-                affaire: travail.data.get('uid')
-            })
-            .then(result => {
-              KAIROS.info(`Nouvelle réservation`)
-            })
-          }
-        })
-      }
-      const deleteReservation = event => {
-
-      }
-      window.addEventListener('dblclick', addReservationEvent)
+      window.addEventListener('dblclick', iAddReservation.bind(this))
       window.addEventListener('global-keypress', event => {
         switch(event.key) {
-          case 'Enter': return addReservationEvent(event)
-          case 'Delete': return deleteReservation(event)
+          case 'Enter': return iAddReservation(event).bind(this)
+          case 'Delete': return iDeleteReservation(event).bind(this)
         }
       })
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
@@ -1290,10 +1188,14 @@ define([
         day.setHours(12, 0, 0)
         let subLineCell = document.createElement('SPAN')
         subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
-        subLineCell.style.minWidth = `var(--blocksize)`
+        subLineCell.style.width = `var(--blocksize)`
         subLineFrag.appendChild(subLineCell)
 
         var d = this.makeDay(day)
+        d.domNode.style.display = 'inline-block'
+        d.domNode.style.maxWidth = `${this.get('blockSize')}px`
+        d.domNode.style.width = `${this.get('blockSize')}px`
+        d.domNode.style.overflow = 'hidden'
         if (typeof window.Rent.Days[d.stamp] === 'undefined') {
           window.Rent.Days[d.stamp] = {}
         }
@@ -1307,56 +1209,95 @@ define([
         this.lastDay = day
         dayCount++; dayMonthCount++
       }
-
       if (dayCount > 0) {
         this.createWeekNumber(currentWeek, dayCount, hFrag)
       }
       if (dayMonthCount > 0) {
         this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
       }
+
+      this.Viewport.setViewportWidth(this.get('zoom') * this.get('blockSize'))
+      this.Viewport.setMargins(74, 14, 50, this.get('offset'))
+
       KAIROSAnim.push(() => {
         this.subline.innerHTML = ''
         this.subline.appendChild(subLineFrag)
         this.line.appendChild(docFrag)
         this.header.appendChild(hFrag)
         this.supHeader.appendChild(shFrag)
-        const rect = this.line.getBoundingClientRect()
-        this.Viewport.setViewportWidth(rect.right - rect.left)
       })
     },
 
     drawVerticalLine: function () {
-      var frag = document.createDocumentFragment()
-      var that = this
+      const draw = () => {
+        return new Promise(resolve => {
+          const frame = document.getElementById('VerticalLineFrame')
+          if (!frame) { resolve(); return }
+          const dayLength = this.days.length
+          const frameLength = frame.children.length
+          const blocksize = this.get('blockSize')
+          const offset = this.get('offset')
 
-      if (this.currentVerticalLine !== this.get('blockSize')) {
-        frag.appendChild(document.createElement('DIV'))
-        for (var i = 0; i < this.days.length; i++) {
-          var node = document.createElement('DIV')
-          var nodeclass = ''
-          if (i % 2) {
-            nodeclass = 'vertical even'
-          } else {
-            nodeclass = 'vertical odd'
+          const chain = Promise.resolve()
+          
+          for (let i = dayLength; i < frameLength; i++) {
+            const node = frame.children[i]
+            chain.then(() => {
+              return new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                  if (node.parentNode) { frame.removeChild(node); }
+                  resolve()
+                })
+              })
+            })
           }
+          for (let i = 0; i < dayLength; i++) {
+            const day = new Date()
+            day.setTime(this.firstDay.getTime() + (i * 86400000))
+            const node = frame.children[i] || document.createElement('DIV')
+            if (!frame.children[i]) {
+              chain.then(() => {
+                return new Promise((resolve) => {
+                  window.requestAnimationFrame(() => {
+                    frame.appendChild(node)
+                    resolve()
+                  })
+                })
+              })
+            }
 
-          var style = ''
+            const classes = [ 'vertical' ]
+            const left = offset + (blocksize * i)
+            if (i % 2) {
+              classes.push('even')
+            } else {
+              classes.push('odd')
+            }
 
-          if (djDate.compare(this.days[i]._date, new Date(), 'date') === 0) {
-            nodeclass = nodeclass + ' today'
+            /* priority on showing holiday : a non working staturday can be used to work, if it's an holiday, need to pay more */
+            if(this.Holidays.isHolidayInAnyOf(day, KAIROS.holidays)) {
+              classes.push('nowork'),
+              classes.push('holiday')
+            } else if (KAIROS.days[day.getDay()].chunks === null) {
+              classes.push('nowork')
+            }
+            chain.then(() => {
+              return new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                  node.style.setProperty('left', `${left}px`)
+                  node.setAttribute('class', classes.join(' '))
+                  resolve()
+                })
+              })
+            })
           }
-          node.setAttribute('class', nodeclass)
-          node.setAttribute('style', style + 'height: 100%; position: fixed; top: 0; z-index: -10; width: ' +
-          this.get('blockSize') + 'px; display: block; background-color: transparent; left: ' + (this.get('offset') + (this.get('blockSize') * i)) + 'px')
-          frag.firstChild.appendChild(node)
-        }
-
-        KAIROSAnim.push(() => {
-          if (this.nVerticals.firstChild) { this.nVerticals.removeChild(that.nVerticals.firstChild) }
-          this.nVerticals.appendChild(frag)
-          this.currentVerticalLine = this.get('blockSize')
+          chain.then(() => {
+            resolve()
+          })
         })
       }
+      if (!this.vDrawPromise) { this.vDrawPromise = Promise.resolve() }
+      this.vDrawPromise.then(() => draw())
     },
 
     loadEntries: function () {

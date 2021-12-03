@@ -64,13 +64,21 @@ span.day.anniversary {
 	position: fixed;
 	z-index: 5;	
 }
+
+
 .timeline .line span {
 	overflow: hidden;
 	text-align: center;
 	width: 40px;
-	font-size: 16px;
+	font-size: 14px;
 	display: inline-block;
+	font-family: "B612 Mono";
 }
+
+.timeline .line .dayname {
+	font-size: 10px;
+}
+
 
 .day.weekend {
 	background-color: black;	
@@ -288,19 +296,33 @@ div.contact > div:first-child {
 	border-color:red;
 }
 
+.vertical {
+	height: 100%; 
+	position: fixed; 
+	top: 0; 
+	display: block;
+	background-color: transparent;
+	z-index: -10;
+	width: var(--blocksize);
+}
+
 .vertical.even {
 	border-left: 1px solid transparent;
     border-right: 1px solid transparent;
-}
-
-.vertical.today {
-	background-color: gray;
 }
 
 .vertical.odd {
 	border-left: 1px solid  lightgray;
 	border-right: 1px solid lightgray;
 	z-index: -1;
+}
+
+.vertical.nowork {
+	background-color: hsla(360, 0%, 50%, 0.2) !important;
+}
+
+.vertical.holiday {
+	background-color: hsla(40, 20%, 50%, 0.2) !important;
 }
 
 fieldset {
