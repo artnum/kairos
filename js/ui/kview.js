@@ -241,6 +241,7 @@ KView.prototype.move = function (days) {
     range[0] = range[0] * this.get('entry-count')
     for (let i = range[0] - displacement; i <= range[1] + displacement; i++) {
         const cell = this.grid[i]
+        if (!cell) { continue }
         if (i >= range[0] && i <= range[1]) {
             for (const [key, object] of cell.entries()) {        
                 if(object.isDestroyed()) {
@@ -272,6 +273,7 @@ KView.prototype.resize = function () {
     range[0] = range[0] * this.get('entry-count')
     for (let i = range[0]; i <= range[1]; i++) {
         const cell = this.grid[i]
+        if (!cell) { continue }
         if (i >= range[0] && i <= range[1]) {
             for (const [key, object] of cell.entries()) {        
                 if(object.isDestroyed()) {

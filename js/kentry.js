@@ -258,6 +258,7 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                 this.entries.set(entry.uuid, reservation)
                 const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                 for (const row of rows) {
+                    if (!row) { continue }
                     row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
                 }
  
