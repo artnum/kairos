@@ -112,7 +112,7 @@ KProject.prototype.kaffaire = function (affaire) {
         <div class="kpair"><span class="klabel">Rendez-vous</span><span class="kvalue">${$S(affaire.get('meeting'))}</span></div>
         <div class="kapir"><span class="klabel">Fin souhaitée</span><span class="kvalue">${$S(affaire.get('end'))}</span></div>
         <div class="kapir"><span class="klabel">Durée nécessaire</span><span class="kvalue">${$S(affaire.get('time'))}</span></div>
-        <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button>
+        <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button><button data-affaire="${affaire.get('uid')}" data-action="edit-affaire">Modifier</button>
     </div>`
 }
 
@@ -210,8 +210,9 @@ KProject.prototype.handleFormClick = function (event) {
             })
             listItem.select()
             return
+        case 'edit-affaire':
+            return
         case 'new-travail':
-  
             return
     }
 }

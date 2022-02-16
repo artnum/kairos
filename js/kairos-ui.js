@@ -397,3 +397,7 @@ KAIROS.confirm = function(title, message, opts) {
         win.open()
     })
 }
+
+KAIROS.images = {}
+KAIROS.images.move = new Image()
+KAIROS.images.move.src = '../resources/images/move-reservation.png'

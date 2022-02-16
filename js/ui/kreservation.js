@@ -11,6 +11,7 @@ function KUIReservation (object) {
     this.domNode.classList.add('kreservation')
     this.domNode.setAttribute('draggable', true)
     this.domNode.addEventListener('dragstart', event => {
+        event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
         event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
         event.dataTransfer.dropEffect = 'move'
     })
