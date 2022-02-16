@@ -157,6 +157,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],
         ['../js/stores/kcontact.js', 'script'],
+        ['../js/utils/time.js', 'script'],
+
         ['../node_modules/artnum/DTable.js', 'script'],
         ['../node_modules/artnum/Date.js', 'script'],
         ['../node_modules/artnum/String.js', 'script'],
