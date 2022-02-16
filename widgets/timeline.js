@@ -373,6 +373,7 @@ define([
                                 .timeline .line { margin-left: ${this.get('offset')}px !important; }
                                 ${style}`
       this.resize()
+      this.update()
     },
 
     _setFilterAttr: function (value) {
