@@ -657,10 +657,11 @@ define([
         let entryNode = event.target
         while (entryNode && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
         if (!entryNode) { return ; }
-        const kident = event.dataTransfer.getData('application/kairos')
+        const kident = event.dataTransfer.getData('text/plain')
         if (!kident) { return }
+        if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
-        const object = kGStore.get(kident)
+        const object = kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
         const duration = end.getTime() - begin.getTime()

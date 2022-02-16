@@ -11,8 +11,7 @@ function KUIReservation (object) {
     this.domNode.classList.add('kreservation')
     this.domNode.setAttribute('draggable', true)
     this.domNode.addEventListener('dragstart', event => {
-        event.dataTransfer.setData('text/plain', this.object.toString())
-        event.dataTransfer.setData('application/kairos', `${this.object.getType()}/${this.object.get('uid')}`)
+        event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
         event.dataTransfer.dropEffect = 'move'
     })
     this.domNode.addEventListener('drop', event => {
@@ -93,6 +92,8 @@ KUIReservation.prototype.renderForm = function () {
         <fieldset><legend>Date</legend>
         <label>Début : <input type="text" value="${reservation.get('begin')}"></input></label>
         <label>Fin : <input type="text" value="${reservation.get('end')}"></input></label>
+        <label>Durée : <input type="text" value="${TimeUtils.toHourString(reservation.get('time'))}"></input></label>
+
         </fieldset>
         <button name="delete" class="mbutton">Supprimer</button>
         `
