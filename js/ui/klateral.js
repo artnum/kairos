@@ -216,8 +216,7 @@ KLateral.prototype.remove = function (idx) {
     const [tabTitle, tabContent] = this.getTab(idx)
     const sibling = tabTitle.nextElementSibling || tabTitle.previousElementSibling
     if (tab) { tab.destroy() }
-    this.tabs.remove(String(idx))
-    this.tab.removeChild(tabTitle)
+    if (tabTitle) { this.tab.removeChild(tabTitle) }
     this.content.removeChild(tabContent)
     this.tabCurrent = 0
     this.tabOpen--
