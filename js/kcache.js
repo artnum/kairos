@@ -54,49 +54,7 @@ function kcremove (url) {
 }
 
 function kfetch (url, options = { method: 'GET' }) {
-    return new Promise ((resolve, reject) => {
-        switch (options.method.toLowerCase()) {
-            case 'get': 
-            case 'head':
-                const cResponse = kcget(String(url))
-                if (cResponse) {
-                    resolve(cResponse)
-                    return
-                }
-                break
-        }
-        fetch(url, options)
-        .then (response => {
-            resolve(response)
-            if (!response.ok) { return }
-            switch (options.method.toLowerCase()) {
-                default: return
-                case 'get': 
-                case 'head':
-                    break
-            }
-            /* status that don't trigger cache */
-            switch (clonedResponse.status) {
-                case 404: return
-                case 500: return
-            }
-            const clonedResponse = response.clone()
-            clonedResponse.text()
-            .then(body => {
-                const storableResponse = {
-                    body,
-                    status: clonedResponse.status,
-                    statusText: clonedResponse.statusText,
-                    headers: {}
-                }
-                for (const k of clonedResponse.headers.keys()) {
-                    storableResponse.headers[k.toLowerCase()] = clonedResponse.headers.get(k)
-                }
-                kcstore(String(url), storableResponse)
-            })
-        })
-        .catch(reason => reject(reason))
-    })
+    return KAIROS.fetch(url, options)
 }
 
 function KCacheReduce () {

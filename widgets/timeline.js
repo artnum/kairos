@@ -366,7 +366,7 @@ define([
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
-      this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset')) / days))
+      this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset') - 10) / days))
       this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
                                  .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
                                 .timeline .header .tools { width: ${this.get('offset')}px !important; }
@@ -554,7 +554,6 @@ define([
 
     createWeekNumber: function (number, days, frag) {
       var n = document.createElement('DIV')
-      console.log(days,this.get('blockSize'))
       n.setAttribute('style', 'width: ' + Math.floor(days * this.get('blockSize')) + 'px')
       n.innerHTML = 'Semaine ' + number
       if (days * this.get('blockSize') < 80) {

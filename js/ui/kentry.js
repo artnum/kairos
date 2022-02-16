@@ -88,9 +88,16 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             let boxes = []
             let i = this.kview.computeXBox(left)
             do {
-                boxes.push(this.boxes[i])
                 if (!this.boxes[i]) { this.boxes[i] = [] }
-                this.boxes[i].push(uireservation)
+                boxes.push(this.boxes[i])
+                let isIn = false
+                for (let j = 0; j < this.boxes[i].length; j++) {
+                    if (this.boxes[i][j].id === uireservation.id) {
+                        isIn = true
+                        break
+                    }
+                }
+                if (!isIn) { this.boxes[i].push(uireservation) }
                 if (max < this.boxes[i].length) { max = this.boxes[i].length }
                 i++
             } while (i < this.kview.computeXBox(left + uireservation.props.get('width')));
