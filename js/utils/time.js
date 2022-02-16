@@ -1,7 +1,7 @@
 const TimeUtils = {
     toHourString (seconds) {
-        let hours = (seconds / 3600).toFixed(0)
-        let minutes = ((seconds / 60) - (hours * 60)).toFixed(0)
-        return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
+        let hours = Math.floor(seconds / 3600)
+        let minutes = Math.floor((seconds / 60) - (hours * 60))
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
     }
 }
