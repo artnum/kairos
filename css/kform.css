@@ -1,24 +1,40 @@
 .k-form-ui .k-label {
-    display: inline-block;
+    display: inline-flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 3em;
+    height: min-content;
+    font-weight: bold;
 }
 
 .k-form-ui .k-input {
-    margin-left: 32ch;
-    width: calc(100% - 32ch);
+    height: 2em;
+    min-width: calc(100% - 18ch);
+    max-width: calc(100% - 18ch);
     border: none;
-    border-bottom: 2px solid green;
+    border-bottom: 2px solid rgba(0, 200, 0, 0.5);
+    box-shadow: 0px 2px 8px 0px rgba(0, 200, 0, 0.25);
 }
 
 .k-form-ui .k-input[readonly] {
-    border-bottom: 2px solid black;
-    background-color:cornflowerblue;
+    border: none;
+    background-color: white;
+    color: black;
+    font-weight: bolder;
+    font-family: monospace;
+    box-shadow: none;
 }
 
 
 .k-form-ui .k-input.k-changed {
-    border-bottom: 2px solid orange;
+    border-bottom: 2px solid rgba(255,165,0,0.5);
+    box-shadow: 0px 2px 8px 0px rgba(255,165,0,0.25);
+
 }
 
 .k-form-ui .k-input.k-invalid {
-    border-bottom: 2px solid red;
+    border-bottom: 2px solid rgba(255,0,0,0.5);
+    box-shadow: 0px 2px 8px 0px rgba(255,0,0,0.25);
+
 }

@@ -23,11 +23,21 @@ KStore.save = function (kobject) {
     const body = {}
     for (const k of kobject.keys()) {
         if (fields.indexOf(k) !== -1) {
-            console.log(k, kobject.get(k))
             body[k] = kobject.get(k)
         }
     }
-    return kstore.set(body, kobject.get('uid'))
+    return new Promise((resolve, reject) => {
+        kstore.set(body, kobject.get('uid'))
+        .then(id => {
+            return kstore.get(id)
+        })
+        .then(kobject => {
+            resolve(kobject)
+        })
+        .catch(reason => {
+            reject(reason)
+        })
+    })
 }
 
 
@@ -81,7 +91,6 @@ KStore.prototype.relateEntry = function (kobject) {
             resolve(kobject)
         })
         .catch(reason => {
-            console.log(reason)
             resolve(kobject)
         })
     })
@@ -110,6 +119,7 @@ KStore.prototype.delete = function (id) {
 
 KStore.prototype.get = function (id) {
     return new Promise((resolve, reject) => {
+        id = String(id)
         /* in some part, store/id is used, remove the store part */
         if (id.indexOf('/') !== -1) {
             id = id.split('/').pop() 

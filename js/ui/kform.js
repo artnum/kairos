@@ -1,5 +1,7 @@
 function KFormUI (object) {
     this.object = object
+    this.fields = []
+    this.changePipeline = Promise.resolve()
     this.domNode = document.createElement('FORM')
     this.domNode.classList.add('k-form-ui')
     this.domNode.addEventListener('submit', this.submit.bind(this))
@@ -32,17 +34,59 @@ KFormUI.prototype.reset = function (event) {
 }
 
 KFormUI.prototype.change = function (event) {
-    let node = event.target
+    const node = event.target
     node.classList.add('k-changed')
-    this.object.set(node.getAttribute('name'), node.value)
-    KStore.save(this.object)
-    .then(x => {
-        node.classList.remove('k-changed')
+
+    this.changePipeline
+    .then(() => {
+        this.changePipeline = new Promise(resolve => {
+            this.object.set(node.getAttribute('name'), node.value)
+            KStore.save(this.object)
+            .then(x => {
+                node.classList.remove('k-changed')
+                this.updateFormFields()
+                resolve()
+            })
+            .catch(reason => {
+                node.classList.remove('k-changed')
+                node.classList.add('k-invalid')
+                resolve()
+            })
+        })
     })
-    .catch(reason => {
-        node.classList.remove('k-changed')
-        node.classList.add('k-invalid')
-    })
+}
+
+KFormUI.prototype.updateFormFields = function () {
+    for (const key of this.fields) {
+        const input = this.domNode.querySelector(`[name="${key}"]`)
+        if (input) {
+            const value = this.object.get(input.getAttribute('name'))
+            if (value !== input.value) { input.value = value }
+        }
+    }
+}
+
+KFormUI.prototype.keyDownEvents = function (event) {
+    const node = event.target
+    switch (event.key) {
+        case 'Escape':
+            node.value = this.object.get(node.getAttribute('name'))
+            node.focus()
+            break
+    }
+}
+
+KFormUI.prototype.keyUpEvents = function (event) {
+    const node = event.target
+
+    /* resize textarea height to fit text */
+    if (node.nodeName === 'TEXTAREA') {
+        window.requestAnimationFrame(() => {
+            node.style.setProperty('height', 'auto')
+            node.style.setProperty('height', `${node.scrollHeight}px`)
+          })
+    }
+
 }
 
 KFormUI.prototype.render = function (fields) {
@@ -87,6 +131,7 @@ KFormUI.prototype.render = function (fields) {
             })(type, this.object.get(key))
 
             input.setAttribute('name', key)
+            this.fields.push(key)
             input.classList.add('k-input')
             if (fields[key]?.readonly) {
                 input.classList.add('k-input-readonly')
@@ -94,6 +139,10 @@ KFormUI.prototype.render = function (fields) {
             }
 
             input.addEventListener('change', this.change.bind(this))
+            input.addEventListener('keydown', this.keyDownEvents.bind(this))
+            input.addEventListener('keyup', this.keyUpEvents.bind(this))
+
+
             label.appendChild(input)
 
             let found = false

@@ -100,9 +100,13 @@ KUIReservation.prototype.renderForm = function () {
 
         const rform = new KFormUI(this.object)
         rform.render({
+            id: {label: 'Numéro', readonly: true},
+            version: {label: 'Version', readonly: true},
             begin: {label: 'Début', type: 'date'},
             end: {label: 'Fin', type: 'date'},
-            time: {label: 'Durée', type: 'hour'}
+            time: {label: 'Durée', type: 'hour'},
+            comment: {label: 'Remarque', type: 'multitext'}
+
         })
         .then(domNode => {
             for (const fieldset of form.getElementsByTagName('FIELDSET')) {
