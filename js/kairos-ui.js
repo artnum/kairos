@@ -41,7 +41,7 @@ window.addEventListener('keydown', (event) => {
                     let node
                     do { 
                         node = KAIROS.lastInputBlured.pop()
-                    } while(!document.body.contains(node))
+                    } while(node && !document.body.contains(node))
                     if (node) {
                         node.focus()
                         event.preventDefault()

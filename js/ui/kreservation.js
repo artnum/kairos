@@ -89,15 +89,40 @@ KUIReservation.prototype.renderForm = function () {
         const reservation = this.object
         const form = document.createElement('DIV')
         form.classList.add('kreservationForm')
+        const affaire = this.object.getRelation('kaffaire')
         form.innerHTML = `
-        <fieldset><legend>Date</legend>
-        <label>Début : <input type="text" value="${reservation.get('begin')}"></input></label>
-        <label>Fin : <input type="text" value="${reservation.get('end')}"></input></label>
-        <label>Durée : <input type="text" value="${TimeUtils.toHourString(reservation.get('time'))}"></input></label>
-
+        <fieldset name="reservation"><legend>Réservation</legend>
+        </fieldset>
+        <fieldset name="affaire"><legend>Travail</legend>
         </fieldset>
         <button name="delete" class="mbutton">Supprimer</button>
         `
+
+        const rform = new KFormUI(this.object)
+        rform.render({
+            begin: {label: 'Début', type: 'date'},
+            end: {label: 'Fin', type: 'date'},
+            time: {label: 'Durée', type: 'hour'}
+        })
+        .then(domNode => {
+            for (const fieldset of form.getElementsByTagName('FIELDSET')) {
+                if (fieldset.getAttribute('name') === 'reservation') {
+                    fieldset.appendChild(domNode)
+                    break
+                }
+            }
+        })
+        const affaireUi = new KAffaireFormUI(affaire)
+        affaireUi.render()
+        .then(domNode => {
+            for (const fieldset of form.getElementsByTagName('FIELDSET')) {
+                if (fieldset.getAttribute('name') === 'affaire') {
+                    fieldset.appendChild(domNode)
+                    break
+                }
+            }
+        })
+
         const buttons = MButton.parse(form)
         for (const button of buttons) {
             switch(button.name) {

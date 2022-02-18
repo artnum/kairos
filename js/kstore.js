@@ -14,6 +14,23 @@ function KStore(type) {
     return this
 }
 
+KStore.save = function (kobject) {
+    const kstore = new KStore(kobject.getType())
+    const fields = KAIROS[kobject.getType()].fields !== undefined ? KAIROS[kobject.getType()].fields : []
+    if (fields.length === 0) {
+        return kstore.set(kobject.getBody(), kobject.get('uid'))
+    }
+    const body = {}
+    for (const k of kobject.keys()) {
+        if (fields.indexOf(k) !== -1) {
+            console.log(k, kobject.get(k))
+            body[k] = kobject.get(k)
+        }
+    }
+    return kstore.set(body, kobject.get('uid'))
+}
+
+
 KStore.prototype.relateEntry = function (kobject) {
     return new Promise((resolve, reject) => {
         const promises = []

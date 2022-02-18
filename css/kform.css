@@ -1,0 +1,24 @@
+.k-form-ui .k-label {
+    display: inline-block;
+}
+
+.k-form-ui .k-input {
+    margin-left: 32ch;
+    width: calc(100% - 32ch);
+    border: none;
+    border-bottom: 2px solid green;
+}
+
+.k-form-ui .k-input[readonly] {
+    border-bottom: 2px solid black;
+    background-color:cornflowerblue;
+}
+
+
+.k-form-ui .k-input.k-changed {
+    border-bottom: 2px solid orange;
+}
+
+.k-form-ui .k-input.k-invalid {
+    border-bottom: 2px solid red;
+}

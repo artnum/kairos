@@ -83,7 +83,7 @@ function KObject (type, data) {
                 case 'set': return object.setItem.bind(object)
                 case 'has': return object.hasItem.bind(object)
                 case 'delete': return object.deleteItem.bind(object)
-                case 'keys': return object.itemKeys.bind(objet)
+                case 'keys': return object.itemKeys.bind(object)
                 case 'getCn': return object.getCn.bind(object)
                 case 'getRelation': return object.getRelation.bind(object)
                 case 'setRelation': return object.setRelation.bind(object)
@@ -98,6 +98,7 @@ function KObject (type, data) {
                 case 'toXML': return object.doToXML.bind(object)
                 case 'toJSON': return object.doToJSON.bind(object)
                 case 'getFirstTextValue': return object.getFirstTextValue.bind(object)
+                case 'getBody': return object.doGetBody.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -133,6 +134,7 @@ function KObject (type, data) {
                 case 'toXML':
                 case 'toJSON':
                 case 'getFirstTextValue':
+                case 'getBody':
                     return {
                         writable: false,
                         enumerable: false,
@@ -347,6 +349,10 @@ KObject.prototype.doToString = function () {
         }
     }
     return oToStr(Object.fromEntries(this.data.entries()), 0)
+}
+
+KObject.prototype.doGetBody = function () {
+    return Object.fromEntries(this.data)
 }
 
 KObject.prototype.doToJSON = function () {
