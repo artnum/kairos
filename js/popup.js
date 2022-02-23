@@ -1,22 +1,50 @@
 function KTaskBar () {
-    if (!KTaskBar._taskBar) {
-        KTaskBar._id = 0
-        KTaskBar._tasks = new Map()
-        KTaskBar._lists = new Map()
-        KTaskBar._taskBar = document.createElement('DIV')
-        KTaskBar._taskBar.id = 'KTaskBar'
-        KTaskBar._taskBar.style.setProperty('z-index', KAIROS.zMax())
-        KAIROS.keepAtTop(KTaskBar._taskBar)
-        KAIROSAnim.push(() => {
-            document.body.appendChild(KTaskBar._taskBar)
-        })
-    }
-    this.taskbar = KTaskBar._taskBar
-    this.tasks = KTaskBar._tasks
-    this.lists = KTaskBar._lists
+    if (KTaskBar._taskBar) { return KTaskBar._taskBar }
+
+    KTaskBar._taskBar = this
+    this.id = 0
+    this.tasks = new Map()
+    this.lists = new Map()
+    this.taskbar = document.createElement('DIV')
+    this.taskbar.id = 'KTaskBar'
+    this.taskbar.style.setProperty('z-index', KAIROS.zMax())
+    this.taskbar.addEventListener('click', this.handleClickEvent.bind(this), {capture: true})
+    KAIROS.keepAtTop(this.taskbar)
+    document.body.appendChild(this.taskbar)
+    window.addEventListener('global-keypress', this.handleGlobalEvents.bind(this))
 }
 
-KTaskBar.prototype.dispose = function () {
+KTaskBar.prototype.handleGlobalEvents = function (globalEvent) {
+    const event = globalEvent.detail
+    const mod = (x, mod) => {
+        return ((x % mod) + mod) % mod
+    }
+
+    if (isNaN(parseInt(event.key, 10))) { return }
+    const id = parseInt(event.key, 10)
+    const keys = Array.from(this.lists.keys())
+
+    if (keys[mod(id - 1, 10)]) {
+        this.lists.get(keys[mod(id - 1, 10)]).select()
+    }
+}
+
+KTaskBar.prototype.handleClickEvent = function (event) {
+    let node = event.target
+    while (node && !node.dataset.type) { node = node.parentNode }
+    if (node.dataset.type === 'task') {
+        return this.maximize(node.id)
+    } 
+    if (node.dataset.type === 'list') {
+        const list = this.lists.get(node.id)
+        if (list.node.dataset.popped === '1') {
+            return this.unpopList(list)
+        }
+        return this.popList(event)
+    }
+}
+
+KTaskBar.prototype.place = function () {
     let j = 0
     let i = 0
     const offset = this.lists.size * 152
@@ -34,66 +62,191 @@ KTaskBar.prototype.dispose = function () {
 }
 
 KTaskBar.prototype.minimize = function (titleNode, maximizeCallback) {
-    const tid = `ktask-t-${++KTaskBar._id}`
+    const tid = `ktask-t-${++this.id}`
     const task = document.createElement('DIV')
     task.id = tid
+    task.dataset.type = 'task'
     task.classList.add('ktask')
     task.appendChild(titleNode)
-    task.addEventListener('click', maximizeCallback)
     KAIROSAnim.push(() => { this.taskbar.appendChild(task) })
     .then(() => {
-        this.dispose()
+        this.place()
     })
-    this.tasks.set(tid, task)
+    this.tasks.set(tid, {node: task, callback: maximizeCallback})
     return tid
 }
 
 KTaskBar.prototype.maximize = function (tid) {
-    const node = this.tasks.get(tid)
-    if (!node) { return }
+    const task = this.tasks.get(tid)
+
+    if (!task.node) { return }
+    task.callback()
     this.tasks.delete(tid)
     KAIROSAnim.push(() => { 
-        if (!node.parentNode) { return }
-        node.parentNode.removeChild(node)
+        if (!task.node.parentNode) { return }
+        task.node.parentNode.removeChild(task.node)
     })
     .then(() => {
-        this.dispose()
+        this.place()
     })
 }
 
-KTaskBar.prototype.remove = function (tid) {
-    const node = this.tasks.get(tid)
-    if (!node) { return }
-    this.tasks.delete(tid)
-    KAIROSAnim.push(() => { 
-        if (!node.parentNode) { return }
-        node.parentNode.removeChild(node)
-    })
-    .then(() => {
-        this.dispose()
-    })    
+KTaskBar.prototype.addListItem = function (listId, item) {
+    const list = this.lists.get(listId)
+    if (!list) { return }
+    list.items.push(item)
+    this.lists.set(listId, list)
 }
 
-KTaskBar.prototype.list = function (titleNode, items) {
-    const lid = `ktask-l-${++KTaskBar._id}`
+function KListItem (data) {
+    this.evtTarget = new EventTarget()
+    Object.assign(this, data)
+}
+
+KListItem.prototype.select = function () {
+    const ktask = new KTaskBar()
+    ktask.selectItem(this.id)
+}
+
+KListItem.prototype.addEventListener = function(type, listener, options) {
+    return this.evtTarget.addEventListener(type, listener, options)
+}
+
+KListItem.prototype.removeEventListener = function (type, listener, options) {
+    return this.evtTarget.removeEventListener(type, listener, options)
+}
+
+KListItem.prototype.dispatchEvent = function (event) {
+    return this.evtTarget.dispatchEvent(event)
+}
+
+
+KTaskBar.prototype.list = function (titleNode, items, itemCallback, actions = [], data = null) {
+    const lid = `ktask-l-${++this.id}`
     const list = document.createElement('DIV')
     list.classList.add('klist')
     list.id = lid
-    list.appendChild(titleNode)
+    list.dataset.type = 'list'
+    list.dataset.popped = '0'
+    if (titleNode instanceof HTMLElement) {
+        list.appendChild(titleNode)
+    } else {
+        const span = document.createElement('SPAN')
+        span.innerHTML = titleNode
+        list.appendChild(span)
+    }
     list.style.setProperty('left', 0)
-    list.addEventListener('click', this.popList.bind(this), {capture: true})
-
     KAIROSAnim.push(() => { this.taskbar.appendChild(list) })
-    .then(() => { this.dispose() })
+    .then(() => { this.place() })
+    const listInstance = new KListItem({
+        id: lid,
+        node: list,
+        items: items,
+        itemCallback: itemCallback,
+        actions: actions,
+        popped: null,
+        data: data
+    })
+    this.lists.set(lid, listInstance)
+    return listInstance
+}
 
-    this.lists.set(lid, {node: list, items: items})
+KTaskBar.prototype.unselect = function () {
+    if (this.popped) {
+        this.unpopList(this.popped)
+    }
+    return true
+}
 
-    return lid
+KTaskBar.prototype.unpopList = function (target) {
+    if (target instanceof Event) {        
+        let node = target.target
+        while (node && !node.classList.contains('klist')) { node = node.parentNode }
+        node.dataset.popped = '0'
+        const list = this.lists.get(node.id)
+        list.dispatchEvent(new CustomEvent('unpop', {detail: list}))
+        KAIROSAnim.push(() => { if (list.popped && list.popped.parentNode) { list.popped.parentNode.removeChild(list.popped) } })
+    } else {
+        target.dispatchEvent(new CustomEvent('unpop', {detail: target}))
+        target.node.dataset.popped = '0'
+        KAIROSAnim.push(() => { if (target.popped && target.popped.parentNode) { target.popped.parentNode.removeChild(target.popped) } })
+    }
+    this.popped = null
 }
 
 KTaskBar.prototype.popList = function (event) {
-    let node = event.target
+    KAIROS.stackClosable(this.unselect.bind(this))
+    let node
+    if (event instanceof Event) {
+        node = event.target
+    } else {
+        node = event
+    }
     while (node && !node.classList.contains('klist')) { node = node.parentNode }
+    node.dataset.popped = '1'
+    const listNode = document.createElement('DIV')
+    listNode.classList.add('klist', 'pop')
+    KAIROS.setAtTop(listNode)
+    const list = this.lists.get(node.id)
+    list.dispatchEvent(new CustomEvent('pop', {detail: list}))
+    if (!list) { return }
+    
+    /* unpop others */
+    for (const [k, l] of this.lists) {
+        if (k !== node.id) { this.unpopList(l) }
+    }
+    /* set popped now as unpop reset this.poped */
+    this.popped = list
+
+    /* if no action, no item in list, stop, else render */
+    if (Object.keys(list.actions).length === 0 && Object.keys(list.items).length === 0) { ; return }
+    for (const k of Object.keys(list.actions)) {
+        listNode.innerHTML += `<span data-id="${k}" class="kaction">${list.actions[k].label}</span>`
+    }
+    listNode.innerHTML += `<span class="kseparator"> </span>`
+    for (const k of Object.keys(list.items)) {
+        const item = list.items[k]
+        let label = ''
+        for (const prop of [ 'id', 'label', 'getLabel', 'title', 'getTitle' ]) {
+            if (prop in item) {
+                if (typeof item[prop] === 'function') {
+                    label = item[prop]()
+                } else {
+                    label = item[prop]
+                }
+                break
+            }
+        }
+        listNode.innerHTML += `<span data-id="${k}" class="kitem">${label}</span>`
+    }
+    listNode.addEventListener('click', this.handleListEvent.bind(list))
+    KAIROSAnim.push(() => {
+        document.body.appendChild(listNode)
+    })
+}
+
+KTaskBar.prototype.selectItem = function (itemId) {
+    if (this.lists.has(itemId)) {
+        const item = this.lists.get(itemId)
+        this.popList(item.node)
+    } else if (this.tasks.has(itemId)) {
+
+    }
+}
+
+KTaskBar.prototype.getCurrentList = function () {
+    return this.popped
+}
+
+KTaskBar.prototype.handleListEvent = function (event) {
+    let node = event.target
+    while (node && !node.dataset.id) { node = node.parentNode }
+    if (node.classList.contains('kaction')) {
+        return this.actions[node.dataset.id].callback()
+    }
+    if (node.classList.contains('kitem')) {
+        return this.itemCallback(this.items[node.dataset.id])
+    }
 }
 
 function KPopup (title, opts = {}) {

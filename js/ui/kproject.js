@@ -121,6 +121,11 @@ KProject.prototype.form = function () {
                     const fs = document.createElement('fieldset')
                     fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
                     fs.appendChild(affNode)
+                    const plan = document.createElement('button')
+                    plan.innerHTML = 'Planifier'
+                    plan.dataset.action = 'plan-affaire'
+                    plan.dataset.affaire = affaire.uid
+                    fs.appendChild(plan)
                     node.appendChild(fs)
                 })
             }
