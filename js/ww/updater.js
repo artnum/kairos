@@ -78,9 +78,11 @@ function connectEventSource () {
     self.postMessage({op: 'log', data: msg})
     if (msg.operation === undefined) { return }
     if (msg.cid === undefined) { return }
-    if (!EVTOperation[msg.operation]) { return }
-    if (!EVTOperation[msg.operation][msg.type]) { return }
-    EVTOperation[msg.operation][msg.type](msg)
+    if (EVTOperation[msg.operation] && EVTOperation[msg.operation][msg.type]) {
+      EVTOperation[msg.operation][msg.type](msg)
+    } else {
+      new GEvent().send('kobjet.something', msg)
+    }
   }
   evtsource.onerror = event => {
     evtsource.close()

@@ -2,7 +2,21 @@ function KObjectGStore () {
     if (KObjectGStore._instance) { return KObjectGStore._instance }
     this.store = new Map()
     KObjectGStore._instance = this
+    new GEvent().listen('kobjet.something', KObjectGStore._instance.receiveKobjectUpdate.bind(KObjectGStore._instance))
     return this
+}
+
+KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
+    const details = event.detail
+    switch (details.operation) {
+        default: break;
+        case 'write':
+            if (details.type && details.id && KAIROS.remoteType[details.type]) {
+                const kstore = new KStore(KAIROS.remoteType[details.type])
+                kstore.get(details.id)
+            } 
+            break
+    }
 }
 
 KObjectGStore.prototype.put = function (kobject) {

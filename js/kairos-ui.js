@@ -29,6 +29,7 @@ window.addEventListener('keydown', (event) => {
         || event.target instanceof HTMLTextAreaElement
         || event.target instanceof HTMLButtonElement
         || event.target instanceof HTMLFormElement
+        || event.target instanceof HTMLSelectElement
        ) 
     {       
         switch(event.key) {

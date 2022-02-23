@@ -1,11 +1,15 @@
 function KFormUI (object) {
     this.object = object
     this.fields = []
+    this.inputs = []
     this.changePipeline = Promise.resolve()
     this.domNode = document.createElement('FORM')
     this.domNode.classList.add('k-form-ui')
     this.domNode.addEventListener('submit', this.submit.bind(this))
     this.domNode.addEventListener('reset', this.reset.bind(this))
+    this.object.addEventListener('update', this.updateFormFields.bind(this))
+    this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
+    this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
 }
 
 KFormUI.prototype.getValue = function (element) {
@@ -40,7 +44,13 @@ KFormUI.prototype.change = function (event) {
     this.changePipeline
     .then(() => {
         this.changePipeline = new Promise(resolve => {
-            this.object.set(node.getAttribute('name'), node.value)
+            let value = null
+            switch(node.dataset.type) {
+                default: value = node.value; break
+                case 'hour': value = TimeUtils.fromHourString(node.value); break
+            }
+
+            this.object.set(node.getAttribute('name'), value)
             KStore.save(this.object)
             .then(x => {
                 node.classList.remove('k-changed')
@@ -56,12 +66,42 @@ KFormUI.prototype.change = function (event) {
     })
 }
 
+KFormUI.prototype.beginObjectUpdate = function () {
+    for(const input of this.inputs) {
+        window.requestAnimationFrame(() => {
+            input.classList.add('k-update-begin')
+            input.setAttribute('readonly', '1')
+        })
+    }
+}
+
+KFormUI.prototype.endObjectUpdate = function () {
+    for(const input of this.inputs) {
+        window.requestAnimationFrame(() => {
+            input.classList.remove('k-update-begin')
+            input.removeAttribute('readonly')
+        })
+    }
+}
+
 KFormUI.prototype.updateFormFields = function () {
     for (const key of this.fields) {
         const input = this.domNode.querySelector(`[name="${key}"]`)
         if (input) {
             const value = this.object.get(input.getAttribute('name'))
-            if (value !== input.value) { input.value = value }
+            if (input.dataset.value) {
+                if (value !== input.dataset.value) {
+                    input.dataset.value = value
+                    switch(input.dataset.type) {
+                        case 'date': input.value = TimeUtils.toDateString(value); break;
+                        case 'hour': input.value = TimeUtils.toHourString(value); break;
+                    }
+                }
+            } else {
+                if (value !== input.value) { 
+                    input.value = value 
+                }
+            }
         }
     }
 }
@@ -116,6 +156,7 @@ KFormUI.prototype.render = function (fields) {
                     case 'hour':
                         const hour = document.createElement('INPUT')
                         hour.value = TimeUtils.toHourString(value)
+                        hour.dataset.value = value
                         hour.setAttribute('type', 'text')
                         hour.classList.add('k-input-hour')
                         hour.dataset.type = 'hour'
@@ -123,6 +164,7 @@ KFormUI.prototype.render = function (fields) {
                     case 'date':
                         const date = document.createElement('INPUT')
                         date.value = TimeUtils.toDateString(value)
+                        date.dataset.value = value
                         date.setAttribute('type', 'text')
                         date.classList.add('k-input-hour')
                         date.dataset.type = 'date'
@@ -130,6 +172,7 @@ KFormUI.prototype.render = function (fields) {
                 }
             })(type, this.object.get(key))
 
+            this.inputs.push(input)
             input.setAttribute('name', key)
             this.fields.push(key)
             input.classList.add('k-input')

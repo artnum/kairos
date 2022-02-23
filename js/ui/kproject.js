@@ -105,15 +105,8 @@ KProject.prototype.lowlight = function () {
 }
 
 KProject.prototype.kaffaire = function (affaire) {
-    return `<div><h1>${affaire.getCn()}</h1>
-        <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
-        <div class="kpair"><span class="klabel">Description</span><span class="kvalue">${$S(affaire.get('description'))}</span></div>
-        <div class="kpair"><span class="klabel">Référence</span><span class="kvalue">${$S(affaire.get('reference'))}</span></div>
-        <div class="kpair"><span class="klabel">Rendez-vous</span><span class="kvalue">${$S(affaire.get('meeting'))}</span></div>
-        <div class="kapir"><span class="klabel">Fin souhaitée</span><span class="kvalue">${$S(affaire.get('end'))}</span></div>
-        <div class="kapir"><span class="klabel">Durée nécessaire</span><span class="kvalue">${$S(affaire.get('time'))}</span></div>
-        <button data-affaire="${affaire.get('uid')}" data-action="plan-affaire">Planifier</button><button data-affaire="${affaire.get('uid')}" data-action="edit-affaire">Modifier</button>
-    </div>`
+    const kaffaire = new KAffaireFormUI(affaire)
+    return kaffaire.render()
 }
 
 KProject.prototype.form = function () {
@@ -121,16 +114,18 @@ KProject.prototype.form = function () {
         const node = document.createElement('DIV')
         const affaires = this.project.getRelation('kaffaire')
         node.classList.add('kproject')
-        let affaireHTML = ''
         if (affaires) {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                affaireHTML += this.kaffaire(affaire)
+                this.kaffaire(affaire)
+                .then(affNode => {
+                    const fs = document.createElement('fieldset')
+                    fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
+                    fs.appendChild(affNode)
+                    node.appendChild(fs)
+                })
             }
         }
-        node.innerHTML = `
-            <div class="affaires">
-            ${affaireHTML}
-            </div>
+        node.innerHTML += `
             <h1 data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</h1>
             <form>
             <div class="kpair"><label class="klabel">Référence</label><span class="kvalue"><input autocomplete="off" name="reference"></span></div>

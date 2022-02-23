@@ -157,7 +157,6 @@ KUIEntry.prototype.getDomNode = function () {
 KUIEntry.prototype.resize = function () {
 }
 
-
 KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {
     if (!oldOrigin) { return }
     const diff = Math.floor((newOrigin.getTime() - oldOrigin.getTime()) / 86400000)
