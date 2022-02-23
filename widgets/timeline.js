@@ -1303,8 +1303,16 @@ define([
 
     loadEntries: function () {
       return new Promise((resolve, reject) => {
-        const url = KAIROS.URL(KAIROS.kentry.store)
-        kfetch(url)
+        const url = KAIROS.URL(`${KAIROS.kentry.store}/_query`)
+        kfetch(url, {
+          method: 'POST',
+          body: JSON.stringify({
+            '#and': {
+              disabled: '0',
+              deleted: '--'
+            }
+          })
+        })
         .then(response => {
           if (!response.ok) { return null }
           return response.json()
