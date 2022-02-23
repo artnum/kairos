@@ -59,6 +59,7 @@ KEntrySortUI.prototype.render = function () {
                     div.classList.add('k-invisible')
                 } else {
                     this.order[input.dataset.entryId].order = input.value
+                    this.order[input.dataset.entryId].visible = true
                     div.style.setProperty('order', input.value)
                     input.setAttribute('tabindex', parseInt(input.value) + 1)
                     div.classList.remove('k-invisible')
