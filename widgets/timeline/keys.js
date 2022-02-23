@@ -51,7 +51,7 @@ define([
     constructor: function () {
       this.func = null
       this.suggest = null
-      this.commandLetters = [ 'j', 'm', 'r', 'd', 'c', 'p' , 'k' ]
+      this.commandLetters = [ 'j', 'm', 'r', 't', 'p' , 'k' ]
 
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
@@ -201,9 +201,16 @@ define([
           this.goToSearchBox()
           this.func = this.gotoCount
           break
-        case 'c':
-          this.goToSearchBox()
-          this.func = this.searchByClient
+        case 't':
+          const kentrysort = new KEntrySortUI()
+          KAIROS.openWindow('Organisation des entrées')
+          .then(([domNode, document]) => {
+            kentrysort.render()
+            .then(d => {
+              domNode.appendChild(d)
+            })
+          })
+          done = true
           break
         case ':':
           this.goToSearchBox()

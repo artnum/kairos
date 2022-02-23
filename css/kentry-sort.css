@@ -1,0 +1,21 @@
+.k-entry-sort .k-list {
+    display: flex;
+    flex-direction: column;
+}
+.k-entry-sort .k-list .k-invisible {
+    color: grey;
+}
+
+.k-entry-sort .k-list .name {
+    display: inline-block;
+    min-width: 80%;
+}
+
+.k-entry-sort .k-list input {
+    max-width: 15%;
+    display: inline-block;
+} 
+
+.k-entry-sort .k-list .k-invisible input {
+    border-color: grey;
+}

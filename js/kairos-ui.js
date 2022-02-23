@@ -1,5 +1,5 @@
 
-KAIROS.mouse = {}
+KAIROS.mouse = {follow: new Map(), index: 0}
 const kMouseFollow = event => {
     KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? (event.pageY || event.clientX)
     KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
@@ -12,6 +12,9 @@ const kMouseFollow = event => {
     }
     KAIROS.mouse.clientX = event.pageX || event.clientX 
     KAIROS.mouse.clientY = event.pageY || event.clientY
+    for (const [_, cb] of KAIROS.mouse.follow) {
+        cb(KAIROS.mouse)
+    }
 }
 
 const K_INFO = 1
@@ -101,6 +104,17 @@ KAIROS.clearSelection = function () {
         window.getSelection().removeAllRanges()
         return
     }
+}
+
+KAIROS.addFollowMouse = function (callback) {
+    const idx = KAIROS.mouse.index++
+    KAIROS.mouse.follow.set(idx, callback)
+    return idx
+}
+
+KAIROS.removeFollowMouse = function (index) {
+    KAIROS.mouse.follow.delete(index)
+
 }
 
 KAIROS.info = function (txt, code = 0) {
