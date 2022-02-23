@@ -21,6 +21,10 @@ function KUIReservation (object) {
     this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
     })
+    object.addEventListener('update', this.render.bind(this))
+    const affaire = this.object.getRelation('kaffaire')
+    affaire.addEventListener('update', this.render.bind(this))
+
     object.bindUINode(this)
 }
 
@@ -184,7 +188,13 @@ KUIReservation.prototype.render = function () {
         }
         this.object.bindUINode(this)
         window.requestAnimationFrame(() => {
-            this.domNode.innerHTML = `<div class="content">${affaire.getFirstTextValue('???', 'reference', 'description', 'cn')}</div><div class="color-bar">&nbsp;</div>`
+            this.domNode.innerHTML = `<div class="content">
+                    <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
+                    <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
+                    <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                    <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                </div>
+                <div class="color-bar">&nbsp;</div>`
             this.domNode.style.setProperty('--kreservation-project-color', `var(${color})`)
             this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
             this.domNode.style.left = `${this.props.get('left')}px`

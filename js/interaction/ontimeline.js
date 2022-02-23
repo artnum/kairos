@@ -6,9 +6,15 @@ function iSelectReservation(event) {
     const entry = Viewport.getRowObject(y)
     const cell = Viewport.getCell(x, y)
 
-    if (!(event instanceof KeyboardEvent) && event.target.id) {
+    let node = event.target
+    while (node && !node.classList.contains('kentry')) { 
+      if (node.classList.contains('kreservation')) { break }
+      node = node.parentNode
+    }
+
+    if (!(event instanceof KeyboardEvent) && node.id) {
         const kgstore = new KObjectGStore()
-        const reservation = kgstore.search('kreservation', 'uuid', event.target.id)
+        const reservation = kgstore.search('kreservation', 'uuid', node.id)
         if (!reservation) {
             return
         }

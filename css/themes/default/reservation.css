@@ -8,6 +8,14 @@
     box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
 }
 
+.kreservation .content .field {
+    margin: 0.5ex 1ch;
+}
+
+.kreservation .content .reference {
+    font-weight: bold;
+}
+
 .kreservation .color-bar {
     background-color: var(--kreservation-project-color);
     width: 100%;
