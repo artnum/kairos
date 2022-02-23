@@ -40,7 +40,6 @@ KColor.prototype.delete = function (id) {
 KColor.prototype.generate = function (group) {
     const color = this.groups.get(group)
     if (color) {
-
         if (color.h + color.step >= 360 && color.l < 30) {
             color.s = 50
             color.l = 70

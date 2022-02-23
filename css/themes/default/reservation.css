@@ -1,10 +1,25 @@
 .kreservation {
-    background-color: var(--kreservation-project-color);
-    border: 2px solid transparent;
+    background-color: white;
+    border: 1px solid black;
     font-family: 'B612';
     font-size: 10px;
     overflow: hidden;
     text-overflow: clip;
+    box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
+}
+
+.kreservation .color-bar {
+    background-color: var(--kreservation-project-color);
+    width: 100%;
+    min-height: 6px;
+    max-height: 6px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+
 }
 
 .kreservation.selected {

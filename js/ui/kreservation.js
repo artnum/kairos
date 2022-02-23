@@ -160,7 +160,7 @@ KUIReservation.prototype.render = function () {
         let color = kcolor.get(`kproject:${project.get('uid')}`)
         if (!color) {
             const gcolor = kcolor.generate('kproject')
-            color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.25)`)
+            color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.8)`)
         }
         let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
 
@@ -184,7 +184,7 @@ KUIReservation.prototype.render = function () {
         }
         this.object.bindUINode(this)
         window.requestAnimationFrame(() => {
-            this.domNode.innerHTML = `${affaire.getFirstTextValue('???', 'reference', 'description', 'cn')}`
+            this.domNode.innerHTML = `<div class="content">${affaire.getFirstTextValue('???', 'reference', 'description', 'cn')}</div><div class="color-bar">&nbsp;</div>`
             this.domNode.style.setProperty('--kreservation-project-color', `var(${color})`)
             this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
             this.domNode.style.left = `${this.props.get('left')}px`
