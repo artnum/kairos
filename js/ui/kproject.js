@@ -6,6 +6,7 @@ function KProject (project) {
 }
 
 KProject.prototype.render = function () {
+    const today = new Date()
     return new Promise((resolve) => {
         const project = this.project
         const div = document.createElement('DIV')
@@ -21,19 +22,20 @@ KProject.prototype.render = function () {
         
         const txt = `${project.getFirstTextValue('', 'name') || ''} ${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''} ${project.getCn()}`
         const words =  txt.split(' ')
-        div.classList.add('kproject-list')
+        div.classList.add('k-project-in-list')
         div.dataset.words = words.filter((w,i) => { return words.indexOf(w) === i}).map(v => { return v.toLowerCase()}).join(' ')
-        div.innerHTML = `
-        <h1>${project.getCn()}</h1>
-        <div>
-        <div class="kpair"><span class="klabel">Nom</span><span class="kvalue">${project.getFirstTextValue('', 'name') || ''}</span></div>
-        <div class="kpair"><span class="klabel">Client</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''}</span></div>
-        </div>
-        <ul>
-        `
+    
+        let nearestEnd = Infinity
+        let affaireHtml = ''
         if (affaire) {
             for (const aff of Array.isArray(affaire) ? affaire : [affaire]) {
                 let time = 0
+                const end = new Date(aff.get('end'))
+                if (!isNaN(end.getTime())) {
+                    if (end.getTime() < nearestEnd) {
+                        nearestEnd = end.getTime()
+                    }
+                }
                 const reservations = aff.getRelation('kreservation')
                 if (reservations) {
                     for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
@@ -41,10 +43,31 @@ KProject.prototype.render = function () {
                         if (!isNaN(rtime)) { time += rtime }
                     }
                 }
-                div.innerHTML += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
+                affaireHtml += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
             }
         }
-        div.innerHTML += '</ul>'
+
+        const nearestDate = new Date()
+        nearestDate.setTime(nearestEnd)
+
+        div.innerHTML = `
+        <h1>${project.getCn()} - ${isNaN(nearestDate.getTime()) ? 'Pas de date'  : nearestDate.toLocaleDateString()}</h1>
+        <div>
+        <div class="kpair"><span class="klabel">Nom</span><span class="kvalue">${project.getFirstTextValue('', 'name') || ''}</span></div>
+        <div class="kpair"><span class="klabel">Client</span><span class="kvalue">${project.getRelation('kcontact')?.getFirstTextValue('', 'cn') || ''}</span></div>
+        </div>
+        <ul>
+            ${affaireHtml}
+        </ul>
+        `
+        if (nearestEnd === Infinity) {
+            div.style.setProperty('order', Math.floor(today.getTime() / 1000 + 86400 * 3650))
+        } else {
+            div.style.setProperty('order', Math.floor(nearestEnd / 1000))
+        }
+        if (today.getTime() > nearestEnd) {
+            div.classList.add('k-overtime')
+        }
         div.addEventListener('mouseenter', event => {
             this.highlight()
         })
@@ -118,6 +141,7 @@ KProject.prototype.form = function () {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
                 this.kaffaire(affaire)
                 .then(affNode => {
+                    const kformui = affNode.getParentObject()
                     const fs = document.createElement('fieldset')
                     fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
                     fs.appendChild(affNode)
@@ -127,6 +151,7 @@ KProject.prototype.form = function () {
                     plan.dataset.affaire = affaire.uid
                     fs.appendChild(plan)
                     node.appendChild(fs)
+                    kformui.attachToParent(fs)
                 })
             }
         }
@@ -170,7 +195,6 @@ KProject.prototype.form = function () {
                     const appendTo = node.querySelector('div.affaires')
                     window.requestAnimationFrame(() => {
                         appendTo.appendChild(dom.content)
-                        
                     })
                 })
             })

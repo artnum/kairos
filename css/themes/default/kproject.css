@@ -1,3 +1,12 @@
-.kproject-list {
+.k-project-in-list {
     background-color: var(--kproject-color);
+}
+
+.k-project-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.k-overtime h1 {
+    color: yellow;
 }

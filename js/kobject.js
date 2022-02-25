@@ -16,6 +16,17 @@ KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
                 kstore.get(details.id)
             } 
             break
+        case 'delete':
+            console.log(event, details)
+            if (details.type && details.id && KAIROS.remoteType[details.type]) {
+                const kobject = this.get(KAIROS.remoteType[details.type], details.id)
+                console.log(kobject)
+                if (kobject) {
+                    kobject.deleteObject()
+                    this.delete(KAIROS.remoteType[details.type], details.id)
+                }
+            } 
+            break
     }
 }
 
@@ -26,7 +37,7 @@ KObjectGStore.prototype.put = function (kobject) {
         if (!this.store.get(type)) {
             this.store.set(type, new Map())
         }
-        this.store.get(type).set(uid, kobject)
+        this.store.get(type).set(String(uid), kobject)
     }
 }
 
@@ -37,7 +48,7 @@ KObjectGStore.prototype.get = function (type, uid) {
 
     const tstore = this.store.get(type)
     if (tstore) {
-        return tstore.get(uid)
+        return tstore.get(String(uid))
     }
     return undefined
 }
@@ -61,7 +72,7 @@ KObjectGStore.prototype.delete = function (type, uid) {
 
     const tstore = this.store.get(type)
     if (tstore) {
-        return tstore.delete(uid)
+        return tstore.delete(String(uid))
     }
     return false
 }
@@ -113,6 +124,7 @@ function KObject (type, data) {
                 case 'toJSON': return object.doToJSON.bind(object)
                 case 'getFirstTextValue': return object.getFirstTextValue.bind(object)
                 case 'getBody': return object.doGetBody.bind(object)
+                case 'deleteObject': return object.doDeleteObject.bind(object)
                 case 'relation': return undefined
             }
             return object.getItem(name)
@@ -149,6 +161,7 @@ function KObject (type, data) {
                 case 'toJSON':
                 case 'getFirstTextValue':
                 case 'getBody':
+                case 'deleteObject':
                     return {
                         writable: false,
                         enumerable: false,
@@ -218,6 +231,9 @@ KObject.prototype.doUpdate = function (data) {
     this.evtTarget.dispatchEvent(new CustomEvent('update', {detail: {kobject: this}}))
 }
 
+KObject.prototype.doDeleteObject = function () {
+    this.evtTarget.dispatchEvent(new CustomEvent('delete', {detail: {kobject: this}}))
+}
 
 KObject.prototype.deleteItem = function (name) {
     if (this.hasItem(name)) { 

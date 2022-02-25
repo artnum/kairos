@@ -31,6 +31,10 @@ KAffaireFormUI.prototype.change = function (event) {
     
 }
 
+KAffaireFormUI.prototype.attachToParent = function(parent) {
+    this.formUI.attachToParent(parent)
+}
+
 KAffaireFormUI.prototype.render = function () {
     return this.formUI.render({
         reference: {label: 'Référence'},

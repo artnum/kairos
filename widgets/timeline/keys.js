@@ -223,8 +223,9 @@ define([
             const klateral = new KLateral().open()
             
             const container = document.createElement('DIV')
-
+            container.classList.add('k-project-list')
             const search = document.createElement('DIV')
+            search.style.setProperty('order', -1)
             search.innerHTML = '<input type="text" placeholder="Recherche">'
             container.appendChild(search)
             search.firstElementChild.addEventListener('keyup', event => {

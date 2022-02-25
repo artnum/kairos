@@ -5,8 +5,13 @@ function KFormUI (object) {
     this.changePipeline = Promise.resolve()
     this.domNode = document.createElement('FORM')
     this.domNode.classList.add('k-form-ui')
+    this.domNode.getParentObject = function () {
+        return this
+    }.bind(this)
+    this.parentNode = this.domNode
     this.domNode.addEventListener('submit', this.submit.bind(this))
     this.domNode.addEventListener('reset', this.reset.bind(this))
+    this.object.addEventListener('delete', this.deleteForm.bind(this))
     this.object.addEventListener('update', this.updateFormFields.bind(this))
     this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
     this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
@@ -28,6 +33,12 @@ KFormUI.prototype.getValue = function (element) {
         case 'SELECT':
             return null
     }
+}
+
+/* if interface attach us to something that must disappear on delete or something else */
+KFormUI.prototype.attachToParent = function (parent) {
+    this.parentNode = parent
+    this.parentNode.classList.add('k-form-ui')
 }
 
 KFormUI.prototype.submit = function (event) {
@@ -64,6 +75,12 @@ KFormUI.prototype.change = function (event) {
             })
         })
     })
+}
+
+KFormUI.prototype.deleteForm = function () {
+    if (!this.parentNode) { return }
+    const parent = this.parentNode.parentNode
+    window.requestAnimationFrame(() => { parent.removeChild(this.parentNode) })
 }
 
 KFormUI.prototype.beginObjectUpdate = function () {
