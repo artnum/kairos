@@ -199,28 +199,3 @@ KStore.prototype.set = function (object, id = null) {
         })
     })    
 }
-
-KStore.prototype.query = function (query) {
-    return new Promise((resolve, reject) => {
-        const url = new URL(`${this.url}/_query`)
-        
-        fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(query)
-        })
-        .then(response => {
-            if (!response.ok) { reject(new Error('ERR:Server')); return }
-            return response.json()
-        })
-        .then(result => {
-            if (result.data === null) { reject(new Error('ERR:Server')); return }
-            const kobjects = []
-            for (const kentry of result.data) {
-                const kobject = new KObject(this.type, kentry)
-                this.relateEntry(kobject)
-                kobjects.push(kobject)
-            }
-            resolve(kobjects)
-        })
-    })
-}
