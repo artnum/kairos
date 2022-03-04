@@ -55,17 +55,13 @@ KFormUI.prototype.change = function (event) {
     this.changePipeline
     .then(() => {
         this.changePipeline = new Promise(resolve => {
-            let value = null
-            switch(node.dataset.type) {
-                default: value = node.value; break
-                case 'hour': value = TimeUtils.fromHourString(node.value); break
-            }
-
-            this.object.set(node.getAttribute('name'), value)
+            const value = this.getInputValue(node)
+            const name = node.getAttribute('name')
+            this.object.set(name, value)
             KStore.save(this.object)
             .then(x => {
                 node.classList.remove('k-changed')
-                this.updateFormFields()
+                this.updateFormFields(name)
                 resolve()
             })
             .catch(reason => {
@@ -101,22 +97,39 @@ KFormUI.prototype.endObjectUpdate = function () {
     }
 }
 
-KFormUI.prototype.updateFormFields = function () {
+KFormUI.prototype.getInputValue = function (input) {
+    switch(input.dataset.type) {
+        case 'date': return TimeUtils.fromDateString(input.value); break;
+        case 'hour': return TimeUtils.fromHourString(input.value); break;
+        default: return input.value
+    }
+}
+
+KFormUI.prototype.setInputValue = function (input, value) {
+    if (input.dataset.value) {
+        input.dataset.value = value
+        switch(input.dataset.type) {
+            case 'date': input.value = TimeUtils.toDateString(value); break;
+            case 'hour': input.value = TimeUtils.toHourString(value); break;
+        }
+    } else {
+        input.value = value
+    }
+}
+
+KFormUI.prototype.updateFormFields = function (name = null) {
     for (const key of this.fields) {
+        if (name !== null && name !== key) { continue }
         const input = this.domNode.querySelector(`[name="${key}"]`)
         if (input) {
             const value = this.object.get(input.getAttribute('name'))
             if (input.dataset.value) {
                 if (value !== input.dataset.value) {
-                    input.dataset.value = value
-                    switch(input.dataset.type) {
-                        case 'date': input.value = TimeUtils.toDateString(value); break;
-                        case 'hour': input.value = TimeUtils.toHourString(value); break;
-                    }
+                   this.setInputValue(input, value)
                 }
             } else {
-                if (value !== input.value) { 
-                    input.value = value 
+                if (value !== input.value) {
+                    this.setInputValue(input, value)
                 }
             }
         }
@@ -127,7 +140,7 @@ KFormUI.prototype.keyDownEvents = function (event) {
     const node = event.target
     switch (event.key) {
         case 'Escape':
-            node.value = this.object.get(node.getAttribute('name'))
+            this.setInputValue(node, this.object.get(node.getAttribute('name')))
             node.focus()
             break
     }

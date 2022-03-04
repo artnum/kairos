@@ -17,10 +17,8 @@ KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
             } 
             break
         case 'delete':
-            console.log(event, details)
             if (details.type && details.id && KAIROS.remoteType[details.type]) {
                 const kobject = this.get(KAIROS.remoteType[details.type], details.id)
-                console.log(kobject)
                 if (kobject) {
                     kobject.deleteObject()
                     this.delete(KAIROS.remoteType[details.type], details.id)
@@ -65,6 +63,25 @@ KObjectGStore.prototype.search = function (type, attr, value) {
     return undefined
 }
 
+KObjectGStore.prototype.deleteRelations = function (type, uid) {
+    const store = this.store.get(type)
+    if (!store) { return }
+    const kobject = store.get(String(uid))
+    if (!kobject) { return }
+    const relations = kobject.getAllRelations()
+    for (const [relType, objects] of relations) {
+        if (objects instanceof Array) {
+            for (const object of objects) {
+                const kobject = this.get(relType, object)
+                if (kobject) { kobject.deleteRelation(type, String(uid))}
+            }
+        } else {
+            const kobject = this.get(relType, objects)
+            if (kobject) { kobject.deleteRelation(type, String(uid))}
+        }
+    }
+}
+
 KObjectGStore.prototype.delete = function (type, uid) {
     if (uid === undefined) {
         [type, uid] = type.split('/', 2)
@@ -72,6 +89,7 @@ KObjectGStore.prototype.delete = function (type, uid) {
 
     const tstore = this.store.get(type)
     if (tstore) {
+        this.deleteRelations(type, String(uid))
         return tstore.delete(String(uid))
     }
     return false
@@ -111,8 +129,10 @@ function KObject (type, data) {
                 case 'keys': return object.itemKeys.bind(object)
                 case 'getCn': return object.getCn.bind(object)
                 case 'getRelation': return object.getRelation.bind(object)
+                case 'getAllRelations': return object.getAllRelations.bind(object)
                 case 'setRelation': return object.setRelation.bind(object)
                 case 'addRelation': return object.addRelation.bind(object)
+                case 'deleteRelation': return object.deleteRelation.bind(object)
                 case 'getType': return object.getType.bind(object)
                 case 'addEventListener': return object.addEventListener.bind(object)
                 case 'removeEventListener': return object.removeEventListener.bind(object)
@@ -148,8 +168,10 @@ function KObject (type, data) {
                 case 'getCn':
                 case 'delete':
                 case 'getRelation':
+                case 'getAllRelations':
                 case 'setRelation':
                 case 'addRelation':
+                case 'deleteRelation':
                 case 'getType':
                 case 'addEventListener':
                 case 'removeEventListener':
@@ -328,6 +350,26 @@ KObject.prototype.getRelation = function (type) {
         return result
     }
     return undefined
+}
+
+KObject.prototype.getAllRelations = function () {
+    return this.relation
+}
+
+KObject.prototype.deleteRelation = function (type, kobject)  {
+    const uid = kobject instanceof KObject ? kobject.get('uid') : String(kobject)
+    const relations = this.relation.get(String(type))
+    if (!relations) { return }
+    if (relations instanceof Array) {
+        const idx = relations.indexOf(uid)
+        if (idx !== -1) {
+            relations.splice(idx, 1)
+        }
+    } else {
+        if (relations === uid) {
+            this.relation.delete(type)
+        }
+    }
 }
 
 KObject.prototype.getType = function () {

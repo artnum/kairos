@@ -39,11 +39,14 @@ KProject.prototype.render = function () {
                 const reservations = aff.getRelation('kreservation')
                 if (reservations) {
                     for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
+                        if (reservation === undefined) { continue }
                         const rtime = parseInt(reservation.get('time'))
                         if (!isNaN(rtime)) { time += rtime }
                     }
                 }
-                affaireHtml += `<li>${aff.getCn()} : <strong>${aff.getFirstTextValue('0', 'time')} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
+                let affaireTime = aff.get('time')
+                if (!affaireTime) { affaireTime = 0 }
+                affaireHtml += `<li>${aff.getCn()} : <strong>${TimeUtils.toHourString(affaireTime)} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
             }
         }
 
@@ -104,6 +107,7 @@ KProject.prototype.highlight = function () {
         if (!reservations) { continue }
         const color = `hsla(0, 100%, 50%, 1)`
         for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
+            if (reservation === undefined) { continue }
             const dom = document.getElementById(reservation.get('uuid'))
             if (!dom) { continue }
             dom.style.setProperty('--selected-color', color)
@@ -120,6 +124,7 @@ KProject.prototype.lowlight = function () {
         const reservations = affaire.getRelation('kreservation')
         if (!reservations) { continue }
         for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
+            if (reservation === undefined) { continue }
             const dom = document.getElementById(reservation.get('uuid'))
             if (!dom) { continue }
             window.requestAnimationFrame(() => { dom.classList.remove('selected') })
@@ -127,31 +132,37 @@ KProject.prototype.lowlight = function () {
     }
 }
 
-KProject.prototype.kaffaire = function (affaire) {
-    const kaffaire = new KAffaireFormUI(affaire)
-    return kaffaire.render()
+KProject.prototype.kaffaireNode = function (affaire) {
+    return new Promise((resolve, reject) => {
+        const kaffaireui = new KAffaireFormUI(affaire)
+        kaffaireui.render()
+        .then(kaffaireNode => {
+            const kformui = kaffaireNode.getParentObject()
+            const fs = document.createElement('fieldset')
+            fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
+            fs.appendChild(kaffaireNode)
+            const plan = document.createElement('button')
+            plan.innerHTML = 'Planifier'
+            plan.dataset.action = 'plan-affaire'
+            plan.dataset.affaire = affaire.uid
+            fs.appendChild(plan)
+            kformui.attachToParent(fs)
+            resolve(fs)
+        })
+    })
 }
 
 KProject.prototype.form = function () {
     return new Promise((resolve) => {
+        
         const node = document.createElement('DIV')
         const affaires = this.project.getRelation('kaffaire')
         node.classList.add('kproject')
         if (affaires) {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                this.kaffaire(affaire)
-                .then(affNode => {
-                    const kformui = affNode.getParentObject()
-                    const fs = document.createElement('fieldset')
-                    fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
-                    fs.appendChild(affNode)
-                    const plan = document.createElement('button')
-                    plan.innerHTML = 'Planifier'
-                    plan.dataset.action = 'plan-affaire'
-                    plan.dataset.affaire = affaire.uid
-                    fs.appendChild(plan)
-                    node.appendChild(fs)
-                    kformui.attachToParent(fs)
+                this.kaffaireNode(affaire)
+                .then(affaireNode => {
+                    node.appendChild(affaireNode)
                 })
             }
         }
@@ -190,11 +201,12 @@ KProject.prototype.form = function () {
             .then(result => {
                 kstravail.get(result)
                 .then(value => {
-                    const dom = document.createElement('template')
-                    dom.innerHTML = this.kaffaire(value)
-                    const appendTo = node.querySelector('div.affaires')
-                    window.requestAnimationFrame(() => {
-                        appendTo.appendChild(dom.content)
+                    const kaffaireui = new KAffaireFormUI(affaire)
+                    kaffaireui.render()
+                    .then(affaireNode => {
+                        window.requestAnimationFrame(() => {
+                            this.domNode.appendChild(affaireNode)
+                        })
                     })
                 })
             })

@@ -1,4 +1,4 @@
-const TimeUtils = {
+  const TimeUtils = {
     toHourString (seconds) {
         let hours = Math.floor(seconds / 3600)
         let minutes = Math.floor((seconds / 60) - (hours * 60))
@@ -7,6 +7,9 @@ const TimeUtils = {
     toDateString (date) {
         const object = new Date(date)
         return object.toLocaleDateString()
+    },
+    fromDateString (string) {
+      return string
     },
     fromHourString (value) {
         const rExp = /\s*([0-9]*)\s*(?:(?:([m|M]|[h|H]){1}\s*([0-9]*))|(?:([.:,]{1})\s*([0-9]*))){0,1}\s*/

@@ -74,7 +74,7 @@ function iAddReservation (event) {
 
     let ttime = travail.data.get('time')
     if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
-      ttime = parseFloat(ttime)
+      ttime = parseFloat(ttime) / 3600
     } else {
       ttime = KAIROS.defaults.reservation.duration
     }
