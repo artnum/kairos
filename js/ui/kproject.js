@@ -3,6 +3,7 @@ function KProject (project) {
     this.project = project
     this.project.bindUINode(this)
     this.domNode = null
+    this.kLateralDomNode = null
 }
 
 KProject.prototype.render = function () {
@@ -83,6 +84,7 @@ KProject.prototype.render = function () {
             this.form()
             .then(node => {
                 const tab = klateral.add(node, { title: `${project.getCn()}` })
+                this.kLateralDomNode = node
                 tab.addEventListener('show', (event) => {
                     this.highlight()
                 })
@@ -139,16 +141,44 @@ KProject.prototype.kaffaireNode = function (affaire) {
         .then(kaffaireNode => {
             const kformui = kaffaireNode.getParentObject()
             const fs = document.createElement('fieldset')
-            fs.innerHTML = `<legend>${affaire.getCn()}</legend>`
+            fs.innerHTML = `<legend>${affaire ? affaire.getCn() : 'Nouveau travail'}</legend>`
             fs.appendChild(kaffaireNode)
             const plan = document.createElement('button')
-            plan.innerHTML = 'Planifier'
-            plan.dataset.action = 'plan-affaire'
-            plan.dataset.affaire = affaire.uid
-            fs.appendChild(plan)
+            if (affaire) {
+                const plan = document.createElement('button')
+                plan.innerHTML = 'Planifier'
+                plan.dataset.action = 'plan-affaire'
+                plan.dataset.affaire = affaire.uid
+                fs.appendChild(plan)
+
+            } else {
+                const add = document.createElement('button')
+                add.innerHTML = 'Ajouter'
+                add.addEventListener('click', () => { this.submitNewAffaire(kformui) })
+                fs.appendChild(add)
+            }
             kformui.attachToParent(fs)
             resolve(fs)
         })
+    })
+}
+
+KProject.prototype.submitNewAffaire = function (formui) {
+    const store = new KStore('kaffaire')
+    const affaire = formui.getAllValues()
+    formui.clear()
+    affaire.project = this.project.get('uid')
+    store.set(affaire)
+    .then(id => {
+        return store.get(id)
+    })
+    .then(affaire => {
+        return this.kaffaireNode(affaire)
+    })
+    .then(fsNode => {
+        if (this.kLateralDomNode) {
+            window.requestAnimationFrame(() => { this.kLateralDomNode.appendChild(fsNode) })
+        }
     })
 }
 
@@ -158,6 +188,12 @@ KProject.prototype.form = function () {
         const node = document.createElement('DIV')
         const affaires = this.project.getRelation('kaffaire')
         node.classList.add('kproject')
+
+        this.kaffaireNode(undefined)
+        .then(emptyAffaire => {
+            node.appendChild(emptyAffaire)
+        })
+
         if (affaires) {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
                 this.kaffaireNode(affaire)
@@ -166,52 +202,6 @@ KProject.prototype.form = function () {
                 })
             }
         }
-        node.innerHTML += `
-            <h1 data-project="${this.project.get('uid')}" data-action="new-travail">Nouveau travail</h1>
-            <form>
-            <div class="kpair"><label class="klabel">Référence</label><span class="kvalue"><input autocomplete="off" name="reference"></span></div>
-            <div class="kpair"><label class="klabel">Rendez-vous</label><span class="kvalue"><input autocomplete="off" name="meeting"></span></div>
-            <div class="kpair"><label class="klabel">Personne de contact</label><span class="kvalue"><input autocomplete="off" name="contact"></span></div>
-            <div class="kpair"><label class="klabel">Téléphone</label><span class="kvalue"><input autocomplete="off" name="phone"></span></div>
-            <div class="kpair"><label class="klabel">Fin souhaitée</label><span class="kvalue"><input autocomplete="off" name="end" type="date"></span></div>
-            <div class="kpair"><label class="klabel">Durée nécessaire</label><span class="kvalue"><input autocomplete="off" name="time" type="text"> [h]</span></div>
-            <span class="klabel">Description</span><br>
-            <textarea name="description"></textarea>
-            <br>
-            <button >Nouveau travail</button>
-            </form>
-        `
-        node.addEventListener('submit', (event) => {
-            event.preventDefault()
-            const formData = new FormData(event.target)
-            const request = {}
-            for (const [name, value] of formData.entries()) {
-                if (value.length > 0) {
-                    if (name === 'end') {
-                        const end = new Date(value)
-                        request.end = end.toISOString()
-                        continue
-                    }
-                    request[name] = value
-                }
-            }
-            request.project = this.project.get('uid')
-            kstravail = new KStore('kaffaire')
-            kstravail.set(request)
-            .then(result => {
-                kstravail.get(result)
-                .then(value => {
-                    const kaffaireui = new KAffaireFormUI(affaire)
-                    kaffaireui.render()
-                    .then(affaireNode => {
-                        window.requestAnimationFrame(() => {
-                            this.domNode.appendChild(affaireNode)
-                        })
-                    })
-                })
-            })
-        })
-        node.addEventListener('click', this.handleFormClick.bind(this))
         resolve(node)
     })
 }

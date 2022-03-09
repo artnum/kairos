@@ -11,10 +11,12 @@ function KFormUI (object) {
     this.parentNode = this.domNode
     this.domNode.addEventListener('submit', this.submit.bind(this))
     this.domNode.addEventListener('reset', this.reset.bind(this))
-    this.object.addEventListener('delete', this.deleteForm.bind(this))
-    this.object.addEventListener('update', (event) => { this.updateFormFields() })
-    this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
-    this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
+    if (object) {
+        this.object.addEventListener('delete', this.deleteForm.bind(this))
+        this.object.addEventListener('update', (event) => { this.updateFormFields() })
+        this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
+        this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
+    }
 }
 
 KFormUI.prototype.getValue = function (element) {
@@ -54,26 +56,31 @@ KFormUI.prototype.change = function (event) {
     if (node.dataset.type === 'datehour') {
         uiNode = node.parentNode
     }
-    uiNode.classList.add('k-changed')
+    if (this.object) { uiNode.classList.add('k-changed') }
 
     this.changePipeline
     .then(() => {
         this.changePipeline = new Promise(resolve => {
             const value = this.getInputValue(node)
-            const name = uiNode.getAttribute('name')
-            this.object.set(name, value)
-            KStore.save(this.object)
-            .then(x => {
-                uiNode.classList.remove('k-changed')
-                this.updateFormFields(name)
+            if (this.object) {
+                const name = uiNode.getAttribute('name')
+                this.object.set(name, value)
+                KStore.save(this.object)
+                .then(x => {
+                    uiNode.classList.remove('k-changed')
+                    this.updateFormFields(name)
+                    resolve()
+                })
+                .catch(reason => {
+                    console.log(reason)
+                    uiNode.classList.remove('k-changed')
+                    uiNode.classList.add('k-invalid')
+                    resolve()
+                })
+            } else {
+                this.setInputValue(node, value)
                 resolve()
-            })
-            .catch(reason => {
-                console.log(reason)
-                uiNode.classList.remove('k-changed')
-                uiNode.classList.add('k-invalid')
-                resolve()
-            })
+            }
         })
     })
 }
@@ -90,6 +97,29 @@ KFormUI.prototype.beginObjectUpdate = function () {
             input.classList.add('k-update-begin')
             input.setAttribute('readonly', '1')
         })
+    }
+}
+
+KFormUI.prototype.getAllValues = function () {
+    const object = {}
+    for (const input of this.inputs) {
+        const name = input.getAttribute('name')
+        const value = this.getInputValue(input)
+        switch (input.dataset.type) {
+            default: object[name] = value; break
+            case 'date':
+            case 'datehour':
+                if (isNaN(value.getTime())) { break }
+                object[name] = value.toISOString()
+                break
+        }
+    }
+    return object
+}
+
+KFormUI.prototype.clear = function () {
+    for (const input of this.inputs) {
+        this.setInputValue(input, '')
     }
 }
 
@@ -129,6 +159,7 @@ KFormUI.prototype.setInputValue = function (input, value) {
 }
 
 KFormUI.prototype.updateFormFields = function (name = null) {
+    if (!this.object) { return }
     for (const key of this.fields) {
         /* version field are always updated */
         if (name !== null && (name !== key && key !== 'version')) { continue }
@@ -149,6 +180,7 @@ KFormUI.prototype.updateFormFields = function (name = null) {
 }
 
 KFormUI.prototype.keyDownEvents = function (event) {
+    if (!this.object) { return }
     const node = event.target
     switch (event.key) {
         case 'Escape':
@@ -173,7 +205,7 @@ KFormUI.prototype.keyUpEvents = function (event) {
 
 KFormUI.prototype.render = function (fields) {
     return new Promise((resolve, reject) => {
-        this.domNode.id = this.object.get('id')
+        if (this.object) { this.domNode.id = this.object.get('id') }
         for (const key of Object.keys(fields)) {
             const label = document.createElement('LABEL')
             label.innerHTML = fields[key]?.label || key
@@ -236,7 +268,7 @@ KFormUI.prototype.render = function (fields) {
                         })()
 
                 }
-            })(type, this.object.get(key))
+            })(type, this.object ? this.object.get(key) : '')
 
             this.inputs.push(input)
             input.setAttribute('name', key)
