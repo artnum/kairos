@@ -39,6 +39,7 @@ function KLateral () {
     this.isOpen = false
     this.tabs = new Map()
     this.actions = new Map()
+    this.idMap = new Map()
     this.evtTarget = new EventTarget()
     this.tabIdx = 1
     this.tabOpen = 0
@@ -151,6 +152,18 @@ KLateral.prototype.close = function () {
 }
 
 KLateral.prototype.add = function (content, opt = {}) {
+
+    if (opt.id) {
+        const tabId = this.idMap.get(opt.id)
+        if (tabId) {
+            const tabEntry = this.tabs.get(String(tabId))
+            this.showTab(tabId)
+            this.open()
+            this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${tabId}`, {detail: {tabEntry}}))
+            return
+        }
+    }
+
     const tabContent = document.createElement('DIV')
     if (content instanceof HTMLElement) {
         tabContent.appendChild(content)
@@ -170,6 +183,9 @@ KLateral.prototype.add = function (content, opt = {}) {
     }
 
     const index = this.tabIdx++
+    if (opt.id) {
+        this.idMap.set(opt.id, index)
+    }
     tabTitle.dataset.index = index
     tabContent.dataset.index = index
 
@@ -220,6 +236,12 @@ KLateral.prototype.remove = function (idx) {
         return
     }
     const [tabTitle, tabContent] = this.getTab(idx)
+    this.tabs.delete(String(idx))
+    for (const [k, v] of this.idMap) {
+        if (String(v) === String(idx)) {
+            this.idMap.delete(k)
+        }
+    }
     if (tabTitle) { this.tab.removeChild(tabTitle) }
     const sibling = tabTitle ? tabTitle.nextElementSibling || tabTitle.previousElementSibling : null
     if (tab) { tab.destroy() }

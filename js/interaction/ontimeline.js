@@ -25,7 +25,10 @@ function iSelectReservation(event) {
         ui.renderForm()
             .then(domNode => {
                 const klateral = new KLateral()
-                const ktab = klateral.add(domNode, { title: `Réservation ${reservation.get('uid')}:${reservation.get('version')}`, })
+                const ktab = klateral.add(domNode, { 
+                  title: `Réservation ${reservation.get('uid')}:${reservation.get('version')}`,
+                  id: reservation.get('uid')
+                })
                 ui.addEventListener('close', event => {
                     ktab.close()
                 })
