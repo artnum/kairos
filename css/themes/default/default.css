@@ -112,10 +112,11 @@ body.waiting * {
 }
 
 .reservationContainer {
-    margin: 15px 0 0 0;
+    margin: 115px 0 0 0;
 }
 
 #AppHeader {
+    position: fixed;
 	z-index: 460;
 	background-color: var(--default-bg-color);
 	width: 100%;
@@ -125,6 +126,10 @@ body.waiting * {
     background-color: #535353;
     color: white;
     min-height: 100px;
+    max-height: 100px;
+    overflow: hidden;
+    top: 0;
+    left: 0;
 }
 
 #scrollshow {
