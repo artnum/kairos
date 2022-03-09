@@ -12,7 +12,7 @@ function KFormUI (object) {
     this.domNode.addEventListener('submit', this.submit.bind(this))
     this.domNode.addEventListener('reset', this.reset.bind(this))
     this.object.addEventListener('delete', this.deleteForm.bind(this))
-    this.object.addEventListener('update', this.updateFormFields.bind(this))
+    this.object.addEventListener('update', (event) => { this.updateFormFields() })
     this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
     this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
 }

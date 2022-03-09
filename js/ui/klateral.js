@@ -42,9 +42,7 @@ function KLateral () {
     this.idMap = new Map()
     this.evtTarget = new EventTarget()
     this.tabIdx = 1
-    this.tabOpen = 0
     this.tabCurrent = 0
-    this.tabPrevSelected = 0
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('klateral')
     this.domNode.style.zIndex = KAIROS.zMax()
@@ -137,9 +135,9 @@ KLateral.prototype.open = function () {
 }
 
 KLateral.prototype.close = function () {
-    if (this.tabOpen > 0) {
+    if (this.tabs.size > 0) {
         this.remove(this.tabCurrent)
-        if(this.tabOpen > 0) {
+        if(this.tabs.size > 0) {
             /* more tab to close, stack close again */
             KAIROS.stackClosable(this.close.bind(this))
             return true
@@ -152,7 +150,6 @@ KLateral.prototype.close = function () {
 }
 
 KLateral.prototype.add = function (content, opt = {}) {
-
     if (opt.id) {
         const tabId = this.idMap.get(opt.id)
         if (tabId) {
@@ -196,8 +193,7 @@ KLateral.prototype.add = function (content, opt = {}) {
     this.tabs.set(String(index), tab)
     
     this.showTab(index)
-    this.tabOpen++
-    if (this.tabOpen > 0 && !this.isOpen) {
+    if (this.tabs.size > 0 && !this.isOpen) {
         this.open()
     }
 
@@ -243,18 +239,11 @@ KLateral.prototype.remove = function (idx) {
         }
     }
     if (tabTitle) { this.tab.removeChild(tabTitle) }
-    const sibling = tabTitle ? tabTitle.nextElementSibling || tabTitle.previousElementSibling : null
     if (tab) { tab.destroy() }
     this.content.removeChild(tabContent)
     this.tabCurrent = 0
-    this.tabOpen--
-    if (this.tabOpen <= 0) { this.close() }
-    if (this.tabPrevSelected !== 0) {
-        this.showTab(this.tabPrevSelected)
-        this.tabPrevSelected = 0
-    } else {
-        if (!sibling) { return }
-        this.showTab(sibling.dataset.index)  
+    if (this.tabs.size > 0) {
+        this.showTab()  
     }
 }
 
@@ -269,6 +258,13 @@ KLateral.prototype.hideTab = function (idx) {
 }
 
 KLateral.prototype.showTab = function (idx) {
+    if (idx === undefined) {
+        // find first tabs
+        for (const [k, v] of this.tabs) {
+            idx = k
+            break
+        }
+    }
     const tab = this.tabs.get(String(idx))
     this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
     if (this.tabCurrent !== 0) {
