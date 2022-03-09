@@ -9,6 +9,9 @@
 }
 
 .k-form-ui .k-input {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
     height: 2em;
     min-width: calc(100% - 25%);
     max-width: calc(100% - 25%);
@@ -49,4 +52,12 @@ fieldset.k-form-ui legend {
 fieldset.k-form-ui {
     border: 1px solid black;
     padding: 8px;
+}
+
+/* k-input can have multiple input */
+.k-form-ui .k-input input {
+    border: none;
+    border-bottom: 1px dotted black;
+    margin: 0px 1ch;
+    width: 100%;
 }

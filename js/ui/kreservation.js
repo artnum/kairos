@@ -106,8 +106,8 @@ KUIReservation.prototype.renderForm = function () {
         rform.render({
             id: {label: 'Numéro', readonly: true},
             version: {label: 'Version', readonly: true},
-            begin: {label: 'Début', type: 'date'},
-            end: {label: 'Fin', type: 'date'},
+            begin: {label: 'Début', type: 'datehour'},
+            end: {label: 'Fin', type: 'datehour'},
             time: {label: 'Durée', type: 'hour'},
             comment: {label: 'Remarque', type: 'multitext'}
 

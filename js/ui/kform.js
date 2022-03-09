@@ -50,23 +50,28 @@ KFormUI.prototype.reset = function (event) {
 
 KFormUI.prototype.change = function (event) {
     const node = event.target
-    node.classList.add('k-changed')
+    let uiNode = node
+    if (node.dataset.type === 'datehour') {
+        uiNode = node.parentNode
+    }
+    uiNode.classList.add('k-changed')
 
     this.changePipeline
     .then(() => {
         this.changePipeline = new Promise(resolve => {
             const value = this.getInputValue(node)
-            const name = node.getAttribute('name')
+            const name = uiNode.getAttribute('name')
             this.object.set(name, value)
             KStore.save(this.object)
             .then(x => {
-                node.classList.remove('k-changed')
+                uiNode.classList.remove('k-changed')
                 this.updateFormFields(name)
                 resolve()
             })
             .catch(reason => {
-                node.classList.remove('k-changed')
-                node.classList.add('k-invalid')
+                console.log(reason)
+                uiNode.classList.remove('k-changed')
+                uiNode.classList.add('k-invalid')
                 resolve()
             })
         })
@@ -101,25 +106,32 @@ KFormUI.prototype.getInputValue = function (input) {
     switch(input.dataset.type) {
         case 'date': return TimeUtils.fromDateString(input.value); break;
         case 'hour': return TimeUtils.fromHourString(input.value); break;
+        case 'datehour': 
+            let node = input.parentNode
+            const date = TimeUtils.fromDateString(node.firstElementChild.value)
+            TimeUtils.dateFromHourString(node.lastElementChild.value, date)
+            return date
         default: return input.value
     }
 }
 
 KFormUI.prototype.setInputValue = function (input, value) {
-    if (input.dataset.value) {
-        input.dataset.value = value
         switch(input.dataset.type) {
-            case 'date': input.value = TimeUtils.toDateString(value); break;
-            case 'hour': input.value = TimeUtils.toHourString(value); break;
+            default: input.value = value; break
+            case 'date': input.dataset.value = value; input.value = TimeUtils.toDateString(value); break;
+            case 'hour': input.dataset.value = value; input.value = TimeUtils.toHourString(value); break;
+            case 'datehour': 
+                input.dataset.value = value
+                input.firstElementChild.value = TimeUtils.toDateString(value)
+                input.lastElementChild.value = TimeUtils.dateToHourString(value)
+                break
         }
-    } else {
-        input.value = value
-    }
 }
 
 KFormUI.prototype.updateFormFields = function (name = null) {
     for (const key of this.fields) {
-        if (name !== null && name !== key) { continue }
+        /* version field are always updated */
+        if (name !== null && (name !== key && key !== 'version')) { continue }
         const input = this.domNode.querySelector(`[name="${key}"]`)
         if (input) {
             const value = this.object.get(input.getAttribute('name'))
@@ -199,6 +211,30 @@ KFormUI.prototype.render = function (fields) {
                         date.classList.add('k-input-hour')
                         date.dataset.type = 'date'
                         return date
+                    case 'datehour':
+                        return (() => {
+                            const container = document.createElement('DIV')
+                            container.classList.add('k-input')
+                            container.dataset.value = value
+                            container.dataset.type = 'datehour'
+
+                            const date = document.createElement('INPUT')
+                            date.value = TimeUtils.toDateString(value)
+                            date.setAttribute('type', 'text')
+                            date.classList.add('k-input-hour')
+                            date.dataset.type = 'datehour'
+
+                            const hour = document.createElement('INPUT')
+                            hour.value = TimeUtils.dateToHourString(value)
+                            hour.setAttribute('type', 'text')
+                            hour.classList.add('k-input-hour')
+                            hour.dataset.type = 'datehour'
+
+                            container.appendChild(date)
+                            container.appendChild(hour)
+                            return container
+                        })()
+
                 }
             })(type, this.object.get(key))
 

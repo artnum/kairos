@@ -55,11 +55,17 @@ function KLateral () {
     this.tab = this.domNode.firstElementChild.firstElementChild.nextElementSibling
     this.content = this.domNode.lastElementChild.previousElementSibling.firstElementChild
     this.action = this.domNode.lastElementChild
+    
     this.tab.addEventListener('click', this.handleSelectTab.bind(this), {passive: true})
     this.domNode.firstElementChild.firstElementChild.addEventListener('click', this.handleSelectTab.bind(this))
     this.domNode.firstElementChild.lastElementChild.addEventListener('click', this.handleSelectTab.bind(this))
     this.domNode.addEventListener('wheel', this.handleScrollEvent.bind(this), {capture: true})
     this.action.addEventListener('click', this.handleActionEvent.bind(this), {passive: true, capture: true})
+
+    // intercept all click on bubble phase and stop propagation to avoid action underneath
+    this.domNode.addEventListener('click', event => { event.stopPropagation() })     
+    this.domNode.addEventListener('dblclick', event => { event.stopPropagation() })     
+
     document.body.appendChild(this.domNode)
 }
 

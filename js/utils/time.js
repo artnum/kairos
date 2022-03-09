@@ -1,15 +1,142 @@
   const TimeUtils = {
+    dateFromHourString (string, date = new Date()) {
+      if (string.trim().length === 3) {
+        const subMilitaryRegexp = /\s*([0-9]{1})([0-9]{2})/
+        if (subMilitaryRegexp.test(string)) {
+          const subMValue = subMilitaryRegexp.exec(string)
+          const submH = Number(subMValue[1])
+          const submM = Number(subMValue[2])
+          if (submH <= 24 && submM <= 60) {
+            date.setHours(submH)
+            date.setMinutes(submM)
+            date.setSeconds(0)
+            return date
+          }
+        }
+      }
+      if (string.trim().length === 4) {
+        const militaryRegexp = /\s*([0-9]{2})([0-9]{2})/
+        if (militaryRegexp.test(string)) {
+          const mValue = militaryRegexp.exec(string)
+          const mH = Number(mValue[1])
+          const mM = Number(mValue[2])
+          if (mH <= 24 && mM <= 60) {
+            date.setHours(mH)
+            date.setMinutes(mM)
+            date.setSeconds(0)
+            return date
+          }
+        }
+      }
+      const rExp = /\s*([0-9]*)\s*[h.:,-/\s]?\s*([0-9]*)/
+      if (!rExp.test(string)) { return new Date(undefined) }
+      const value = rExp.exec(string)
+      const h = Number(value[1])
+      const m = Number(value[2])
+      if (h > 24) { return new Date(undefined) }
+      if (m > 60) { return new Date(undefined) }
+      date.setHours(h)
+      date.setMinutes(m)
+      date.setSeconds(0)
+      return date
+    },
+    dateToHourString (date) {
+      const object = date instanceof Date ? date : new Date(date)
+      if (isNaN(object.getTime())) { return '' }
+      return `${String(object.getHours()).padStart(2, '0')}:${String(object.getMinutes()).padStart(2, '0')}`
+    },
     toHourString (seconds) {
         let hours = Math.floor(seconds / 3600)
         let minutes = Math.floor((seconds / 60) - (hours * 60))
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
     },
     toDateString (date) {
-        const object = new Date(date)
-        return object.toLocaleDateString()
+        const object = date instanceof Date ? date : new Date(date)
+        if (isNaN(object.getTime())) { return '' }
+
+        return `${String(object.getDate()).padStart(2, '0')}.${String(object.getMonth() + 1).padStart(2, '0')}.${object.getFullYear()}`
     },
-    fromDateString (string) {
-      return string
+    fromDateString (string, origin = new Date()) {
+      const EUMonths = {
+        'gennaio': 1,
+        'janvier': 1,
+        'january': 1,
+        'januar': 1,
+        'febbraio': 2,
+        'fevrier': 2,
+        'février': 2,
+        'february': 2,
+        'feburar': 2,
+        'marzo': 3,
+        'mars': 3,
+        'march': 3,
+        'marz': 3,
+        'märz': 3,
+        'aprile': 4,
+        'avril': 4,
+        'april': 4,
+        'maggio': 5,
+        'mai': 5,
+        'may': 5,
+        'guigno': 6,
+        'juin': 6,
+        'june': 6,
+        'juni': 6,
+        'luglio': 7,
+        'juillet': 7,
+        'july': 7,
+        'juli': 7,
+        'agosto': 8,
+        'aout': 8,
+        'août': 8,
+        'august': 8,
+        'settembre': 9,
+        'septembre': 9,
+        'september': 9,
+        'ottobre': 10,
+        'octobre': 10,
+        'october': 10,
+        'oktober': 10,
+        'novembre': 11,
+        'november': 11,
+        'dicembre': 12,
+        'decembre': 12,
+        'décembre': 12,
+        'dezember': 12,
+        'december': 12
+      }
+
+      const dateReg = /^\s*([0-9]+)\s*[\.\/\-]?\s*([0-9]+|[a-zäéû]+)\s*[\.\/\-]?\s*([0-9]+)?\s*$/gi
+      let date = dateReg.exec(string)
+      if (date !== null) {
+          if (date) {
+              let d = parseInt(date[1])
+              let m = parseInt(date[2])
+              if (isNaN(m)) {
+                  date[2] = date[2].toLocaleLowerCase()
+                  if (EUMonths[date[2]] !== undefined) {
+                      m = EUMonths[date[2]]
+                  } else {
+                      for(let month in EUMonths) {
+                          if (month.indexOf(date[2]) === 0) {
+                              m = EUMonths[month]
+                              break
+                          }
+                      }
+                  }
+              }
+              let y = (new Date()).getFullYear()
+              if (date[3] !== undefined) {
+                  y = parseInt(date[3])
+                  if (date[3].length < 4) {
+                      y += 2000
+                  }
+              }
+              return new Date(y, m - 1, d, 12, 0, 0, 0)
+          }
+      } else {
+        return new Date(undefined)
+      }
     },
     fromHourString (value) {
         const rExp = /\s*([0-9]*)\s*(?:(?:([m|M]|[h|H]){1}\s*([0-9]*))|(?:([.:,]{1})\s*([0-9]*))){0,1}\s*/
