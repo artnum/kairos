@@ -94,10 +94,6 @@ span.day.anniversary {
 	background-color: hsla(333, 49%, 49%, 1) !important;
 }
 
-.vertical.today {
-	background-color: hsla(333, 49%, 49%, 0.4);
-}
-
 .day.holiday {
     background-color: hsla(40, 100%, 50%, 1) !important;
     color: black;
@@ -336,6 +332,10 @@ div.contact > div:first-child {
 
 .vertical.holiday {
 	background-color: hsla(40, 20%, 50%, 0.2) !important;
+}
+
+.vertical.today {
+	background-color: hsla(333, 49%, 49%, 0.4) !important;
 }
 
 fieldset {
