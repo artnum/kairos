@@ -365,7 +365,7 @@ define([
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
       }
-      this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset') - 10) / days))
+      this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset') - getScrollBarWidth()) / days))
       this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
                                  .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
                                 .timeline .header .tools { width: ${this.get('offset')}px !important; }
@@ -461,6 +461,7 @@ define([
       domDay.setAttribute('data-artnum-day', dayStamp)
       domDay.classList.add('day')
 
+      const today = new Date()
       let holiday = this.Holidays.isHoliday(newDay)
       if (holiday && newDay.getDay() !== 0) {
         domDay.classList.add('holiday')
@@ -480,6 +481,9 @@ define([
         if (newDay.getDay() === 0 || newDay.getDay() === 6) {
           domDay.classList.add('weekend')
         }
+      }
+      if (newDay.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+        domDay.classList.add('today')
       }
 
       domDay.innerHTML = txtDate
@@ -1222,7 +1226,7 @@ define([
       }
 
       this.Viewport.setViewportWidth(this.get('zoom') * this.get('blockSize'))
-      this.Viewport.setMargins(74, 14, 50, this.get('offset'))
+      this.Viewport.setMargins(120, 14, 50, this.get('offset'))
 
       KAIROSAnim.push(() => {
         this.subline.innerHTML = ''
@@ -1256,6 +1260,7 @@ define([
               })
             })
           }
+          const today = new Date()
           for (let i = 0; i < dayLength; i++) {
             const day = new Date()
             day.setTime(this.firstDay.getTime() + (i * 86400000))
@@ -1286,6 +1291,11 @@ define([
             } else if (KAIROS.days[day.getDay()].chunks === null) {
               classes.push('nowork')
             }
+
+            if (day.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+              classes.push('today')
+            }
+
             chain.then(() => {
               return new Promise(resolve => {
                 window.requestAnimationFrame(() => {

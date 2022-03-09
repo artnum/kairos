@@ -111,16 +111,20 @@ body.waiting * {
     pointer-events: none;
 }
 
-/* Menu */
+.reservationContainer {
+    margin: 15px 0 0 0;
+}
+
 #AppHeader {
-	max-height: 89px;
-	height: 89px;
+	z-index: 460;
 	background-color: var(--default-bg-color);
 	width: 100%;
 	max-width: 100%;
-	border-bottom: 2px solid var(--default-color);
-    position: sticky;
-    top: 0;
+	border-bottom: 0px solid var(--default-color);
+    box-shadow: 0px 5px 5px 0px hsla(var(--default-color-base), 0.6);
+    background-color: #535353;
+    color: white;
+    min-height: 100px;
 }
 
 #scrollshow {

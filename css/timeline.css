@@ -31,6 +31,7 @@ span.day.anniversary {
 .timeline .header div {
 	display: inline-block;	
 	overflow: hidden;
+	background-color: #535353;
 }
 
 .header {
@@ -50,7 +51,7 @@ span.day.anniversary {
 	text-align: center;
 }
 .weekNumber.even, .monthName.even {
-	background-color: white;
+	background-color: #292929 !important;
 }
 
 .weekNumber.odd {
@@ -58,8 +59,7 @@ span.day.anniversary {
 	color: white;
 }
 .monthName.odd {
-	background-color: lightgray;
-	color: black;
+	color: white;
 }
 .timeline .fixed {
 	position: fixed;
@@ -74,25 +74,37 @@ span.day.anniversary {
 	font-size: 14px;
 	display: inline-block;
 	font-family: "B612 Mono";
+	background-color: #535353;
 }
 
 .timeline .line .dayname {
+	background-color: transparent;
 	font-size: 10px;
+	line-height: 16px;
 }
 
 
 .day.weekend {
-	background-color: black;	
+	background-color: black !important;	
 	color: white;
 }
 
+.day.today {
+	color: white;
+	background-color: hsla(333, 49%, 49%, 1) !important;
+}
+
+.vertical.today {
+	background-color: hsla(333, 49%, 49%, 0.4);
+}
+
 .day.holiday {
-    background-color: hsla(40, 100%, 50%, 1);
+    background-color: hsla(40, 100%, 50%, 1) !important;
     color: black;
 }
 
 .day {
-	background-color: white;
+	background-color: transparent;
 	border-left: 1px solid #ddd;	
 	border-right: 1px solid #ddd;	
 }
@@ -411,6 +423,10 @@ span.spanReset {
 
 #searchMachineLive {
 	width: 260px;
+	border: none;
+	border-bottom: 2px steelblue solid;
 	min-height: 32px;
 	font-size: 12px !important;
+	background-color: lightsteelblue;
+
 }
