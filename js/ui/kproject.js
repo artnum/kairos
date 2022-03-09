@@ -202,6 +202,7 @@ KProject.prototype.form = function () {
                 })
             }
         }
+        node.addEventListener('click', this.handleFormClick.bind(this))
         resolve(node)
     })
 }
