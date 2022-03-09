@@ -361,7 +361,6 @@ define([
         KAIROS.warn('Zoom maximum atteint')
       }
 
-      this.Viewport.setDayCount(days)
       this.daysZoom = days
       if (classname !== '') {
         djDomClass.add(this.domNode, classname)
@@ -373,6 +372,8 @@ define([
                                 .timeline .line { margin-left: ${this.get('offset')}px !important; }
                                 ${style}`
       this.resize()
+      this.Viewport.setOrigin(this.firstDay)
+      this.Viewport.setDayCount(days)
       this.update()
     },
 
