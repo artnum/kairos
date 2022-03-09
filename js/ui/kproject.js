@@ -222,7 +222,7 @@ KProject.prototype.handleFormClick = function (event) {
                 }
             }
             const ktask = new KTaskBar()
-            const listItem = ktask.list(currentAffaire.getCn(), {}, function () { }, {}, currentAffaire)
+            const listItem = ktask.list(`${this.project.get('reference')} <span data-uplink="kaffaire:${currentAffaire.get('uid')}" data-uplink-attr="reference">${currentAffaire.get('reference')}</span>`, {}, function () { }, {}, currentAffaire)
             listItem.addEventListener('pop', event => {
                 const item = event.detail.data
                 const kproject = item.getRelation('kproject')

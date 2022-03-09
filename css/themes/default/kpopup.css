@@ -31,11 +31,12 @@
     border: none;
     margin: 0;    
     padding: 0;
-    background-color: transparent;
     pointer-events: none;
     font-size: 14px;
     font-family: 'B612 Mono';
     color: white;
+    background-color: #535353;
+    box-shadow: 0px -5px 5px 0px hsla(var(--default-color-base), 0.6);
 }
 
 #KTaskBar .ktask .title span {

@@ -1,11 +1,12 @@
 .klateral {
     position: fixed;
     right: 0;
-    top: 0;
+    top: 0px;
+    bottom: 44px;
     width: 600px;
     max-width: 100%;
-    min-height: 100%;
     border-left: 1px solid black;
+    border-bottom: 1px solid black;
     margin: 0;
     padding: 0;
 }
@@ -30,12 +31,12 @@
     min-height: 34px;
     min-width: 100%;
     background: lightblue;
-    bottom: 0px;
+    bottom: 44px;
     position: fixed;
 }
 
 .klateral .kcontent {
-    min-height: calc(100% - 86px);
+    min-height: calc(100% - 78px);
     width: 100%;
     margin: 0;
     padding: 0;
