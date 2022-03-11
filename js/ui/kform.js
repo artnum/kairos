@@ -5,18 +5,25 @@ function KFormUI (object) {
     this.changePipeline = Promise.resolve()
     this.domNode = document.createElement('FORM')
     this.domNode.classList.add('k-form-ui')
+    this.evtTarget = new EventTarget()
     this.domNode.getParentObject = function () {
         return this
     }.bind(this)
     this.parentNode = this.domNode
-    this.domNode.addEventListener('submit', this.submit.bind(this))
-    this.domNode.addEventListener('reset', this.reset.bind(this))
     if (object) {
         this.object.addEventListener('delete', this.deleteForm.bind(this))
         this.object.addEventListener('update', (event) => { this.updateFormFields() })
         this.object.addEventListener('begin-update', this.beginObjectUpdate.bind(this))
         this.object.addEventListener('end-update', this.endObjectUpdate.bind(this))
     }
+}
+
+KFormUI.prototype.addEventListener = function (type, listener, options = {}) {
+    this.evtTarget.addEventListener(type, listener, options)
+}
+
+KFormUI.prototype.removeEventListener = function (type, listener, options = {}) {
+    this.evtTarget.addEventListener(type, listener, options)
 }
 
 KFormUI.prototype.getValue = function (element) {
@@ -43,13 +50,6 @@ KFormUI.prototype.attachToParent = function (parent) {
     this.parentNode.classList.add('k-form-ui')
 }
 
-KFormUI.prototype.submit = function (event) {
-}
-
-KFormUI.prototype.reset = function (event) {
-    
-}
-
 KFormUI.prototype.change = function (event) {
     const node = event.target
     let uiNode = node
@@ -66,23 +66,31 @@ KFormUI.prototype.change = function (event) {
                 const name = uiNode.getAttribute('name')
                 this.object.set(name, value)
                 KStore.save(this.object)
-                .then(x => {
+                .then(kobject => {
                     uiNode.classList.remove('k-changed')
                     this.updateFormFields(name)
-                    resolve()
+                    resolve(kobject)
                 })
                 .catch(reason => {
-                    console.log(reason)
                     uiNode.classList.remove('k-changed')
                     uiNode.classList.add('k-invalid')
-                    resolve()
+                    resolve(null)
                 })
             } else {
                 this.setInputValue(node, value)
-                resolve()
+                resolve(null)
             }
         })
+        .then(kobject => {
+            if (!kobject) { return }
+            this.evtTarget.dispatchEvent(new CustomEvent('change', {detail: {
+                target: this, 
+                name: node.getAttribute('name'), 
+                value: this.get(node.getAttribute('name')),
+            }}))
+        })
     })
+    
 }
 
 KFormUI.prototype.deleteForm = function () {
@@ -156,6 +164,18 @@ KFormUI.prototype.setInputValue = function (input, value) {
                 input.lastElementChild.value = TimeUtils.dateToHourString(value)
                 break
         }
+}
+
+KFormUI.prototype.get = function (name) {
+    return this.object.get(name)
+}
+
+KFormUI.prototype.set = function (name, value) {
+    return this.object.set(name, value)
+}
+
+KFormUI.prototype.save = function () {
+    return KStore.save(this.object)
 }
 
 KFormUI.prototype.updateFormFields = function (name = null) {

@@ -120,6 +120,18 @@ KUIReservation.prototype.renderForm = function () {
                 }
             }
         })
+        
+        rform.addEventListener('change', (event) => {
+            const name = event.detail.name
+            const value = event.detail.value
+            const form = event.detail.target
+            if (name === 'time') {
+                const end = KVDays.getContinuousEnd(new Date(form.get('begin')), value / 3600,  KAIROS.days)
+                form.set('end', end[0].toISOString())
+                form.save()
+            }
+        })
+
         const affaireUi = new KAffaireFormUI(affaire)
         affaireUi.render()
         .then(domNode => {

@@ -128,7 +128,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/kreservation.js', 'script'],
         ['../js/kcache.js', 'script'],
         ['../js/PJs/pSBC.js', 'script'],
-        ['../js/localdb.js', 'script'],
         ['../js/select.js', 'script'],
         ['../js/view.js', 'script'],
         ['../js/ldap.js', 'script'],

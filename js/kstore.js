@@ -42,7 +42,7 @@ KStore.save = function (kobject) {
 
 
 KStore.prototype.relateEntry = function (kobject) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const promises = []
         if (!kobject.get('uid')) { resolve(kobject); return }
         if (!KAIROS[kobject.getType()].relation) { resolve(kobject); return }

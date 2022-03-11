@@ -110,7 +110,6 @@ function iAddReservation (event) {
         const newRanges = KVDays.getRanges(new Date(targetReservations[0].get('begin')), ttime, KAIROS.days)
         for (const rkey of newRanges.keys()) {
             if (targetReservations[rkey]) {
-                console.log(targetReservations[rkey])
                 reservationStore.set({
                     id: targetReservations[rkey].get('uid'),
                     time: newRanges[rkey][2],

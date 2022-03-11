@@ -669,16 +669,15 @@ define([
         const object = kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
-        const duration = end.getTime() - begin.getTime()
         const kview = new KView()
         const newOrigin = new Date()
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         newOrigin.setHours(begin.getHours(), begin.getMinutes(), 0)
         begin.setTime(newOrigin.getTime())
-        end.setTime(begin.getTime() + duration)
+        const newEnd = KVDays.getContinuousEnd(begin, object.get('time') / 3600, KAIROS.days)
         kstore.set({
             begin: begin.toISO8601(),
-            end: end.toISO8601(),
+            end: newEnd[0].toISO8601(),
             target: entryNode.id, 
             id: object.get('id'),
             version: object.get('version')
