@@ -670,6 +670,8 @@ define([
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
         const kview = new KView()
+        const originalX = kview.getXFromDate(begin)
+        const originalY = kview.getObjectRowById(object.get('target'))
         const newOrigin = new Date()
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         newOrigin.setHours(begin.getHours(), begin.getMinutes(), 0)
@@ -682,9 +684,10 @@ define([
             id: object.get('id'),
             version: object.get('version')
           }, 
-          object.get('id')  
+          object.get('id')
         )
         .then(_ => {
+          kview.moveObjectOnGrid(`kreservation:${object.get('id')}`, originalX , originalY, kview.getXFromDate(begin), kview.getObjectRowById(entryNode.id))
           window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
         })
         .catch(reason => {

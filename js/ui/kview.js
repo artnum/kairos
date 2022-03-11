@@ -1,6 +1,59 @@
 /* global view object */
 function KViewCell () {
-    return new Map()
+    this.content = []
+    this.size = 0
+}
+
+KViewCell.prototype.set = function (id, object) {
+    for (const c of this.content) {
+        if (c.id === String(id)) { return }
+    }
+    this.content.push({id: String(id), object: object})
+    this.size = this.content.length
+}
+
+KViewCell.prototype.get = function (id) {
+    const idx = this.indexOf(id)
+    if (idx !== -1) { return this.content[idx].object }
+    return undefined
+}
+
+KViewCell.prototype.delete = function (id) {
+    const idx = this.indexOf(id)
+    if (idx !== -1) { this.content.splice(idx, 1) }
+    this.size = this.content.length
+}
+
+KViewCell.prototype.has = function (id) {
+    return this.indexOf(id) !== -1
+}
+
+KViewCell.prototype.indexOf = function (id) {
+    for (let i = 0; i < this.content.length; i++) {
+        if (this.content[i].id === String(id)) {
+            return i
+        }
+    }
+    return -1
+}
+
+KViewCell.prototype.entries = function () {
+    let i = 0
+    const kstore = new KObjectGStore()
+
+    const iter = {
+        next: function () {
+            if (i < this.content.length) {
+                const result = {value: [this.content[i].id, this.content[i].object], done: false}
+                i++;
+                return result
+            }
+            return {done: true}
+        }.bind(this),
+        [Symbol.iterator]: function() { return iter }.bind(this)
+    }
+
+    return iter
 }
 
 function KView () {
@@ -99,15 +152,19 @@ KView.prototype.getY = function (y) {
     return this.rowDescription[i + j][0] - 1
 }
 
-KView.prototype.getObjectRow = function (object) {
+KView.prototype.getObjectRowById = function (id) {
     let i = 0
     for (const row of this.rowDescription) {
-        if (row[1] === object) {
+        if (String(row[1].id) === String(id)) {
             return i
         }
         i++
     }
     return -1
+}
+
+KView.prototype.getObjectRow = function (object) {
+    return this.getObjectRowById(object.id)
 }
 
 KView.prototype.getRowObject = function (row) {
@@ -154,15 +211,17 @@ KView.prototype.getRelativeColFromDate = function (dateStart, log = false) {
     return box
 }
 
+KView.prototype.getXFromDate = function (date) {
+    const origin = this.get('date-origin')
+    if (!(date instanceof Date)) { date = new Date(date) }
+    date.setHours(12, 0, 0, 0)
+    const x = Math.ceil((date.getTime() - origin.getTime()) / 86400000)
+    return x
+}
+
 /* we use 12:00 when calculate date, we work at the day level so hour don't count */
 KView.prototype.getCellFromDate = function (date, y) {
-    const origin = this.get('date-origin')
-    date = new Date()
-    date.setTime(date.getTime())
-    date.setHours(12, 0, 0, 0)
-
-    const x = Math.round(origin.getTime() - date.getTime() / 86400000)
-    return this.getCell(x, y)
+    return this.getCell(this.getXFromDate(date), y)
 }
 
 KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
@@ -515,4 +574,42 @@ KView.prototype.getCurrentGridBox = function () {
         x: this.currentBox[0] + this.gridOffset, 
         y: this.getY(this.currentBox[1]), 
         flat: ((this.currentBox[0] + this.gridOffset) * this.get('entry-count')) + this.getY(this.currentBox[1])}
+}
+
+KView.prototype.getAllCellForObject = function (id, x, y) {
+    const cells = []
+    let cell = this.getCell(x, y)
+    while (cell.has(id)) {
+        cells.push(cell)
+        cell = this.getCell(++x, y)
+    }
+    return cells
+}
+
+KView.prototype.setObjectOnGrid = function (id, object, x0, x1, y) {
+    for (; x0 <= x1; x0++) {
+        const cell = this.getCell(x0, y)
+        cell.set(id, object)
+    }
+}
+
+KView.prototype.getObjectsOnGrid = function (x, y) {
+    const cell = this.getCell(x, y)
+    return cell.entries()
+}
+
+
+KView.prototype.removeObjectOnGrid = function (id, x, y) {
+    const cells = this.getAllCellForObject(id, x, y)
+    for(const cell of cells) {
+        cell.delete(id)
+    }
+}
+
+KView.prototype.moveObjectOnGrid = function (id, srcX, srcY, destX, destY) {
+    const cells = this.getAllCellForObject(id, srcX, srcY)
+    const object = cells[0].get(id)
+    const length = cells.length;
+    this.removeObjectOnGrid(id, srcX, srcY)
+    this.setObjectOnGrid(id, object, destX, destX + length, destY)
 }

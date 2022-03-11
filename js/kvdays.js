@@ -7,6 +7,9 @@ const KVDays = Object.freeze({
         const H = Math.trunc(dec)
         return [H, Math.round((dec - H) * 60)]
     },
+    HM2dec (h, m) {
+        return h + (m / 60)
+    },
     getEnd (begin, duration, conf) {
         let effectiveDuration = 0
         const realEnd = new Date()
@@ -49,11 +52,14 @@ const KVDays = Object.freeze({
         return [realEnd, effectiveDuration * this.Hs]
     },
     getContinuousEnd (begin, duration, conf) {
+        console.log(duration)
         let effectiveDuration = 0
         const realEnd = new Date()
         const nextDay = new Date()
+        const startHour = this.HM2dec(begin.getHours(), begin.getMinutes())
         nextDay.setTime(begin.getTime())
         while (duration > 0) {
+            console.log(nextDay, duration)
             const dayConf = conf[nextDay.getDay()]
             let dayTime = dayConf.chunks
             if (dayTime === null) { nextDay.setTime(nextDay.getTime() + this.D); continue }
@@ -69,19 +75,20 @@ const KVDays = Object.freeze({
             let endAt
             for (const chunk of dayTime) {
                 lastChunk = chunk
-                let timeAv = chunk[1] - chunk[0]
+                if (chunk[1] < startHour) { continue; }
+                if (startHour < chunk[0]) { continue; }
+                let timeAv = chunk[1] - startHour
                 if (duration <= timeAv) {
                     timeAv = duration                            
                 }
                 if(duration - timeAv <= dayConf.round) {
                     timeAv = duration
                 }
-                endAt = chunk[0] + timeAv
+                endAt = startHour + timeAv
                 duration -= timeAv
                 effectiveDuration += timeAv
                 if (duration <= 0) { break }
             }
-
             const [endH, endM] = this.dec2HM(endAt)
             realEnd.setHours(endH, endM, 0, 0)
             nextDay.setTime(realEnd.getTime() + this.D)
