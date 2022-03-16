@@ -62,9 +62,6 @@ const EVTOperation = Object.freeze({
     }
   },
   delete: {
-    reservation (msg) {
-      deleteEntry(msg.id, msg.cid)
-    },
     evenement (msg) {
       checkMachineState()
     }
