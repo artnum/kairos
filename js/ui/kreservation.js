@@ -199,13 +199,13 @@ KUIReservation.prototype.render = function () {
             const end = new Date(this.object.get('end')).getTime()
 
             const beginDate = new Date(this.object.get('begin'))
-            let offset = beginDate.getHours() * 60 + beginDate.getMinutes()
+            let offset = (beginDate.getHours() * 60 + beginDate.getMinutes()) / 1.6667
 
             this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
             this.props.set('min', begin < deliveryBegin ? begin : deliveryBegin)
             this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
             this.props.set('length', this.props.get('max') - this.props.get('min'))
-            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
+            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width') + (offset * 60 * this.Viewport.get('second-width')))
 
             if (this.props.get('width') < 10) {
                 this.props.set('width', this.Viewport.get('day-width') / 2)
