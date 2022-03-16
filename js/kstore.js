@@ -126,7 +126,8 @@ KStore.prototype.getSearchAttribute = function () {
 }
 
 KStore.prototype.get = function (id) {
-    if (id === undefined) { return }
+    if (id === undefined) { return Promise.resolve(null) }
+    if (id === null || String(id) === '') { return Promise.resolve(null) }
     return new Promise((resolve, reject) => {
         id = String(id)
         /* in some part, store/id is used, remove the store part */

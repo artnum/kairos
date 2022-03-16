@@ -110,7 +110,9 @@ KUIReservation.prototype.renderForm = function () {
             begin: {label: 'Début', type: 'datehour'},
             end: {label: 'Fin', type: 'datehour'},
             time: {label: 'Durée', type: 'hour'},
-            comment: {label: 'Remarque', type: 'multitext'}
+            comment: {label: 'Remarque', type: 'multitext'},
+            status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
+
         })
         .then(domNode => {
             for (const fieldset of form.getElementsByTagName('FIELDSET')) {
@@ -165,65 +167,72 @@ KUIReservation.prototype.renderForm = function () {
 KUIReservation.prototype.render = function () {
     const kcolor = new KColor()
     this.rendered = new Promise((resolve, reject) => {
-        const affaire = this.object.getRelation('kaffaire')
-        if (!affaire) { return }
-        const project = affaire.getRelation('kproject')
-        if (!project) { return }
-        const leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
-        if (leftbox < 0) { return  }
-        const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
+        const kstore = new KStore('kstatus')
+        
+        kstore.get(this.object.get('status'))
+        .then(status => {
+      
+            const color = status ? status.color || 'lightgray' : 'lightgray'
+            const affaire = this.object.getRelation('kaffaire')
+            if (!affaire) { return }
+            const project = affaire.getRelation('kproject')
+            if (!project) { return }
+            const leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
+            if (leftbox < 0) { return  }
+            const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
 
-        let color = kcolor.get(`kproject:${project.get('uid')}`)
-        if (!color) {
-            const gcolor = kcolor.generate('kproject')
-            color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.8)`)
-        }
-        let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
+            /*let color = kcolor.get(`kproject:${project.get('uid')}`)
+            if (!color) {
+                const gcolor = kcolor.generate('kproject')
+                color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.8)`)
+            } */
+            let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
 
-        if (!deliveryBegin) { deliveryBegin = new Date(this.object.get('begin')).getTime() }
-        let deliveryEnd = null //new Date(this.object.get('deliveryEnd'))
-        if (!deliveryEnd) { deliveryEnd = new Date(this.object.get('end')).getTime() }
-        const begin = new Date(this.object.get('begin')).getTime()
-        const end = new Date(this.object.get('end')).getTime()
+            if (!deliveryBegin) { deliveryBegin = new Date(this.object.get('begin')).getTime() }
+            let deliveryEnd = null //new Date(this.object.get('deliveryEnd'))
+            if (!deliveryEnd) { deliveryEnd = new Date(this.object.get('end')).getTime() }
+            const begin = new Date(this.object.get('begin')).getTime()
+            const end = new Date(this.object.get('end')).getTime()
 
-        const beginDate = new Date(this.object.get('begin'))
-        let offset = beginDate.getHours() * 60 + beginDate.getMinutes()
+            const beginDate = new Date(this.object.get('begin'))
+            let offset = beginDate.getHours() * 60 + beginDate.getMinutes()
 
-        this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
-        this.props.set('min', begin < deliveryBegin ? begin : deliveryBegin)
-        this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
-        this.props.set('length', this.props.get('max') - this.props.get('min'))
-        this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
+            this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
+            this.props.set('min', begin < deliveryBegin ? begin : deliveryBegin)
+            this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
+            this.props.set('length', this.props.get('max') - this.props.get('min'))
+            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
 
-        if (this.props.get('width') < 10) {
-            this.props.set('width', this.Viewport.get('day-width') / 2)
-        }
-        this.object.bindUINode(this)
-        window.requestAnimationFrame(() => {
-            this.domNode.innerHTML = `<div class="content">
-                    <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
-                    <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
-                    <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
-                    <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
-                </div>
-                <div class="color-bar">&nbsp;</div>`
-            this.domNode.style.setProperty('--kreservation-project-color', `var(${color})`)
-            this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
-            this.domNode.style.left = `${this.props.get('left')}px`
-            if (this.height !== undefined) {
-                this.domNode.style.height = `${this.height}px`
-            } else {
-                this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
+            if (this.props.get('width') < 10) {
+                this.props.set('width', this.Viewport.get('day-width') / 2)
             }
-            if (this.top !== undefined) {
-                this.domNode.style.top = `${this.top}px`
-            }
-            this.domNode.setAttribute('draggable', true)
-            this.domNode.id = this.object.get('uuid')
-            this.domNode.addEventListener('mousedown', (event) => {
-                event.stopPropagation()
-            }, {passive: true})
-            resolve(this.domNode)
+            this.object.bindUINode(this)
+            window.requestAnimationFrame(() => {
+                this.domNode.innerHTML = `<div class="content">
+                        <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
+                        <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
+                        <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                        <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                    </div>
+                    <div class="color-bar">&nbsp;</div>`
+                this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
+                this.domNode.style.left = `${this.props.get('left')}px`
+                if (this.height !== undefined) {
+                    this.domNode.style.height = `${this.height}px`
+                } else {
+                    this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
+                }
+                if (this.top !== undefined) {
+                    this.domNode.style.top = `${this.top}px`
+                }
+                this.domNode.setAttribute('draggable', true)
+                this.domNode.id = this.object.get('uuid')
+                this.domNode.addEventListener('mousedown', (event) => {
+                    event.stopPropagation()
+                }, {passive: true})
+                resolve(this.domNode)
+            })
         })
     })
     return this.rendered

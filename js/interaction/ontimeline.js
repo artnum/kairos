@@ -96,9 +96,7 @@ function iAddReservation (event) {
         }
         byTargets.get(reservation.get('target')).push(reservation)
       }
-      console.log(byTargets)
-      console.log(targets)
-    
+
       ttime = ttime / (targets.length + 1)
       
       for (const [_, targetReservations] of byTargets.entries()) {
@@ -115,7 +113,8 @@ function iAddReservation (event) {
                     time: newRanges[rkey][2],
                     end: newRanges[rkey][1].toISO8601(),
                     begin: newRanges[rkey][0].toISO8601(),
-                    version: parseInt(targetReservations[rkey].get('version'))
+                    version: parseInt(targetReservations[rkey].get('version')),
+                    status: travail.data.get('status')
                 }, targetReservations[rkey].get('uid'))
             } else {
                 reservationStore.set({
@@ -123,7 +122,8 @@ function iAddReservation (event) {
                     end: newRanges[rkey][1].toISO8601(),
                     begin: newRanges[rkey][0].toISO8601(),
                     target: entry.id,
-                    affaire: travail.data.get('uid')
+                    affaire: travail.data.get('uid'),
+                    status: travail.data.get('status')
                 })
             }
         }
@@ -152,7 +152,8 @@ function iAddReservation (event) {
             begin: range[0].toISO8601(),
             end: range[1].toISO8601(),
             target: entry.id,
-            affaire: travail.data.get('uid')
+            affaire: travail.data.get('uid'),
+            status: travail.data.get('status')
         })
         .then(result => {
           KAIROS.info(`Nouvelle réservation`)
