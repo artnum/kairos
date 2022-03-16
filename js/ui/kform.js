@@ -51,6 +51,9 @@ KFormUI.prototype.attachToParent = function (parent) {
 }
 
 KFormUI.prototype.change = function (event) {
+    if (this.keyWaitTimeout) {
+        clearTimeout(this.keyWaitTimeout)
+    }
     const node = event.target
     let uiNode = node
     if (node.dataset.type === 'datehour') {
@@ -202,6 +205,9 @@ KFormUI.prototype.updateFormFields = function (name = null) {
 }
 
 KFormUI.prototype.keyDownEvents = function (event) {
+    if (this.keyWaitTimeout) {
+        clearTimeout(this.keyWaitTimeout)
+    }
     if (!this.object) { return }
     const node = event.target
     switch (event.key) {
@@ -213,6 +219,9 @@ KFormUI.prototype.keyDownEvents = function (event) {
 }
 
 KFormUI.prototype.keyUpEvents = function (event) {
+    if (this.keyWaitTimeout) {
+        clearTimeout(this.keyWaitTimeout)
+    }
     const node = event.target
 
     /* resize textarea height to fit text */
@@ -220,8 +229,11 @@ KFormUI.prototype.keyUpEvents = function (event) {
         window.requestAnimationFrame(() => {
             node.style.setProperty('height', 'auto')
             node.style.setProperty('height', `${node.scrollHeight}px`)
-          })
+        })
     }
+    this.keyWaitTimeout = setTimeout(() => {
+        this.change(event)
+    }, 2000)
 
 }
 
