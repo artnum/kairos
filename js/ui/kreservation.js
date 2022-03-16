@@ -106,11 +106,11 @@ KUIReservation.prototype.renderForm = function () {
         rform.render({
             id: {label: 'Numéro', readonly: true},
             version: {label: 'Version', readonly: true},
+            _kproject_name: {label: 'Projet', readonly: true},
             begin: {label: 'Début', type: 'datehour'},
             end: {label: 'Fin', type: 'datehour'},
             time: {label: 'Durée', type: 'hour'},
             comment: {label: 'Remarque', type: 'multitext'}
-
         })
         .then(domNode => {
             for (const fieldset of form.getElementsByTagName('FIELDSET')) {

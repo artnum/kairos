@@ -274,8 +274,29 @@ KObject.prototype.setItem = function (name, value) {
     return this.data.set(name, value)
 }
 
-KObject.prototype.getItem = function (name) {
+KObject.prototype.getItem = function (name, from = null) {
     if (name === 'cn') { return this.getCn() }
+    if (name.substring(0, 1) === '_') {
+        const kostore = new KObjectGStore()
+        const [ktype, kname] = name.substring(1).split('_')
+        if (!this.relation) { return '' }
+        if (this.relation.size <= 0) { return '' }
+        for (const key of this.relation.keys()) {
+            const relation = kostore.get(key, this.relation.get(key))
+            if (from !== null && relation.getType() === from) { return ''}
+            if (!relation) { return '' }
+            if (relation.getType() !== ktype) {
+                return relation.get(name, this.getType())
+            } else {
+                if (kname) { 
+                    return relation.get(kname)
+                } else {
+                    return relation.getCn()
+                }
+            }
+        }
+        return ''
+    }
     if (KAIROS[this.type][name] && KAIROS[this.type][name].remote) {
         if (this.hasItem(KAIROS[this.type][name].remote)) {
             return this.data.get(KAIROS[this.type][name].remote)
