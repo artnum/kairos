@@ -142,8 +142,9 @@ KFormUI.prototype.endObjectUpdate = function () {
 
 KFormUI.prototype.getInputValue = function (input) {
     switch(input.dataset.type) {
-        case 'date': return TimeUtils.fromDateString(input.value); break;
-        case 'hour': return TimeUtils.fromHourString(input.value); break;
+        case 'kstore': return input.dataset.value
+        case 'date': return TimeUtils.fromDateString(input.value)
+        case 'hour': return TimeUtils.fromHourString(input.value)
         case 'datehour': 
             let node = input.parentNode
             const date = TimeUtils.fromDateString(node.firstElementChild.value)
@@ -156,6 +157,7 @@ KFormUI.prototype.getInputValue = function (input) {
 KFormUI.prototype.setInputValue = function (input, value) {
         switch(input.dataset.type) {
             default: input.value = value; break
+            case 'kstore': input.dataset.value = value; break
             case 'date': input.dataset.value = value; input.value = TimeUtils.toDateString(value); break;
             case 'hour': input.dataset.value = value; input.value = TimeUtils.toHourString(value); break;
             case 'datehour': 
@@ -231,9 +233,8 @@ KFormUI.prototype.render = function (fields) {
             label.innerHTML = fields[key]?.label || key
             label.setAttribute('for', key)
             label.classList.add('k-label')
-
             const type = fields[key]?.type || 'text'
-            const input = ((type, value) => {
+            const input = ((type, value, field) => {
                 switch(type) {
                     default:
                     case 'text':  
@@ -285,11 +286,18 @@ KFormUI.prototype.render = function (fields) {
                             container.appendChild(date)
                             container.appendChild(hour)
                             return container
-                        })()
+                        })()          
+                    case 'kstore':
+                        const input = document.createElement('INPUT')
+                        const kstore = new KStore(field.storeType, field.query)
+                        const kselect = new KSelectUI(input, kstore, {attribute: kstore.getSearchAttribute(), realSelect: true, allowFreeText: false})
+                        kselect.value = value
+                        kselect.domNode.classList.add('k-input-select')
+                        kselect.domNode.dataset.type = 'kstore'
+                        return kselect.domNode
 
                 }
-            })(type, this.object ? this.object.get(key) : '')
-
+            })(type, this.object ? this.object.get(key) : '', fields[key])
             this.inputs.push(input)
             input.setAttribute('name', key)
             this.fields.push(key)
@@ -302,7 +310,6 @@ KFormUI.prototype.render = function (fields) {
             input.addEventListener('change', this.change.bind(this))
             input.addEventListener('keydown', this.keyDownEvents.bind(this))
             input.addEventListener('keyup', this.keyUpEvents.bind(this))
-
 
             label.appendChild(input)
 

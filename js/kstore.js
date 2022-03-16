@@ -1,16 +1,21 @@
-function KStore(type) {
+function KStore(type, bindQuery = null) {
     if (!KAIROS[type]) { return null }
     const baseUrl = KAIROS.URL(KAIROS[type].store)
+    let bindedQuery = ''
+    if (bindQuery !== null) {
+        bindedQuery = `#${JSON.stringify(bindQuery)}`
+    }
     if (!KStore._instance) { KStore._instance = new Map() }
     else {
-        if (KStore._instance.has(baseUrl)) {
-            return KStore._instance.get(baseUrl)
+        if (KStore._instance.has(`${baseUrl}${bindedQuery}`)) {
+            return KStore._instance.get(`${baseUrl}${bindedQuery}`)
         }
     }
 
     this.url = baseUrl
     this.type = type
-    KStore._instance.set(baseUrl, this)
+    this.bindQuery = bindQuery
+    KStore._instance.set(`${baseUrl}${bindedQuery}`, this)
     return this
 }
 
@@ -39,7 +44,6 @@ KStore.save = function (kobject) {
         })
     })
 }
-
 
 KStore.prototype.relateEntry = function (kobject) {
     return new Promise((resolve) => {
@@ -117,7 +121,12 @@ KStore.prototype.delete = function (id) {
     })
 }
 
+KStore.prototype.getSearchAttribute = function () {
+    return KAIROS[this.type].searchOn || 'name'
+}
+
 KStore.prototype.get = function (id) {
+    if (id === undefined) { return }
     return new Promise((resolve, reject) => {
         id = String(id)
         /* in some part, store/id is used, remove the store part */
@@ -147,6 +156,18 @@ KStore.prototype.get = function (id) {
 
 KStore.prototype.query = function (query) {
     return new Promise((resolve, reject) => {
+        if (this.bindQuery) {
+            const originalQuery = query
+            query = {'#and': {
+
+            }}
+            for (const k of Object.keys(originalQuery)) {
+                query['#and'][k] = originalQuery[k]
+            }
+            for (const k of Object.keys(this.bindQuery)) {
+                query['#and'][k] = this.bindQuery[k]
+            }
+        }
         const url = new URL(`${this.url}/_query`)
         fetch(url, {method: 'POST', body: JSON.stringify(query)})
         .then(response => {

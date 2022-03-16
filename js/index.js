@@ -142,6 +142,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/klateral.js', 'script'],
         ['../js/ui/kreservation.js', 'script'],
         ['../js/ui/kentry-sort.js', 'script'],
+        ['../js/ui/kselect.js', 'script'],
         ['../js/kevent.js', 'script'],
         ['../js/kentry.js', 'script'],
         ['../js/ui/kentry.js', 'script'],

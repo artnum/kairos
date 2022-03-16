@@ -275,6 +275,7 @@ KObject.prototype.setItem = function (name, value) {
 }
 
 KObject.prototype.getItem = function (name, from = null) {
+    if (!name) { return '' }
     if (name === 'cn') { return this.getCn() }
     if (name.substring(0, 1) === '_') {
         const kostore = new KObjectGStore()
@@ -283,8 +284,8 @@ KObject.prototype.getItem = function (name, from = null) {
         if (this.relation.size <= 0) { return '' }
         for (const key of this.relation.keys()) {
             const relation = kostore.get(key, this.relation.get(key))
-            if (from !== null && relation.getType() === from) { return ''}
             if (!relation) { return '' }
+            if (from !== null && relation.getType() === from) { return ''}
             if (relation.getType() !== ktype) {
                 return relation.get(name, this.getType())
             } else {

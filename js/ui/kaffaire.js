@@ -38,6 +38,7 @@ KAffaireFormUI.prototype.attachToParent = function(parent) {
 KAffaireFormUI.prototype.render = function () {
     return this.formUI.render({
         reference: {label: 'Référence'},
+        status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
         meeting: {label: 'Rendez-vous'},
         contact: {label: 'Personne de contact'},
         phone: {label: 'Téléphone', type: 'phone'},
