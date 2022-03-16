@@ -612,6 +612,8 @@ define([
 
     postCreate: function () {
       this.fixedHeader.style.zIndex = KAIROS.zMax()
+      const ktaskbar = new KTaskBar()
+
       DisplayLoop((runId) => {
         return new Promise((resolve, reject) => {
           let o = runId % 2
