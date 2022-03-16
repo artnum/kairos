@@ -276,6 +276,7 @@ KObject.prototype.setItem = function (name, value) {
 
 KObject.prototype.getItem = function (name, from = null) {
     if (!name) { return '' }
+    if (name === '') { return '' }
     if (name === 'cn') { return this.getCn() }
     if (name.substring(0, 1) === '_') {
         const kostore = new KObjectGStore()

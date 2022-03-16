@@ -23,7 +23,10 @@ function KUIReservation (object) {
     })
     object.addEventListener('update', this.render.bind(this))
     const affaire = this.object.getRelation('kaffaire')
-    affaire.addEventListener('update', this.render.bind(this))
+    if (affaire) {
+        affaire.addEventListener('update', this.render.bind(this))
+    }
+    object.addEventListener('delete', this.deleteMe.bind(this))
 
     object.bindUINode(this)
 }
@@ -160,6 +163,7 @@ KUIReservation.prototype.renderForm = function () {
                 }); break
             }
         }
+        this.renderedForm = form
         resolve(form)
     })
 }
@@ -237,3 +241,19 @@ KUIReservation.prototype.render = function () {
     })
     return this.rendered
 }   
+
+KUIReservation.prototype.deleteMe = function () {
+    console.log('delete me ')
+    window.requestAnimationFrame(() => {
+        if (this.renderedForm) {
+            if (this.renderForm.parentNode) {
+                this.renderForm.parentNode.removeChild(this.renderForm)
+            }
+        }
+    })
+    window.requestAnimationFrame(() => {
+        if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+        }
+    })
+}

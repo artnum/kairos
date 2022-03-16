@@ -150,7 +150,10 @@ KProject.prototype.kaffaireNode = function (affaire) {
                 plan.dataset.action = 'plan-affaire'
                 plan.dataset.affaire = affaire.uid
                 fs.appendChild(plan)
-
+                const del = document.createElement('button')
+                del.innerHTML = 'Supprimer'
+                del.addEventListener('click', () => { this.deleteAffaire(affaire) })
+                fs.appendChild(del)
             } else {
                 const add = document.createElement('button')
                 add.innerHTML = 'Ajouter'
@@ -161,6 +164,20 @@ KProject.prototype.kaffaireNode = function (affaire) {
             resolve(fs)
         })
     })
+}
+
+KProject.prototype.deleteAffaire = function (affaire) {
+    const store = new KStore('kaffaire')
+    const reservationStore = new KStore('kreservation')
+    if (affaire) {
+        const reservations = affaire.getRelation('kreservation')
+        if (reservations) {
+            for (const reservation of reservations) {
+                reservationStore.delete(reservation.uid)
+            }
+        }
+    }
+    store.delete(affaire.uid)
 }
 
 KProject.prototype.submitNewAffaire = function (formui) {
