@@ -52,19 +52,16 @@ const KVDays = Object.freeze({
         return [realEnd, effectiveDuration * this.Hs]
     },
     getContinuousEnd (begin, duration, conf) {
-        console.log(duration)
         let effectiveDuration = 0
         const realEnd = new Date()
         const nextDay = new Date()
         const startHour = this.HM2dec(begin.getHours(), begin.getMinutes())
         nextDay.setTime(begin.getTime())
         while (duration > 0) {
-            console.log(nextDay, duration)
             const dayConf = conf[nextDay.getDay()]
             let dayTime = dayConf.chunks
             if (dayTime === null) { nextDay.setTime(nextDay.getTime() + this.D); continue }
-            if(this.holidays.isHolidayInAnyOf(nextDay, KAIROS.holidays)) { nextDay.setTime(nextDay.getTime() + this.D); continue }
-            
+            if(this.holidays.isHolidayInAnyOf(nextDay, KAIROS.holidays)) { nextDay.setTime(nextDay.getTime() + this.D); continue }     
             {
                 const  [endH, endM] = this.dec2HM(dayTime[0][0])
                 realEnd.setTime(nextDay.getTime())
@@ -73,6 +70,7 @@ const KVDays = Object.freeze({
 
             /* chunks === null -> no time slot available for this day, forward 24h */
             let endAt
+            let lastChunk
             for (const chunk of dayTime) {
                 lastChunk = chunk
                 if (chunk[1] < startHour) { continue; }
@@ -88,6 +86,18 @@ const KVDays = Object.freeze({
                 duration -= timeAv
                 effectiveDuration += timeAv
                 if (duration <= 0) { break }
+            }
+            if (!endAt) {
+                let timeAv = lastChunk[1] - startHour
+                if (duration <= timeAv) {
+                    timeAv = duration                            
+                }
+                if(duration - timeAv <= dayConf.round) {
+                    timeAv = duration
+                }
+                endAt = startHour + timeAv
+                duration -= timeAv
+                effectiveDuration += timeAv
             }
             const [endH, endM] = this.dec2HM(endAt)
             realEnd.setHours(endH, endM, 0, 0)
