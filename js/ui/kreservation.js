@@ -95,9 +95,9 @@ KUIReservation.prototype.renderForm = function () {
         form.classList.add('kreservationForm')
         const affaire = this.object.getRelation('kaffaire')
         form.innerHTML = `
-        <fieldset name="reservation"><legend>Réservation</legend>
+        <fieldset class="k-form-ui" name="reservation"><legend>Réservation</legend>
         </fieldset>
-        <fieldset name="affaire"><legend>Travail</legend>
+        <fieldset class="k-form-ui" name="affaire"><legend>Travail</legend>
         </fieldset>
         <button name="delete" class="mbutton">Supprimer</button>
         `
