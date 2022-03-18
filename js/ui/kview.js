@@ -370,10 +370,18 @@ KView.prototype.set = function (name, value) {
 
 KView.prototype.get = function (name) {
     switch(name) {
+        case 'date-end':
+            return (() => { 
+                const d = new Date()
+                d.setTime(this.data.get('date-origin').getTime() + (this.get('day-count') * 86400000))
+                return d
+            })()
         case 'date-origin':
-            const d = new Date()
-            d.setTime(this.data.get(name).getTime())
-            return d
+            return (() => {
+                const d = new Date()
+                d.setTime(this.data.get(name).getTime())
+                return d
+            })()
         default: 
             return this.data.get(name)
     }

@@ -520,9 +520,13 @@ define([
         })
     },
 
-    resize: function () { 
+    resizeTimeline: function () {
       this.drawTimeline()
       this.drawVerticalLine()
+    },
+
+    resize: function () { 
+      this.resizeTimeline()
       this.resizeEntries()
       this.Viewport.resize()
     },
@@ -628,28 +632,9 @@ define([
 
       this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
 
-      var tContainer = dtRegistry.byId('tContainer')
       this.bc = new BroadcastChannel('KAIROS-Location-bc')
       this.view = {}
       this.set('zoom', 'week')
-      tContainer.startup()
-
-      djAspect.after(tContainer, 'addChild', function () {
-        if (this.hasChildren()) {
-          djDomStyle.set(this.domNode.parentNode, 'display', 'block')
-          window.App.minimizeMaximize(null, true)
-        }
-      }, true)
-
-      djAspect.after(tContainer, 'selectChild', function () {
-        window.App.minimizeMaximize(null, true)
-      }, true)
-
-      djAspect.after(tContainer, 'removeChild', function (child) {
-        if (!this.hasChildren()) {
-          djDomStyle.set(this.domNode.parentNode, 'display', 'none')
-        }
-      }, true)
 
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
@@ -1029,7 +1014,7 @@ define([
     moveXRight: function (x) {
       this.center = djDate.add(this.center, 'day', Math.abs(x))
       this.Viewport.move(-x)
-      this.update()
+      this.resizeTimeline()
     },
     moveOneRight: function () {
       this.moveXRight(1)
@@ -1044,7 +1029,7 @@ define([
     moveXLeft: function (x) {
       this.center = djDate.add(this.center, 'day', -Math.abs(x))
       this.Viewport.move(x)
-      this.update()
+      this.resizeTimeline()
     },
     moveOneLeft: function () {
       this.moveXLeft(1)

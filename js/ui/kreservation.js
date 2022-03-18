@@ -77,7 +77,7 @@ KUIReservation.prototype.getDomNode = function () {
     return new Promise((resolve, reject) => {
         this.rendered
         .then(domNode => {
-            resolve(domNode)
+            resolve(this.domNode)
         })
     })
 }
@@ -170,27 +170,35 @@ KUIReservation.prototype.renderForm = function () {
 }
 
 KUIReservation.prototype.render = function () {
-    const kcolor = new KColor()
     this.rendered = new Promise((resolve, reject) => {
+        if (!this.lastRender) { this.lastRender = performance.now() }
+        else { if (performance.now() - this.lastRender < 100) { resolve(null); return } }
+        this.lastRender = performance.now()
+
         const kstore = new KStore('kstatus')
-        
         kstore.get(this.object.get('status'))
         .then(status => {
             const color = status ? status.color || 'lightgray' : 'lightgray'
             const affaire = this.object.getRelation('kaffaire')
-            if (!affaire) { return }
+            if (!affaire) { resolve(null); return }
             const project = affaire.getRelation('kproject')
-            if (!project) { return }
+            if (!project) { resolve(null); return }
+
             let leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
             let gap = null
+            let virtualEnd = null
             if (leftbox < 0) {
-                follow = true
-                let rightbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('end')))
-            
-                if (rightbox < 0) { this.removeDomNode(); return }
+                if (this.Viewport.get('date-origin').getTime() > new Date(this.object.get('end')).getTime()) {
+                    this.removeDomNode();
+                    resolve(null);
+                    return
+                }
+                if (new Date(this.object.get('end')).getTime() > this.Viewport.get('date-end').getTime()) {
+                    virtualEnd = this.Viewport.get('date-end')
+                    virtualEnd = virtualEnd.getTime() + 86400000
+                }
                 const begin = new Date(this.object.get('begin'))
-                gap = this.Viewport.get('date-origin')
-                gap.setHours(begin.getHours(), begin.getMinutes(), 0, 0)
+                gap = this.Viewport.get('date-origin').getTime()
                 leftbox = 0
             }
             const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
@@ -204,10 +212,11 @@ KUIReservation.prototype.render = function () {
 
             const beginDate = new Date(this.object.get('begin'))
             let offset = (beginDate.getHours() * 60 + beginDate.getMinutes()) / 1.6667
+            if (gap) { offset = 0 }
 
             this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
             this.props.set('min', gap === null ? (begin < deliveryBegin ? begin : deliveryBegin) : gap)
-            this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
+            this.props.set('max', virtualEnd !== null ? virtualEnd : (end > deliveryEnd ? end : deliveryEnd))
             this.props.set('length', this.props.get('max') - this.props.get('min'))
             this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width') - (offset * 60 * this.Viewport.get('second-width')))
 
@@ -218,6 +227,8 @@ KUIReservation.prototype.render = function () {
             window.requestAnimationFrame(() => {
                 if (gap) { this.domNode.classList.add('k-left-open') }
                 else { this.domNode.classList.remove('k-left-open') }
+                if (virtualEnd) { this.domNode.classList.add('k-right-open') }
+                else { this.domNode.classList.remove('k-right-open') }
                 this.domNode.innerHTML = `<div class="content">
                         <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                         <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
@@ -233,6 +244,7 @@ KUIReservation.prototype.render = function () {
                 } else {
                     this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
                 }
+
                 if (this.top !== undefined) {
                     this.domNode.style.top = `${this.top}px`
                 }

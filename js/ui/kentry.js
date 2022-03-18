@@ -78,13 +78,13 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             uireservation.setParent(this)
         ])
         .then(([domNode, parentNode, refNode, origin]) => {
+            if (!domNode) { return }
             const kview = new KView()
             const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
             if (leftbox < 0) { 
                 let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
-                if (rightbox < 0) { return }
+                if (rightbox < 0) { uireservation.removeDomNode(); return }
             }
-            domNode.style.position = 'absolute'
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')
             let max = 1
