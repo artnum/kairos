@@ -235,8 +235,12 @@ KUIReservation.prototype.render = function () {
             this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
             this.props.set('min', gap === null ? (begin < deliveryBegin ? begin : deliveryBegin) : gap)
             this.props.set('max', virtualEnd !== null ? virtualEnd : (end > deliveryEnd ? end : deliveryEnd))
-            this.props.set('length', this.props.get('max') - this.props.get('min'))
-            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width') - (offset * 60 * this.Viewport.get('second-width')))
+            let extend = (beginDate.getHours() * 3600 + beginDate.getMinutes() * 60) * 1000
+            if (!gap) {
+                extend = 0
+            }
+            this.props.set('length', this.props.get('max') - this.props.get('min') + extend)
+            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
 
             if (this.props.get('width') < 10) {
                 this.props.set('width', this.Viewport.get('day-width') / 2)
