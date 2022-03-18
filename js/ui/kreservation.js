@@ -10,11 +10,15 @@ function KUIReservation (object) {
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('kreservation')
     this.domNode.setAttribute('draggable', true)
+    this.domNode.id = this.object.get('uuid')
     this.domNode.addEventListener('dragstart', event => {
         event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
         event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
         event.dataTransfer.dropEffect = 'move'
     })
+    this.domNode.addEventListener('mousedown', (event) => {
+        event.stopPropagation()
+    }, {passive: true})
     this.domNode.addEventListener('drop', event => {
         event.preventDefault()
     })
@@ -171,9 +175,23 @@ KUIReservation.prototype.renderForm = function () {
 
 KUIReservation.prototype.render = function () {
     this.rendered = new Promise((resolve, reject) => {
-        if (!this.lastRender) { this.lastRender = performance.now() }
-        else { if (performance.now() - this.lastRender < 100) { resolve(null); return } }
-        this.lastRender = performance.now()
+
+        if (this.object.isDestroyed()) {
+            this.unrender()
+            resolve()
+            return
+        }
+        
+        let changeDom = true
+        if (!this.lastObjectChange) {
+            this.lastObjectChange = this.object.get('last-change')
+        } else {
+            if (this,this.lastObjectChange === this.object.get('last-change')) { changeDom = false }
+        }
+
+        if (!this.domProduced) {
+            changeDom = true
+        }
 
         const kstore = new KStore('kstatus')
         kstore.get(this.object.get('status'))
@@ -229,14 +247,7 @@ KUIReservation.prototype.render = function () {
                 else { this.domNode.classList.remove('k-left-open') }
                 if (virtualEnd) { this.domNode.classList.add('k-right-open') }
                 else { this.domNode.classList.remove('k-right-open') }
-                this.domNode.innerHTML = `<div class="content">
-                        <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
-                        <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
-                        <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
-                        <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
-                    </div>
-                    <div class="color-bar">&nbsp;</div>`
-                this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+
                 this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
                 this.domNode.style.left = `${this.props.get('left')}px`
                 if (this.height !== undefined) {
@@ -248,11 +259,19 @@ KUIReservation.prototype.render = function () {
                 if (this.top !== undefined) {
                     this.domNode.style.top = `${this.top}px`
                 }
-                this.domNode.setAttribute('draggable', true)
-                this.domNode.id = this.object.get('uuid')
-                this.domNode.addEventListener('mousedown', (event) => {
-                    event.stopPropagation()
-                }, {passive: true})
+
+                if (changeDom) {
+                    this.domProduced = true
+                    this.domNode.innerHTML = `<div class="content">
+                            <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
+                            <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
+                            <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                            <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                        </div>
+                        <div class="color-bar">&nbsp;</div>`
+                        this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                }
+
                 resolve(this.domNode)
             })
         })

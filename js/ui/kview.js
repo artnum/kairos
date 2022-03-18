@@ -298,6 +298,8 @@ KView.prototype.move = function (days) {
     const displacement = Math.abs(this.get('entry-count') * days * 2)
     range[1] = range[1] * this.get('entry-count')
     range[0] = range[0] * this.get('entry-count')
+    const toUnrender = new Map()
+    const toPlace = new Map()
     for (let i = range[0] - displacement; i <= range[1] + displacement; i++) {
         const cell = this.grid[i]
         if (!cell) { continue }
@@ -306,9 +308,10 @@ KView.prototype.move = function (days) {
                 if(object.isDestroyed()) {
                     cell.delete(key)
                     continue
-                }        
+                }
                 const p = this.getRowObject(Math.round((i - (range[0] - displacement))  % this.get('entry-count')))
-                p.KUI.placeReservation(object)
+                toPlace.set(object.get('id'), [p.KUI, object])
+                toUnrender.set(object.get('id'), null)
             }
         } else {
             for (const [key, object] of cell.entries()) {
@@ -316,12 +319,20 @@ KView.prototype.move = function (days) {
                     cell.delete(key)
                     continue
                 }        
-                if (!object.getUINode) { continue }
-                const ui = object.getUINode()
-                if (!ui) { continue }
-                ui.unrender()
+                if (!toUnrender.has(object.get('id'))) {
+                    toUnrender.set(object.get('id'), object)
+                }
             }
         }
+    }
+
+    for (const [_, p] of toPlace) {
+        p[0].placeReservation(p[1])
+    }
+    for (const [_, o] of toUnrender) {
+        if (!o) { continue }
+        const ui = o.getUINode()
+        if (ui) { ui.unrender() }
     }
 }
 

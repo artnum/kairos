@@ -102,6 +102,7 @@ function KObject (type, data) {
     this.evtTarget = new EventTarget()
     this.UINode = null
     this.deleted = false
+    this.lastChange = performance.now()
     const kgstore =  new KObjectGStore()
 
     for (const key in data) {
@@ -225,6 +226,7 @@ KObject.prototype.isObjectDestroyed = function () {
 
 KObject.prototype.destroyObject = function () {
     const kgstore =  new KObjectGStore()
+    this.lastChange = performance.now()
     this.deleted = true
     kgstore.delete(this.getType(), this.getItem('uid'))
 }
@@ -259,6 +261,7 @@ KObject.prototype.doDeleteObject = function () {
 
 KObject.prototype.deleteItem = function (name) {
     if (this.hasItem(name)) { 
+        this.lastChange = performance.now()
         this.data.delete(name);
         this.evtTarget.dispatchEvent(new CustomEvent('delete-item', {detail: {kobject: this, item: name}}))
         return true; 
@@ -271,6 +274,7 @@ KObject.prototype.itemKeys = function () {
 }
 
 KObject.prototype.setItem = function (name, value) {
+    this.lastChange = performance.now()
     return this.data.set(name, value)
 }
 
@@ -278,6 +282,7 @@ KObject.prototype.getItem = function (name, from = null) {
     if (!name) { return '' }
     if (name === '') { return '' }
     if (name === 'cn') { return this.getCn() }
+    if (name === 'last-change') { return this.lastChange }
     if (name.substring(0, 1) === '_') {
         const kostore = new KObjectGStore()
         const [ktype, kname] = name.substring(1).split('_')

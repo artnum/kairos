@@ -78,12 +78,12 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             uireservation.setParent(this)
         ])
         .then(([domNode, parentNode, refNode, origin]) => {
-            if (!domNode) { return }
+            if (!domNode) { resolve(); return }
             const kview = new KView()
             const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
             if (leftbox < 0) { 
                 let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
-                if (rightbox < 0) { uireservation.removeDomNode(); return }
+                if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
             }
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')
@@ -115,10 +115,11 @@ KUIEntry.prototype.placeReservation = function (reservation) {
                     }
                 }
             }
-            window.requestAnimationFrame(() => {
-                if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
-                parentNode.appendChild(domNode)
-            })
+            if (!domNode.parentNode) {
+                window.requestAnimationFrame(() => {
+                    parentNode.appendChild(domNode)
+                })
+            }
             resolve()
         })
     })
