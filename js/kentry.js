@@ -234,19 +234,9 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             const y = viewport.getObjectRow(this)
             if (this.entries.has(uuid)) {
                 const reservation = this.entries.get(uuid)
-                /* remove from viewport before update */
-                {                
-                    console.log('remove')
-                    const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
-                    for (const row of rows) {
-                        row.delete(`${reservation.getType()}:${reservation.get('uid')}`)
-                    }
-                }
-                
                 reservation.update(entry)
                 /* re-add to viewport after update */
                 {
-                    console.log('re-add')
                     const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                     for (const row of rows) {
                         row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
