@@ -80,7 +80,10 @@ KUIEntry.prototype.placeReservation = function (reservation) {
         .then(([domNode, parentNode, refNode, origin]) => {
             const kview = new KView()
             const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
-            if (leftbox < 0) { return }
+            if (leftbox < 0) { 
+                let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
+                if (rightbox < 0) { return }
+            }
             domNode.style.position = 'absolute'
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')

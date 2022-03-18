@@ -369,7 +369,14 @@ KView.prototype.set = function (name, value) {
 }
 
 KView.prototype.get = function (name) {
-    return this.data.get(name)
+    switch(name) {
+        case 'date-origin':
+            const d = new Date()
+            d.setTime(this.data.get(name).getTime())
+            return d
+        default: 
+            return this.data.get(name)
+    }
 }
 
 KView.prototype.setOrigin = function (date) {

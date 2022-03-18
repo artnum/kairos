@@ -176,21 +176,24 @@ KUIReservation.prototype.render = function () {
         
         kstore.get(this.object.get('status'))
         .then(status => {
-      
             const color = status ? status.color || 'lightgray' : 'lightgray'
             const affaire = this.object.getRelation('kaffaire')
             if (!affaire) { return }
             const project = affaire.getRelation('kproject')
             if (!project) { return }
-            const leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
-            if (leftbox < 0) { return  }
+            let leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
+            let gap = null
+            if (leftbox < 0) {
+                follow = true
+                let rightbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('end')))
+            
+                if (rightbox < 0) { this.removeDomNode(); return }
+                const begin = new Date(this.object.get('begin'))
+                gap = this.Viewport.get('date-origin')
+                gap.setHours(begin.getHours(), begin.getMinutes(), 0, 0)
+                leftbox = 0
+            }
             const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
-
-            /*let color = kcolor.get(`kproject:${project.get('uid')}`)
-            if (!color) {
-                const gcolor = kcolor.generate('kproject')
-                color = kcolor.set(`kproject:${project.get('uid')}`, `hsla(${gcolor.h}, ${gcolor.s}%, ${gcolor.l}%, 0.8)`)
-            } */
             let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
 
             if (!deliveryBegin) { deliveryBegin = new Date(this.object.get('begin')).getTime() }
@@ -203,7 +206,7 @@ KUIReservation.prototype.render = function () {
             let offset = (beginDate.getHours() * 60 + beginDate.getMinutes()) / 1.6667
 
             this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
-            this.props.set('min', begin < deliveryBegin ? begin : deliveryBegin)
+            this.props.set('min', gap === null ? (begin < deliveryBegin ? begin : deliveryBegin) : gap)
             this.props.set('max', end > deliveryEnd ? end : deliveryEnd)
             this.props.set('length', this.props.get('max') - this.props.get('min'))
             this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width') - (offset * 60 * this.Viewport.get('second-width')))
@@ -213,6 +216,8 @@ KUIReservation.prototype.render = function () {
             }
             this.object.bindUINode(this)
             window.requestAnimationFrame(() => {
+                if (gap) { this.domNode.classList.add('k-left-open') }
+                else { this.domNode.classList.remove('k-left-open') }
                 this.domNode.innerHTML = `<div class="content">
                         <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                         <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
@@ -243,8 +248,15 @@ KUIReservation.prototype.render = function () {
     return this.rendered
 }   
 
+KUIReservation.prototype.removeDomNode = function () {
+    window.requestAnimationFrame(() => {
+        if (this.domNode && this.domNode.parentNode) {
+            this.domNode.parentNode.removeChild(this.domNode)
+        }
+    })
+}
+
 KUIReservation.prototype.deleteMe = function () {
-    console.log('delete me ')
     window.requestAnimationFrame(() => {
         if (this.renderedForm) {
             if (this.renderForm.parentNode) {
