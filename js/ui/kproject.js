@@ -177,7 +177,7 @@ KProject.prototype.deleteAffaire = function (affaire) {
     if (affaire) {
         const reservations = affaire.getRelation('kreservation')
         if (reservations) {
-            for (const reservation of reservations) {
+            for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
                 reservationStore.delete(reservation.uid)
             }
         }
