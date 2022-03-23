@@ -1198,6 +1198,11 @@ define([
           window.Rent.Days[d.stamp] = {}
         }
 
+        d.domNode.addEventListener('dblclick', (event) => {
+          event.stopPropagation()
+          window.open(`${KAIROS.getBase()}/pdfs/day/${event.target.dataset.artnumDay}`, '_blank')
+        })
+
         this.days.push(d)
         if (this.get('blockSize') > 20) {
           djDomConstruct.place(d.domNode, docFrag, 'last')

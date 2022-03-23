@@ -2,8 +2,12 @@
 include('artnum/autoload.php');
 include('../lib/format.php');
 include('../lib/get-entry.php');
-include('../lib/kobject.php');
+include('../lib/k/kstore.php');
+
 header('Cache-Control: no-cache, max-age=0');
+
+
+$KAppConf = new KAppConf('../conf/app.json');
 
 function e404($msg = 'aucun') {
    ob_end_clean();
@@ -22,10 +26,10 @@ class BlankLocationPDF extends artnum\PDF {
       } else {
          $this->SetMargins($options['margins'][0], $options['margins'][1], $options['margins'][2]);
       }
-      $this->addTaggedFont('c', 'century-gothic', '', 'century-gothic.ttf', true);
-      $this->addTaggedFont('cb', 'century-gothic-bold', '', 'century-gothic-bold.ttf', true);
+      $this->addTaggedFont('c', 'dejavu', '', 'DejaVuSans.ttf', true);
+      $this->addTaggedFont('cb', 'dejavu-bold', '', 'DejaVuSans-Bold.ttf', true);
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);
-      $this->SetFont('century-gothic');
+      $this->SetFont('helvetica');
    }
 }
 
@@ -51,13 +55,19 @@ class LocationPDF extends BlankLocationPDF {
     }
   
     function Header() {
+      global $KAppConf;
+
       if ($this->NoHeaderFooter) { return; }
       if ($this->EvenOnly && $this->PageNo() % 2 === 0) { return; }
       $w = ($this->w / 2.4) - $this->lMargin;
-      $this->Image('logo.png', $this->lMargin, $this->rMargin, $w);
+      
+      $logo = $KAppConf->get('company.logoFile');
+      if ($logo) {
+         $this->Image($logo, $this->lMargin, $this->rMargin, $w);
+      }
       if(!empty($this->title)) {
          $this->setFontSize(10);
-         $this->SetFont('century-gothic');
+         $this->SetFont('helvetica');
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
@@ -65,20 +75,22 @@ class LocationPDF extends BlankLocationPDF {
    }
 
    function Footer() {
+      global $KAppConf;
       if ($this->NoHeaderFooter) { return; }
       if ($this->EvenOnly && $this->PageNo() % 2 === 0) { return; }
       $this->SetY(280);
       $this->setFontSize(2.4);
       $this->hr();
-      $this->printTaggedLn(array('%cb', 'Airnace SA', '%c', ', Route des Îles Vieilles 8-10, 1902 Evionnaz'), array('break' => false));
-      $this->printTaggedLn(array('%c', ' | Téléphone: +41 27 767 30 38, Fax: +41 27 767 30 28'), array('break' => false));
-      $this->printTaggedLn(array('%c', ' | info@airnace.ch | https://www.airnace.ch'));
+      $this->printTaggedLn(['%cb', $KAppConf->get('company.name') , '%c', ', ' . $KAppConf->get('company.street') . ', ' . $KAppConf->get('company.locality')]);
+      $this->printTaggedLn(['%c', 'Téléphone: ' . $KAppConf->get('company.phone')], ['break' => false]);
+      $this->printTaggedLn(['%c', ' | ' . $KAppConf->get('company.mail') . ' | '. $KAppConf->get('company.website')]);
       $this->resetFontSize();
    }
 }
 
 function getLocality ($JClient, $locality) {
-  if (empty($locality)) { return NULL; }
+   return $locality;
+  /*if (empty($locality)) { return NULL; }
 
   if (preg_match('/PC\/[0-9a-f]{32,32}$/', $locality) || preg_match('/^Warehouse\/[a-zA-Z0-9]*$/', $locality)) {
     $l = explode('/', $locality);
@@ -95,7 +107,7 @@ function getLocality ($JClient, $locality) {
     }
   } else {
     return array('raw', $locality);
-  }
+  }*/
 }
 
 function format_address($addr, $options = array()) {
