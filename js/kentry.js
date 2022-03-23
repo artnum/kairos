@@ -8,8 +8,8 @@ function KEntry (id) {
     this.entries = new Map()
     this.wwInstance
     this._loaded
-    this.KUI = new KUIEntry(this, KAIROS.kentry.ui)
-    this.URL = KAIROS.URL(KAIROS.kentry.store)
+    this.KUI = new KUIEntry(this, KAIROS.stores.kentry.ui)
+    this.URL = KAIROS.URL(KAIROS.stores.kentry.store)
 }
 
 KEntry.load = function (id) {

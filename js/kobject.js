@@ -304,9 +304,9 @@ KObject.prototype.getItem = function (name, from = null) {
         }
         return ''
     }
-    if (KAIROS[this.type][name] && KAIROS[this.type][name].remote) {
-        if (this.hasItem(KAIROS[this.type][name].remote)) {
-            return this.data.get(KAIROS[this.type][name].remote)
+    if (KAIROS.stores[this.type][name] && KAIROS.stores[this.type][name].remote) {
+        if (this.hasItem(KAIROS.stores[this.type][name].remote)) {
+            return this.data.get(KAIROS.stores[this.type][name].remote)
         }
     }
     return this.data.get(name)
@@ -339,13 +339,13 @@ KObject.prototype.variables = function (txt) {
 }
 
 KObject.prototype.getName = function (capitalize = false) {
-    let name = this.variables(KAIROS[this.type].name)
+    let name = this.variables(KAIROS.stores[this.type].name)
     if (capitalize) { return name.charAt(0).toUpperCase() + name.slice(1) }
     return name
 }
 
 KObject.prototype.getCn = function () {
-    return this.variables(KAIROS[this.type].cn)
+    return this.variables(KAIROS.stores[this.type].cn)
 }
 
 KObject.prototype.setRelation = function(type, kobject) {

@@ -1,6 +1,6 @@
 function KStore(type, bindQuery = null) {
-    if (!KAIROS[type]) { return null }
-    const baseUrl = KAIROS.URL(KAIROS[type].store)
+    if (!KAIROS.stores[type]) { return null }
+    const baseUrl = KAIROS.URL(KAIROS.stores[type].store)
     let bindedQuery = ''
     if (bindQuery !== null) {
         bindedQuery = `#${JSON.stringify(bindQuery)}`
@@ -21,7 +21,7 @@ function KStore(type, bindQuery = null) {
 
 KStore.save = function (kobject) {
     const kstore = new KStore(kobject.getType())
-    const fields = KAIROS[kobject.getType()].fields !== undefined ? KAIROS[kobject.getType()].fields : []
+    const fields = KAIROS.stores[kobject.getType()].fields !== undefined ? KAIROS.stores[kobject.getType()].fields : []
     if (fields.length === 0) {
         return kstore.set(kobject.getBody(), kobject.get('uid'))
     }
@@ -49,9 +49,9 @@ KStore.prototype.relateEntry = function (kobject) {
     return new Promise((resolve) => {
         const promises = []
         if (!kobject.get('uid')) { resolve(kobject); return }
-        if (!KAIROS[kobject.getType()].relation) { resolve(kobject); return }
+        if (!KAIROS.stores[kobject.getType()].relation) { resolve(kobject); return }
 
-        for (const relation of KAIROS[kobject.getType()].relation) {
+        for (const relation of KAIROS.stores[kobject.getType()].relation) {
             if (!relation.multiple) {
                 const ko = new KObjectGStore().get(relation.target, kobject.get(relation.attr))
                 if (ko) {
@@ -122,7 +122,7 @@ KStore.prototype.delete = function (id) {
 }
 
 KStore.prototype.getSearchAttribute = function () {
-    return KAIROS[this.type].searchOn || 'name'
+    return KAIROS.stores[this.type].searchOn || 'name'
 }
 
 KStore.prototype.get = function (id) {
