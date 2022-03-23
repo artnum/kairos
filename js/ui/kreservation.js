@@ -118,6 +118,8 @@ KUIReservation.prototype.renderForm = function () {
             end: {label: 'Fin', type: 'datehour'},
             time: {label: 'Durée', type: 'hour'},
             comment: {label: 'Remarque', type: 'multitext'},
+            creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}},
+            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}},
             status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
 
         })
