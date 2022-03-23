@@ -30,6 +30,7 @@ KProject.prototype.render = function () {
         let affaireHtml = ''
         if (affaire) {
             for (const aff of Array.isArray(affaire) ? affaire : [affaire]) {
+                if (aff.get('closed') !== '0') { continue }
                 let time = 0
                 const end = new Date(aff.get('end'))
                 if (!isNaN(end.getTime())) {
@@ -47,7 +48,7 @@ KProject.prototype.render = function () {
                 }
                 let affaireTime = aff.get('time')
                 if (!affaireTime) { affaireTime = 0 }
-                affaireHtml += `<li>${aff.getCn()} : <strong>${TimeUtils.toHourString(affaireTime)} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
+                affaireHtml += `<li id="${aff.get('uid')}">${aff.getCn()} : <strong>${TimeUtils.toHourString(affaireTime)} prévues/${(time / 60 / 60).toFixed(2)} planifiées</strong></li>`
             }
         }
 
@@ -154,6 +155,10 @@ KProject.prototype.kaffaireNode = function (affaire) {
                 del.innerHTML = 'Supprimer'
                 del.addEventListener('click', () => { this.deleteAffaire(affaire) })
                 fs.appendChild(del)
+                const close = document.createElement('button')
+                close.innerHTML = 'Clore'
+                close.addEventListener('click', () => { this.closeAffaire(affaire) })
+                fs.appendChild(close)
             } else {
                 const add = document.createElement('button')
                 add.innerHTML = 'Ajouter'
@@ -178,6 +183,11 @@ KProject.prototype.deleteAffaire = function (affaire) {
         }
     }
     store.delete(affaire.uid)
+}
+
+KProject.prototype.closeAffaire = function (affaire) {
+    affaire.set('closed', (new Date()).getTime() / 1000)
+    KStore.save(affaire)
 }
 
 KProject.prototype.submitNewAffaire = function (formui) {
@@ -213,6 +223,7 @@ KProject.prototype.form = function () {
 
         if (affaires) {
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
+                if (affaire.get('closed') !== '0') { continue }
                 this.kaffaireNode(affaire)
                 .then(affaireNode => {
                     node.appendChild(affaireNode)
