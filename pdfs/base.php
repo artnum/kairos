@@ -7,6 +7,17 @@ include('../lib/k/kstore.php');
 header('Cache-Control: no-cache, max-age=0');
 
 
+function dbHourToHour ($dbDT) {
+   $hour = explode('T', $dbDT)[1];
+   $hour = explode(':', $hour);
+   return $hour[0] . ':' . $hour[1];
+}
+
+function decToHM ($dec) {
+   $H = intval($dec);
+   return str_pad(strval($H), 2, '0', STR_PAD_LEFT) . ':' .  str_pad(strval(round(($dec - $H) * 60)), 2, '0', STR_PAD_RIGHT);
+}
+
 $KAppConf = new KAppConf('../conf/app.json');
 
 function e404($msg = 'aucun') {
