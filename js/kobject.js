@@ -108,10 +108,12 @@ function KObject (type, data) {
     for (const key in data) {
         this.setItem(key, data[key])
     }
-    const previous = kgstore.get(type, this.getItem('uid'))
-    if (previous) {
-        previous.update(data)
-        return previous
+    if (this.getItem('uid')) {
+        const previous = kgstore.get(type, this.getItem('uid'))
+        if (previous) {
+            previous.update(data)
+            return previous
+        }
     }
 
     const kobject = new Proxy(this, {
@@ -147,6 +149,7 @@ function KObject (type, data) {
                 case 'getBody': return object.doGetBody.bind(object)
                 case 'deleteObject': return object.doDeleteObject.bind(object)
                 case 'relation': return undefined
+                case 'clone': return object.doClone.bind(object)
             }
             return object.getItem(name)
         },
@@ -185,6 +188,7 @@ function KObject (type, data) {
                 case 'getFirstTextValue':
                 case 'getBody':
                 case 'deleteObject':
+                case 'clone':
                     return {
                         writable: false,
                         enumerable: false,
@@ -219,6 +223,32 @@ function KObject (type, data) {
     kgstore.put(kobject)
     return kobject
 }
+
+KObject.prototype.doClone = function () {
+    const data = new Map()
+    console.log(this.data)
+    for (const [key, value] of this.data) {
+        data.set(key, value)
+    }
+
+    if (KAIROS.stores[this.type]['version'] && KAIROS.stores[this.type]['version'].remote) {
+        data.delete(KAIROS.stores[this.type]['version'].remote)
+    }
+    if (KAIROS.stores[this.type]['uid'] && KAIROS.stores[this.type]['uid'].remote) {
+        data.delete(KAIROS.stores[this.type]['uid'].remote)
+    } else {
+        for (const name of ['id', 'uid', 'uuid', 'IDent']) {
+            if (data.has(name)) { data.delete(name); break }
+        }
+    }
+    if (KAIROS.stores[this.type]['notClonable']) {
+        for (const attr of KAIROS.stores[this.type]['notClonable']) {
+            data.delete(attr)
+        }
+    }
+    return new KObject(this.getType(), Object.fromEntries(data))
+}
+
 
 KObject.prototype.isObjectDestroyed = function () {
     return this.deleted
@@ -456,7 +486,15 @@ KObject.prototype.doGetBody = function () {
 }
 
 KObject.prototype.doToJSON = function () {
-    return JSON.stringify(Object.fromEntries(this.data))
+    const data = new Map()
+    if (KAIROS.stores[this.getType()].fields) {
+        for (const [key, value] of this.data) {
+            if(KAIROS.stores[this.getType()].fields.indexOf(key) !== -1) {
+                data.set(key, value)
+            }
+        }
+    }
+    return JSON.stringify(Object.fromEntries(data))
 }
 
 KObject.prototype.doToXML = function (stack = []) {

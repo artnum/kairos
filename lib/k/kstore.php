@@ -10,21 +10,22 @@ class KStore {
         $this->url = $conf->get('stores.' . $type . '.store');
         $this->bindedQuery = null;
         if (!empty($bindQuery)) {
-            $this->bindeQuery = $bindQuery;
+            $this->bindedQuery = $bindQuery;
         }
     }
 
-    function query ($query) {
+    function query ($query, &$outQuery = null) {
         if ($this->bindedQuery) {
             $originalQuery = $query;
             $query = ['#and' => []];
             foreach($originalQuery as $k => $v) {
                 $query['#and'][$k] = $v;
             }
-            foreach ($this->bindQuery as $k => $v) {
+            foreach ($this->bindedQuery as $k => $v) {
                 $query['#and'][$k] = $v;
             }
         }
+        $outQuery = $query;
         $response = kfetch($this->url . '/_query', ['method' => 'POST', 'body' => $query]);
         if (!$response->ok) { return []; }
         $result = $response->json();

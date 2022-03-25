@@ -627,6 +627,7 @@ KView.prototype.getObjectsOnGrid = function (x, y) {
 
 KView.prototype.removeObjectOnGrid = function (id, x, y) {
     const cells = this.getAllCellForObject(id, x, y)
+    if (cells.length <= 0) { return }
     for(const cell of cells) {
         cell.delete(id)
     }
@@ -634,6 +635,7 @@ KView.prototype.removeObjectOnGrid = function (id, x, y) {
 
 KView.prototype.moveObjectOnGrid = function (id, srcX, srcY, destX, destY) {
     const cells = this.getAllCellForObject(id, srcX, srcY)
+    if (cells.length <= 0) { return }
     const object = cells[0].get(id)
     const length = cells.length;
     this.removeObjectOnGrid(id, srcX, srcY)

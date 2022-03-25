@@ -10,6 +10,48 @@ const KVDays = Object.freeze({
     HM2dec (h, m) {
         return h + (m / 60)
     },
+    getChunksFromDay (day, conf) {
+        const chunks = []
+        const dayTime = conf[day.getDay()]
+        const dayHour = this.HM2dec(day.getHours(), day.getMinutes())
+        let chunkStarted = false
+        if (dayTime.chunks === null) { return chunks }
+        for (const chunk of dayTime.chunks) {
+            if (chunkStarted) { chunks.push(chunk)}
+            if (dayHour >= chunk[0] && dayHour <= chunk[1]) {
+                if (dayHour !== chunk[1]) { chunks.push([dayHour,chunk[1]]) }
+                chunkStarted = true
+            }
+        }
+        return chunks
+    },
+    getChunksUpToDay (day, conf) {
+        const chunks = []
+        const dayTime = conf[day.getDay()]
+        const dayHour = this.HM2dec(day.getHours(), day.getMinutes())
+        for (const chunk of dayTime) {
+            if (dayHour >= chunk[0] && dayHour <= chunk[1]) {
+                if (dayHour !== chunk[0]) { chunks.push([chunk[0], dayHour]) }
+            } else {
+                chunks.push(chunk)
+            }
+        }
+        return chunks
+    },
+    getDurationForChunks (chunks) {
+        let duration = 0
+        for (const chunk of chunks) {
+            duration += chunk[1] - chunk[0]
+        }
+        return duration * this.Hs
+    },
+    initDayStartTime (day, conf) {
+        const dayTime = conf[day.getDay()]
+        if (dayTime.chunks === null) { day.setHours(24, 0, 0, 0); return day }
+        const [h, m] = this.dec2HM(dayTime.chunks[0][0])
+        day.setHours(h, m, 0, 0)
+        return day
+    },
     getEnd (begin, duration, conf) {
         let effectiveDuration = 0
         const realEnd = new Date()
@@ -20,16 +62,10 @@ const KVDays = Object.freeze({
             let dayTime = dayConf.chunks
             if (dayTime === null) { break }
             if(this.holidays.isHolidayInAnyOf(nextDay, KAIROS.holidays)) { break }
-            
-            {
-                const  [endH, endM] = this.dec2HM(dayTime[0][0])
-                realEnd.setTime(nextDay.getTime())
-                realEnd.setHours(endH, endM, 0, 0)
-            }
 
             /* chunks === null -> no time slot available for this day, forward 24h */
             let endAt
-            for (const chunk of dayTime) {
+            for (const chunk of this.getChunksFromDay(nextDay, conf)) {
                 lastChunk = chunk
                 let timeAv = chunk[1] - chunk[0]
                 if (duration <= timeAv) {
@@ -45,8 +81,10 @@ const KVDays = Object.freeze({
             }
 
             const [endH, endM] = this.dec2HM(endAt)
+            realEnd.setTime(nextDay.getTime())
             realEnd.setHours(endH, endM, 0, 0)
             nextDay.setTime(realEnd.getTime() + this.D)
+            this.initDayStartTime(nextDay, conf)
         }
         // effectiveDuration is in second
         return [realEnd, effectiveDuration * this.Hs]

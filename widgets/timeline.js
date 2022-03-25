@@ -653,28 +653,42 @@ define([
         if (!kident) { return }
         if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
-        const object = kGStore.get(kident.substr(6))
+        let object = event.shiftKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
+        console.log(begin, end)
         const kview = new KView()
         const originalX = kview.getXFromDate(begin)
         const originalY = kview.getObjectRowById(object.get('target'))
         const newOrigin = new Date()
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
-        newOrigin.setHours(begin.getHours(), begin.getMinutes(), 0)
+        KVDays.initDayStartTime(newOrigin, KAIROS.days)
         begin.setTime(newOrigin.getTime())
-        const newEnd = KVDays.getContinuousEnd(begin, object.get('time') / 3600, KAIROS.days)
-        kstore.set({
-            begin: begin.toISO8601(),
-            end: newEnd[0].toISO8601(),
-            target: entryNode.id, 
-            id: object.get('id'),
-            version: object.get('version')
-          }, 
-          object.get('id')
-        )
-        .then(_ => {
-          kview.moveObjectOnGrid(`kreservation:${object.get('id')}`, originalX , originalY, kview.getXFromDate(begin), kview.getObjectRowById(entryNode.id))
+        //const newEnd = KVDays.getContinuousEnd(begin, object.get('time') / 3600, KAIROS.days)
+    
+        const ranges = KVDays.getRanges(begin, object.get('time') / 3600, KAIROS.days)
+         
+        const p = []
+        for (const range of ranges) {
+          console.log(range[0], range[1])
+          object.set('begin', range[0].toISO8601())
+          object.set('end', range[1].toISO8601())
+          object.set('time', range[2])
+          object.set('target', entryNode.id)
+            
+          p.push(
+            kstore.set(object)
+            .then(id => {
+              return kstore.get(id)
+            })
+          )
+          object = object.clone()
+        }
+        Promise.all(p)
+        .then(kobjects =>{
+          for (const kobject of kobjects) {
+            kview.moveObjectOnGrid(`kreservation:${kobject.get('id')}`, originalX , originalY, kview.getXFromDate(begin), kview.getObjectRowById(entryNode.id))
+          }
           window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
         })
         .catch(reason => {

@@ -24,7 +24,7 @@ $kobjects = $kreservation->query([
         'begin' => ['<', $dayEnd],
         'end' => ['>', $dayBegin]        
     ]
-]);
+], $query);
 
 uasort($kobjects, function ($a, $b) {
     return intval($a->get('target')) - intval($b->get('target'));
@@ -36,15 +36,19 @@ $PDF->addTab(3);
 $PDF->setFontSize(3);
 $PDF->SetY(40);
 $currentName = '';
+
+$PDF->printTaggedLn([json_encode($query)]);
+
 foreach($kobjects as $kobject) {
+    $PDF->printTaggedLn(['%cb', $kobject->get('uid')]);
 
     $entry = $kentry->get($kobject->get('target'));
     if ($currentName !== $entry->get('name')) {
         $PDF->printTaggedLn(['%cb', $entry->get('name')]);
         $currentName = $entry->get('name');
     }
-
     $affaire = $kaffaire->get($kobject->get('affaire'));
+   // $PDF->printTaggedLn(var_export($kaffaire, true), ['multiline' => true]);
     $status = $kstatus->get($kobject->get('status'));
     if ($affaire === null)  { continue; }
   
