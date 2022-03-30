@@ -3,6 +3,7 @@
 @import 'tooltip.css';
 @import '../exec/css.php';
 @import 'kentry-sort.css';
+@import 'kcalendar.css';
 
 body, html { margin: 0; padding: 0; }
 *[draggable] {

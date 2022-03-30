@@ -1,0 +1,92 @@
+.k-calendar {
+    font-family: "B612";
+    user-select: none;
+    max-width: calc(62px * 8);
+    background-color: white;
+    border: 1px solid black;
+}
+.k-week, .k-header {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+.k-days span {
+    text-align: center;
+    min-height: 42px;
+    display: inline-flex;
+    max-height: 42px;
+
+    justify-content: center;
+    align-items: center;
+    max-width: 58px;
+    min-width: 58px;
+}
+.k-days .k-header span {
+    font-size: 0.8em;
+    max-width: 58px;
+    min-width: 58px;
+}
+
+.k-days span.other-month {
+    color: lightgray;
+    background-color: white !important;
+}
+
+.k-days .k-weeknum {
+    min-height: 42px;
+    border: 2px solid transparent;
+    font-size: 0.8em;
+}
+
+.k-days .k-week:hover .k-weeknum {
+    background-color: black;
+    color: white;
+}
+
+.k-days .k-day {
+    border: 2px solid transparent;
+    cursor: pointer;
+    background-color: lightgoldenrodyellow;
+
+}
+.k-days .k-weekend {
+    color: gray;
+    background-color: white;
+}
+.k-days .k-day:hover {
+    border: 2px solid orange;
+    background-color: yellow;
+}
+.k-days .k-day.k-selected {
+    background-color: orange;
+}
+.k-months {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.k-months .k-month {
+    display: inline-block;
+    margin: 0px 1ch;
+    cursor: pointer;
+}
+.k-months .k-month-current {
+    font-weight: bold;
+}
+.k-month-popper {
+    background-color: white;
+    font-size: 0.8em;
+    border: 1px solid black;
+    overflow-y: scroll;
+    max-height: 24ex;
+}
+.k-month-popper div {
+    margin: 2px 2px;
+    padding: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+.k-month-popper div:hover {
+    background-color: lightyellow;
+    border: 2px solid yellow;
+}

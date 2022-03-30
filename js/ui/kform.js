@@ -270,6 +270,24 @@ KFormUI.prototype.render = function (fields) {
                         return hour
                     case 'date':
                         const date = document.createElement('INPUT')
+                        date.addEventListener('focus', event => {
+                            const kalendar = new CalendarUI(new Date(value))
+                            kalendar.render()
+                            .then(node => {
+                                node.style.setProperty('z-index', KAIROS.zMax())
+                                document.body.appendChild(node)
+                                const popper = Popper.createPopper(date, node)
+
+                                kalendar.addEventListener('select-day', event => {
+                                    const day = event.detail.pop()
+                                    date.dataset.value = day
+                                    date.dispatchEvent(new Event('change'))
+                                    date.value = TimeUtils.toDateString(day)
+                                    popper.destroy()
+                                    node.parentNode.removeChild(node)
+                                })
+                            })
+                        })
                         date.value = TimeUtils.toDateString(value)
                         date.dataset.value = value
                         date.setAttribute('type', 'text')
@@ -288,6 +306,24 @@ KFormUI.prototype.render = function (fields) {
                             date.setAttribute('type', 'text')
                             date.classList.add('k-input-hour')
                             date.dataset.type = 'datehour'
+                            date.addEventListener('focus', event => {
+                                const kalendar = new CalendarUI(new Date(value))
+                                kalendar.render()
+                                .then(node => {
+                                    node.style.setProperty('z-index', KAIROS.zMax())
+                                    document.body.appendChild(node)
+                                    const popper = Popper.createPopper(date, node)
+    
+                                    kalendar.addEventListener('select-day', event => {
+                                        const day = event.detail.pop()
+                                        date.dataset.value = day
+                                        date.dispatchEvent(new Event('change', {bubbles: true}))
+                                        date.value = TimeUtils.toDateString(day)
+                                        popper.destroy()
+                                        node.parentNode.removeChild(node)
+                                    })
+                                })
+                            })
 
                             const hour = document.createElement('INPUT')
                             hour.value = TimeUtils.dateToHourString(value)

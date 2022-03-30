@@ -1173,14 +1173,14 @@ define([
           this.todayOffset = i
         }
 
-        if (currentWeek !== day.getWeek()) {
+        if (currentWeek !==  TimeUtils.getWeekNumber(day)) {
           if (currentWeek === 0) {
-            currentWeek = day.getWeek()
+            currentWeek = TimeUtils.getWeekNumber(day)
           } else {
             if (this.weekOffset === -1) { this.weekOffset = i }
             this.createWeekNumber(currentWeek, dayCount, hFrag)
             dayCount = 0
-            currentWeek = day.getWeek()
+            currentWeek =  TimeUtils.getWeekNumber(day)
           }
         }
         if (currentMonth !== day.getMonth()) {
