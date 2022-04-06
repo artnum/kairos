@@ -9,6 +9,12 @@
     box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
 }
 
+.kreservation.k-selected {
+    box-shadow: 2px 5px 5px 0px rgba(255, 0, 0, 0.75);
+    border: 1px solid rgb(255, 0, 0);
+
+}
+
 .kreservation.k-left-open {
     border-left: 1px dotted transparent;
 }
@@ -136,4 +142,108 @@
             rgba(127,127,127,0.5) 10px
         );  
     }
+}
+
+.kreservation .k-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: repeating-linear-gradient( -55deg, #eee, #eee 5px, white 5px, white 10px );
+    height: 100%;
+    opacity: 0.7;
+}
+
+.kreservation .k-progress-0 {
+    width: 0%;
+}
+
+.kreservation .k-progress-5 {
+    width: 5%;
+}
+
+.kreservation .k-progress-10 {
+    width: 10%;
+}
+
+.kreservation .k-progress-15 {
+    width: 15%;
+}
+
+.kreservation .k-progress-20 {
+    width: 20%;
+}
+
+.kreservation .k-progress-25 {
+    width: 25%;
+}
+
+.kreservation .k-progress-30 {
+    width: 30%;
+}
+
+.kreservation .k-progress-35 {
+    width: 35%;
+}
+
+.kreservation .k-progress-40 {
+    width: 40%;
+}
+
+.kreservation .k-progress-45 {
+    width: 45%;
+}
+
+.kreservation .k-progress-50 {
+    width: 50%;
+}
+
+.kreservation .k-progress-55 {
+    width: 55%;
+}
+
+.kreservation .k-progress-60 {
+    width: 60%;
+}
+
+.kreservation .k-progress-65 {
+    width: 65%;
+}
+
+.kreservation .k-progress-70 {
+    width: 70%;
+}
+
+
+.kreservation .k-progress-75 {
+    width: 75%;
+}
+
+.kreservation .k-progress-80 {
+    width: 80%;
+}
+
+.kreservation .k-progress-85 {
+    width: 85%;
+}
+
+.kreservation .k-progress-90 {
+    width: 90%;
+}
+
+
+.kreservation .k-progress-95 {
+    width: 95%;
+}
+
+
+.kreservation .k-progress-100 {
+    width: 100%;
+}
+
+.k-reservation-details {
+    width: 200px;
+    height: 140px;
+    background-color: black;
+    box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
+    color:white;
 }

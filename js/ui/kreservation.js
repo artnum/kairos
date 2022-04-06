@@ -12,10 +12,11 @@ function KUIReservation (object) {
     this.domNode.setAttribute('draggable', true)
     this.domNode.id = this.object.get('uuid')
     this.domNode.addEventListener('dragstart', event => {
-        event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
+        if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false }
+        //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
         event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
         event.dataTransfer.dropEffect = 'move'
-    })
+    }, {capture: true})
     this.domNode.addEventListener('mousedown', (event) => {
         event.stopPropagation()
     }, {passive: true})
@@ -24,6 +25,22 @@ function KUIReservation (object) {
     })
     this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
+    })
+    this.domNode.addEventListener('click', this.popDetails.bind(this))
+    this.domNode.addEventListener('dblclick', (event) => {
+        event.stopPropagation()
+        if (this.poptimeout) { clearTimeout(this.poptimeout) }
+        this.renderForm()
+        .then(domNode => {
+            const klateral = new KLateral()
+            const ktab = klateral.add(domNode, { 
+              title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+              id: this.object.get('uid')
+            })
+            this.addEventListener('close', event => {
+                ktab.close()
+            })
+        })
     })
     object.addEventListener('update', this.render.bind(this))
     const affaire = this.object.getRelation('kaffaire')
@@ -60,6 +77,21 @@ KUIReservation.prototype.setParent = function (parent) {
     })
 }
 
+KUIReservation.prototype.popDetails = function () {
+    this.select()
+   /* this.poptimeout = setTimeout(() => {
+        if (this.detailsPopped) {
+            this.detailsPopped.destroy()
+            this.detailsPopped = undefined
+        } else {
+            const div = document.createElement('DIV')
+            div.classList.add('k-reservation-details')
+            document.body.appendChild(div)
+            this.detailsPopped = Popper.createPopper(this.domNode, div)
+        }
+    }, 350)*/
+}
+
 KUIReservation.prototype.reload = function (object) {
 
 }
@@ -93,6 +125,7 @@ KUIReservation.prototype.unrender = function () {
             if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
         })
     })
+    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
 }
 
 KUIReservation.prototype.renderForm = function () {
@@ -113,14 +146,15 @@ KUIReservation.prototype.renderForm = function () {
         rform.render({
             id: {label: 'Numéro', readonly: true},
             version: {label: 'Version', readonly: true},
+            locked: {label: 'Verrouillée', type: 'on-off'},
             _kproject_name: {label: 'Projet', readonly: true},
-            begin: {label: 'Début', type: 'datehour'},
-            end: {label: 'Fin', type: 'datehour'},
-            time: {label: 'Durée', type: 'hour'},
-            comment: {label: 'Remarque', type: 'multitext'},
-            creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}},
-            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}},
-            status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
+            begin: {label: 'Début', type: 'datehour', readonly: this.object.get('locked') === '1'},
+            end: {label: 'Fin', type: 'datehour', readonly: this.object.get('locked') === '1'},
+            time: {label: 'Durée', type: 'hour', readonly: this.object.get('locked') === '1'},
+            comment: {label: 'Remarque', type: 'multitext', readonly: this.object.get('locked') === '1'},
+            creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
+            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
+            status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}, readonly: this.object.get('locked') === '1'},
 
         })
         .then(domNode => {
@@ -129,6 +163,21 @@ KUIReservation.prototype.renderForm = function () {
                     fieldset.appendChild(domNode)
                     break
                 }
+            }
+        })
+
+        rform.addReadonlySwitch('locked', (name) => {
+            switch (name) {
+                default: return null
+                case 'begin': 
+                case 'end':
+                case 'time':
+                case 'comment':
+                case 'creator':
+                case 'techican':
+                case 'status':
+                    return this.object.get('locked') === '1'
+
             }
         })
         
@@ -173,6 +222,16 @@ KUIReservation.prototype.renderForm = function () {
         this.renderedForm = form
         resolve(form)
     })
+}
+
+KUIReservation.prototype.select = function () {
+    if (!this.selected) {
+        this.selected = true
+        this.domNode.classList.add('k-selected')
+    } else {
+        this.selected = false
+        this.domNode.classList.remove('k-selected')
+    }
 }
 
 KUIReservation.prototype.render = function () {
@@ -274,9 +333,10 @@ KUIReservation.prototype.render = function () {
                             <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
                             <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
                         </div>
-                        <div class="color-bar">&nbsp;</div>`
+                        <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
                         this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
                 }
+                if (this.detailsPopped) { this.detailsPopped.update() }
 
                 resolve(this.domNode)
             })
@@ -291,6 +351,7 @@ KUIReservation.prototype.removeDomNode = function () {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
+    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
 }
 
 KUIReservation.prototype.deleteMe = function () {
@@ -306,4 +367,5 @@ KUIReservation.prototype.deleteMe = function () {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
+    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
 }

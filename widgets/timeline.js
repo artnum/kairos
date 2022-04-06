@@ -644,6 +644,9 @@ define([
       this.domNode.addEventListener('dragstart', event => {
         window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
       })
+      this.domNode.addEventListener('dragend', event => {
+        window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
+      })
       this.domNode.addEventListener('drop', event => {
         event.preventDefault()
         let entryNode = event.target
@@ -656,7 +659,6 @@ define([
         let object = event.shiftKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
-        console.log(begin, end)
         const kview = new KView()
         const originalX = kview.getXFromDate(begin)
         const originalY = kview.getObjectRowById(object.get('target'))
@@ -670,7 +672,6 @@ define([
          
         const p = []
         for (const range of ranges) {
-          console.log(range[0], range[1])
           object.set('begin', range[0].toISO8601())
           object.set('end', range[1].toISO8601())
           object.set('time', range[2])

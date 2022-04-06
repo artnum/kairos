@@ -2,13 +2,10 @@ function KFormUI (object) {
     this.object = object
     this.fields = []
     this.inputs = []
+    this.readonlySwitches = new Map()
     this.changePipeline = Promise.resolve()
-    this.domNode = document.createElement('FORM')
-    this.domNode.classList.add('k-form-ui')
     this.evtTarget = new EventTarget()
-    this.domNode.getParentObject = function () {
-        return this
-    }.bind(this)
+    this.newDomNode()
     this.parentNode = this.domNode
     if (object) {
         this.object.addEventListener('delete', this.deleteForm.bind(this))
@@ -26,18 +23,31 @@ KFormUI.prototype.removeEventListener = function (type, listener, options = {}) 
     this.evtTarget.addEventListener(type, listener, options)
 }
 
+KFormUI.prototype.newDomNode = function () {
+    this.domNode = document.createElement('FORM')
+    this.domNode.classList.add('k-form-ui')
+    this.domNode.getParentObject = function () {
+        return this
+    }.bind(this)
+}
+
+KFormUI.prototype.addReadonlySwitch = function (name, callback) {
+    this.readonlySwitches.set(name, callback)
+}
+
 KFormUI.prototype.getValue = function (element) {
     if (!element) { return null }
     switch(element.nodeName) {
         case 'INPUT':
         case 'TEXTAREA':
+        case 'BUTTON':
             if (element.dataset) {
                 if (element.dataset.value) { return element.dataset.value }
             }
             if (element.value) {
                 return element.value
             }
-            return null
+            return null            
         case 'CHECKBOX':
         case 'SELECT':
             return null
@@ -91,6 +101,19 @@ KFormUI.prototype.change = function (event) {
                 name: node.getAttribute('name'), 
                 value: this.get(node.getAttribute('name')),
             }}))
+            if (this.readonlySwitches.has(node.getAttribute('name'))) {
+                for (const [name, field] of Object.entries(this.originalFields)) {
+                    const readonly = this.readonlySwitches.get(node.getAttribute('name'))(name)
+                    if (readonly === null) { continue }
+                    field.readonly = readonly
+                }
+                const prevDomNode = this.domNode
+                this.newDomNode()
+                this.render(this.originalFields)
+                .then(domNode => {
+                    prevDomNode.parentNode.replaceChild(domNode, prevDomNode)
+                })
+            }
         })
     })
     
@@ -148,6 +171,11 @@ KFormUI.prototype.getInputValue = function (input) {
         case 'kstore': return input.dataset.value
         case 'date': return TimeUtils.fromDateString(input.value)
         case 'hour': return TimeUtils.fromHourString(input.value)
+        case 'on-off': 
+            if (input.getParentObject) { return input.getParentObject().getValue() }
+            if (input.dataset.value) { return input.dataset.value }
+            if (input.value) { return input.value }
+            return '0'
         case 'datehour': 
             let node = input.parentNode
             const date = TimeUtils.fromDateString(node.firstElementChild.value)
@@ -160,6 +188,11 @@ KFormUI.prototype.getInputValue = function (input) {
 KFormUI.prototype.setInputValue = function (input, value) {
         switch(input.dataset.type) {
             default: input.value = value; break
+            case 'on-off': 
+                if (input.getParentObject) { input.getParentObject().setValue(value); break }
+                input.dataset.value = value
+                input.value = value
+                break
             case 'kstore': input.dataset.value = value; break
             case 'date': input.dataset.value = value; input.value = TimeUtils.toDateString(value); break;
             case 'hour': input.dataset.value = value; input.value = TimeUtils.toHourString(value); break;
@@ -238,6 +271,11 @@ KFormUI.prototype.keyUpEvents = function (event) {
 }
 
 KFormUI.prototype.render = function (fields) {
+    if (fields) {
+        this.originalFields = fields
+    } else {
+        fields = this.originalFields
+    }
     return new Promise((resolve, reject) => {
         if (this.object) { this.domNode.id = this.object.get('id') }
         for (const key of Object.keys(fields)) {
@@ -248,6 +286,12 @@ KFormUI.prototype.render = function (fields) {
             const type = fields[key]?.type || 'text'
             const input = ((type, value, field) => {
                 switch(type) {
+                    case 'on-off':
+                        const button = document.createElement('BUTTON')
+                        const object = new MButton(button, {set: [1, 'Oui'], unset: [0, 'Non']})
+                        button.dataset.type = 'on-off'
+                        object.setValue(value)
+                        return button
                     default:
                     case 'text':  
                         const txt = document.createElement('INPUT')
@@ -304,32 +348,40 @@ KFormUI.prototype.render = function (fields) {
                             const date = document.createElement('INPUT')
                             date.value = TimeUtils.toDateString(value)
                             date.setAttribute('type', 'text')
-                            date.classList.add('k-input-hour')
+                            date.classList.add('k-input-hour', 'k-input-half')
                             date.dataset.type = 'datehour'
-                            date.addEventListener('focus', event => {
-                                const kalendar = new CalendarUI(new Date(value))
-                                kalendar.render()
-                                .then(node => {
-                                    node.style.setProperty('z-index', KAIROS.zMax())
-                                    document.body.appendChild(node)
-                                    const popper = Popper.createPopper(date, node)
-    
-                                    kalendar.addEventListener('select-day', event => {
-                                        const day = event.detail.pop()
-                                        date.dataset.value = day
-                                        date.dispatchEvent(new Event('change', {bubbles: true}))
-                                        date.value = TimeUtils.toDateString(day)
-                                        popper.destroy()
-                                        node.parentNode.removeChild(node)
+                           
+                            if (!field.readonly) {
+                                date.addEventListener('focus', event => {
+                                    const kalendar = new CalendarUI(new Date(value))
+                                    kalendar.render()
+                                    .then(node => {
+                                        node.style.setProperty('z-index', KAIROS.zMax())
+                                        document.body.appendChild(node)
+                                        const popper = Popper.createPopper(date, node)
+        
+                                        kalendar.addEventListener('select-day', event => {
+                                            const day = event.detail.pop()
+                                            date.dataset.value = day
+                                            date.dispatchEvent(new Event('change', {bubbles: true}))
+                                            date.value = TimeUtils.toDateString(day)
+                                            popper.destroy()
+                                            kalendar.destroy()
+                                        })
                                     })
                                 })
-                            })
+                            }
 
                             const hour = document.createElement('INPUT')
                             hour.value = TimeUtils.dateToHourString(value)
                             hour.setAttribute('type', 'text')
-                            hour.classList.add('k-input-hour')
+                            hour.classList.add('k-input-hour', 'k-input-half')
                             hour.dataset.type = 'datehour'
+
+                            if (field.readonly) {
+                                date.setAttribute('readonly', '1')
+                                hour.setAttribute('readonly', '1')
+                            }
 
                             container.appendChild(date)
                             container.appendChild(hour)
@@ -349,7 +401,11 @@ KFormUI.prototype.render = function (fields) {
             this.inputs.push(input)
             input.setAttribute('name', key)
             this.fields.push(key)
-            input.classList.add('k-input')
+            if (input.getParentObject) {
+                input.getParentObject().domNode.classList.add('k-input')
+            } else {
+                input.classList.add('k-input')
+            }
             if (fields[key]?.readonly) {
                 input.classList.add('k-input-readonly')
                 input.setAttribute('readonly', '1')
@@ -360,7 +416,9 @@ KFormUI.prototype.render = function (fields) {
             input.addEventListener('keyup', this.keyUpEvents.bind(this))
 
             label.appendChild(input)
-
+            if (input.getParentObject) {
+                input.getParentObject().place()
+            }
             let found = false
             for (const currentInput of this.domNode.getElementsByTagName(input.nodeName)) {
                 if (currentInput.getAttribute('name') === input.getAttribute('name')) {

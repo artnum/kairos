@@ -21,6 +21,12 @@ CalendarUI.prototype.getWeekNumber = function (day) {
                           - 3 + (week1.getDay() + 6) % 7) / 7);
 }
 
+CalendarUI.prototype.destroy = function () {
+    if (this.domNode.parentNode) {
+        window.requestAnimationFrame(() => { this.domNode.parentNode.removeChild(this.domNode) })
+    }
+    this.evtTarget.dispatchEvent(new CustomEvent('destroy', {detail: this}))
+}
 
 CalendarUI.prototype.getWeekdayName = function (weekday) {
     const today = new Date()

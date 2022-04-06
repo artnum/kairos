@@ -60,7 +60,7 @@ function iAddReservation (event) {
     const ktask = new KTaskBar()
     const travail = ktask.getCurrentList()
 
-    if (cell.size > 0 && !travail) {
+    if (cell.size > 0 && !travail && !(event instanceof MouseEvent)) {
       return iSelectReservation.bind(this)(event)
     }
 

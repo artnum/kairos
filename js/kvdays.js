@@ -90,6 +90,9 @@ const KVDays = Object.freeze({
         return [realEnd, effectiveDuration * this.Hs]
     },
     getContinuousEnd (begin, duration, conf) {
+        const ranges = this.getRanges(begin, duration, conf)
+        return [ranges[0][1], ranges[0][2]]
+    
         let effectiveDuration = 0
         const realEnd = new Date()
         const nextDay = new Date()
@@ -145,6 +148,9 @@ const KVDays = Object.freeze({
         return [realEnd, effectiveDuration * this.Hs]
     },
     getRanges (begin, duration, conf) {
+      /*  const range =  [[ begin, ...this.getContinuousEnd(begin, duration, conf) ]]
+        return range*/
+        /* splitting is not good idea, keep code yet */
         const skipDays = (begin) => {
             let isHoliday = false
             let isCloseDay = false
@@ -187,6 +193,12 @@ const KVDays = Object.freeze({
                 begin.setTime(end.getTime() + this.D)
             }
         } while (duration > 0)
-        return ranges.reverse() // reverse so reservations number follow chronological order
+        ranges.reverse() // reverse so reservations number follow chronological order
+        let effectiveDuration = 0
+
+        for(const range of ranges) {
+            effectiveDuration += range[2]
+        }
+        return [[ranges[0][0], ranges[ranges.length - 1][1], effectiveDuration]]
     }
 })

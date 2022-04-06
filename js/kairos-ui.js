@@ -1,6 +1,18 @@
 
+KAIROS.debounce = function (callback, timeout = 250) {
+    let timer
+    return (...args) => {
+        clearTimeout(timer)
+        timer = setTimeout(() => { callback.apply(this, args) }, timeout)
+    }
+}
+
 KAIROS.mouse = {follow: new Map(), index: 0}
 const kMouseFollow = event => {
+    if (kMouseFollow._last_start) {
+        if (performance.now() - kMouseFollow._last_start < 50) { return }
+    }
+    kMouseFollow._last_start = performance.now()
     KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? (event.pageY || event.clientX)
     KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
     const diplaysCoords = document.querySelector('input[data-dojo-attach-point="nSearchMachineLive"]')
@@ -24,8 +36,8 @@ const K_ERROR = 3
 KAIROS.lastInputBlured = []
 
 window.addEventListener('mousemove', kMouseFollow)
-window.addEventListener('touchmove', kMouseFollow)  
-window.addEventListener('dragover', kMouseFollow)  
+window.addEventListener('touchmove', kMouseFollow)
+window.addEventListener('dragover', kMouseFollow)
 window.addEventListener('keydown', (event) => {
     if (
         event.target instanceof HTMLInputElement
