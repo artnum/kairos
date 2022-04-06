@@ -240,6 +240,12 @@
     width: 100%;
 }
 
+.kreservation .k-progress-over {
+    width: 100%;
+    background: repeating-linear-gradient( -55deg, #f00, #f00 5px, #f99 5px, #f99 10px );
+}
+
+
 .k-reservation-details {
     width: 200px;
     height: 140px;
