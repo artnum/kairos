@@ -680,6 +680,7 @@ define([
       
       window.addEventListener('dblclick', iAddReservation.bind(this))
       window.addEventListener('click', iGrowAddReservation.bind(this))
+      window.addEventListener('mousemove', iFollowGrowAddReservation.bind(this))
       window.addEventListener('keyup', iGrowAddReservationEnd.bind(this))
       window.addEventListener('global-keypress', event => {
         switch(event.key) {

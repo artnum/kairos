@@ -61,6 +61,7 @@ function iGrowAddReservationEnd (event) {
   const travail = ktask.getCurrentList()
 
   if (!this.currentGrowAdd) { return }
+  this.currentGrowAdd[1].remove()
 
   const end = new Date()
   end.setTime(this.firstDay.getTime())
@@ -76,14 +77,27 @@ function iGrowAddReservationEnd (event) {
   const reservationStore = new KStore('kreservation')
   reservationStore.set({
     time: 8 * 3600,
-    begin: this.currentGrowAdd.toISO8601(),
+    begin: this.currentGrowAdd[0].toISO8601(),
     end: end.toISO8601(),
-    target: entry.id,
+    target: this.currentGrowAdd[3],
     affaire: travail.data.get('uid'),
     status: travail.data.get('status')
   })
   this.currentGrowAdd = null
 
+}
+
+function iFollowGrowAddReservation (event) {
+  if (!this.currentGrowAdd) { return }
+  const Viewport = new KView()
+  const x = Viewport.getXFromDate(this.currentGrowAdd[0])
+  if (x < 0) {
+    this.currentGrowAdd[1].start = LeaderLine.pointAnchor({element: document.firstElementChild, x: Viewport.get('margin-left'), y: this.currentGrowAdd[2]})
+  } else {
+    this.currentGrowAdd[1].start = LeaderLine.pointAnchor({element: document.firstElementChild, x: x * Viewport.get('day-width') + Viewport.get('margin-left'), y: this.currentGrowAdd[2]})
+  }
+  this.currentGrowAdd[1].end = LeaderLine.pointAnchor({element: document.firstElementChild, x: event.pageX, y: this.currentGrowAdd[2]})
+  this.currentGrowAdd[1].position()
 }
 
 function iGrowAddReservation (event) {
@@ -92,7 +106,6 @@ function iGrowAddReservation (event) {
   const Viewport = new KView()
   const {x, y} = Viewport.getCurrentBox()
   const entry = Viewport.getRowObject(y)
-  const cell = Viewport.getCell(x, y)
   const ktask = new KTaskBar()
   const travail = ktask.getCurrentList()
 
@@ -103,10 +116,16 @@ function iGrowAddReservation (event) {
     return
   }
 
+
   const begin = new Date()
   begin.setTime(this.firstDay.getTime())
   begin.setTime(begin.getTime() + (x * 86400000))
-  this.currentGrowAdd = begin
+  const lineX = Viewport.getXFromDate(begin) * Viewport.get('day-width') + Viewport.get('margin-left')
+  this.currentGrowAdd = [begin, new LeaderLine({
+    start: LeaderLine.pointAnchor({element: document.firstElementChild, x: lineX, y: event.pageY}),
+    end: LeaderLine.pointAnchor({element: document.firstElementChild, x: lineX, y: event.pageY}),
+    path: 'grid'
+  }), event.pageY, entry.id]
 }
 
 function iAddReservation (event) {

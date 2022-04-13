@@ -47,7 +47,6 @@ KProject.prototype.render = function () {
                     for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
                         if (reservation === undefined) { continue }
                         const rtime = parseInt(reservation.get('time'))
-                        console.log(rtime)
                         if (!isNaN(rtime)) { time += rtime }
                     }
                 }
