@@ -57,6 +57,7 @@ $PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $day]);
 $PDF->setFontSize(3);
 
 foreach ($byTargets as $kobjects) {
+    $i = 1;
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
@@ -95,7 +96,13 @@ foreach ($byTargets as $kobjects) {
             }        
         }
 
-        $PDF->printTaggedLn(['%cb', $begin, ' -> ', $end, '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
+        $PDF->printTaggedLn(['%cb', 'Ordre ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
+        $i++;
+        $comment = explode("\n", $kobject->get('comment'));
+        foreach ($comment as $line) {
+            $PDF->tab(1);
+            $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+        }
         $description = explode("\n", $affaire->get('description'));
         foreach ($description as $line) {
             $PDF->tab(1);
