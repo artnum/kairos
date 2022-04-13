@@ -247,9 +247,49 @@
 
 
 .k-reservation-details {
-    width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 1ch;
+    font-size: 14px;
+    font-size: 'B612';
+    width: 400px;
     height: 140px;
-    background-color: black;
-    box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
+    background-color: rgb(70, 70, 70);
+    box-shadow: 2px 5px 5px 0px rgb(70, 70, 70);
     color:white;
+}
+
+.k-reservation-details .k-field {
+    display: flex;
+}
+
+.k-reservation-details .k-content .k-value {
+    display: inline-block;
+}
+
+.k-reservation-details .k-content .k-label {
+    font-weight: bold;
+
+    display: inline-block;
+    margin-right: 1ch;
+    min-width: 18ch;
+}
+
+.k-step-progress {
+    width: 100%;
+    min-height: 20px;
+}
+
+.k-step-progress .k-step {
+    min-height: 20px;
+    display: inline-block;
+    min-width: 2px;
+    border: none;
+    background-color: lightgray;
+}
+
+.k-step-progress .k-step.selected {
+    display: inline-block;
+    border: none;
+    background-color: red;
 }

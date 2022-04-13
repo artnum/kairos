@@ -702,6 +702,8 @@ define([
       })
       
       window.addEventListener('dblclick', iAddReservation.bind(this))
+      window.addEventListener('click', iGrowAddReservation.bind(this))
+      window.addEventListener('keyup', iGrowAddReservationEnd.bind(this))
       window.addEventListener('global-keypress', event => {
         switch(event.key) {
           case 'Enter': return iAddReservation(event).bind(this)

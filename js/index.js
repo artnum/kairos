@@ -54,8 +54,8 @@ window.addEventListener('load', event => {
         ['../node_modules/sjcl/sjcl.js', 'script'],
         ['../node_modules/object-hash/dist/object_hash.js', 'script'],
         ['../node_modules/@popperjs/core/dist/umd/popper.min.js', 'script'],
+        ['../node_modules/leader-line/leader-line.min.js', 'script'],
         ['https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js', 'script'],
-
         ['', 'end']
     ]
 
@@ -142,6 +142,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/klateral.js', 'script'],
         ['../js/ui/kreservation.js', 'script'],
         ['../js/ui/kentry-sort.js', 'script'],
+        ['../js/ui/k-step-progress.js', 'script'],
+
         ['../js/ui/kselect.js', 'script'],
         ['../js/kevent.js', 'script'],
         ['../js/kentry.js', 'script'],

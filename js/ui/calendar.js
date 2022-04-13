@@ -56,13 +56,13 @@ CalendarUI.prototype.click = function (event) {
         if (event.target.classList.contains('k-weeknum')) {
             for (let node = event.target.nextElementSibling; node; node = node.nextElementSibling) {
                 this.dates.push(node.dataset.date)
-                if (event.shiftKey) { window.requestAnimationFrame(() => { node.classList.add('k-selected') }) }
+                if (event.ctrlKey) { window.requestAnimationFrame(() => { node.classList.add('k-selected') }) }
             }
         } else {
             this.dates.push(event.target.dataset.date)
         }
 
-        if (!event.shiftKey) {
+        if (!event.ctrlKey) {
             const outEvent = new CustomEvent('select-day', {detail: this.dates}) 
             this.evtTarget.dispatchEvent(outEvent)
             this.dates = []

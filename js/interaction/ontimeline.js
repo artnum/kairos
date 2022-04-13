@@ -52,6 +52,63 @@ function iSelectReservation(event) {
     }
 }
 
+function iGrowAddReservationEnd (event) {
+  const Viewport = new KView()
+  const {x, y} = Viewport.getCurrentBox()
+  const entry = Viewport.getRowObject(y)
+  const cell = Viewport.getCell(x, y)
+  const ktask = new KTaskBar()
+  const travail = ktask.getCurrentList()
+
+  if (!this.currentGrowAdd) { return }
+
+  const end = new Date()
+  end.setTime(this.firstDay.getTime())
+  end.setTime(end.getTime() + (x * 86400000))
+
+  if (!entry || !travail || !end || isNaN(end.getTime())) { 
+    if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
+    else if (!travail) { KAIROS.error('Pas de travail sélectionné') }
+    else { KAIROS.error('Date invalide') }
+    return
+  }
+
+  const reservationStore = new KStore('kreservation')
+  reservationStore.set({
+    time: 8 * 3600,
+    begin: this.currentGrowAdd.toISO8601(),
+    end: end.toISO8601(),
+    target: entry.id,
+    affaire: travail.data.get('uid'),
+    status: travail.data.get('status')
+  })
+  this.currentGrowAdd = null
+
+}
+
+function iGrowAddReservation (event) {
+  if (!event.shiftKey) { return }
+  if (this.currentGrowAdd) { return }
+  const Viewport = new KView()
+  const {x, y} = Viewport.getCurrentBox()
+  const entry = Viewport.getRowObject(y)
+  const cell = Viewport.getCell(x, y)
+  const ktask = new KTaskBar()
+  const travail = ktask.getCurrentList()
+
+  if (!entry || !travail) { 
+    if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
+    else if (!travail) { KAIROS.error('Pas de travail sélectionné') }
+    else { KAIROS.error('Date invalide') }
+    return
+  }
+
+  const begin = new Date()
+  begin.setTime(this.firstDay.getTime())
+  begin.setTime(begin.getTime() + (x * 86400000))
+  this.currentGrowAdd = begin
+}
+
 function iAddReservation (event) {
     const Viewport = new KView()
     const {x, y} = Viewport.getCurrentBox()
@@ -63,24 +120,40 @@ function iAddReservation (event) {
     if (cell.size > 0 && !travail && !(event instanceof MouseEvent)) {
       return iSelectReservation.bind(this)(event)
     }
+    let ttime = 8
 
-    const date = new Date()
-    date.setTime(this.firstDay.getTime())
-    date.setTime(date.getTime() + (x * 86400000))
+    const begin = new Date()
+    begin.setTime(this.firstDay.getTime())
+    begin.setTime(begin.getTime() + (x * 86400000))
 
-    if (!entry || !travail || !date || isNaN(date.getTime())) { 
+    const end = new Date()
+    end.setTime(begin.getTime() + ttime * 360000)
+
+    if (!entry || !travail || !begin || isNaN(begin.getTime())) { 
       if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
       else if (!travail) { KAIROS.error('Pas de travail sélectionné') }
       else { KAIROS.error('Date invalide') }
       return
     }
 
-    let ttime = travail.data.get('time')
+    /*let ttime = travail.data.get('time')
     if (!isNaN(parseFloat(ttime)) && parseFloat(ttime) > 0) {
       ttime = parseFloat(ttime) / 3600
     } else {
       ttime = KAIROS.defaults.reservation.duration
-    }
+    }*/
+    const reservationStore = new KStore('kreservation')
+
+    reservationStore.set({
+      time: ttime * 3600,
+      begin: begin.toISO8601(),
+      end: end.toISO8601(),
+      target: entry.id,
+      affaire: travail.data.get('uid'),
+      status: travail.data.get('status')
+  })
+  
+  /*
     const reservationStore = new KStore('kreservation')
     const reservations = travail.data.getRelation('kreservation')
     let updateAll = Promise.resolve()
@@ -141,7 +214,7 @@ function iAddReservation (event) {
         end.setTime(begin.getTime() + duration)
         p.push(reservationStore.set({id: reservation.get('uid'), end: end.toISOString(), version: reservation.get('version')}, reservation.get('uid')))
       }
-      updateAll = Promise.allSettled(p)*/
+      updateAll = Promise.allSettled(p)
     }
     const ranges = KVDays.getRanges(date, ttime, KAIROS.days)
     updateAll
@@ -159,7 +232,7 @@ function iAddReservation (event) {
           KAIROS.info(`Nouvelle réservation`)
         })
       }
-    })
+    })*/
   }
 
   function iDeleteReservation (event) {

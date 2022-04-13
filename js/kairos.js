@@ -240,6 +240,18 @@ KAIROS.purgeDelayedQuery = function (iter) {
   })
 }
 
+KAIROS.states = new Map()
+KAIROS.states.set('lockShowHideRelation', false)
+KAIROS.setState = function (name, value) {
+  KAIROS.states.set(name, value)
+}
+KAIROS.getState = function (name) {
+  return KAIROS.states.get(name)
+}
+KAIROS.unsetState = function (name) {
+  KAIROS.states.delete(name)
+}
+
 KAIROS.get = function (resource) {
   if (KAIROS.register.table === undefined) { return null } 
   if (KAIROS.register.table[resource] === undefined) { return null }

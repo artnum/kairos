@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0
 	"reservation_time"    INT UNSIGNED NOT NULL DEFAULT 0, -- effective time (a 24h work spans over 3 days, this would be set de 24 * 60 * 60 (seconds))
 	                                                       -- while end - begin would be much more than 24h.
+	"reservation_locked" TINYINT UNSIGNED NOT NULL DEFAULT 0
 	) CHARACTER SET "utf8mb4";
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
@@ -404,3 +405,17 @@ CREATE INDEX "idxContactsComment" ON "contacts" ("contacts_comment"(16));
 
 -- Recherche récurrente par nom
 CREATE INDEX "idxEntryName" ON "entry" ("entry_name"(32));
+
+
+-- Relation between reservation
+CREATE TABLE IF NOT EXISTS "relation" (
+	"relation_id" INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	"relation_source" INTEGER UNSIGNED,
+	"relation_closure" INTEGER UNSIGNED,
+	"relation_name" CHAR(30) DEFAULT '',
+	"relation_description" CHAR(200) DEFAULT '',
+    FOREIGN KEY ("relation_source") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY ("relation_closure") REFERENCES "reservation"("reservation_id") ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX "idxRelationSourceClosure" ON "relation" ("relation_source", "relation_closure");
