@@ -168,7 +168,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         start: this.domNode,
                         end: ui.domNode,
                         middleLabel: relation.name,
-                        color: ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('end'))).getTime() > 0) ? 'red' : 'green'
+                        color: ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
                     })
                     this.relations.set(`${relation.source},${relation.closure}`, {
                         leaderline: leaderline,
@@ -179,7 +179,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     ui.showRelation(from)
                     this.shownRelations.push(ui)
                 } else {
-                    const color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('end'))).getTime() > 0) ? 'red' : 'green'
+                    const color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
                     const node = document.getElementById(object.get('target'))
                     const leaderline = this.newLeaderLine({
                         start: this.domNode,
@@ -203,7 +203,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     ui.showRelation(from)
                     this.shownRelations.push(ui)
                 } else {
-                    const color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('end'))).getTime() < 0) ? 'red' : 'green'
+                    const color = ((new Date(this.object.get('begin'))).getTime() - (new Date(object.get('end'))).getTime() < 0) ? 'red' : 'green'
                     const node = document.getElementById(object.get('target'))
                     const leaderline = this.newLeaderLine({
                         start: node,
