@@ -7,5 +7,6 @@ class RelationModel extends artnum\SQL
     {
         $this->kconf = $config;
         parent::__construct($db, 'relation', 'relation_id', []);
+        $this->conf('auto-increment', true);
     }
 }
