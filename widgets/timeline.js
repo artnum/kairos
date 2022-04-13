@@ -659,6 +659,7 @@ define([
         let object = event.shiftKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
+        const diff = end.getTime() - begin.getTime()
         const kview = new KView()
         const originalX = kview.getXFromDate(begin)
         const originalY = kview.getObjectRowById(object.get('target'))
@@ -666,35 +667,11 @@ define([
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         KVDays.initDayStartTime(newOrigin, KAIROS.days)
         begin.setTime(newOrigin.getTime())
-        //const newEnd = KVDays.getContinuousEnd(begin, object.get('time') / 3600, KAIROS.days)
-    
-        const ranges = KVDays.getRanges(begin, object.get('time') / 3600, KAIROS.days)
-         
-        const p = []
-        for (const range of ranges) {
-          object.set('begin', range[0].toISO8601())
-          object.set('end', range[1].toISO8601())
-          object.set('time', range[2])
-          object.set('target', entryNode.id)
-            
-          p.push(
-            kstore.set(object)
-            .then(id => {
-              return kstore.get(id)
-            })
-          )
-          object = object.clone()
-        }
-        Promise.all(p)
-        .then(kobjects =>{
-          for (const kobject of kobjects) {
-            kview.moveObjectOnGrid(`kreservation:${kobject.get('id')}`, originalX , originalY, kview.getXFromDate(begin), kview.getObjectRowById(entryNode.id))
-          }
-          window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
-        })
-        .catch(reason => {
-          KAIROS.error(reason)
-        })
+        end.setTime(begin.getTime() + diff)
+        object.set('begin', begin.toISOString())
+        object.set('end', end.toISOString())
+        object.set('target', entryNode.id)
+        kstore.set(object)
       })
 
       this.domNode.addEventListener('dragover', event => {
