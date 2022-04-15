@@ -315,9 +315,13 @@ KUIReservation.prototype.popDetails = function () {
         if (!affaire) { resolve(null); return }
         const project = affaire.getRelation('kproject')
         if (!project) { resolve(null); return }
-        const step = new KStepProgressUI()
+        //const step = new KStepProgressUI()
 
         div.innerHTML = `
+        <div class="k-command">
+            <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
+            <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
+        </div>
         <div class="k-progress"></div>
         <div class="k-content">
             <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
@@ -327,7 +331,8 @@ KUIReservation.prototype.popDetails = function () {
             <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
             <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
         </div>`
-        div.querySelector('.k-progress').appendChild(step.domNode)
+        //div.querySelector('.k-progress').appendChild(step.domNode)
+        div.querySelector('.k-command').addEventListener('click', this.doCommand.bind(this))
         document.body.appendChild(div)
         this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
         KClosable.new(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
@@ -344,6 +349,70 @@ KUIReservation.prototype.unpopDetails = function () {
     this.detailsPopped[0].destroy()
     this.detailsPopped = undefined
     return true
+}
+
+KUIReservation.prototype.doCommand = function (event) {
+    const action = event.target.dataset.action
+
+
+    switch(action) {
+        case 'begin-am':
+            (() => {
+                const day = new KDate(this.object.get('begin'))
+                const hours = KVDays.getAM(day, KAIROS)
+                if (hours.length > 0) {
+                    const hour = hours.shift()
+                    const [h, m] = KVDays.dec2HM(hour.shift())
+                    day.setHours(h, m, 0, 0)
+                    const store = new KStore('kreservation')
+                    this.object.set('begin', day)
+                    store.set(this.object)
+                }
+            })()
+            break
+        case 'begin-pm':
+            (() => {
+                const day = new KDate(this.object.get('begin'))
+                const hours = KVDays.getPM(day, KAIROS)
+                if (hours.length > 0) {
+                    const hour = hours.shift()
+                    const [h, m] = KVDays.dec2HM(hour.shift())
+                    day.setHours(h, m, 0, 0)
+                    const store = new KStore('kreservation')
+                    this.object.set('begin', day)
+                    store.set(this.object)
+                }
+            })()
+            break
+        case 'end-am':
+            (() => {
+                const day = new KDate(this.object.get('end'))
+                const hours = KVDays.getAM(day, KAIROS)
+                if (hours.length > 0) {
+                    const hour = hours.pop()
+                    const [h, m] = KVDays.dec2HM(hour.pop())
+                    day.setHours(h, m, 0, 0)
+                    const store = new KStore('kreservation')
+                    this.object.set('end', day)
+                    store.set(this.object)
+                }
+            })()
+            break
+        case 'end-pm':
+            (() => {
+                const day = new KDate(this.object.get('end'))
+                const hours = KVDays.getPM(day, KAIROS)
+                if (hours.length > 0) {
+                    const hour = hours.pop()
+                    const [h, m] = KVDays.dec2HM(hour.pop())
+                    day.setHours(h, m, 0, 0)
+                    const store = new KStore('kreservation')
+                    this.object.set('end', day)
+                    store.set(this.object)
+                }
+            })()
+            break
+    }
 }
 
 KUIReservation.prototype.reload = function (object) {
@@ -379,7 +448,7 @@ KUIReservation.prototype.unrender = function () {
             if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
         })
     })
-    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
+    if (this.detailsPopped) { this.unpopDetails() }
 }
 
 KUIReservation.prototype.renderForm = function () {
@@ -584,7 +653,7 @@ KUIReservation.prototype.render = function () {
                         <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
                         this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
                 }
-                if (this.detailsPopped) { this.detailsPopped.update() }
+                if (this.detailsPopped) { this.detailsPopped[0].update() }
                 if (this.shownRelations.length > 0) { this.showRelation() }
                 resolve(this.domNode)
             })
@@ -599,7 +668,7 @@ KUIReservation.prototype.removeDomNode = function () {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
-    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
+    if (this.detailsPopped) { this.unpopDetails() }
 }
 
 KUIReservation.prototype.deleteMe = function () {
@@ -615,5 +684,5 @@ KUIReservation.prototype.deleteMe = function () {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
-    if (this.detailsPopped) { this.detailsPopped.destroy(); this.detailsPopped = undefined }
+    if (this.detailsPopped) { this.unpopDetails() }
 }

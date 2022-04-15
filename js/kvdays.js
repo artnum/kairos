@@ -55,7 +55,40 @@ const KVDays = Object.freeze({
         }
         return sec
     },
+    getAM (day, conf) {
+        const dayConf = conf.days[day.getDay()]
+        const hours = []
 
+        for (const id of dayConf.am) {
+            const chunk = []
+            for (const h of dayConf.chunks[id]) {
+                chunk.push(h)
+            }
+            hours.push(chunk)
+        }
+        hours.sort((a, b) => {
+            return a[0] - b[0]
+        })
+
+        return hours
+    },
+    getPM (day, conf) {
+        const dayConf = conf.days[day.getDay()]
+        const hours = []
+
+        for (const id of dayConf.pm) {
+            const chunk = []
+            for (const h of dayConf.chunks[id]) {
+                chunk.push(h)
+            }
+            hours.push(chunk)
+        }
+        hours.sort((a, b) => {
+            return a[0] - b[0]
+        })
+        
+        return hours
+    },
     getChunksFromDay (day, conf) {
         const chunks = []
         const dayTime = conf[day.getDay()]

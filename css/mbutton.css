@@ -195,6 +195,14 @@
     min-height: 28px;
 }
 
+.mbutton.k-small, .dijitButton.k-small, button.k-small, input[type="button"].k-small, input[type="submit"].k-small, input[type="reset"].k-small {
+    display: inline-block;
+    width: 160px;
+    font-size: 12px;
+    max-height: 24px;
+    min-height: 24px;
+}
+
 .mbuttonMain {
     height: var(--button-height);
     display: inline-block;
