@@ -31,11 +31,12 @@ const KVDays = Object.freeze({
     // divise by 2 some time period during the day
     getVirtualSeconds (h, m, conf) {
         const compress = conf.compressTime
+        const compressRatio = conf.compressTimeRatio
         let totalCompressed = 0
         for (const period of compress) {
             totalCompressed += Math.abs(period[0] - period[1])
         }
-        const ratio = (24 - (totalCompressed / 2)) / (24 - totalCompressed)
+        const ratio = (24 - (totalCompressed / compressRatio)) / (24 - totalCompressed)
         const dec = KVDays.HM2dec(h, m)
         let sec = 0
         let lastPeriod = null
@@ -45,10 +46,10 @@ const KVDays = Object.freeze({
             }
             if (dec <= period[0]) { break }
             if (dec > period[1]) {
-                sec += Math.abs(period[0] - period[1]) * 3600 / 2
+                sec += Math.abs(period[0] - period[1]) * 3600 / compressRatio
             }
             if (dec > period[0] && dec <= period[1]) {
-                sec += Math.abs(period[0] - dec) * 3600 / 2
+                sec += Math.abs(period[0] - dec) * 3600 / compressRatio
                 break
             }
             lastPeriod = period
@@ -86,7 +87,7 @@ const KVDays = Object.freeze({
         hours.sort((a, b) => {
             return a[0] - b[0]
         })
-        
+
         return hours
     },
     getChunksFromDay (day, conf) {
