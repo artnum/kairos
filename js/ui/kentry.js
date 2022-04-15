@@ -9,7 +9,7 @@ function KUIEntry (dataObject, opts = {}) {
     this.kview = new KView()
     this.boxes = new Array(this.kview.get('day-count'))
     for (let i = 0; i < this.boxes.length; i++) {
-        this.boxes[i] = new Array()
+        this.boxes[i] = []
     }
     this.getDomNode()
     .then(domNode => {
@@ -81,9 +81,9 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             if (!domNode) { resolve(); return }
             const kview = new KView()
             const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
-            if (leftbox < 0) { 
+            if (leftbox < 0 || isNaN(leftbox)) { 
                 let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
-                if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
+                if (rightbox < 0 || isNaN(rightbox)) { uireservation.removeDomNode(); resolve(); return }
             }
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')

@@ -208,7 +208,7 @@ KView.prototype.getRelativeColFromDate = function (dateStart, log = false) {
     date.setTime(dateStart.getTime())
     const box = Math.round(((date.getTime() - origin.getTime()) / 86400000))
     if (box >= this.get('day-count')) { return -1 }
-    return box
+    return isNaN(box) ? -1 : box
 }
 
 KView.prototype.getXFromDate = function (date) {

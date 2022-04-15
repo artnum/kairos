@@ -236,51 +236,33 @@ KAIROS.log = function (level, txt, code) {
 }
 
 KAIROS.stackClosable = function (closeFunction) {
-    if (!KAIROS._closables) {
-        KAIROS._closables = []
-    }
-    KAIROS._closables.push(closeFunction)
+    const closables = new KClosable()
+    return closables.add(null, {function: closeFunction})
 }
 
 KAIROS.removeClosableFromStack = function (closeFunction) {
-    return
+    const closables = new KClosable()
+    return closables.removeByFunction(closeFunction)
 }
 
 KAIROS.removeClosableByIdx = function (idx) {
-    return
+    const closables = new KClosable()
+    return closables.remove(idx)
 }
 
 KAIROS.closeNext = function (count = 0) {
-    if (KAIROS._closables) {
-        let closeFunction = KAIROS._closables.pop()
-        if (closeFunction && closeFunction instanceof Function) {
-            KAIROS._currentClosable = closeFunction
-            try {
-                if (!closeFunction()) {
-                    KAIROS.closeNext(++count)
-                }
-            } catch (e) {
-                if (count < 10) {
-                    KAIROS.closeNext(++count)
-                } else {
-                    console.log('too many closable')
-                }
-            }
-            KAIROS._currentClosable = null
-            return true
-        }
-    }
-    return false
+    const closables = new KClosable()
+    return closables.closeNext()
 }
 
 window.addEventListener('global-keypress', event => {
-    if (event.key === 'Escape') {
-        if (event.shiftKey) {
-            while (KAIROS.closeNext());
-        } else {
-            KAIROS.closeNext()
-        }
-        event.preventDefault()
+    switch (event.key) {
+        case 'F6':
+            event.preventDefault()
+            const cutTool = KAIROS.getState('cutToolActive')
+            if (cutTool) { KAIROS.unsetState('cutToolActive') }
+            else { KAIROS.setState('cutToolActive', true)}
+            break
     }
 })
 

@@ -28,7 +28,6 @@ function KUIReservation (object) {
     })
     this.domNode.addEventListener('contextmenu', event => {
         event.preventDefault()
-
         if (KAIROS.getState('startSetRelation')) {
             const source = KAIROS.getState('startSetRelation')
             this.setRelation(source, this)
@@ -60,7 +59,10 @@ function KUIReservation (object) {
         if (KAIROS.getState('lockShowHideRelation')) { return }
         this.hideRelation()
     })
-    this.domNode.addEventListener('click', this.popDetails.bind(this))
+    this.domNode.addEventListener('click', (event) => {
+        if (KAIROS.getState('cutToolActive')) { return }
+        this.popDetails()
+    })
     this.domNode.addEventListener('dblclick', (event) => {
         event.stopPropagation()
         if (this.poptimeout) { clearTimeout(this.poptimeout) }
@@ -152,6 +154,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         middleLabel: displayedRelation.entry.name,
                         color: end1.getTime() - end2.getTime() < 0 ? 'red' : 'green'
                     })
+                    if (!leaderline) { continue }
                     displayedRelation.leaderline = leaderline
                     this.relations.set(`${relation.source},${relation.closure}`, displayedRelation)
                 }
@@ -170,6 +173,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         middleLabel: relation.name,
                         color: ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
                     })
+                    if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
                         leaderline: leaderline,
                         source: this,
@@ -188,6 +192,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         color: color,
                         endSocket: color === 'red' ? 'left' : 'right'
                     })
+                    if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
                         leaderline: leaderline,
                         source: this,
@@ -212,6 +217,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         color: color,
                         endSocket: color === 'red' ? 'left' : 'right'
                     })
+                    if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
                         leaderline: leaderline,
                         source: this,
@@ -265,7 +271,11 @@ KUIReservation.prototype.newLeaderLine = function (options = {}) {
     options.size = 6
     options.startPlug = 'square'
     options.endPlug = 'arrow2'
-    return new LeaderLine(options)
+    try {
+        return new LeaderLine(options)
+    } catch(e) {
+        return null
+    }
 }
 
 KUIReservation.prototype.dispatchEvent = function (event) {
@@ -296,8 +306,7 @@ KUIReservation.prototype.setParent = function (parent) {
 KUIReservation.prototype.popDetails = function () {
     this.select()
     if (this.detailsPopped) {
-        this.detailsPopped.destroy()
-        this.detailsPopped = undefined
+        this.unpopDetails()
     } else {
         const div = document.createElement('DIV')
 
@@ -320,8 +329,21 @@ KUIReservation.prototype.popDetails = function () {
         </div>`
         div.querySelector('.k-progress').appendChild(step.domNode)
         document.body.appendChild(div)
-        this.detailsPopped = Popper.createPopper(this.domNode, div)
+        this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
+        KClosable.new(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
     }
+}
+
+KUIReservation.prototype.unpopDetails = function () {
+    if (!this.detailsPopped) { return false }
+    this.unselect()
+    const node = this.detailsPopped[1]
+    window.requestAnimationFrame(() => {
+        node.parentNode.removeChild(node)
+    })
+    this.detailsPopped[0].destroy()
+    this.detailsPopped = undefined
+    return true
 }
 
 KUIReservation.prototype.reload = function (object) {
