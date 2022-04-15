@@ -1305,7 +1305,6 @@ define([
     },
 
     loadEntries: function () {
-      const kentrySort = JSON.parse(localStorage.getItem('kairos/kentry-sort')) || {}
       return new Promise((resolve, reject) => {
         const url = KAIROS.URL(`${KAIROS.stores.kentry.store}/_query`)
         kfetch(url, {
@@ -1326,18 +1325,12 @@ define([
           const entries = Array.isArray(result.data) ? result.data : [result.data]
           const load = []
           for (const entry of entries) {
-            if (kentrySort[entry.id]) {
-              if (!kentrySort[entry.id].visible) { continue }
-            }
+            if (parseInt(entry.order) < 0) { continue }
             if (entry.disabled !== '0') { continue; }
             load.push(
               KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
               .then(kentry => {
-                if (kentrySort[entry.id] && kentrySort[entry.id].order) {
-                  kentry.sortValue = kentrySort[entry.id].order
-                } else {
-                  kentry.sortValue = 99999
-                }
+                kentry.sortValue = parseInt(entry.order)
                 kentry.get('id')
                 .then(uid => {
                   this.Entries.set(uid, kentry)
