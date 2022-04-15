@@ -80,10 +80,12 @@ KUIEntry.prototype.placeReservation = function (reservation) {
         .then(([domNode, parentNode, refNode, origin]) => {
             if (!domNode) { resolve(); return }
             const kview = new KView()
-            const leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
-            if (leftbox < 0 || isNaN(leftbox)) { 
+            let leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
+            if (!isFinite(leftbox)) { uireservation.removeDomNode(); resolve(); return } // begin is far away on right sid
+            if (leftbox < 0) { 
                 let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
-                if (rightbox < 0 || isNaN(rightbox)) { uireservation.removeDomNode(); resolve(); return }
+                if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
+                leftbox = 0
             }
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')

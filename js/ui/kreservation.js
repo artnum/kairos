@@ -524,49 +524,36 @@ KUIReservation.prototype.render = function () {
             const project = affaire.getRelation('kproject')
             if (!project) { resolve(null); return }
 
-            let leftbox = this.Viewport.getRelativeColFromDate(new Date(this.object.get('begin')))
+            const beginDate = new KDate(this.object.get('begin'))
+            const endDate = new KDate(this.object.get('end'))
+            let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
+            let rightbox = this.Viewport.getRelativeColFromDate(endDate)
             let gap = null
             let virtualEnd = null
+            if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
             if (leftbox < 0) {
-                if (this.Viewport.get('date-origin').getTime() > new Date(this.object.get('end')).getTime()) {
+                if (rightbox < 0) {
                     this.removeDomNode();
                     resolve(null);
                     return
                 }
-                if (new Date(this.object.get('end')).getTime() > this.Viewport.get('date-end').getTime()) {
-                    virtualEnd = this.Viewport.get('date-end')
-                    virtualEnd = virtualEnd.getTime() + 86400000
-                }
-                const begin = new Date(this.object.get('begin'))
-                gap = this.Viewport.get('date-origin').getTime()
-                leftbox = 0
+
             }
+
+            let width = 0
             const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
-            let deliveryBegin = null //new Date(this.object.get('deliveryBegin'))
-
-            if (!deliveryBegin) { deliveryBegin = new Date(this.object.get('begin')).getTime() }
-            let deliveryEnd = null //new Date(this.object.get('deliveryEnd'))
-            if (!deliveryEnd) { deliveryEnd = new Date(this.object.get('end')).getTime() }
-            const begin = new Date(this.object.get('begin')).getTime()
-            const end = new Date(this.object.get('end')).getTime()
-
-            const beginDate = new Date(this.object.get('begin'))
-            let offset = (beginDate.getHours() * 60 + beginDate.getMinutes()) / 1.6667
-            if (gap) { offset = 0 }
-
-            this.props.set('left', left + (offset * 60 * this.Viewport.get('second-width')))
-            this.props.set('min', gap === null ? (begin < deliveryBegin ? begin : deliveryBegin) : gap)
-            this.props.set('max', virtualEnd !== null ? virtualEnd : (end > deliveryEnd ? end : deliveryEnd))
-            let extend = (beginDate.getHours() * 3600 + beginDate.getMinutes() * 60) * 1000
-            if (!gap) {
-                extend = 0
+            let offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS) * this.Viewport.get('second-width')
+            if (rightbox === Infinity) { width = this.Viewport.get('viewport-width') - (left + offset) }
+            else {
+                width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS) * this.Viewport.get('second-width') - offset
             }
-            this.props.set('length', this.props.get('max') - this.props.get('min') + extend)
-            this.props.set('width', this.props.get('length') / 1000 * this.Viewport.get('second-width'))
 
-            if (this.props.get('width') < 10) {
-                this.props.set('width', this.Viewport.get('day-width') / 2)
-            }
+            if (width < 10) { width = 10}
+ 
+            this.props.set('left', left + offset )          
+            this.props.set('width', width)
+
+ 
             this.object.bindUINode(this)
             window.requestAnimationFrame(() => {
                 if (gap) { this.domNode.classList.add('k-left-open') }

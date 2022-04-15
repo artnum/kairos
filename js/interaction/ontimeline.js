@@ -66,6 +66,9 @@ function iGrowAddReservationEnd (event) {
   const end = new Date()
   end.setTime(this.firstDay.getTime())
   end.setTime(end.getTime() + (x * 86400000))
+  
+  const endStart = KVDays.dec2HM(KVDays.getDayBeginEnd(end, KAIROS)[1])
+  end.setHours(endStart[0], endStart[1], 0, 0)
 
   if (!entry || !travail || !end || isNaN(end.getTime())) { 
     if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
@@ -120,6 +123,10 @@ function iGrowAddReservation (event) {
   const begin = new Date()
   begin.setTime(this.firstDay.getTime())
   begin.setTime(begin.getTime() + (x * 86400000))
+
+  const beginStart = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
+  begin.setHours(beginStart[0], beginStart[1], 0, 0)
+
   const lineX = Viewport.getXFromDate(begin) * Viewport.get('day-width') + Viewport.get('margin-left')
   this.currentGrowAdd = [begin, new LeaderLine({
     start: LeaderLine.pointAnchor({element: document.firstElementChild, x: lineX, y: event.pageY}),
@@ -145,8 +152,16 @@ function iAddReservation (event) {
     begin.setTime(this.firstDay.getTime())
     begin.setTime(begin.getTime() + (x * 86400000))
 
+    const beginStart = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
+    begin.setHours(beginStart[0], beginStart[1], 0, 0)
+
+
     const end = new Date()
     end.setTime(begin.getTime() + ttime * 360000)
+
+    const endStart = KVDays.dec2HM(KVDays.getDayBeginEnd(end, KAIROS)[1])
+    end.setHours(endStart[0], endStart[1], 0, 0)
+
 
     if (!entry || !travail || !begin || isNaN(begin.getTime())) { 
       if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }

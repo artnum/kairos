@@ -207,7 +207,7 @@ KView.prototype.getRelativeColFromDate = function (dateStart, log = false) {
     const date = new Date()
     date.setTime(dateStart.getTime())
     const box = Math.round(((date.getTime() - origin.getTime()) / 86400000))
-    if (box >= this.get('day-count')) { return -1 }
+    if (box >= this.get('day-count')) { return Infinity }
     return isNaN(box) ? -1 : box
 }
 

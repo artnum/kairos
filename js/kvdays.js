@@ -10,6 +10,52 @@ const KVDays = Object.freeze({
     HM2dec (h, m) {
         return h + (m / 60)
     },
+
+    /* conf is not the only .days part in this function only, TODO must fix */
+    getDayBeginEnd (day, conf) {
+        if (conf.days[day.getDay()].chunks === null) { return conf.defaultDayTime }
+
+        const chunks = conf.days[day.getDay()].chunks
+        let hstart = Infinity
+        let hend = -Infinity
+
+        for (const chunk of chunks) {
+            if (chunk[0] < hstart) { hstart = chunk[0] }
+            if (chunk[1] > hend) { hend = chunk[1] }
+        }
+        if (hstart === Infinity) { hstart = conf.defaultDayTime[0] }
+        if (hend === -Infinity) { hend = conf.defaultDayTime[1] }
+        return [hstart, hend]
+    },
+
+    // divise by 2 some time period during the day
+    getVirtualSeconds (h, m, conf) {
+        const compress = conf.compressTime
+        let totalCompressed = 0
+        for (const period of compress) {
+            totalCompressed += Math.abs(period[0] - period[1])
+        }
+        const ratio = (24 - (totalCompressed / 2)) / (24 - totalCompressed)
+        const dec = KVDays.HM2dec(h, m)
+        let sec = 0
+        let lastPeriod = null
+        for (const period of compress) {
+            if (lastPeriod !== null) {
+                sec += Math.abs(lastPeriod[1] - dec) * 3600 * ratio
+            }
+            if (dec <= period[0]) { break }
+            if (dec > period[1]) {
+                sec += Math.abs(period[0] - period[1]) * 3600 / 2
+            }
+            if (dec > period[0] && dec <= period[1]) {
+                sec += Math.abs(period[0] - dec) * 3600 / 2
+                break
+            }
+            lastPeriod = period
+        }
+        return sec
+    },
+
     getChunksFromDay (day, conf) {
         const chunks = []
         const dayTime = conf[day.getDay()]
