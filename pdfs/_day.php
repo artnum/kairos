@@ -31,8 +31,16 @@ $kobjects = $kreservation->query([
 
 
 $byTargets = [];
+$withPeople = [];
 
 foreach($kobjects as $kobject) {
+    $affaire = $kaffaire->get($kobject->get('affaire'));
+    if (!isset($withPeople[$affaire->get('id')])) {
+        $withPeople[$affaire->get('id')] = [];
+    }
+    if (!in_array( $kobject->get('target'), $withPeople[$affaire->get('id')])) {
+        $withPeople[$affaire->get('id')][] = $kobject->get('target');
+    }
     if (!isset($byTargets[$kobject->get('target')])) {
         $byTargets[$kobject->get('target')] = [];
     }
@@ -47,6 +55,8 @@ foreach ($byTargets as &$byTarget) {
 
 $PDF = new LocationPDF();
 $PDF->AddPage();
+$PDF->DisableHeader();
+$PDF->unsetHeaderFooterEvenOnly();
 $PDF->addTab(3);
 $PDF->SetY(40);
 $currentName = '';
@@ -56,7 +66,20 @@ $PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $day]);
 
 $PDF->setFontSize(3);
 
-foreach ($byTargets as $kobjects) {
+$entries = $kentry->query(['#and' => 
+    [
+        'disabled' => 0,
+        'deleted' => '--'
+    ]
+]);
+
+uasort($entries, function ($a, $b) {
+    return intval($a->get('order')) - intval($b->get('order'));
+});
+foreach ($entries as $entry) {
+    if (!isset($byTargets[$entry->get('id')])) { continue; }
+
+    $kobjects = $byTargets[$entry->get('id')];
     $i = 1;
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
@@ -78,7 +101,9 @@ foreach ($byTargets as $kobjects) {
         $PDF->setColor('black');
 
         $begin = dbHourToHour($kobject->get('begin'));
+        if ($begin === null) { continue; }
         $end = dbHourToHour($kobject->get('end'));
+        if ($end === null) { continue; }
         if (explode('T', $kobject->get('begin'))[0] !== $day) {
             if ($KAppConf->get('days.' . $weekDay . '.chunks') === NULL) {
                 $begin = 'Début';
@@ -96,17 +121,37 @@ foreach ($byTargets as $kobjects) {
             }        
         }
 
-        $PDF->printTaggedLn(['%cb', 'Ordre ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
+        $PDF->printTaggedLn(['%cb', 'En ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
         $i++;
-        $comment = explode("\n", $kobject->get('comment'));
-        foreach ($comment as $line) {
-            $PDF->tab(1);
-            $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+        $comments = trim($kobject->get('comment'));
+        if ($comments !== '') {
+            $comment = explode("\n", $comments);
+            foreach ($comment as $line) {
+                $PDF->tab(1);
+                $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+            }
         }
-        $description = explode("\n", $affaire->get('description'));
-        foreach ($description as $line) {
-            $PDF->tab(1);
-            $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+        $descriptions = trim($affaire->get('description'));
+        if ($descriptions !== '') {
+            $description = explode("\n", $descriptions);
+            foreach ($description as $line) {
+                $PDF->tab(1);
+                $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+            }
+        }
+
+        if (count($withPeople[$affaire->get('id')]) > 1) {
+            $PDF->printTaggedLn(['%cb', 'Avec '], ['break' => false]);
+            $first = true;
+            foreach ($withPeople[$affaire->get('id')] as $personid) {
+                if ($personid !== $entry->get('id')) {
+                    $p = $kentry->get($personid);
+                    if (!$first) { $PDF->printTaggedLn(['%c', ', '], ['break' => false]); }
+                    $PDF->printTaggedLn(['%c', $p->get('name')], ['break' => false]);
+                    $first = false;
+                }
+            }
+            $PDF->br();
         }
     }
 }

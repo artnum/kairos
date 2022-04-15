@@ -8,9 +8,14 @@ header('Cache-Control: no-cache, max-age=0');
 
 
 function dbHourToHour ($dbDT) {
-   $hour = explode('T', $dbDT)[1];
-   $hour = explode(':', $hour);
-   return $hour[0] . ':' . $hour[1];
+   if (strpos($dbDT, 'T') === FALSE) { return null; }
+   try {
+      $hour = explode('T', $dbDT)[1];
+      $hour = explode(':', $hour);
+      return $hour[0] . ':' . $hour[1];
+   } catch (Exception $e) {
+      return null;
+   }
 }
 
 function decToHM ($dec) {
@@ -47,12 +52,15 @@ class BlankLocationPDF extends artnum\PDF {
 class LocationPDF extends BlankLocationPDF {
     protected $NoHeaderFooter = false;
     protected $EvenOnly = true;
+    protected $NoHeader = false;
   
     function __construct($options = array()) {
       parent::__construct($options);
       $this->NoHeaderFooter = false;
     }
-
+    function DisableHeader () {
+       $this->NoHeader = true;
+    }
     function DisableHeaderFooter() {
       $this->NoHeaderFooter = true;
     }
@@ -64,11 +72,15 @@ class LocationPDF extends BlankLocationPDF {
     function SetHeaderFooterEvenOnly() {
       $this->EvenOnly = true;
     }
+
+    function unsetHeaderFooterEvenOnly() {
+      $this->EvenOnly = false;
+    }
   
     function Header() {
       global $KAppConf;
 
-      if ($this->NoHeaderFooter) { return; }
+      if ($this->NoHeaderFooter || $this->NoHeader) { return; }
       if ($this->EvenOnly && $this->PageNo() % 2 === 0) { return; }
       $w = ($this->w / 2.4) - $this->lMargin;
       
