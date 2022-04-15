@@ -656,7 +656,7 @@ define([
         if (!kident) { return }
         if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
-        let object = event.shiftKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
+        let object = event.ctrlKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
         const diff = end.getTime() - begin.getTime()
