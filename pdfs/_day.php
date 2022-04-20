@@ -56,6 +56,7 @@ foreach ($byTargets as &$byTarget) {
 $PDF = new LocationPDF();
 $PDF->AddPage();
 //$PDF->DisableHeader();
+$PDF->setAutoPageBreak(false, 20);
 $PDF->unsetHeaderFooterEvenOnly();
 $PDF->addTab(3);
 $PDF->SetY(38);
@@ -100,12 +101,15 @@ foreach ($entries as $entry) {
         if ($currentName !== $entry->get('name')) {
             if ($kpdf->getHeight() + $PDF->GetY() > $PDF->getPageBottom()) {
                 $PDF->AddPage();
-            } else {
-                $kpdf->hr();
-                $kpdf->br();
             }
-
+            
             $kpdf->out();
+
+
+            $kpdf->br();
+            $kpdf->hr();
+            $kpdf->br();
+
             $kpdf->printTaggedLn(['%cb', $entry->get('name')]);
 
             $currentName = $entry->get('name');
