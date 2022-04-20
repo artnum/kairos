@@ -55,15 +55,23 @@ foreach ($byTargets as &$byTarget) {
 
 $PDF = new LocationPDF();
 $PDF->AddPage();
-$PDF->DisableHeader();
+//$PDF->DisableHeader();
 $PDF->unsetHeaderFooterEvenOnly();
 $PDF->addTab(3);
-$PDF->SetY(40);
+$PDF->SetY(38);
 $currentName = '';
 
 $PDF->setFontSize(5);
-$PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $day]);
-
+$dateFormater = new IntlDateFormatter(
+    'fr_CH',  IntlDateFormatter::FULL,
+    IntlDateFormatter::FULL,
+    'Europe/Zurich',
+    IntlDateFormatter::GREGORIAN,
+    'dd MMMM y'
+);
+$PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $dateFormater->format((new DateTime($day)))]);
+$PDF->hr();
+$PDF->br();
 $PDF->setFontSize(3);
 
 $entries = $kentry->query(['#and' => 
@@ -76,6 +84,7 @@ $entries = $kentry->query(['#and' =>
 uasort($entries, function ($a, $b) {
     return intval($a->get('order')) - intval($b->get('order'));
 });
+$first = true;
 foreach ($entries as $entry) {
     if (!isset($byTargets[$entry->get('id')])) { continue; }
 
@@ -89,7 +98,8 @@ foreach ($entries as $entry) {
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
-            $PDF->hr();
+            if ($PDF->GetY() > 260) { $PDF->addPage(); $PDF->SetY(40); }
+            else { if (!$first) { $PDF->hr(); $first = false; } }
             $PDF->printTaggedLn(['%cb', $entry->get('name')]);
             $currentName = $entry->get('name');
         }
