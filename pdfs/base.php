@@ -53,6 +53,7 @@ class BlankLocationPDF extends artnum\PDF {
       } else {
          $this->SetMargins($options['margins'][0], $options['margins'][1], $options['margins'][2]);
       }
+      $this->setBottomMargin(20);
       $this->addTaggedFont('c', 'dejavu', '', 'DejaVuSans.ttf', true);
       $this->addTaggedFont('cb', 'dejavu-bold', '', 'DejaVuSans-Bold.ttf', true);
       $this->addTaggedFont('a', 'fontawesome', '', 'fontawesome-webfont.ttf', true);
