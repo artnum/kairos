@@ -3,6 +3,11 @@ function KLateralTab (id, klateral) {
     this.klateral = klateral
     this.destroyed = false
     this.scroll = 0
+    this.evtTarget = new EventTarget()
+}
+
+KLateralTab.prototype.addEventListener = function (event, listener, options) {
+    this.evtTarget.addEventListener(event, listener, options)
 }
 
 KLateralTab.prototype.destroy = function () {
@@ -23,12 +28,12 @@ KLateralTab.prototype.setScroll = function(scroll) {
     return scroll
 }
 
-KLateralTab.prototype.addEventListener = function (type, listener, options) {
-    return this.klateral.addEventListener(`${type}-tab-${this.tabIdx}`, listener, options)
+KLateralTab.prototype.focus = function () {
+    this.evtTarget.dispatchEvent(new CustomEvent('focus'))
 }
 
-KLateralTab.prototype.removeEventListener = function (type, listener, options) {
-    return this.klateral.removeEventListener(`${type}-tab-${this.tabIdx}`, listener, options)
+KLateralTab.prototype.blur = function () {
+    this.evtTarget.dispatchEvent(new CustomEvent('blur'))
 }
 
 function KLateral () {
@@ -228,6 +233,7 @@ KLateral.prototype.getTab = function (idx) {
 
 KLateral.prototype.remove = function (idx) {
     const tab = this.tabs.get(String(idx))
+    tab.blur()
     if (!this.evtTarget.dispatchEvent(new CustomEvent(`destroy-tab-${idx}`, {detail: {tab}}))) {
         return
     }
@@ -250,6 +256,7 @@ KLateral.prototype.remove = function (idx) {
 KLateral.prototype.hideTab = function (idx) {
     const tab = this.tabs.get(String(idx))
     this.evtTarget.dispatchEvent(new CustomEvent(`hide-tab-${idx}`, {detail: {tab}}))
+    tab.blur()
     const [tabTitle, tabContent] = this.getTab(idx)
     tab.setScroll(this.content.scrollTop)
     tabContent.style.display = 'none'
@@ -267,6 +274,7 @@ KLateral.prototype.showTab = function (idx) {
     }
     const tab = this.tabs.get(String(idx))
     this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
+    tab.focus()
     if (this.tabCurrent !== 0) {
         this.tabPrevSelected = this.tabCurrent
         this.hideTab(this.tabCurrent)

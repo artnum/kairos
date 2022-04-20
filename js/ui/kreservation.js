@@ -78,9 +78,19 @@ function KUIReservation (object) {
               title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
               id: this.object.get('uid')
             })
+            ktab.addEventListener('focus', () => {
+                this.select()
+                this.showRelation()
+            })
+            ktab.addEventListener('blur', () => {
+                this.unselect()
+                this.hideRelation()
+            })
             this.addEventListener('close', event => {
                 ktab.close()
             })
+            this.select()
+            this.showRelation()
         })
     })
     object.addEventListener('update', this.render.bind(this))
