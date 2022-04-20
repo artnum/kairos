@@ -164,8 +164,8 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     const end1 = displayedRelation.source.object.get('end')
                     const end2 = displayedRelation.closure.object.get('end')
                     const leaderline = this.newLeaderLine({
-                        source: displayedRelation.source.domNode,
-                        closure: displayedRelation.closure.domNode, 
+                        start: displayedRelation.source.domNode,
+                        end: displayedRelation.closure.domNode, 
                         middleLabel: displayedRelation.entry.name,
                         color: end1.getTime() - end2.getTime() < 0 ? 'red' : 'green'
                     })
@@ -207,12 +207,18 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
                         color = 'blue';
                     }
+                    let relative = 'right'
+                    if (color === 'red') { relative = 'left' }
+                    if (color === 'blue') {
+                        relative = 'top'
+                    }
                     const node = document.getElementById(object.get('target'))
                     const leaderline = this.newLeaderLine({
                         start: this.domNode,
                         end: node,
                         middleLabel: relation.name,
                         color: color,
+                        _relative: relative
                     })
                     if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
@@ -234,12 +240,19 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
                         color = 'blue';
                     }
+                    let relative = 'right'
+                    if (color === 'red') { relative = 'left' }
+                    if (color === 'blue') {
+                        relative = 'top'
+                    }
+                    console.log(relative)
                     const node = document.getElementById(object.get('target'))
                     const leaderline = this.newLeaderLine({
                         start: node,
                         end: this.domNode,
                         middleLabel: relation.name,
                         color: color,
+                        _relative: relative
                     })
                     if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
@@ -295,6 +308,33 @@ KUIReservation.prototype.newLeaderLine = function (options = {}) {
     options.size = 4
     options.startPlug = 'square'
     options.endPlug = 'arrow2'
+
+    options.start = LeaderLine.pointAnchor(options.start, {x: '0%', y: '50%'})
+    if (options._relative) {
+        switch (options._relative) {
+            case 'left':
+                options.end = LeaderLine.pointAnchor(options.end, {x: '0%'})
+                break;
+            case 'right':
+                options.end = LeaderLine.pointAnchor(options.end, {x: '100%'})
+                break
+        }
+        delete options._relative
+    } else {
+        switch(options.color) {
+            case 'green':
+                options.end = LeaderLine.pointAnchor(options.end, {x: '0%', y: '50%'})
+                break
+            case 'red':
+                options.end = LeaderLine.pointAnchor(options.end, {x: '100%', y: '50%'})
+                break
+            case 'blue':
+                options.end = LeaderLine.pointAnchor(options.end, {x: '50%', y: '50%'})
+                break
+
+        }
+    }
+
     try {
         return new LeaderLine(options)
     } catch(e) {
