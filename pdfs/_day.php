@@ -59,6 +59,7 @@ $PDF->AddPage();
 $PDF->setAutoPageBreak(false, 20);
 $PDF->unsetHeaderFooterEvenOnly();
 $PDF->addTab(3);
+$PDF->addTab(-0.5);
 $PDF->SetY(38);
 $currentName = '';
 
@@ -110,7 +111,9 @@ foreach ($entries as $entry) {
             $kpdf->hr();
             $kpdf->br();
 
+            $kpdf->setFontSize(3.5);
             $kpdf->printTaggedLn(['%cb', $entry->get('name')]);
+            $kpdf->setFontSize(3);
 
             $currentName = $entry->get('name');
         }
@@ -181,7 +184,7 @@ foreach ($entries as $entry) {
     }
 
 }
-if ($kpdf->getHeight() > $PDF->getPageBottom()) {
+if ($kpdf->getHeight() + $PDF->GetY() > $PDF->getPageBottom()) {
     $PDF->AddPage();
 }
 $kpdf->out();
