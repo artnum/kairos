@@ -67,7 +67,7 @@ $dateFormater = new IntlDateFormatter(
     IntlDateFormatter::FULL,
     'Europe/Zurich',
     IntlDateFormatter::GREGORIAN,
-    'dd MMMM y'
+    'EEEE, dd MMMM y'
 );
 $PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $dateFormater->format((new DateTime($day)))]);
 $PDF->setFontSize(3);
