@@ -3,6 +3,7 @@ include('artnum/autoload.php');
 include('../lib/format.php');
 include('../lib/get-entry.php');
 include('../lib/k/kstore.php');
+include('../lib/k/kpdf.php');
 
 header('Cache-Control: no-cache, max-age=0');
 
