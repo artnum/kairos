@@ -349,7 +349,8 @@ KUIReservation.prototype.popDetails = function () {
         div.querySelector('.k-command').addEventListener('click', this.doCommand.bind(this))
         document.body.appendChild(div)
         this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
-        KClosable.new(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
+        const closable = new KClosable()
+        closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
     }
 }
 

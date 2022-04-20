@@ -88,9 +88,13 @@ KClosable.prototype.closeNextMouse = function (x, y, origin = 0) {
     
     let close = false
 
-    if (!this.isClickInNode(x, y, closable.domNode)) { close = true }
-    if (closable.parent && close && !this.isClickInNode(x, y, closable.parent)) { close = true}
-    else { close = false }
+    if (!this.isClickInNode(x, y, closable.domNode)) {
+        close = true
+        if (closable.parent) {
+            if (close && !this.isClickInNode(x, y, closable.parent)) { close = true}
+            else { close = false }
+        }
+    }
     
     if (close) {
         this.stack.splice(i, 1)

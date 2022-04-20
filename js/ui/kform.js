@@ -322,6 +322,17 @@ KFormUI.prototype.render = function (fields) {
                                 document.body.appendChild(node)
                                 const popper = Popper.createPopper(date, node)
 
+                                const closable = new KClosable()
+                                closable.add(node, {function: 
+                                    () => {
+                                        if (!kalendar.domNode.parentNode) {
+                                            return false
+                                        }
+                                        kalendar.domNode.parentNode.removeChild(kalendar.domNode)
+                                        popper.destroy()
+                                        return true
+                                    }, mouse: true})
+                                
                                 kalendar.addEventListener('select-day', event => {
                                     const day = event.detail.pop()
                                     date.dataset.value = day
@@ -356,10 +367,21 @@ KFormUI.prototype.render = function (fields) {
                                     const kalendar = new CalendarUI(new Date(value))
                                     kalendar.render()
                                     .then(node => {
+                                      
                                         node.style.setProperty('z-index', KAIROS.zMax())
                                         document.body.appendChild(node)
                                         const popper = Popper.createPopper(date, node)
-        
+                                        const closable = new KClosable()
+                                        closable.add(node, {function: 
+                                            () => {
+                                                if (!kalendar.domNode.parentNode) {
+                                                    return false
+                                                }
+                                                kalendar.domNode.parentNode.removeChild(kalendar.domNode)
+                                                popper.destroy()
+                                                return true
+                                            }, mouse: true})
+
                                         kalendar.addEventListener('select-day', event => {
                                             const day = event.detail.pop()
                                             date.dataset.value = day

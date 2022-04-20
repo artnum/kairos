@@ -1,24 +1,33 @@
-function CalendarUI (date = new Date()) {
+function CalendarUI (date = new Date(), holiday = null, options = {}) {
     this.domNode = document.createElement('DIV')
+    this.domNode.setAttribute('tabindex', '0')
     this.domNode.classList.add('k-calendar')
+    this.domNode.addEventListener('mouseover', () => { this.domNode.focus() })
     this.domNode.addEventListener('click', this.click.bind(this))
+    this.domNode.addEventListener('wheel', this.move.bind(this))
+    this.holiday = holiday
     this.evtTarget = new EventTarget()
     this.today = date
     this.dates = []
+    this.range = []
+
+    if (options.begin && options.end) {
+        if (!(options.begin instanceof Date)) { options.begin = new Date(options.begin) }
+        if (!(options.end instanceof Date)) { options.end = new Date(options.end) }
+        const begin = KDate.fromDate(options.begin)
+        const end = KDate.fromDate(options.end)
+        while (begin.compare(end, 'date') < 1) {
+            this.range.push(begin.dateStamp())
+            begin.setTime(begin.getTime() + 86400000)
+        }
+    }
 }
 
-// from https://weeknumber.com/how-to/javascript
-// don't work for years below 100 !
 CalendarUI.prototype.getWeekNumber = function (day) {
-    const date = new Date(day.getTime());
-    date.setHours(0, 0, 0, 0);
-    // Thursday in current week decides the year.
-    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-    // January 4 is always in week 1.
-    const week1 = new Date(date.getFullYear(), 0, 4);
-    // Adjust to Thursday in week 1 and count number of weeks from date to week1.
-    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
-                          - 3 + (week1.getDay() + 6) % 7) / 7);
+    if (day instanceof Date) {
+        day = KDate.fromDate(day)
+    }
+    return day.getWeek()
 }
 
 CalendarUI.prototype.destroy = function () {
@@ -97,6 +106,9 @@ CalendarUI.prototype.click = function (event) {
         })
         .then(select => {
             const popper = Popper.createPopper(event.target, select, {position: 'bottom-start'})
+            select.addEventListener('wheel', event => {
+                event.stopPropagation()
+            })
             select.addEventListener('click', event => {
                 if (event.target?.dataset?.value) {
                     this.today.setMonth(event.target.dataset.value)
@@ -135,6 +147,9 @@ CalendarUI.prototype.click = function (event) {
         })
         .then(select => {
             const popper = Popper.createPopper(event.target, select, {position: 'bottom-start'})
+            select.addEventListener('wheel', (event) => {
+                event.stopPropagation()
+            })
             select.addEventListener('scroll', event => {
                 if (select.scrollTop > select.scrollTopMax - 200) {
                     const startYear = parseInt(select.lastElementChild.dataset.value)
@@ -176,6 +191,18 @@ CalendarUI.prototype.click = function (event) {
     }
 }
 
+CalendarUI.prototype.move = function (event) {
+    event.stopPropagation()
+    event.preventDefault()
+    if (event.deltaY === 0) { return }
+    if (event.deltaY < 0) {
+        this.today.setMonth(this.today.getMonth() - 1)
+    } else {
+        this.today.setMonth(this.today.getMonth() + 1)
+    }
+    this.render()
+}
+
 CalendarUI.prototype.render = function () {
     return new Promise (resolve => {
         const first = new Date()
@@ -214,16 +241,38 @@ CalendarUI.prototype.render = function () {
                 window.requestAnimationFrame(() => { n.firstElementChild.innerHTML = w })
                 for (let j = 0, subnode = node.firstElementChild.nextElementSibling; j < 7; j++, subnode = subnode.nextElementSibling) {
                     const fulldate = first.toISOString().split('T')[0]
+                    let isHoliday = false
+                    if (this.holiday && this.holiday.isHoliday) {
+                        if (this.holiday.isHoliday(fulldate) !== false) {
+                            isHoliday = true
+                        }
+                    }
+
                     subnode.dataset.date = fulldate
-                    if (this.dates.indexOf(fulldate) !== -1) { window.requestAnimationFrame(() => { subnode.classList.add('k-selected') })}
-                    const date = first.getDate()
-                    window.requestAnimationFrame(() => { subnode.innerHTML = date })
-                    if (first.getMonth() !== currentMonth) {
-                        window.requestAnimationFrame(() => { subnode.classList.add('other-month') })
+                    
+                    const date = new KDate()
+                    date.setTime(first.getTime())
+
+                    let inrange = false
+                    if (this.range.indexOf(date.dateStamp()) !== -1) {
+                        inrange = true
                     }
-                    if (first.getDay() === 0 || first.getDay() === 6) {
-                        window.requestAnimationFrame(() => { subnode.classList.add('k-weekend') })
-                    }
+                    window.requestAnimationFrame(() => {
+                        subnode.innerHTML = date.getDate()
+                        if (this.dates.indexOf(fulldate) !== -1) { subnode.classList.add('k-selected') }
+                        if (date.getMonth() !== currentMonth) {
+                            subnode.classList.add('other-month')
+                        }
+                        if (date.getDay() === 0 || first.getDay() === 6) {
+                            subnode.classList.add('k-weekend')
+                        }
+                        if (isHoliday) {
+                            subnode.classList.add('k-holiday')
+                        }
+                        if (inrange) {
+                            subnode.classList.add('k-inrange')
+                        }
+                    })
                     first.setTime(first.getTime() + 86400000)
                 }
                 node = node.nextElementSibling
@@ -231,4 +280,70 @@ CalendarUI.prototype.render = function () {
             return resolve(this.domNode)
         })
     })
+}
+
+function CalendarInputUI (domNode, holiday = null, options = {}) {
+    if (!domNode) {
+        domNode = document.createElement('INPUT')
+        domNode.setAttribute('type', 'text')
+    }
+    this.holiday = holiday
+    this.evtTarget = new EventTarget()
+    this.options = options
+    this.domNode = domNode
+    if (this.domNode.value) {
+        this.domNode.dataset.value = (new KDate(this.domNode.value)).toISOString()
+        this.domNode.value = (new KDate(this.domNode.value)).longDate()
+    } else if (this.domNode.dataset.value) {
+        this.domNode.value = (new KDate(this.domNode.value)).longDate()
+    } else {
+        this.domNode.dataset.value = (new KDate()).toISOString()
+    }
+
+    const observer = new MutationObserver((mutlist) => {
+        for (const mutation of mutlist) {
+            if (mutation.type !== 'attributes') { continue }
+            mutation.target.value = (new KDate(mutation.target.dataset.value)).longDate()
+        }
+    })
+
+    observer.observe(this.domNode, {attributes: true, attributeFilter: ['data-value']})
+       
+    this.domNode.addEventListener('click', this.open.bind(this))
+    this.domNode.addEventListener('focus', this.open.bind(this))
+}
+
+CalendarInputUI.prototype.open = function () {
+    if (this.calendar) { return }
+    this.calendar = new CalendarUI(new KDate(this.domNode.dataset.value), this.holiday, this.options)
+    document.body.appendChild(this.calendar.domNode)
+    this.calendar.domNode.style.setProperty('z-index', KAIROS.zMax())
+    this.popper = Popper.createPopper(this.domNode, this.calendar.domNode)
+    this.calendar.render()
+    .then((domNode) => {
+        this.popper.update()
+        this.evtTarget.dispatchEvent(new CustomEvent('open', {detail: domNode}))
+    })
+
+    this.calendar.addEventListener('select-day', event => {
+        const date = new KDate(event.detail.pop())
+        this.domNode.dataset.value = date.toISOString()
+        this.close()
+    })
+}
+
+CalendarInputUI.prototype.close = function () {
+    if (this.popper) {
+        this.popper.destroy()
+    }
+    if (this.calendar) {
+        this.calendar.domNode.parentNode.removeChild(this.calendar.domNode)
+    }
+    this.calendar = null
+    this.popper = null
+    return true
+}
+
+CalendarInputUI.prototype.addEventListener = function (type, listener, options) {
+    this.evtTarget.addEventListener(type, listener, options)
 }
