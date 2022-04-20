@@ -245,14 +245,14 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     if (color === 'blue') {
                         relative = 'top'
                     }
-                    console.log(relative)
                     const node = document.getElementById(object.get('target'))
                     const leaderline = this.newLeaderLine({
                         start: node,
                         end: this.domNode,
                         middleLabel: relation.name,
                         color: color,
-                        _relative: relative
+                        _relative: relative,
+                        _reverse: true
                     })
                     if (!leaderline) { continue }
                     this.relations.set(`${relation.source},${relation.closure}`, {
@@ -305,35 +305,63 @@ KUIReservation.prototype.loadRelation = function () {
 
 KUIReservation.prototype.newLeaderLine = function (options = {}) {
     options.path = 'fluid'
-    options.size = 4
-    options.startPlug = 'square'
-    options.endPlug = 'arrow2'
+    options.size = 5
+    options.startPlug = 'disc'
+    options.endPlug = 'arrow3'
 
-    options.start = LeaderLine.pointAnchor(options.start, {x: '0%', y: '50%'})
-    if (options._relative) {
-        switch (options._relative) {
-            case 'left':
-                options.end = LeaderLine.pointAnchor(options.end, {x: '0%'})
-                break;
-            case 'right':
-                options.end = LeaderLine.pointAnchor(options.end, {x: '100%'})
-                break
+    if (options._reverse) {
+        options.end = LeaderLine.pointAnchor(options.end, {x: '50%', y: '50%'})
+        if (options._relative) {
+            switch (options._relative) {
+                case 'left':
+                    options.start = LeaderLine.pointAnchor(options.start, {x: '0%'})
+                    break;
+                case 'right':
+                    options.start = LeaderLine.pointAnchor(options.start, {x: '100%'})
+                    break
+            }
+        } else {
+            switch(options.color) {
+                case 'green':
+                    options.start = LeaderLine.pointAnchor(options.start, {x: '0%', y: '50%'})
+                    break
+                case 'red':
+                    options.start = LeaderLine.pointAnchor(options.start, {x: '100%', y: '50%'})
+                    break
+                case 'blue':
+                    options.start = LeaderLine.pointAnchor(options.start, {x: '50%', y: '50%'})
+                    break
+
+            }
         }
-        delete options._relative
     } else {
-        switch(options.color) {
-            case 'green':
-                options.end = LeaderLine.pointAnchor(options.end, {x: '0%', y: '50%'})
-                break
-            case 'red':
-                options.end = LeaderLine.pointAnchor(options.end, {x: '100%', y: '50%'})
-                break
-            case 'blue':
-                options.end = LeaderLine.pointAnchor(options.end, {x: '50%', y: '50%'})
-                break
+        options.start = LeaderLine.pointAnchor(options.start, {x: '50%', y: '50%'})
+        if (options._relative) {
+            switch (options._relative) {
+                case 'left':
+                    options.end = LeaderLine.pointAnchor(options.end, {x: '0%'})
+                    break;
+                case 'right':
+                    options.end = LeaderLine.pointAnchor(options.end, {x: '100%'})
+                    break
+            }
+        } else {
+            switch(options.color) {
+                case 'green':
+                    options.end = LeaderLine.pointAnchor(options.end, {x: '0%', y: '50%'})
+                    break
+                case 'red':
+                    options.end = LeaderLine.pointAnchor(options.end, {x: '100%', y: '50%'})
+                    break
+                case 'blue':
+                    options.end = LeaderLine.pointAnchor(options.end, {x: '50%', y: '50%'})
+                    break
 
+            }
         }
     }
+    delete options._reverse
+    delete options._relative
 
     try {
         return new LeaderLine(options)
