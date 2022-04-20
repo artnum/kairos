@@ -98,7 +98,12 @@ foreach ($entries as $entry) {
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
-            $PDF->hr();
+            $yPos = $PDF->GetY();
+            if ($yPos + $PDF->getFontSize() * 3 > 260) {
+                $PDF->AddPage();
+            } else {
+                $PDF->hr();
+            }
             $PDF->printTaggedLn(['%cb', $entry->get('name')]);
             $currentName = $entry->get('name');
         }
