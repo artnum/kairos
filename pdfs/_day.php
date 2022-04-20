@@ -54,6 +54,7 @@ foreach ($byTargets as &$byTarget) {
 }
 
 $PDF = new LocationPDF();
+$PDF->SetAutoPageBreak(true, 22);
 $PDF->AddPage();
 //$PDF->DisableHeader();
 $PDF->unsetHeaderFooterEvenOnly();
@@ -95,7 +96,6 @@ foreach ($entries as $entry) {
     });
 
     foreach($kobjects as $kobject) {
-        if ($PDF->GetY() > 260) { $PDF->addPage(); $PDF->SetY(38); }
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
             $PDF->hr();

@@ -105,7 +105,7 @@ class LocationPDF extends BlankLocationPDF {
          $this->printLn($this->title, array( 'align' => 'right'));
          $this->resetFontSize();
       }
-      $this->SetY(38);
+      $this->tMargin = 38;
    }
 
    function Footer() {
