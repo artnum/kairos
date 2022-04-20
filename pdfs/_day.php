@@ -97,7 +97,7 @@ foreach ($entries as $entry) {
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
-            if ($PDF->GetY() > 260) { $PDF->addPage();  $PDF->SetY(38); }
+            if ($PDF->GetY() > 260) { $PDF->addPage(); $PDF->SetY(38); }
             else { $PDF->hr(); }
             $PDF->printTaggedLn(['%cb', $entry->get('name')]);
             $currentName = $entry->get('name');
