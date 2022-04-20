@@ -626,10 +626,10 @@ KUIReservation.prototype.render = function () {
 
             let width = 0
             const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
-            let offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS) * this.Viewport.get('second-width')
+            let offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * this.Viewport.get('second-width')
             if (rightbox === Infinity) { width = this.Viewport.get('viewport-width') - (left + offset) }
             else {
-                width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS) * this.Viewport.get('second-width') - offset
+                width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * this.Viewport.get('second-width') - offset
             }
 
             if (width < 10) { width = 10}

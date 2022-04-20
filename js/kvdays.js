@@ -29,8 +29,13 @@ const KVDays = Object.freeze({
     },
 
     // divise by 2 some time period during the day
-    getVirtualSeconds (h, m, conf) {
-        const compress = conf.compressTime
+    getVirtualSeconds (h, m, conf, date = null) {
+        let compress = conf.compressTime
+        if (date !== null && (date instanceof KDate || date instanceof Date)) {
+            if (conf.days[date.getDay()]?.compressTime) {
+                compress = conf.days[date.getDay()].compressTime
+            }
+        }
         const compressRatio = conf.compressTimeRatio
         let totalCompressed = 0
         for (const period of compress) {
@@ -54,7 +59,7 @@ const KVDays = Object.freeze({
             }
             lastPeriod = period
         }
-        return sec
+        return sec > 84600 ? 86400 : sec
     },
     getAM (day, conf) {
         const dayConf = conf.days[day.getDay()]
