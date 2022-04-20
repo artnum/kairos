@@ -83,8 +83,9 @@ uasort($entries, function ($a, $b) {
     return intval($a->get('order')) - intval($b->get('order'));
 });
 
+$kpdf = new KPDF($PDF);
+
 foreach ($entries as $entry) {
-    $PDF->block($entry->get('id'));
     if (!isset($byTargets[$entry->get('id')])) { continue; }
 
     $kobjects = $byTargets[$entry->get('id')];
@@ -97,26 +98,28 @@ foreach ($entries as $entry) {
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
-            $yPos = $PDF->GetY();
-            if ($yPos + $PDF->getLineHeight() * 4 >= $PDF->getPageBottom()) {
+            if ($kpdf->getHeight() + $PDF->GetY() > $PDF->getPageBottom()) {
                 $PDF->AddPage();
             } else {
-                $PDF->hr();
+                $kpdf->hr();
+                $kpdf->br();
             }
-            $PDF->printTaggedLn(['%cb', $entry->get('name')]);
+
+            $kpdf->out();
+            $kpdf->printTaggedLn(['%cb', $entry->get('name')]);
+
             $currentName = $entry->get('name');
         }
         $affaire = $kaffaire->get($kobject->get('affaire'));
 
-    // $PDF->printTaggedLn(var_export($kaffaire, true), ['multiline' => true]);
         $status = $kstatus->get($kobject->get('status'));
         if ($affaire === null)  { continue; }
         $project = $kproject->get($affaire->get('project'));
     
-        if ($status) { $PDF->setColor($status->get('color')); }
-        else { $PDF->setColor('gray'); }
-        $PDF->printTaggedLn(['%a', ' ', '%c', $status ? $status->get('name') : ' ', ' ']);
-        $PDF->setColor('black');
+        if ($status) { $kpdf->setColor($status->get('color')); }
+        else { $kpdf->setColor('gray'); }
+        $kpdf->printTaggedLn(['%a', ' ', '%c', $status ? $status->get('name') : ' ', ' ']);
+        $kpdf->setColor('black');
 
         $begin = dbHourToHour($kobject->get('begin'));
         if ($begin === null) { continue; }
@@ -139,40 +142,44 @@ foreach ($entries as $entry) {
             }        
         }
 
-        $PDF->printTaggedLn(['%cb', 'En ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
+        $kpdf->printTaggedLn(['%cb', 'En ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
         $i++;
         $comments = trim($kobject->get('comment'));
         if ($comments !== '') {
             $comment = explode("\n", $comments);
             foreach ($comment as $line) {
-                $PDF->tab(1);
-                $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+                $kpdf->tab(1);
+                $kpdf->printTaggedLn(['%c', $line], ['multiline' => true]);
             }
         }
         $descriptions = trim($affaire->get('description'));
         if ($descriptions !== '') {
             $description = explode("\n", $descriptions);
             foreach ($description as $line) {
-                $PDF->tab(1);
-                $PDF->printTaggedLn(['%c', $line], ['multiline' => true]);
+                $kpdf->tab(1);
+                $kpdf->printTaggedLn(['%c', $line], ['multiline' => true]);
             }
         }
 
         if (count($withPeople[$affaire->get('id')]) > 1) {
-            $PDF->printTaggedLn(['%cb', 'Avec '], ['break' => false]);
+            $kpdf->printTaggedLn(['%cb', 'Avec '], ['break' => false]);
             $first = true;
             foreach ($withPeople[$affaire->get('id')] as $personid) {
                 if ($personid !== $entry->get('id')) {
                     $p = $kentry->get($personid);
-                    if (!$first) { $PDF->printTaggedLn(['%c', ', '], ['break' => false]); }
-                    $PDF->printTaggedLn(['%c', $p->get('name')], ['break' => false]);
+                    if (!$first) { $kpdf->printTaggedLn(['%c', ', '], ['break' => false]); }
+                    $kpdf->printTaggedLn(['%c', $p->get('name')], ['break' => false]);
                     $first = false;
                 }
             }
-            $PDF->br();
+            $kpdf->br();
         }
     }
-    $PDF->close_block();
+
 }
+if ($kpdf->getHeight() > $PDF->getPageBottom()) {
+    $PDF->AddPage();
+}
+$kpdf->out();
 
 $PDF->Output('I', 'Planning du ' . $_GET['id'] .  '.pdf', true); 
