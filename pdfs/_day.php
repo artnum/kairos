@@ -84,6 +84,7 @@ uasort($entries, function ($a, $b) {
 });
 
 foreach ($entries as $entry) {
+    $PDF->block($entry->get('id'));
     if (!isset($byTargets[$entry->get('id')])) { continue; }
 
     $kobjects = $byTargets[$entry->get('id')];
@@ -96,7 +97,7 @@ foreach ($entries as $entry) {
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {
-            if ($PDF->GetY() > 260) { $PDF->addPage(); $PDF->SetY(38); }
+            if ($PDF->GetY() > 260) { $PDF->addPage();  $PDF->SetY(38); }
             else { $PDF->hr(); }
             $PDF->printTaggedLn(['%cb', $entry->get('name')]);
             $currentName = $entry->get('name');
@@ -167,6 +168,7 @@ foreach ($entries as $entry) {
             $PDF->br();
         }
     }
+    $PDF->close_block();
 }
 
 $PDF->Output('I', 'Planning du ' . $_GET['id'] .  '.pdf', true); 
