@@ -81,6 +81,11 @@ foreach ($entries as $entry) {
 
     $kobjects = $byTargets[$entry->get('id')];
     $i = 1;
+
+    uasort($kobjects, function ($a, $b) {
+        return dbHourToDec($a->get('begin')) - dbHourToDec($b->get('begin'));
+    });
+
     foreach($kobjects as $kobject) {
         $entry = $kentry->get($kobject->get('target'));
         if ($currentName !== $entry->get('name')) {

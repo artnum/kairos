@@ -18,6 +18,17 @@ function dbHourToHour ($dbDT) {
    }
 }
 
+function dbHourToDec ($dbDT) {
+   if (strpos($dbDT, 'T') === FALSE) { return null; }
+   try {
+      $hour = explode('T', $dbDT)[1];
+      $hour = explode(':', $hour);
+      return intval($hour[0]) + (intval($hour[1]) / 60);
+   } catch (Exception $e) {
+      return 0;
+   }
+}
+
 function decToHM ($dec) {
    $H = intval($dec);
    return str_pad(strval($H), 2, '0', STR_PAD_LEFT) . ':' .  str_pad(strval(round(($dec - $H) * 60)), 2, '0', STR_PAD_RIGHT);
