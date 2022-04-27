@@ -1010,6 +1010,7 @@ define([
       this.center = djDate.add(this.center, 'day', Math.abs(x))
       this.Viewport.move(-x)
       this.resizeTimeline()
+      this.update()
     },
     moveOneRight: function () {
       this.moveXRight(1)
@@ -1025,6 +1026,7 @@ define([
       this.center = djDate.add(this.center, 'day', -Math.abs(x))
       this.Viewport.move(x)
       this.resizeTimeline()
+      this.update()
     },
     moveOneLeft: function () {
       this.moveXLeft(1)

@@ -82,6 +82,7 @@ function KCacheClean (origin) {
         while (performance.now() - start < 10) {
             if (localStorage.length <= i) { i = 0 }
             const url = localStorage.key(i)
+            if (url === null) { i++; continue }
             if (!(url.startsWith('http://') || url.startsWith('https://'))) { i++; continue }
             const cachedItem = localStorage.getItem(url)
             i++

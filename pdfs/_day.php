@@ -35,6 +35,7 @@ $withPeople = [];
 
 foreach($kobjects as $kobject) {
     $affaire = $kaffaire->get($kobject->get('affaire'));
+    if (!$affaire) { continue; }
     if (!isset($withPeople[$affaire->get('id')])) {
         $withPeople[$affaire->get('id')] = [];
     }

@@ -680,6 +680,7 @@ KUIReservation.prototype.render = function () {
         const kstore = new KStore('kstatus')
         kstore.get(this.object.get('status'))
         .then(status => {
+            const kview = new KView()
             const color = status ? status.color || 'lightgray' : 'lightgray'
             const affaire = this.object.getRelation('kaffaire')
             if (!affaire) { resolve(null); return }
@@ -699,8 +700,10 @@ KUIReservation.prototype.render = function () {
                     resolve(null);
                     return
                 }
-
+                leftbox = 0
             }
+            if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+
 
             let width = 0
             const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')

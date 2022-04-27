@@ -6,8 +6,8 @@ function KEntry (id) {
     this.channel.port1.onmessage = this.handleMessage.bind(this)
     this.evtTarget = new EventTarget()
     this.entries = new Map()
-    this.wwInstance
-    this._loaded
+    this.wwInstance = null
+    this._loaded = null
     this.KUI = new KUIEntry(this, KAIROS.stores.kentry.ui)
     this.URL = KAIROS.URL(KAIROS.stores.kentry.store)
 }

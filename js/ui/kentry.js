@@ -75,24 +75,29 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             this.getContainerDomNode(),
             this.getDomNode(),
             this.object.get('origin'),
-            uireservation.setParent(this)
+            uireservation.setParent(this),
         ])
         .then(([domNode, parentNode, refNode, origin]) => {
+            const begin = uireservation.object.get('begin')
+            const end = uireservation.object.get('end')
+            if (begin === '') {resolve(); return }
+            if (end === '') { resolve() ; return }
             if (!domNode) { resolve(); return }
             const kview = new KView()
-            let leftbox = kview.getRelativeColFromDate(new Date(reservation.get('begin')))
+            let leftbox = kview.getRelativeColFromDate(new Date(begin))
+            let rightbox =  kview.getRelativeColFromDate(new Date(end))
             if (!isFinite(leftbox)) { uireservation.removeDomNode(); resolve(); return } // begin is far away on right sid
             if (leftbox < 0) { 
-                let rightbox = kview.getRelativeColFromDate(new Date(this.object.get('end')))
                 if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
                 leftbox = 0
             }
+            if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+
             domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')
             let max = 1
             let boxes = []
-            let i = this.kview.computeXBox(left)
-            do {
+            for (let i = leftbox; i <= rightbox; i++) {
                 if (!this.boxes[i]) { this.boxes[i] = [] }
                 boxes.push(this.boxes[i])
                 let isIn = false
@@ -104,8 +109,7 @@ KUIEntry.prototype.placeReservation = function (reservation) {
                 }
                 if (!isIn) { this.boxes[i].push(uireservation) }
                 if (max < this.boxes[i].length) { max = this.boxes[i].length }
-                i++
-            } while (i < this.kview.computeXBox(left + uireservation.props.get('width')));
+            }
             
             const entryHeight = this.kview.get('entry-inner-height') / max
             for (const box of boxes) {

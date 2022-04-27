@@ -86,20 +86,27 @@ KProject.prototype.render = function () {
             this.lowlight()
         })
         div.addEventListener('click', event => {
-            const klateral = new KLateral().open()
-            this.highlight()
-            this.form()
-            .then(node => {
-                const tab = klateral.add(node, { title: `${project.getCn()}` })
-                this.kLateralDomNode = node
-                tab.addEventListener('show', (event) => {
-                    this.highlight()
-                })
-                tab.addEventListener('hide', (event) => {
-                    this.lowlight()
-                })
-                tab.addEventListener('destroy', (event) => {
-                    this.lowlight()
+            const kstore = new KStore('kaffaire')
+            kstore.query({'#and': {
+                    project: this.project.get('uid'),
+                    closed: '0'
+            }})
+            .then(affaires => {
+                const klateral = new KLateral().open()
+                this.highlight()
+                this.form()
+                .then(node => {
+                    const tab = klateral.add(node, { title: `${project.getCn()}` })
+                    this.kLateralDomNode = node
+                    tab.addEventListener('show', (event) => {
+                        this.highlight()
+                    })
+                    tab.addEventListener('hide', (event) => {
+                        this.lowlight()
+                    })
+                    tab.addEventListener('destroy', (event) => {
+                        this.lowlight()
+                    })
                 })
             })
         })
