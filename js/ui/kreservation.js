@@ -743,7 +743,7 @@ KUIReservation.prototype.render = function () {
                     this.domNode.innerHTML = `<div class="content">
                             <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                             <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
-                            <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span>
+                            <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
                             <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
                             <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
                         </div>
