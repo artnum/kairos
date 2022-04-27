@@ -209,6 +209,7 @@ KStore.prototype.set = function (object, id = null) {
             id = object.get('uid')
         }
         if (typeof id === 'undefined') { id = null }
+        if (id === '') { id = null }
         const url = new URL(`${this.url}${id === null ? '' : '/' + id}`)
         fetch(url, {method: id === null ? 'POST' : 'PATCH', body: json})
         .then(response => {
