@@ -226,7 +226,6 @@ function KObject (type, data) {
 
 KObject.prototype.doClone = function () {
     const data = new Map()
-    console.log(this.data)
     for (const [key, value] of this.data) {
         data.set(key, value)
     }
@@ -309,6 +308,8 @@ KObject.prototype.setItem = function (name, value) {
 }
 
 KObject.prototype.getItem = function (name, from = null) {
+    if (from === null) { from = [] }
+    from.push(this.getType())
     if (!name) { return '' }
     if (name === '') { return '' }
     if (name === 'cn') { return this.getCn() }
@@ -318,28 +319,49 @@ KObject.prototype.getItem = function (name, from = null) {
         const [ktype, kname] = name.substring(1).split('_')
         if (!this.relation) { return '' }
         if (this.relation.size <= 0) { return '' }
+        const ifUpRelation = []
         for (const key of this.relation.keys()) {
+            if (ktype !== key) { ifUpRelation.push([key, this.relation.get(key)]); continue }
             const relation = kostore.get(key, this.relation.get(key))
-            if (!relation) { return '' }
-            if (from !== null && relation.getType() === from) { return ''}
-            if (relation.getType() !== ktype) {
-                return relation.get(name, this.getType())
+            if (!relation) { continue }
+            if (from.indexOf(ktype) !== -1) { continue }
+            if (relation.getType() !== ktype) { continue }
+            if (kname) { 
+                return relation.get(kname)
             } else {
-                if (kname) { 
-                    return relation.get(kname)
-                } else {
-                    return relation.getCn()
-                }
+                return relation.getCn()
             }
+        }
+        /* travel tree upward */
+        for (const rel of ifUpRelation) {
+            if (from.indexOf(rel[0]) !== -1) { continue }
+            const relation = kostore.get(rel[0], rel[1])
+            if (!relation) { continue }
+            const val = relation.get(name, from)
+            if (val !== '') { return val }
         }
         return ''
     }
     if (KAIROS.stores[this.type][name] && KAIROS.stores[this.type][name].remote) {
         if (this.hasItem(KAIROS.stores[this.type][name].remote)) {
-            return this.data.get(KAIROS.stores[this.type][name].remote)
+            return this._getItem(KAIROS.stores[this.type][name].remote, from)
         }
     }
-    return this.data.get(name)
+    return this._getItem(name, from)
+}
+
+KObject.prototype._getItem = function (name, from = []) {
+    if (this.hasItem(name)) {
+        const val = this.data.get(name)
+        if (val !== '') { return val }
+    }
+    if (!KAIROS.stores[this.type]) { return '' }
+    if (!KAIROS.stores[this.type].alternatives) { return '' }
+    if (KAIROS.stores[this.type].alternatives[name]) {
+        const val = this.getItem(KAIROS.stores[this.type].alternatives[name], from)
+        return val
+    }
+    return ''
 }
 
 KObject.prototype.hasItem = function (name) {
