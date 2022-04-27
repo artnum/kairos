@@ -107,7 +107,6 @@ foreach ($entries as $entry) {
             
             $kpdf->out();
 
-
             $kpdf->br();
             $kpdf->hr();
             $kpdf->br();
@@ -126,8 +125,19 @@ foreach ($entries as $entry) {
     
         if ($status) { $kpdf->setColor($status->get('color')); }
         else { $kpdf->setColor('gray'); }
-        $kpdf->printTaggedLn(['%a', ' ', '%c', $status ? $status->get('name') : ' ', ' ']);
+        $kpdf->printTaggedLn(['%a', ' ', '%c', $status ? $status->get('name') : ' ', ' '], ['break' => false]);
         $kpdf->setColor('black');
+        if ($kobject->get('technician')) {
+            $technician = $kentry->get($kobject->get('technician'));
+            $kpdf->printTaggedLn(['%c', ' - Chef projet : ',  '%cb', $technician->get('name')], ['break' => false]);
+        } else {
+            if ($project->get('manager')) {
+                $technician = $kentry->get($project->get('manager'));
+                $kpdf->printTaggedLn(['%c', ' - Chef projet : ',  '%cb', $technician->get('name')], ['break' => false]);
+            }
+        }
+
+        $kpdf->br();
 
         $begin = dbHourToHour($kobject->get('begin'));
         if ($begin === null) { continue; }
@@ -151,6 +161,9 @@ foreach ($entries as $entry) {
         }
 
         $kpdf->printTaggedLn(['%cb', 'En ', strval($i), '%c', ' | ', $project->get('reference'), ' | ', $project->get('name')]);
+        if ($affaire->get('reference')) {
+            $kpdf->printTaggedLn(['%cb', 'Référence ', '%c', $affaire->get('reference')], ['multiline' => true]);
+        }
         $i++;
         $comments = trim($kobject->get('comment'));
         if ($comments !== '') {
