@@ -741,6 +741,7 @@ KUIReservation.prototype.render = function () {
                 if (changeDom) {
                     this.domProduced = true
                     this.domNode.innerHTML = `<div class="content">
+                            <span class="field options">${parseInt(this.object.get('locked')) === 1 ? '<i class="fa fa-lock"> </i>' : ''}</span>
                             <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                             <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
                             <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
