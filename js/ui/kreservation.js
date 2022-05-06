@@ -9,28 +9,13 @@ function KUIReservation (object) {
     this.id = object.get('uuid')
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('kreservation')
-    this.domNode.setAttribute('draggable', true)
     this.domNode.id = this.object.get('uuid')
-    this.domNode.addEventListener('dragstart', event => {
-        
-        if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
-        //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
-        event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
-        if (event.ctrlKey) {
-            event.dataTransfer.dropEffect = 'copy'
-        } else {
-            event.dataTransfer.dropEffect = 'move'
-        }
-    }, {capture: true})
+    this.domNode.dataset.remoteId = this.object.get('uid')
+
     this.domNode.addEventListener('mousedown', (event) => {
         event.stopPropagation()
     }, {passive: true})
-    this.domNode.addEventListener('drop', event => {
-        event.preventDefault()
-    })
-    this.domNode.addEventListener('dragover', event => {
-        event.preventDefault()
-    })
+
     this.domNode.addEventListener('contextmenu', event => {
         event.preventDefault()
         if (KAIROS.getState('startSetRelation')) {
@@ -64,8 +49,40 @@ function KUIReservation (object) {
         if (KAIROS.getState('lockShowHideRelation')) { return }
         this.hideRelation()
     })
+    this.domNode.addEventListener('mouseup', (event) => {
+        if (this.dndTimeout) {
+            clearTimeout(this.dndTimeout)
+            this.dndTimeout = undefined
+        }
+    })
+    this.domNode.addEventListener('dragend', event => {
+        console.log(event)
+        this.dndDone = false
+    })
+    this.domNode.addEventListener('mousedown', (event) => {
+        if (this.dndDone) { return }
+        if (!this.dndTimeout) {
+            this.dndTimeout = setTimeout(() => {
+                this.dndDone = true
+                const dnd = new DnD(this.domNode)
+                const mselect = new MultiSelect()
+                mselect.add(this)
+                for (const object of mselect.getAll()) {
+                    dnd.add(object.domNode, event.clientX, event.clientY)
+                }
+            }, 250)
+        }
+    })
     this.domNode.addEventListener('click', (event) => {
         if (KAIROS.getState('cutToolActive')) { return }
+        if (event.ctrlKey) {
+            const mselect = new MultiSelect()
+            mselect.toggle(this)
+            return 
+        } 
+        const mselect = new MultiSelect()
+        mselect.clear()
+        mselect.toggle(this)
         this.popDetails()
     })
     this.domNode.addEventListener('dblclick', (event) => {
@@ -99,6 +116,9 @@ function KUIReservation (object) {
         affaire.addEventListener('update', this.render.bind(this))
     }
     object.addEventListener('delete', this.deleteMe.bind(this))
+
+    this.addEventListener('select', (event) => { console.log(event); this.selectMe(event) })
+    this.addEventListener('unselect', this.unselectMe.bind(this))
 
     object.bindUINode(this)
 }
@@ -395,6 +415,14 @@ KUIReservation.prototype.setParent = function (parent) {
     })
 }
 
+KUIReservation.prototype.selectMe = function (event) {
+    this.select()
+}
+
+KUIReservation.prototype.unselectMe = function (event) {
+    this.unselect()
+}
+
 KUIReservation.prototype.popDetails = function () {
     this.select()
     if (this.detailsPopped) {
@@ -434,7 +462,8 @@ KUIReservation.prototype.popDetails = function () {
 
 KUIReservation.prototype.unpopDetails = function () {
     if (!this.detailsPopped) { return false }
-    this.unselect()
+    const mselect = new MultiSelect()
+    if (!mselect.has(this)) { this.unselect() }
     const node = this.detailsPopped[1]
     window.requestAnimationFrame(() => {
         node.parentNode.removeChild(node)
@@ -641,20 +670,13 @@ KUIReservation.prototype.renderForm = function () {
 }
 
 KUIReservation.prototype.select = function () {
-    if (!this.selected) {
-        this.selected = true
-        this.domNode.classList.add('k-selected')
-    } else {
-        this.selected = false
-        this.domNode.classList.remove('k-selected')
-    }
+    this.selected = true
+    window.requestAnimationFrame(() => { this.domNode.classList.add('k-selected') })
 }
 
 KUIReservation.prototype.unselect = function () {
-    if (this.selected) {
-        this.selected = false
-        this.domNode.classList.remove('k-selected')
-    }
+    this.selected = false
+    window.requestAnimationFrame(() => { this.domNode.classList.remove('k-selected') })
 }
 
 KUIReservation.prototype.render = function () {

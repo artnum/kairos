@@ -641,7 +641,7 @@ define([
       this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), {passive: true})
       this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
-      this.domNode.addEventListener('dragstart', event => {
+      /*this.domNode.addEventListener('dragstart', event => {
         window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
       })
       this.domNode.addEventListener('dragend', event => {
@@ -671,13 +671,14 @@ define([
         object.set('begin', begin.toISOString())
         object.set('end', end.toISOString())
         object.set('target', entryNode.id)
+        console.log(object)
         kstore.set(object)
       })
 
       this.domNode.addEventListener('dragover', event => {
         event.preventDefault()
       })
-      
+      */
       window.addEventListener('dblclick', iAddReservation.bind(this))
       window.addEventListener('click', iGrowAddReservation.bind(this))
       window.addEventListener('mousemove', iFollowGrowAddReservation.bind(this))
@@ -952,6 +953,7 @@ define([
 
     wheelZoom: function (event) {
       event.preventDefault()
+      return 
       if (event.deltaY < 0) {
         this.zoomInN(event.deltaY)
       } else {

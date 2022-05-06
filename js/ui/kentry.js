@@ -13,6 +13,28 @@ function KUIEntry (dataObject, opts = {}) {
     }
     this.getDomNode()
     .then(domNode => {
+        domNode.addEventListener('dnd-drop', event => {
+            console.log(event)
+            const kident = `kreservation/${event.detail.element.dataset.remoteId}`
+            console.log(event.detail, kident)
+            kGStore = new KObjectGStore()
+            let object = event.detail.ctrlKey ? kGStore.get(kident).clone() : kGStore.get(kident)
+            const kstore = new KStore(object.getType())
+            const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
+            const diff = end.getTime() - begin.getTime()
+            const kview = new KView()
+            const originalX = kview.getXFromDate(begin)
+            const originalY = kview.getObjectRowById(object.get('target'))
+            const newOrigin = new Date()
+            newOrigin.setTime(kview.get('date-origin').getTime() + kview.computeXBox(event.detail.x) * 86400000)
+            KVDays.initDayStartTime(newOrigin, KAIROS.days)
+            begin.setTime(newOrigin.getTime())
+            end.setTime(begin.getTime() + diff)
+            object.set('begin', begin.toISOString())
+            object.set('end', end.toISOString())
+            object.set('target', domNode.id)
+            kstore.set(object)
+        })
         dataObject.get('id')
         .then(uid => {
             domNode.id = uid

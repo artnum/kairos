@@ -1,5 +1,10 @@
 function Kolor(color) {
     this.color = color
+    if (color.substr(0, 1) === '#') {
+        this.r = parseInt(this.color.substr(1, 2), 16)
+        this.g = parseInt(this.color.substr(3, 2), 16)
+        this.b = parseInt(this.color.substr(5, 2), 16)
+    }
 }
 
 Kolor.prototype.foreground = function () {
@@ -11,4 +16,8 @@ Kolor.prototype.foreground = function () {
         return '#FFFFFF'
     } 
     return '#000000'
+}
+
+Kolor.prototype.alpha = function (alpha) {
+    return `rgba(${this.r}, ${this.g}, ${this.b}, ${alpha})`
 }

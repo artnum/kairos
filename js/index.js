@@ -152,8 +152,9 @@ window.addEventListener('kairos-preload', event => {
         ['../js/kstore.js', 'script'],
         ['../js/kobject.js', 'script'],
         ['../js/interaction/ontimeline.js', 'script'],
+        ['../js/interaction/mselect.js', 'script'],
+        ['../js/interaction/dnd.js', 'script'],
         ['../js/ui/kform.js', 'script'],
-
         ['../js/ui/klist.js', 'script'],
         ['../js/ui/kview.js', 'script'],
         ['../js/ui/klives.js', 'script'],
