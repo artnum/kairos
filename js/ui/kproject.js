@@ -148,6 +148,14 @@ KProject.prototype.lowlight = function () {
     }
 }
 
+KProject.prototype.toggleAffaire = function (event) {
+    const node = event.target.parentNode
+
+    window.requestAnimationFrame(() => {
+        node.classList.toggle('open')
+    })
+}
+
 KProject.prototype.kaffaireNode = function (affaire) {
     return new Promise((resolve, reject) => {
         const kaffaireui = new KAffaireFormUI(affaire)
@@ -155,10 +163,18 @@ KProject.prototype.kaffaireNode = function (affaire) {
         .then(kaffaireNode => {
             const kformui = kaffaireNode.getParentObject()
             const fs = document.createElement('fieldset')
-            fs.innerHTML = `<legend>${affaire ? affaire.getCn() : 'Nouveau travail'}</legend>`
+            fs.classList.add('k-project-fieldset')
+            fs.innerHTML = `<legend>${affaire ? `${affaire.getCn()} - ${affaire.get('description')}` : 'Nouveau travail'}</legend>`
+            fs.querySelector('legend').addEventListener('click', this.toggleAffaire)
             fs.appendChild(kaffaireNode)
-            const plan = document.createElement('button')
             if (affaire) {
+                const status = affaire.getRelation('kstatus')
+                if (status &&  status.color) {
+                    const kolor = new Kolor(status.color)
+                    const legend = fs.querySelector('legend')
+                    legend.style.setProperty('background-color', status.color)
+                    legend.style.setProperty('color', kolor.foreground())
+                }
                 const plan = document.createElement('button')
                 plan.innerHTML = 'Planifier'
                 plan.dataset.action = 'plan-affaire'
@@ -172,6 +188,10 @@ KProject.prototype.kaffaireNode = function (affaire) {
                 close.innerHTML = 'Clore'
                 close.addEventListener('click', () => { this.closeAffaire(affaire) })
                 fs.appendChild(close)
+                const print = document.createElement('button')
+                print.innerHTML = 'Imprimer'
+                print.addEventListener('click', () => { this.printAffaire(affaire) })
+                fs.appendChild(print)
             } else {
                 const add = document.createElement('button')
                 add.innerHTML = 'Ajouter'
@@ -182,6 +202,13 @@ KProject.prototype.kaffaireNode = function (affaire) {
             resolve(fs)
         })
     })
+}
+
+KProject.prototype.printAffaire = function (affaire) {
+    if (affaire) {
+        const project = affaire.getRelation('kproject')
+        window.open(KAIROS.URL(`${KAIROS.kaalURL}/admin/exec/export/bon.php?pid=${project.id}&travail=${affaire.id}`), '_blank')
+    }
 }
 
 KProject.prototype.deleteAffaire = function (affaire) {

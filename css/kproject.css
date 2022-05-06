@@ -1,0 +1,12 @@
+.k-project-fieldset form {
+    display: none;
+}
+
+.k-project-fieldset.open form {
+    display: block;
+}
+
+.k-project-fieldset legend {
+    max-height: 1em;
+    overflow: hidden;
+}
