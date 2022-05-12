@@ -44,6 +44,7 @@ KAffaireFormUI.prototype.render = function () {
         phone: {label: 'Téléphone', type: 'phone'},
         description: {label: 'Description', type: 'multitext'},
         time: {label: 'Durées', type: 'hour'},
+        force: {label: 'Nombre de personne', type: 'text'},
         begin: {label: 'Début souhaité', type: 'date'},
         end: {label: 'Fin souhaité', type: 'date'}
     })
