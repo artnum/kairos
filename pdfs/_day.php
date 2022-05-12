@@ -203,4 +203,4 @@ if ($kpdf->getHeight() + $PDF->GetY() > $PDF->getPageBottom()) {
 }
 $kpdf->out();
 
-$PDF->Output('I', 'Planning du ' . $_GET['id'] .  '.pdf', true); 
+$PDF->Output('I', 'Planning du ' . $dateFormater->format((new DateTime($day))) .  '.pdf', true); 
