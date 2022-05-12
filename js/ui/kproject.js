@@ -164,7 +164,7 @@ KProject.prototype.kaffaireNode = function (affaire) {
             const kformui = kaffaireNode.getParentObject()
             const fs = document.createElement('fieldset')
             fs.classList.add('k-project-fieldset')
-            fs.innerHTML = `<legend>${affaire ? `${affaire.getCn()} - ${affaire.getFirstTextValue('', 'reference', 'decription')}` : 'Nouveau travail'}</legend>`
+            fs.innerHTML = `<legend>${affaire ? `${affaire.getCn()}${affaire.getFirstTextValue('', 'group') === '' ? ' ' : ` - ${affaire.getFirstTextValue('', 'group')} `}- ${affaire.getFirstTextValue('', 'reference', 'decription')}` : 'Nouveau travail'}</legend>`
             fs.querySelector('legend').addEventListener('click', this.toggleAffaire)
             fs.appendChild(kaffaireNode)
             if (affaire) {
@@ -277,6 +277,9 @@ KProject.prototype.form = function () {
         })
 
         if (affaires) {
+            affaires.sort((a, b) => {
+                return a.getFirstTextValue('', 'group').localeCompare(b.getFirstTextValue('', 'group'))
+            })
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
                 if (affaire.get('closed') !== '0') { continue }
                 this.kaffaireNode(affaire)
