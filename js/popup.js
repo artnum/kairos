@@ -280,10 +280,10 @@ function KPopup (title, opts = {}) {
     this.domNode.stopLoading = this.stopLoading.bind(this)
 
     if (opts.fitContent) {
-        this.popup.style.minHeight = 'min-content'
-        this.popup.style.maxHeight = 'min-content'
-        this.popup.style.minWidth = 'min-content'
-        this.popup.style.maxWidth = 'min-content'
+        this.popup.style.minHeight = 'max-content'
+        this.popup.style.maxHeight = 'max-content'
+        this.popup.style.minWidth = 'max-content'
+        this.popup.style.maxWidth = 'max-content'
     } else {
         if (opts.minWidth) {
             this.popup.style.minWidth = opts.minWidth
@@ -594,4 +594,34 @@ KPopup.prototype.setContentDiv = function (div) {
 KPopup.prototype.bindWith = function (kpopup) {
     this.binded.push(kpopup)
     kpopup.binded.push(this)
+}
+
+function KConfirm (text = ``, reference = null) {
+    return new Promise((resolve) => {
+        let popup
+        if (reference) {
+            popup = new KPopup('Confirmation d\'action', {reference, fitContent: true})
+        } else {
+            popup = new KPopup('Confirmation d\'action')
+        }
+
+        const form = document.createElement('FORM')
+        form.innerHTML = `<p>${text}</p><p style="display: flex;"><button type="submit">Oui</button><button type="reset">Non</button></p>`
+        form.addEventListener('submit', event => {
+            event.preventDefault()
+            popup.close()
+            resolve(true)
+        })
+        form.addEventListener('reset', event => {
+            event.preventDefault()
+            popup.close()
+            resolve(false)
+        })
+        popup.addEventListener('close', event => {
+            resolve(false)
+        })
+
+        popup.setContentDiv(form)
+        popup.open()
+    })
 }

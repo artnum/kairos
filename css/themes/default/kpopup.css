@@ -22,7 +22,7 @@
 
 #KTaskBar {
     position: fixed;
-    display: flex;
+    display: flex !important;
     align-items: center;
     bottom: 0;
     left: 0;
@@ -106,7 +106,7 @@
     bottom: 44px;
     left: 0;
     background-color: var(--kpopup-bg-color);
-    display: flex;
+    display: flex !important;
     justify-content: center;
     flex-direction: column;
     flex-wrap: wrap;
@@ -128,7 +128,7 @@
     border: 1px solid var(--kpopup-bg-color);
     border-left: none;
     border-right: none;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -167,7 +167,7 @@
 }
 
 .kpopup {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     min-width: 240px;
     overflow: auto;
@@ -213,12 +213,13 @@
     max-height: calc(100% - 48px);
     min-width: calc(100% - 16px);
     max-width: calc(100% - 16px);
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     margin: 0;
     padding: 4px;
     font-size: initial;
     overflow-y: auto;
+    align-items: center;
 }
 
 .kpopup.win {

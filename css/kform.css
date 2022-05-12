@@ -20,6 +20,15 @@
     box-shadow: 0px 2px 8px 0px lightgray;
 }
 
+.k-form-ui .hidden-in-close {
+    display: none;
+}
+
+.k-form-ui.open .hidden-in-close {
+    display: unset;
+}
+
+
 .k-form-ui .k-input[readonly] {
     border: none;
     background-color: white;

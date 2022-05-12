@@ -164,7 +164,7 @@ KProject.prototype.kaffaireNode = function (affaire) {
             const kformui = kaffaireNode.getParentObject()
             const fs = document.createElement('fieldset')
             fs.classList.add('k-project-fieldset')
-            fs.innerHTML = `<legend>${affaire ? `${affaire.getCn()} - ${affaire.get('description')}` : 'Nouveau travail'}</legend>`
+            fs.innerHTML = `<legend>${affaire ? `${affaire.getCn()} - ${affaire.getFirstTextValue('', 'reference', 'decription')}` : 'Nouveau travail'}</legend>`
             fs.querySelector('legend').addEventListener('click', this.toggleAffaire)
             fs.appendChild(kaffaireNode)
             if (affaire) {
@@ -180,21 +180,36 @@ KProject.prototype.kaffaireNode = function (affaire) {
                 plan.dataset.action = 'plan-affaire'
                 plan.dataset.affaire = affaire.uid
                 fs.appendChild(plan)
-                const del = document.createElement('button')
-                del.innerHTML = 'Supprimer'
-                del.addEventListener('click', () => { this.deleteAffaire(affaire) })
-                fs.appendChild(del)
-                const close = document.createElement('button')
-                close.innerHTML = 'Clore'
-                close.addEventListener('click', () => { this.closeAffaire(affaire) })
-                fs.appendChild(close)
+     
                 const print = document.createElement('button')
                 print.innerHTML = 'Imprimer'
                 print.addEventListener('click', () => { this.printAffaire(affaire) })
                 fs.appendChild(print)
+
+                const del = document.createElement('button')
+                del.innerHTML = 'Supprimer'
+                del.classList.add('hidden-in-close', 'danger')
+                del.addEventListener('click', () => { 
+                    KConfirm('Voulez-vous vraiment supprimer le travail', del)
+                    .then(confirm => {
+                        if (confirm) { this.deleteAffaire(affaire) }
+                    })
+                })
+                fs.appendChild(del)
+                const close = document.createElement('button')
+                close.innerHTML = 'Clore'
+                close.classList.add('hidden-in-close', 'danger')
+                close.addEventListener('click', () => {
+                    KConfirm('Voulez-vous vraiment clore le travail', close)
+                    .then(confirm => {
+                        if (confirm) { this.closeAffaire(affaire) } 
+                    })
+                })
+                fs.appendChild(close)
             } else {
                 const add = document.createElement('button')
                 add.innerHTML = 'Ajouter'
+                add.classList.add('hidden-in-close')
                 add.addEventListener('click', () => { this.submitNewAffaire(kformui) })
                 fs.appendChild(add)
             }

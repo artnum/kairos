@@ -203,6 +203,13 @@
     min-height: 24px;
 }
 
+.mbutton.danger, .dijitButton.danger, button.danger, input[type="button"].danger, input[type="submit"].danger, input[type="reset"].danger{
+    font-size: 12px;
+    max-height: 24px;
+    min-height: 24px;
+    float: right;
+}
+
 .mbuttonMain {
     height: var(--button-height);
     display: inline-block;

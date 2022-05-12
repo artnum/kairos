@@ -232,6 +232,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                 const object = ostore.search('kreservation', 'id', relation.source)
                 if (!object) { continue }
                 const ui = object.getUINode()
+                if (!ui) { continue }
                 if (ui.domNode.parentNode) {
                     ui.showRelation(from)
                     this.shownRelations.push(ui)
