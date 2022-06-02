@@ -507,11 +507,11 @@ define([
       }
     },
 
-    resizeEntries: function (iter = null) {
+    resizeEntries: throttle(function () {
       for (const [_, entry] of this.Entries) {
         entry.resize()
       }
-    },
+    }, 25),
 
     resizeTimeline: function () {
       this.drawTimeline()
