@@ -404,18 +404,57 @@ KUIReservation.prototype.setParent = function (parent) {
     })
 }
 
+KUIReservation.prototype.highlight = function () {
+    const affaire = this.object.getRelation('kaffaire')
+    if (!affaire) { return }
+    const project = affaire.getRelation('kproject')
+    if (!project) { return }
+    const color = `hsla(0, 100%, 50%, 1)`
+    const nodes = document.querySelectorAll(`[data-kproject="${project.get('uid')}"]`)
+    for (const node of nodes ){
+        window.requestAnimationFrame(() => { 
+            if (!node) { return }
+            node.style.setProperty('--selected-color', color)
+            node.classList.add('selected')
+        })
+    }
+    (new KView()).addRunOnMove(this.highlight.bind(this), `prj-${project.get('uid')}`)
+}
+
+KUIReservation.prototype.lowlight = function () {
+    const affaire = this.object.getRelation('kaffaire')
+    if (!affaire) { return }
+    const project = affaire.getRelation('kproject')
+    if (!project) { return }
+    (new KView()).delRunOnMove(`prj-${project.get('uid')}`)
+    const nodes = document.querySelectorAll(`[data-kproject="${project.get('uid')}"]`)
+    for (const node of nodes ) {
+        window.requestAnimationFrame(() => {
+            if (!node) { return }
+            node.style.removeProperty('--selected-color')
+            node.classList.remove('selected')
+        })
+    }
+}
+
 KUIReservation.prototype.popDetails = function () {
+    const affaire = this.object.getRelation('kaffaire')
+    if (!affaire) { return }
+    const project = affaire.getRelation('kproject')
+    if (!project) { return }
+
+    if (this.domNode.classList.contains('selected')) {
+        this.lowlight()
+    } else {
+        this.highlight()
+    }
+
     this.select()
     if (this.detailsPopped) {
         this.unpopDetails()
     } else {
-        const div = document.createElement('DIV')
-
+         const div = document.createElement('DIV')
         div.classList.add('k-reservation-details')
-        const affaire = this.object.getRelation('kaffaire')
-        if (!affaire) { resolve(null); return }
-        const project = affaire.getRelation('kproject')
-        if (!project) { resolve(null); return }
         //const step = new KStepProgressUI()
 
         div.innerHTML = `

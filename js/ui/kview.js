@@ -80,8 +80,8 @@ function KView () {
     KView._instance = this
 }
 
-KView.prototype.addRunOnMove = function (callback) {
-    const id = ++this.runOnMoveId
+KView.prototype.addRunOnMove = function (callback, id = null) {
+    if (id === null) { id = ++this.runOnMoveId }
     this.runOnMove.set(id, callback)
     return id
 }
