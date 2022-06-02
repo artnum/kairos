@@ -234,7 +234,7 @@ KLateral.prototype.getTab = function (idx) {
 
 KLateral.prototype.remove = function (idx) {
     const tab = this.tabs.get(String(idx))
-    tab.blur()
+    if (tab) { tab.blur() }
     if (!this.evtTarget.dispatchEvent(new CustomEvent(`destroy-tab-${idx}`, {detail: {tab}}))) {
         return
     }
@@ -251,6 +251,8 @@ KLateral.prototype.remove = function (idx) {
     this.tabCurrent = 0
     if (this.tabs.size > 0) {
         this.showTab()  
+    } else {
+        this.close()
     }
 }
 

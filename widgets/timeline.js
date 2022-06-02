@@ -611,18 +611,6 @@ define([
       this.fixedHeader.style.zIndex = KAIROS.zMax()
       const ktaskbar = new KTaskBar()
 
-      DisplayLoop((runId) => {
-        return new Promise((resolve, reject) => {
-          let o = runId % 2
-          let s = o + 1
-          const keys = Array.from(this.Entries.keys())
-          for (let i = o; i < keys.length; i += s) {
-            this.Entries.get(keys[i]).resize()
-          }
-          resolve()
-        })
-      })
-
       this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
 
       this.bc = new BroadcastChannel('KAIROS-Location-bc')
