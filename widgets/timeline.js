@@ -508,16 +508,9 @@ define([
     },
 
     resizeEntries: function (iter = null) {
-      const currentIter = iter || this.Entries.entries()
-
-      window.requestIdleCallback(deadline => {
-          let response = currentIter.next()
-          while (!response.done) {
-            response.value[1].resize()
-            if (deadline.timeRemaining() <= 0) { this.resizeEntries(currentIter); return}
-            response = currentIter.next()
-          }
-        })
+      for (const [_, entry] of this.Entries) {
+        entry.resize()
+      }
     },
 
     resizeTimeline: function () {
