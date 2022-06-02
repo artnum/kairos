@@ -268,7 +268,7 @@ KProject.prototype.form = function () {
     return new Promise((resolve) => {
         
         const node = document.createElement('DIV')
-        const affaires = this.project.getRelation('kaffaire')
+        let affaires = this.project.getRelation('kaffaire')
         node.classList.add('kproject')
 
         this.kaffaireNode(undefined)
@@ -276,7 +276,8 @@ KProject.prototype.form = function () {
             node.appendChild(emptyAffaire)
         })
 
-        if (affaires) {
+        if (affaires && !Array.isArray(affaires)) { affaires = [affaires] }
+        if (affaires && Array.isArray(affaires)) {
             affaires.sort((a, b) => {
                 return a.getFirstTextValue('', 'group').localeCompare(b.getFirstTextValue('', 'group'))
             })
