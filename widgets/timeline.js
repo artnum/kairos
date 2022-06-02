@@ -1369,8 +1369,14 @@ define([
             })
             .then(domNode => {
               return new Promise((resolve) => {
-                window.requestAnimationFrame(() => {
-                  this.domEntries.appendChild(domNode)
+                new Promise(resolve => {
+                  window.requestAnimationFrame(() => {
+                    this.domEntries.appendChild(domNode)
+                    resolve()
+                  })
+                })
+                .then(_ => {
+                  kentry.KUI.inPlace()
                   resolve()
                 })
               })
