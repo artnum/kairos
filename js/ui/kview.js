@@ -75,7 +75,31 @@ function KView () {
     this.rowDescription = null
     this.grid = null
     this.gridOffset = 0
+    this.runOnMove = new Map()
+    this.runOnMoveId = 0
     KView._instance = this
+}
+
+KView.prototype.addRunOnMove = function (callback) {
+    const id = ++this.runOnMoveId
+    this.runOnMove.set(id, callback)
+    return id
+}
+
+KView.prototype.delRunOnMove = function (id) {
+    return this.runOnMove.delete(id)
+}
+
+KView.prototype.runRunOnMove = function () {
+    /* run after animation frame */
+    new Promise((resolve) => {
+        window.requestAnimationFrame(() => { resolve() })
+    })
+    .then(() => {
+        for (const [_, cb] of this.runOnMove) {
+            if (typeof cb === 'function') { window.requestIdleCallback(() => { cb() }) }
+        }
+    })
 }
 
 KView.prototype.addEventListener = function (event, listener, options) {

@@ -12,6 +12,7 @@ KLateralTab.prototype.addEventListener = function (event, listener, options) {
 
 KLateralTab.prototype.destroy = function () {
     this.destroyed = true
+    this.evtTarget.dispatchEvent(new CustomEvent('destroy'))
 }
 
 KLateralTab.prototype.close = function () {
@@ -273,18 +274,19 @@ KLateral.prototype.showTab = function (idx) {
         }
     }
     const tab = this.tabs.get(String(idx))
-    this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
-    tab.focus()
     if (this.tabCurrent !== 0) {
         this.tabPrevSelected = this.tabCurrent
         this.hideTab(this.tabCurrent)
     }
     const [tabTitle, tabContent] = this.getTab(idx)
     if (!tabTitle) { return }
+
     tabContent.style.display = 'block'
     tabContent.classList.add('selected')
     tabTitle.classList.add('selected')
     tabTitle.scrollIntoView({behavior: 'smooth'})
     this.content.scrollTo({left: 0, top: tab.getScroll(), behavior: 'instant'})
     this.tabCurrent = idx
+    this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
+    tab.focus()
 }

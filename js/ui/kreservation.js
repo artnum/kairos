@@ -11,8 +11,16 @@ function KUIReservation (object) {
     this.domNode.classList.add('kreservation')
     this.domNode.setAttribute('draggable', true)
     this.domNode.id = this.object.get('uuid')
+
+    this.kaffaire = object.getRelation('kaffaire')
+    if (this.kaffaire) {
+        this.kproject = this.kaffaire.getRelation('kproject')
+    }
+    if (this.kproject) {
+        this.domNode.dataset.kproject = this.kproject.get('uid')
+    }
+
     this.domNode.addEventListener('dragstart', event => {
-        
         if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
         //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
         event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)

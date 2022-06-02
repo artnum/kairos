@@ -1536,6 +1536,7 @@ define([
     update: function (force = false) {
       this.refresh()
       this.resize()
+      this.Viewport.runRunOnMove()
     },
 
     _getEntriesAttr: function () {

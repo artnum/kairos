@@ -83,9 +83,10 @@ KProject.prototype.render = function () {
             this.highlight()
         })
         div.addEventListener('mouseleave', event => {
-            this.lowlight()
+            if (!this.disableLowLight) { this.lowlight() }
         })
         div.addEventListener('click', event => {
+            this.disableLowLight = true
             const kstore = new KStore('kaffaire')
             kstore.query({'#and': {
                     project: this.project.get('uid'),
@@ -93,20 +94,31 @@ KProject.prototype.render = function () {
             }})
             .then(affaires => {
                 const klateral = new KLateral().open()
-                this.highlight()
                 this.form()
                 .then(node => {
                     const tab = klateral.add(node, { title: `${project.getCn()}` })
                     this.kLateralDomNode = node
-                    tab.addEventListener('show', (event) => {
+                    tab.addEventListener('focus', (event) => {
                         this.highlight()
+                        if (!tab.runOnMove) {
+                            const kview = new KView()
+                            tab.runOnMove = kview.addRunOnMove(this.highlight.bind(this))
+                        }
                     })
-                    tab.addEventListener('hide', (event) => {
+                    tab.addEventListener('blur', (event) => {
                         this.lowlight()
+                        const kview = new KView()
+                        kview.delRunOnMove(tab.runOnMove)
+                        tab.runOnMove = undefined
                     })
                     tab.addEventListener('destroy', (event) => {
                         this.lowlight()
+                        const kview = new KView()
+                        kview.delRunOnMove(tab.runOnMove)
+                        tab.runOnMove = undefined
                     })
+                    tab.focus()
+                    setTimeout(() => { this.disableLowLight = false }, 20)
                 })
             })
         })
@@ -116,35 +128,25 @@ KProject.prototype.render = function () {
 }
 
 KProject.prototype.highlight = function () {
-    const affaires = this. project.getRelation('kaffaire')
-    if (!affaires || (Array.isArray(affaires) && affaires.length === 0)) { return }
-    for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-        const reservations = affaire.getRelation('kreservation')
-        if (!reservations) { continue }
-        const color = `hsla(0, 100%, 50%, 1)`
-        for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-            if (reservation === undefined) { continue }
-            const dom = document.getElementById(reservation.get('uuid'))
-            if (!dom) { continue }
-            dom.style.setProperty('--selected-color', color)
-            dom.dataset.affaire = affaire.get('id')
-            window.requestAnimationFrame(() => { if (!dom) { return }; dom.classList.add(`selected`) })
-        }
+    const color = `hsla(0, 100%, 50%, 1)`
+    const nodes = document.querySelectorAll(`[data-kproject="${this.project.get('uid')}"]`)
+    for (const node of nodes ){
+        window.requestAnimationFrame(() => { 
+            if (!node) { return }
+            node.style.setProperty('--selected-color', color)
+            node.classList.add('selected')
+        })
     }
 }
 
 KProject.prototype.lowlight = function () {
-    const affaires = this.project.getRelation('kaffaire')
-    if (!affaires || (Array.isArray(affaires) && affaires.length === 0)) { return }
-    for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-        const reservations = affaire.getRelation('kreservation')
-        if (!reservations) { continue }
-        for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-            if (reservation === undefined) { continue }
-            const dom = document.getElementById(reservation.get('uuid'))
-            if (!dom) { continue }
-            window.requestAnimationFrame(() => { dom.classList.remove('selected') })
-        }
+    const nodes = document.querySelectorAll(`[data-kproject="${this.project.get('uid')}"]`)
+    for (const node of nodes ) {
+        window.requestAnimationFrame(() => {
+            if (!node) { return }
+            node.style.removeProperty('--selected-color')
+            node.classList.remove('selected')
+        })
     }
 }
 
