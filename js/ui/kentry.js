@@ -21,13 +21,6 @@ function KUIEntry (dataObject, opts = {}) {
     this.object = dataObject
 }
 
-KUIEntry.prototype.inPlace = function () {
-    this.getDomNode()
-    .then(refNode => {
-        this.clientRect = refNode.getBoundingClientRect()
-    })
-}
-
 KUIEntry.prototype.render = function () {
     return new Promise ((resolve, reject) => {
         this.html
@@ -64,7 +57,7 @@ KUIEntry.prototype.removeReservation = function (reservation) {
             for (const box of boxes) {
                 for (let i = 0; i < box.length; i++) {
                     if (box[i]) {
-                        box[i].setTop(this.clientRect.top + window.scrollY + (entryHeight * i))
+                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
                         box[i].setHeight(entryHeight)
                     }
                 }
@@ -100,7 +93,7 @@ KUIEntry.prototype.placeReservation = function (reservation) {
             }
             if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
 
-            domNode.style.top = `${this.clientRect.top + window.scrollY}px`
+            domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
             const left = leftbox * kview.get('day-width') + kview.get('margin-left')
             let max = 1
             let boxes = []
@@ -123,7 +116,7 @@ KUIEntry.prototype.placeReservation = function (reservation) {
                 if (!box) { continue }
                 for (let i = 0; i < max; i++) {
                     if (box[i]) {
-                        box[i].setTop(this.clientRect.top + window.scrollY + (entryHeight * i))
+                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
                         box[i].setHeight(entryHeight - 4)
                     }
                 }
