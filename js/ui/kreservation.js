@@ -405,6 +405,10 @@ KUIReservation.prototype.setParent = function (parent) {
 }
 
 KUIReservation.prototype.highlight = function () {
+    const kstate = KState(this)
+    if (kstate.get()) { const x = kstate.get().lowlight() }
+    kstate.set(this)
+
     const affaire = this.object.getRelation('kaffaire')
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')
@@ -422,6 +426,9 @@ KUIReservation.prototype.highlight = function () {
 }
 
 KUIReservation.prototype.lowlight = function () {
+    const kstate = KState(this)
+    if (kstate.get()) { kstate.unset() }
+
     const affaire = this.object.getRelation('kaffaire')
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')

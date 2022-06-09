@@ -152,8 +152,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/kstore.js', 'script'],
         ['../js/kobject.js', 'script'],
         ['../js/interaction/ontimeline.js', 'script'],
-        ['../js/ui/kform.js', 'script'],
 
+        ['../js/ui/kform.js', 'script'],
         ['../js/ui/klist.js', 'script'],
         ['../js/ui/kview.js', 'script'],
         ['../js/ui/klives.js', 'script'],
@@ -163,6 +163,9 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kaffaire.js', 'script'],
         ['../js/ui/calendar.js', 'script'],
         ['../js/ui/kclosable.js', 'script'],
+        ['../js/ui/kstate.js', 'script'],
+
+
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],
         ['../js/stores/kcontact.js', 'script'],
