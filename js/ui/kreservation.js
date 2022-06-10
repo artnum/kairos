@@ -477,9 +477,14 @@ KUIReservation.prototype.popDetails = function () {
             <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
             <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
             <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+        </div>
+        <div class="k-command">
+            <button data-action="print-affaire" class="ui k-small">Imprimer</button>
         </div>`
         //div.querySelector('.k-progress').appendChild(step.domNode)
-        div.querySelector('.k-command').addEventListener('click', this.doCommand.bind(this))
+        for (const kcomm of div.querySelectorAll('.k-command')) {
+            kcomm.addEventListener('click', this.doCommand.bind(this))
+        }
         document.body.appendChild(div)
         this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
         const closable = new KClosable()
@@ -558,6 +563,15 @@ KUIReservation.prototype.doCommand = function (event) {
                     this.object.set('end', day)
                     store.set(this.object)
                 }
+            })()
+            break
+        case 'print-affaire':
+            (() => {
+                const kaffaire = this.object.getRelation('kaffaire')
+                if (!kaffaire) { return }
+                const kproject = kaffaire.getRelation('kproject')
+                if (!kproject) { return }
+                window.open(KAIROS.URL(`${KAIROS.kaalURL}/admin/exec/export/bon.php?pid=${kproject.id}&travail=${kaffaire.id}`), '_blank')
             })()
             break
     }
