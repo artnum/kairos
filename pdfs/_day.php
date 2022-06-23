@@ -63,6 +63,7 @@ $kobjects = $kreservation->query([
 
 
 $atEnd = [];
+$atEnd2 = [];
 $byProjects = [];
 
 foreach($kobjects as $kobject) {
@@ -83,6 +84,15 @@ foreach($kobjects as $kobject) {
         continue;
     }
 
+    if (intval($status) === 4) {
+        if (!isset($atEnd2[$project->get('id') . $status])) {
+            $atEnd2[$project->get('id') . $status] = [];
+        }
+    
+        $atEnd2[$project->get('id') . $status][] = $kobject;
+        continue;
+    }
+
     if (!isset($byProjects[$project->get('id') . $status])) {
         $byProjects[$project->get('id') . $status] = [];
     }
@@ -96,7 +106,7 @@ foreach ($byProjects as &$byProject) {
     });
 }
 
-$byProjects = array_merge($byProjects, $atEnd);
+$byProjects = array_merge($byProjects, $atEnd, $atEnd2);
 
 $PDF = new LocationPDF();
 $PDF->AddPage();
