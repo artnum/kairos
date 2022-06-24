@@ -189,6 +189,7 @@ foreach ($byProjects as $kobjects) {
     }
     $kpdf->printTaggedLn(['%cb', $project->get('reference')], ['max-width' => 40]);
     $kpdf->printTaggedLn(['%c', $project->get('name')], ['max-width' => 40, 'multiline' => true ]);
+    if ($affaire->get('group')) { $kpdf->printTaggedLn(['%c', $affaire->get('group')], ['max-width' => 40, 'multiline' => true ]); }
 
     $kpdf->to_block_begin();
     $status = null;
