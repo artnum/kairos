@@ -432,3 +432,18 @@ span.spanReset {
 	background-color: lightsteelblue;
 
 }
+
+.subline {
+	color: greenyellow;
+	font-weight: bolder;
+}
+
+.subline span {
+	border: 1px solid transparent;
+	border-top: none;
+	border-bottom: none;;
+}
+
+.subline span i {
+	cursor: pointer;
+}

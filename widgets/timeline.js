@@ -1163,9 +1163,28 @@ define([
 
         day.setHours(12, 0, 0)
         let subLineCell = document.createElement('SPAN')
+        subLineCell.dataset.date = day.toISOString().split('T')[0]
+        subLineCell.innerHTML = `<i  data-action="get-pdf-day" class="far fa-calendar-alt"></i>`
         subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
         subLineCell.style.width = `var(--blocksize)`
         subLineFrag.appendChild(subLineCell)
+
+        subLineCell.addEventListener('click', event => {
+          console.log(event)
+          event.stopPropagation()
+          let node = event.target
+          while (node && !node.dataset.date) { node = node.parentNode }
+          if (!node || !node.dataset.date) { return }
+          
+          const date = new Date(node.dataset.date)
+          if (isNaN(date.getTime())) { return }
+
+          switch(event.target.dataset.action) {
+            default: return;
+            case 'get-pdf-day':
+              return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}`, '_blank')
+          }
+        })
 
         var d = this.makeDay(day)
         d.domNode.style.display = 'inline-block'
@@ -1175,11 +1194,6 @@ define([
         if (typeof window.Rent.Days[d.stamp] === 'undefined') {
           window.Rent.Days[d.stamp] = {}
         }
-
-        d.domNode.addEventListener('dblclick', (event) => {
-          event.stopPropagation()
-          window.open(`${KAIROS.getBase()}/pdfs/day/${event.target.dataset.artnumDay}`, '_blank')
-        })
 
         this.days.push(d)
         if (this.get('blockSize') > 20) {
