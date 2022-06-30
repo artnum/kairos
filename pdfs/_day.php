@@ -11,7 +11,7 @@ function drawHeaders ($pdf) {
 
     $pdf->background_block('#c4007a');
     $pdf->setColor('white');
-    foreach (['Chantier', 'Processus', 'Ouvrier', 'Remarque', 'Véhicule', 'Caisse'] as $header) {
+    foreach (['Chantier', 'Ouvrier', 'Remarque', 'Description', 'Véhicule', 'Caisse'] as $header) {
         $pdf->printTaggedLn(['%cb', $header]);
         $pdf->to_block_begin();
         $pdf->tab($i++);
@@ -122,11 +122,11 @@ $PDF->unsetHeaderFooterEvenOnly();
 $PDF->addTab(-0.5);*/
 
 $PDF->addTab(42);
-$PDF->addTab(62);
-$PDF->addTab(92);
-$PDF->addTab(132);
-$PDF->addTab(151);
-$PDF->addTab(122);
+$PDF->addTab(72);
+$PDF->addTab(104);
+$PDF->addTab(144);
+$PDF->addTab(163);
+$PDF->addTab(180);
 
 $PDF->SetY(38);
 $currentName = '';
@@ -192,7 +192,9 @@ foreach ($byProjects as $kobjects) {
     if ($i % 2 === 0) {
         $PDF->background_block('#EEEEEE');
     }
-    $kpdf->printTaggedLn(['%cb', $project->get('reference')], ['max-width' => 40]);
+    $kpdf->printTaggedLn(['%cb', $project->get('reference')], ['max-width' => 40, 'break' => false]);
+    $REFX = $kpdf->GetX();
+    $kpdf->br();
     $kpdf->printTaggedLn(['%c', $project->get('name')], ['max-width' => 40, 'multiline' => true ]);
     if ($affaire->get('group')) { $kpdf->printTaggedLn(['%c', $affaire->get('group')], ['max-width' => 40, 'multiline' => true ]); }
 
@@ -211,10 +213,13 @@ foreach ($byProjects as $kobjects) {
         if (!$status) { $status = $kstatus->get($kobject->get('status')); }
         if (in_array($kobject->get('target'), $targets)) { continue; }
         $targets[] = $kobject->get('target');
-        $kpdf->tab(2);
+        $kpdf->tab(1);
         $entry = $kentry->get($kobject->get('target'));
 
-        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 30, 'multiline' => true]);
+        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 40, 'multiline' => true, 'break' => false]);
+        $kpdf->tab(2);
+        if ($kobject->get('comment')) { $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 32, 'multiline' => true, 'break' => false]); }
+        $kpdf->br();
     }
 
     if (!$status) {
@@ -222,8 +227,9 @@ foreach ($byProjects as $kobjects) {
     }
     if ($status) {
         $kpdf->to_block_begin();
+        
+        $kpdf->SetX($REFX + 2);
         $kpdf->setColor($status->get('color')); 
-        $kpdf->tab(1);
         $kpdf->printTaggedLn(['%c', $status->get('name')], ['max-width' => 20]);
         $kpdf->setColor('black');
     } 
@@ -252,7 +258,9 @@ foreach ($byProjects as $kobjects) {
     $kpdf->to_block_begin();
 
     $kpdf->tab(3);
-    $kpdf->printTaggedLn(['%c', str_replace("\n", ' ', $kobject->get('comment') . ' '. $affaire->get('description'))], ['multiline' => true, 'max-width' => 40]);
+    $kpdf->printTaggedLn(['%cb', str_replace("\n", ' ', $affaire->get('reference'))], ['multiline' => true, 'max-width' => 40]);
+    $kpdf->tab(3);
+    $kpdf->printTaggedLn(['%c', str_replace("\n", ' ', $affaire->get('description'))], ['multiline' => true, 'max-width' => 40]);
     $PDF->to_block_end();
     $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
     $PDF->close_block();

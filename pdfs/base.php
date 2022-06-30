@@ -50,7 +50,7 @@ class BlankLocationPDF extends artnum\PDF {
       parent::__construct($options);
 
       if (!isset($options['margins'])) {
-         $this->SetMargins(20, 10, 20);
+         $this->SetMargins(12, 10, 12);
       } else {
          $this->SetMargins($options['margins'][0], $options['margins'][1], $options['margins'][2]);
       }
