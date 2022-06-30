@@ -1,0 +1,63 @@
+.kresource-stuff.k-drag-over {
+    background-color: lightslategray;
+}
+
+.kresource-container > div, .kresource-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.kresource-content {
+    display: block;
+    width: 100px;
+    min-height: fit-content;
+    border: 1px solid black;
+    margin: 2px;
+    font-size: 16px;
+}
+
+.kresource-stuff {
+    width: 260px;
+    min-height: max-content;
+    display: block !important;
+    padding: 6px;
+    border-width: 4px;
+}
+
+.kresource-stuff > div:last-child {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    color: black;
+    background-color: lightgray;
+    padding: 4px 0px;
+}
+
+.kresource-title {
+    font-size: 18px;
+    flex: 100%;
+}
+
+.kresource-resource {
+    padding: 6px;
+    cursor: pointer;
+}
+
+.kresource-resource[data-used] {
+    background-color: lightcoral;
+}
+
+.kresource-resource[data-used="0"] {
+    background-color: transparent !important;
+}
+
+.kresource-resource[data-used="1"] {
+    background-color: lightblue !important;
+}
+
+.kresource-resource .k-icon {
+    min-width: 18px;
+    min-height: 18px;
+    display: inline-block;
+}

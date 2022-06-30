@@ -19,6 +19,16 @@ function KStore(type, bindQuery = null) {
     return this
 }
 
+KStore.byKid = function (kid) {
+    if (!kid.startsWith('kid://')) { return Promise.resolve(null) }
+
+    const [type, id] = kid.substr(6).split('/', 2)
+    if (!type || !id) { return Promise.resolve(null) }
+
+    const kstore = new KStore(type)
+    return kstore.get(id)
+}
+
 KStore.save = function (kobject) {
     const kstore = new KStore(kobject.getType())
     const fields = KAIROS.stores[kobject.getType()].fields !== undefined ? KAIROS.stores[kobject.getType()].fields : []
@@ -203,7 +213,6 @@ KStore.prototype.query = function (query) {
 
 KStore.prototype.set = function (object, id = null) {
     return new Promise((resolve, reject) => {
-        console.log(object)
         const json = object instanceof KObject ? object.toJSON() : JSON.stringify(object)
         if (object instanceof KObject) {
             id = object.get('uid')

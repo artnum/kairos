@@ -419,3 +419,12 @@ CREATE TABLE IF NOT EXISTS "relation" (
 );
 
 CREATE UNIQUE INDEX "idxRelationSourceClosure" ON "relation" ("relation_source", "relation_closure");
+
+CREATE TABLE IF NOT EXISTS "rallocation" (
+	"rallocation_id" INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	"rallocation_target" INTEGER UNSIGNED NOT NULL,
+	"rallocation_source" INTEGER UNSIGNED NOT NULL,
+	"rallocation_type" CHAR(8) NOT NULL,
+	"rallocation_date" CHAR(10) NOT NULL COMMENT 'date of allocation YYYY-MM-DD',
+	"rallocation_hour" CHAR(5) DEFAULT NULL COMMENT 'hour of allocation, not necessary'
+);

@@ -5,6 +5,8 @@
 @import 'kentry-sort.css';
 @import 'kcalendar.css';
 @import 'kproject.css';
+@import 'kresource.css';
+
 
 body, html { margin: 0; padding: 0; }
 *[draggable] {

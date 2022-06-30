@@ -272,3 +272,58 @@ function iAddReservation (event) {
   function iDeleteReservation (event) {
 
   }
+
+  function KIOpenResourceAllocation (day) {
+    const r1 = new KStore('kstatus', {type: 2})
+    const stuffs = new KStore('kreservation')
+    const kaffaire = new KStore('kaffaire')
+    const kstatus = new KStore('kstatus', {type: 1})
+    const dayEnd = new KDate()
+    dayEnd.setTime(day.getTime())
+    const dayBegin = new KDate()
+    dayBegin.setTime(day.getTime())
+
+    dayBegin.setHours(0, 0, 0, 0)
+    dayEnd.setHours(24, 0, 0, 0)
+    Promise.all([
+      stuffs.query({
+        '#and': {
+          begin: ['<', dayEnd.toISOString().split('Z')[0]],
+          end: ['>', dayBegin.toISOString().split('Z')[0]],
+          deleted: '--'
+        }
+      }),
+      r1.query({name: '*'}), 
+    ])
+    .then(([reservations, r1data]) => {
+      const affaires = []
+      const qAffaires = []
+      for (const reservation of reservations) {
+        if (affaires.find((value) => reservation.get('affaire') === value)) { continue }
+        affaires.push(reservation.get('affaire'))
+        qAffaires.push(new Promise(resolve => {
+          kaffaire.get(reservation.get('affaire'))
+          .then(affaire => {
+            kstatus.get(affaire.get('status'))
+            .then(status => {
+              if (status) { affaire.set('color', status.get('color')) }
+              resolve(affaire)
+            })
+          })
+        }))
+      }
+
+      return Promise.all(qAffaires)
+      .then(affaires => {
+        const kr = new KResource(r1data, affaires, day, 'afftbcar')
+        return kr.render()
+      })
+    })
+    .then(([resources, stuffs]) => {
+      const div = document.createElement('DIV')
+      div.appendChild(resources)
+      div.appendChild(stuffs)
+      const popup = new KLateral().open()
+      popup.add(div, {title: `Véhicules du ${day.shortDate()}`})
+    })
+  }

@@ -631,13 +631,14 @@ define([
       this.domNode.addEventListener('drop', event => {
         event.preventDefault()
         let entryNode = event.target
-        while (entryNode && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
+        while (entryNode && entryNode.classList && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
         if (!entryNode) { return ; }
         const kident = event.dataTransfer.getData('text/plain')
         if (!kident) { return }
         if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
         let object = event.ctrlKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
+        if (object.getType() !== 'kreservation') { return }
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
         const diff = end.getTime() - begin.getTime()
@@ -1164,13 +1165,12 @@ define([
         day.setHours(12, 0, 0)
         let subLineCell = document.createElement('SPAN')
         subLineCell.dataset.date = day.toISOString().split('T')[0]
-        subLineCell.innerHTML = `<i  data-action="get-pdf-day" class="far fa-calendar-alt"></i>`
+        subLineCell.innerHTML = `<i  data-action="get-pdf-day" class="far fa-calendar-alt"></i> <i data-action="plan-resource" class="fas fa-car"></i>`
         subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
         subLineCell.style.width = `var(--blocksize)`
         subLineFrag.appendChild(subLineCell)
 
         subLineCell.addEventListener('click', event => {
-          console.log(event)
           event.stopPropagation()
           let node = event.target
           while (node && !node.dataset.date) { node = node.parentNode }
@@ -1183,6 +1183,8 @@ define([
             default: return;
             case 'get-pdf-day':
               return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}`, '_blank')
+            case 'plan-resource':
+              return KIOpenResourceAllocation(date);
           }
         })
 
