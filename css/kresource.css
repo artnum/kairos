@@ -10,7 +10,7 @@
 
 .kresource-content {
     display: block;
-    width: 100px;
+    width: 140px;
     min-height: fit-content;
     border: 1px solid black;
     margin: 2px;
@@ -18,7 +18,7 @@
 }
 
 .kresource-stuff {
-    width: 260px;
+    width: 258px;
     min-height: max-content;
     display: block !important;
     padding: 6px;
