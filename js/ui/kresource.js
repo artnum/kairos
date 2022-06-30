@@ -21,6 +21,7 @@ KResource.prototype.showResourceToStuff = function (resource, resourceDom, stuff
     div.classList.add('kresource', 'kresource-content', 'kresource-resource')
     div.dataset.id = resource.uid
     div.dataset.dbid = uid
+    div.style.setProperty('border-color', resource.color)
     div.innerHTML = `<span class="k-icon">${resource.symbol}</span> <span class="k-name">${resource.name}</span>`
     window.requestAnimationFrame(() => stuffDom.lastElementChild.appendChild(div))
     div.addEventListener('click', event =>{
@@ -111,6 +112,7 @@ KResource.prototype.render = function () {
                 r.addEventListener('dragover', event => event.preventDefault())
                 r.dataset.id = resource.id
                 r.classList.add('kresource', 'kresource-content', 'kresource-resource')
+                r.style.setProperty('border-color', resource.color)
                 r.innerHTML = `<span class="k-icon">${resource.symbol}</span> <span class="k-name">${resource.name}</span>`
 
                 group.appendChild(r)

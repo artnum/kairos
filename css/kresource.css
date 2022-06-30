@@ -12,7 +12,7 @@
     display: block;
     width: 140px;
     min-height: fit-content;
-    border: 1px solid black;
+    border: 2px solid black;
     margin: 2px;
     font-size: 16px;
 }
