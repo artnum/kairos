@@ -40,10 +40,12 @@ $kentry = new KStore($KAppConf, 'kentry');
 $kaffaire = new KStore($KAppConf, 'kaffaire');
 $kproject = new KStore($KAppConf, 'kproject');
 $kstatus = new KStore($KAppConf, 'kstatus');
+$kalloc = new KStore($KAppConf, 'krallocation');
+
 
 $day = $_GET['id'];
-$dayBegin = new DateTime($_GET['id']);
-$dayEnd = new DateTime($_GET['id']);
+$dayBegin = new DateTime($_GET['id'], new DateTimeZone('UTC'));
+$dayEnd = new DateTime($_GET['id'], new DateTimeZone('UTC'));
 
 $weekDay = $dayBegin->format('w');
 
@@ -51,16 +53,18 @@ $dayBegin->setTime(0, 0, 0, 0);
 $dayEnd->setTime(24, 0, 0, 0);
 
 
+$allocations = $kalloc->query(['type' => 'afftbcar', 'date' =>$dayBegin->format('Y-m-d') ]);
+
 $dayBegin = explode('+', $dayBegin->format('c'))[0];
 $dayEnd = explode('+', $dayEnd->format('c'))[0];
 
 $kobjects = $kreservation->query([
     '#and' => [
         'begin' => ['<', $dayEnd],
-        'end' => ['>', $dayBegin]        
+        'end' => ['>', $dayBegin],
+        'deleted' => '--'   
     ]
 ]);
-
 
 $atEnd = [];
 $atEnd2 = [];
@@ -75,29 +79,30 @@ foreach($kobjects as $kobject) {
     $project = $kproject->get($affaire->get('project'));
     if (!$project) { continue; }
 
+    $affaireid = $affaire->get('id');
     if (intval($status) === 5) {
-        if (!isset($atEnd[$project->get('id') . $status])) {
-            $atEnd[$project->get('id') . $status] = [];
+        if (!isset($atEnd[$project->get('id') . $status . $affaireid])) {
+            $atEnd[$project->get('id') . $status . $affaireid] = [];
         }
     
-        $atEnd[$project->get('id') . $status][] = $kobject;
+        $atEnd[$project->get('id') . $status . $affaireid][] = $kobject;
         continue;
     }
 
     if (intval($status) === 4) {
-        if (!isset($atEnd2[$project->get('id') . $status])) {
-            $atEnd2[$project->get('id') . $status] = [];
+        if (!isset($atEnd2[$project->get('id') . $status . $affaireid])) {
+            $atEnd2[$project->get('id') . $status . $affaireid] = [];
         }
     
-        $atEnd2[$project->get('id') . $status][] = $kobject;
+        $atEnd2[$project->get('id') . $status . $affaireid][] = $kobject;
         continue;
     }
 
-    if (!isset($byProjects[$project->get('id') . $status])) {
-        $byProjects[$project->get('id') . $status] = [];
+    if (!isset($byProjects[$project->get('id') . $status . $affaireid])) {
+        $byProjects[$project->get('id') . $status . $affaireid] = [];
     }
 
-    $byProjects[$project->get('id') . $status][] = $kobject;
+    $byProjects[$project->get('id') . $status . $affaireid][] = $kobject;
 }
 
 foreach ($byProjects as &$byProject) {
@@ -222,6 +227,27 @@ foreach ($byProjects as $kobjects) {
         $kpdf->printTaggedLn(['%c', $status->get('name')], ['max-width' => 20]);
         $kpdf->setColor('black');
     } 
+
+    $kpdf->to_block_begin();
+    $groups = [];
+    foreach ($allocations as $alloc) {
+        if ($alloc->get('target') == $affaire->get('uid')) {
+            
+            $what = $kstatus->get($alloc->get('source'));
+            if (!isset($groups[$what->get('group')])) {
+                $groups[$what->get('group')] = 0;
+                $kpdf->to_block_begin();
+            } else {
+                $kpdf->SetY($groups[$what->get('group')]);
+            }
+            if ($what) {
+                if ($what->get('group') === 'Caisse') { $kpdf->tab(5); }
+                else { $kpdf->tab(4); }
+                $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 20]);
+                $groups[$what->get('group')] = $kpdf->GetY();
+            }
+        }
+    }
 
     $kpdf->to_block_begin();
 
