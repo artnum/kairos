@@ -204,10 +204,10 @@ foreach ($reservations as $reservation) {
    $begin = new DateTime($reservation->get('begin'));
    $end = new DateTime($reservation->get('end'));
 
-   $origin = (($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400) * DAY_WIDTH ;
+   $origin = round((($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400)) * DAY_WIDTH - 17; 
    if ($origin < DAY_VIEW_ORIGIN) { $origin = DAY_VIEW_ORIGIN; }
 
-   $width = ((($end->getTimestamp() - $begin->getTimestamp()) / 86400) * DAY_WIDTH);
+   $width = ceil((($end->getTimestamp() - $begin->getTimestamp()) / 86400)) * DAY_WIDTH - 1;
    if ($width + $origin >= VIEWPORT_MAX_WIDTH) {
       $width = VIEWPORT_MAX_WIDTH - $origin + $margin[1];
    }
@@ -252,10 +252,11 @@ foreach ($reservations as $reservation) {
 
    $effectiveHeight = (LINE_HEIGHT - 2) / $reservation->get('overlap-count');
    $effectiveTop = $pdf->GetY() + ($effectiveHeight * $reservation->get('overlap-level'));
-   $pdf->setColor($color, 'fill');
-   $pdf->Rect($origin, $effectiveTop + $effectiveHeight - 3, $width, 3, 'F');
+
    $pdf->setColor('white', 'fill');
-   $pdf->Rect($origin, $effectiveTop, $width, $effectiveHeight, 'D');
+   $pdf->Rect($origin, $effectiveTop, $width, $effectiveHeight, 'FD');
+   $pdf->setColor($color, 'fill');
+   $pdf->Rect($origin, $effectiveTop + $effectiveHeight - 3.1, $width, 3, 'F');
 
    $pdf->setColor('black');
 
