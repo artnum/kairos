@@ -56,7 +56,7 @@ $kalloc = new KStore($KAppConf, 'krallocation');
 
 $reservations = $kreservation->query([
    '#and' => [
-       'begin' => ['<', $dayEnd],
+       'begin' => ['<=', $dayEnd],
        'end' => ['>', $dayBegin],
        'deleted' => '--',
    ]
