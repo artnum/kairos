@@ -132,7 +132,7 @@ foreach ($byProjects as $k => $kobject) {
     $order[$k] = $min;
 }
 
-asort($order);
+arsort($order);
 
 $PDF = new LocationPDF();
 $PDF->AddPage();
