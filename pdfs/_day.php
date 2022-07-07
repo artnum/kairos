@@ -114,25 +114,22 @@ foreach ($byProjects as &$byProject) {
 $byProjects = array_merge($byProjects, $atEnd, $atEnd2);
 
 $order = [];
-$targets = [];
-foreach ($byProjects as $k => $kobject) {
-    $min = 0;
+foreach ($byProjects as $k => $kobjects) {
+    $min = 999999;
     foreach ($kobjects as $kobject) {
-        $affaire = $kaffaire->get($kobject->get('affaire'));
-        $status = $kobject->get('status');
-        if (!$affaire)  { continue; }
-        if (!$status) { $status = $affaire->get('status'); }
-        if ($status === 5) { $order[$k] = 0; break; }
-        if ($status === 4) { $order[$k] = 1; break; }
-        if (in_array($kobject->get('target'), $targets)) { continue; }
-        $targets[] = $kobject->get('target');
-        $person = $kentry->get($kobject->get('target'));
-        if ($person->get('order') < 0) { continue; }
-        if ($min > $person->get('order')) { $min = $person->get('order'); }
+         $affaire = $kaffaire->get($kobject->get('affaire'));
+	 $status = $kobject->get('status');
+	 if ($affaire)  { 
+	    if (!$status) { $status = $affaire->get('status'); }
+	    if (intval($status) === 5) { $min = 999998; break; }
+	    if (intval($status) === 4) { $min = 999999; break; }
+	}
+	$person = $kentry->get($kobject->get('target'));
+	if (intval($person->get('order')) < 0) { continue; }
+        if ($min > intval($person->get('order'))) { $min = intval($person->get('order')); }
     }
     $order[$k] = $min;
 }
-
 asort($order);
 
 $PDF = new LocationPDF();
