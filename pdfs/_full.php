@@ -27,7 +27,6 @@ function array_find($array, $func) {
 $pdf = new FullPlan();
 if (!empty($_GET['begin'])) {
    $dayBegin = new DateTime($_GET['begin'], new DateTimeZone('UTC'));
-   $dayBegin->sub(new DateInterval('P1D'));
 } else {
    $dayBegin = new DateTime('now', new DateTimeZone('UTC'));
    $dayBegin->sub(new DateInterval('P2D'));
@@ -35,19 +34,11 @@ if (!empty($_GET['begin'])) {
 
 if (!empty($_GET['end'])) {
    $dayEnd = new DateTime($_GET['end'], new DateTimeZone('UTC'));
-   $dayEnd->sub(new DateInterval('P1D'));
 
 } else {
    $dayEnd = new DateTime('now', new DateTimeZone('UTC'));
    $dayEnd->add(new DateInterval('P13D'));
 }
-
-$dayBeginDisplay = new DateTime('now');
-$dayBeginDisplay->setTimestamp($dayBegin->getTimestamp());
-$dayBeginDisplay->setTime(24, 0, 0, 0);
-$dayEndDisplay = new DateTime('now');
-$dayEndDisplay->setTimestamp($dayEnd->getTimestamp());
-$dayEndDisplay->setTime(24, 0, 0, 0);
 
 $dayBegin->setTime(0, 0, 0, 0);
 $dayEnd->setTime(24, 0, 0, 0);
@@ -141,7 +132,7 @@ foreach ($boxes as $box) {
 $dateFormater = new IntlDateFormatter(
    'fr_CH',  IntlDateFormatter::FULL,
    IntlDateFormatter::FULL,
-   'Europe/Zurich',
+   'UTC',
    IntlDateFormatter::GREGORIAN,
    'EEEE, dd MMMM y'
 );
@@ -149,7 +140,7 @@ $dateFormater = new IntlDateFormatter(
 $dateFormaterSmall = new IntlDateFormatter(
    'fr_CH',  IntlDateFormatter::FULL,
    IntlDateFormatter::FULL,
-   'Europe/Zurich',
+   'UTC',
    IntlDateFormatter::GREGORIAN,
    'd.M'
 );
@@ -159,7 +150,10 @@ define('HEADER_SPACE', 20);
 $pdf->AddPage();
 $pdf->setFontSize(5);
 $pdf->setColor('black');
-$pdf->printTaggedLn(['%cb', 'Planning du ' . $dateFormater->format($dayBeginDisplay) . ' au ' . $dateFormater->format($dayEndDisplay)]);
+$end = new DateTime();
+$end->setTimestamp($END->getTimestamp());
+$end->setTime(-1, 0);
+$pdf->printTaggedLn(['%cb', 'Planning du ' . $dateFormater->format($BEGIN) . ' au ' . $dateFormater->format($end)]);
 $pdf->setAutoPageBreak(false, 20);
 $margin = $pdf->getMargin();
 
@@ -198,6 +192,7 @@ define('VIEWPORT_MAX_WIDTH', (DAY_WIDTH * $daysNumber) + DAY_VIEW_ORIGIN - $marg
 $maxX = 0;
 $date = new DateTime('now', new DateTimeZone('UTC'));
 $date->setTimestamp($BEGIN->getTimestamp());
+$date->setTime(-1, 0, 0);
 $pdf->setColor('white');
 for ($i = 0; $i < $daysNumber; $i++) {
    $pdf->SetFont('dejavu-bold');
@@ -218,8 +213,9 @@ for ($i = 0; $i < $daysNumber; $i++) {
    $pdf->setXY((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN) - ((DAY_WIDTH / 2) + ($width / 2)), 12 + $margin[0]);
    $pdf->Cell($width, 0, $str);
    
-   $date->setTimestamp($date->getTimestamp() + 86400);
    $pdf->drawLine(($i * DAY_WIDTH) + DAY_VIEW_ORIGIN, $margin[0] + 7, VIEWPORT_HEIGHT, -90, 'line', ['color' => LINE_COLOR]);
+   $date->setTimestamp($date->getTimestamp() + 86400);
+
 }
 if (DAY_WIDTH < 16) {
    $pdf->setFontSize(2);
