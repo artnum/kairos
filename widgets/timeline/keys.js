@@ -51,7 +51,7 @@ define([
     constructor: function () {
       this.func = null
       this.suggest = null
-      this.commandLetters = [ 'j', 'm', 'r', 't', 'p' , 'k' ]
+      this.commandLetters = [ 'j', 'm', 'r', 't', 'p' , 'k', 'i' ]
 
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
@@ -215,6 +215,35 @@ define([
         case ':':
           this.goToSearchBox()
           this.func = this.cmdProcessor
+          break
+        case 'i':
+          const popup = new KPopup('Imprimer le planning', {fitContent: true})
+          const form = document.createElement('FORM')
+          form.innerHTML = `
+            <label for="begin">Début : <input type="date" name="begin"></label><br>
+            <label for="begin">Début : <input type="date" name="end"></label><br>
+            <button type="submit">Imprimer</button><button type="reset">Annuler</button>
+          `
+          form.addEventListener('reset', _ => {
+            popup.close()
+          })
+          form.addEventListener('submit', event => {
+            event.preventDefault()
+            const data = new FormData(form)
+
+            const url = new URL(`${KAIROS.getBase()}/pdfs/full/`)
+            const begin = data.get('begin')
+            const end = data.get('end')
+
+            if (begin !== '') { url.searchParams.set('begin', begin) }
+            if (end !== '') { url.searchParams.set('end', end) }
+    
+            window.open(url, '_blank')
+            popup.close()
+          })
+          popup.setContentDiv(form)
+          popup.open()
+          done = true
           break
         case 'p':
           const kstore = new KStore('kproject')

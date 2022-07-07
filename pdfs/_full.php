@@ -25,25 +25,35 @@ function array_find($array, $func) {
 }
 
 $pdf = new FullPlan();
+if (!empty($_GET['begin'])) {
+   $dayBegin = new DateTime($_GET['begin'], new DateTimeZone('UTC'));
+   $dayBegin->sub(new DateInterval('P1D'));
+} else {
+   $dayBegin = new DateTime('now', new DateTimeZone('UTC'));
+   $dayBegin->sub(new DateInterval('P2D'));
+}
 
-$dayBegin = new DateTime('now', new DateTimeZone('UTC'));
-$dayEnd = new DateTime('now', new DateTimeZone('UTC'));
+if (!empty($_GET['end'])) {
+   $dayEnd = new DateTime($_GET['end'], new DateTimeZone('UTC'));
+   $dayEnd->sub(new DateInterval('P1D'));
+
+} else {
+   $dayEnd = new DateTime('now', new DateTimeZone('UTC'));
+   $dayEnd->add(new DateInterval('P13D'));
+}
 
 $dayBegin->setTime(0, 0, 0, 0);
 $dayEnd->setTime(24, 0, 0, 0);
-
-$dayBegin->sub(new DateInterval('P5D'));
-$dayEnd->add(new DateInterval('P5D'));
 
 $BEGIN = new DateTime('now', new DateTimeZone('UTC'));
 $BEGIN->setTimestamp($dayBegin->getTimestamp());
 $END = new DateTime('now', new DateTimeZone('UTC'));
 $END->setTimestamp($dayEnd->getTimestamp());
 
-$daysNumber = ($dayEnd->getTimestamp() - $dayBegin->getTimestamp()) / 86400;
+$daysNumber = floor(($END->getTimestamp() - $BEGIN->getTimestamp()) / 86400);
 
-$dayBegin = explode('+', $dayBegin->format('c'))[0];
-$dayEnd = explode('+', $dayEnd->format('c'))[0];
+$dayBegin = explode('+', $BEGIN->format('c'))[0];
+$dayEnd = explode('+', $END->format('c'))[0];
 
 $kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--']);
 $kentry = new KStore($KAppConf, 'kentry');
@@ -56,7 +66,7 @@ $kalloc = new KStore($KAppConf, 'krallocation');
 
 $reservations = $kreservation->query([
    '#and' => [
-       'begin' => ['<=', $dayEnd],
+       'begin' => ['<', $dayEnd],
        'end' => ['>', $dayBegin],
        'deleted' => '--',
    ]
@@ -86,12 +96,13 @@ foreach($reservations as $reservation) {
    $begin = new DateTime($reservation->get('begin'));
    $end = new DateTime($reservation->get('end'));
 
-   $start = round(($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400);
-   $end = round(($end->getTimestamp() - $END->getTimestamp()) / 86400);
-
-   if ($start < 0) { $start = 0; }
+   $start = floor(($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400);
+   $end =$start + floor(($end->getTimestamp() - $begin->getTimestamp()) / 86400);
+   if ($start < 0) { 
+	   $start = 0; 
+	   if ($end <= 0) { $reservation->set('-no-display', true); continue; }
+   }
    if ($end > $daysNumber) { $end = $daysNumber; }
-
    for ($j = $start; $j <= $end; $j++) {
       $boxes[$reservation->get('target')][$j][] = $reservation;
    }
@@ -105,10 +116,12 @@ foreach ($boxes as $box) {
       foreach ($box as $k => $cell) {
          if (!is_array($cell)) { $used[] = $k; continue; }
          if (in_array($k, $used)) { continue; }
+         if (!isset($box[$biggest])) { continue; }
          if (count($cell) > count($box[$biggest])) { $biggest = $k; }
       }
       $used[] = $biggest;
       $i = 0;
+      if (!isset($box[$biggest])) { continue; }
       foreach ($box[$biggest] as $reservation) {
          if (!($reservation->get('overlap-count'))) {
             $reservation->set('overlap-count', count($box[$biggest]));
@@ -122,6 +135,7 @@ foreach ($boxes as $box) {
 define('HEADER_SPACE', 20);
 
 $pdf->AddPage();
+$pdf->setAutoPageBreak(false, 20);
 $margin = $pdf->getMargin();
 
 define('VIEWPORT_HEIGHT', $pdf->GetPageHeight() - ($margin[0] + $margin[1]));
@@ -201,10 +215,11 @@ $pdf->drawLine($margin[3], $pdf->GetY() + LINE_HEIGHT - 1, VIEWPORT_MAX_WIDTH, 0
 $pdf->setFontSize(2.2);
 
 foreach ($reservations as $reservation) {
+	if ($reservation->get('-no-display')) { continue; }	
    $begin = new DateTime($reservation->get('begin'));
    $end = new DateTime($reservation->get('end'));
 
-   $origin = round((($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400)) * DAY_WIDTH - 17; 
+   $origin = (round((($begin->getTimestamp() - $BEGIN->getTimestamp()) / 86400)) * DAY_WIDTH) + DAY_VIEW_ORIGIN; 
    if ($origin < DAY_VIEW_ORIGIN) { $origin = DAY_VIEW_ORIGIN; }
 
    $width = ceil((($end->getTimestamp() - $begin->getTimestamp()) / 86400)) * DAY_WIDTH - 1;
@@ -225,7 +240,9 @@ foreach ($reservations as $reservation) {
    $pdf->SetX(0);
 
    $affaire = $kaffaire->get($reservation->get('affaire'));
+   if (!$affaire) { continue; }
    $project = $kproject->get($affaire->get('project'));
+   if (!$project) { continue; }
    $status = $kstatus->get($reservation->get('status'));
    $color = null;
    if ($status) {
@@ -266,13 +283,15 @@ foreach ($reservations as $reservation) {
    $pdf->Cell($width, 0, $project->get('reference'));
    $x = $pdf->GetX();
    $pdf->SetFont('dejavu');
-   $pdf->SetX($origin + $strWidth);
 
-   $pdf->Cell($width - $strWidth - 1, 0, ' ' . $project->get('name'));
+   $pdf->SetXY($origin + $strWidth + 1, $effectiveTop + 1);
+   $pdf->printTaggedLn(['%c', $project->get('name')], ['max-width' => $width - ($strWidth + 1) ]);
+//   $pdf->Cell($width - $strWidth - 1, 0, ' ' . $project->get('name'));
    //$pdf->printTaggedLn(['%cb', $project->get('reference'), '%c', ' ' . $project->get('name')], ['max-width' => $width]);
    $pdf->SetXY($origin, $effectiveTop + 5);
-   $pdf->Cell($width, 0, $affaire->get('reference') . ' ' . $affaire->get('description'));
-   //$pdf->printTaggedLn(['%c', $affaire->get('reference') . ' ' . $affaire->get('description')], ['max-height' => 15,'max-width' => $width, 'multiline' => true]);
+
+   //$pdf->Cell($width, 0, $affaire->get('reference') . ' ' . $affaire->get('description'));
+   $pdf->printTaggedLn(['%c', $affaire->get('reference') . ' ' . $affaire->get('description')], ['max-height' => 15,'max-width' => $width - 1, 'multiline' => true]);
 
    $pdf->vtab($currentUser->get('pdf-index'));
    if ($origin + $width > VIEWPORT_MAX_WIDTH) {
