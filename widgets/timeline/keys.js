@@ -221,7 +221,7 @@ define([
           const form = document.createElement('FORM')
           form.innerHTML = `
             <label for="begin">Début : <input type="date" name="begin"></label><br>
-            <label for="begin">Début : <input type="date" name="end"></label><br>
+            <label for="begin">Fin : <input type="date" name="end"></label><br>
             <button type="submit">Imprimer</button><button type="reset">Annuler</button>
           `
           form.addEventListener('reset', _ => {
