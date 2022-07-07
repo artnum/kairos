@@ -42,6 +42,13 @@ if (!empty($_GET['end'])) {
    $dayEnd->add(new DateInterval('P13D'));
 }
 
+$dayBeginDisplay = new DateTime('now');
+$dayBeginDisplay->setTimestamp($dayBegin->getTimestamp());
+$dayBeginDisplay->setTime(24, 0, 0, 0);
+$dayEndDisplay = new DateTime('now');
+$dayEndDisplay->setTimestamp($dayEnd->getTimestamp());
+$dayEndDisplay->setTime(24, 0, 0, 0);
+
 $dayBegin->setTime(0, 0, 0, 0);
 $dayEnd->setTime(24, 0, 0, 0);
 
@@ -131,10 +138,28 @@ foreach ($boxes as $box) {
    }
 }
 
+$dateFormater = new IntlDateFormatter(
+   'fr_CH',  IntlDateFormatter::FULL,
+   IntlDateFormatter::FULL,
+   'Europe/Zurich',
+   IntlDateFormatter::GREGORIAN,
+   'EEEE, dd MMMM y'
+);
+
+$dateFormaterSmall = new IntlDateFormatter(
+   'fr_CH',  IntlDateFormatter::FULL,
+   IntlDateFormatter::FULL,
+   'Europe/Zurich',
+   IntlDateFormatter::GREGORIAN,
+   'd.M'
+);
 
 define('HEADER_SPACE', 20);
 
 $pdf->AddPage();
+$pdf->setFontSize(5);
+$pdf->setColor('black');
+$pdf->printTaggedLn(['%cb', 'Planning du ' . $dateFormater->format($dayBeginDisplay) . ' au ' . $dateFormater->format($dayEndDisplay)]);
 $pdf->setAutoPageBreak(false, 20);
 $margin = $pdf->getMargin();
 
@@ -169,36 +194,44 @@ define('VIEWPORT_MAX_WIDTH', (DAY_WIDTH * $daysNumber) + DAY_VIEW_ORIGIN - $marg
 
 /* ** BEGIN LINES ** */
 /* add 5 mm space before start of days */
-$dateFormater = new IntlDateFormatter(
-   'fr_CH',  IntlDateFormatter::FULL,
-   IntlDateFormatter::FULL,
-   'Europe/Zurich',
-   IntlDateFormatter::GREGORIAN,
-   'EEEE, dd MMMM y'
-);
+
 $maxX = 0;
 $date = new DateTime('now', new DateTimeZone('UTC'));
 $date->setTimestamp($BEGIN->getTimestamp());
 $pdf->setColor('white');
 for ($i = 0; $i < $daysNumber; $i++) {
    $pdf->SetFont('dejavu-bold');
-   $str = $dateFormater->format($date);
-
+   if (DAY_WIDTH < 16) {
+      $pdf->setFontSize(2);
+      $str = $dateFormaterSmall->format($date);
+   } else {
+      $str = $dateFormater->format($date);
+      if (DAY_WIDTH < 46) {
+         $pdf->setFontSize(2.6);
+      }
+   }
    $width = $pdf->GetStringWidth($str);
 
    $pdf->setColor('black', 'fill');
-   $pdf->Rect((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN), $margin[0] + 2, DAY_WIDTH, 6, 'F');
-
-   $pdf->setXY((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN) - ((DAY_WIDTH / 2) + ($width / 2)), 5 + $margin[0]);
+   $pdf->Rect((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN), $margin[0] + 9, DAY_WIDTH, 6, 'F');
+   
+   $pdf->setXY((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN) - ((DAY_WIDTH / 2) + ($width / 2)), 12 + $margin[0]);
    $pdf->Cell($width, 0, $str);
+   
    $date->setTimestamp($date->getTimestamp() + 86400);
-   $pdf->drawLine(($i * DAY_WIDTH) + DAY_VIEW_ORIGIN, $margin[0], VIEWPORT_HEIGHT, -90, 'line', ['color' => LINE_COLOR]);
+   $pdf->drawLine(($i * DAY_WIDTH) + DAY_VIEW_ORIGIN, $margin[0] + 7, VIEWPORT_HEIGHT, -90, 'line', ['color' => LINE_COLOR]);
 }
-$str = $dateFormater->format($date);
+if (DAY_WIDTH < 16) {
+   $pdf->setFontSize(2);
+   $str = $dateFormaterSmall->format($date);
+} else {
+   $str = $dateFormater->format($date);
+}
 $width = $pdf->GetStringWidth($str);
-$pdf->setXY((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN) - ((DAY_WIDTH / 2) + ($width / 2)), 5 + $margin[0]);
+$pdf->setXY((($i * DAY_WIDTH) + DAY_VIEW_ORIGIN) - ((DAY_WIDTH / 2) + ($width / 2)), 12 + $margin[0]);
 $pdf->Cell($width, 0, $str);
-$pdf->drawLine(($i * DAY_WIDTH) + DAY_VIEW_ORIGIN, $margin[0], VIEWPORT_HEIGHT, -90, 'line', ['color' => LINE_COLOR]);
+
+$pdf->drawLine(($i * DAY_WIDTH) + DAY_VIEW_ORIGIN, $margin[0] + 7, VIEWPORT_HEIGHT, -90, 'line', ['color' => LINE_COLOR]);
 
 for ($i = 0; $i < count($users); $i++) {
    $pdf->vtab($i + 1);
