@@ -116,23 +116,24 @@ $byProjects = array_merge($byProjects, $atEnd, $atEnd2);
 $order = [];
 $targets = [];
 foreach ($byProjects as $k => $kobject) {
-    $min = 9999999;
+    $min = 0;
     foreach ($kobjects as $kobject) {
         $affaire = $kaffaire->get($kobject->get('affaire'));
         $status = $kobject->get('status');
         if (!$affaire)  { continue; }
         if (!$status) { $status = $affaire->get('status'); }
-        if ($status === 5) { $order[$k] = 9999999; break; }
-        if ($status === 4) { $order[$k] = 9999998; break; }
+        if ($status === 5) { $order[$k] = 0; break; }
+        if ($status === 4) { $order[$k] = 1; break; }
         if (in_array($kobject->get('target'), $targets)) { continue; }
         $targets[] = $kobject->get('target');
         $person = $kentry->get($kobject->get('target'));
+        if ($person->get('order') < 0) { continue; }
         if ($min > $person->get('order')) { $min = $person->get('order'); }
     }
     $order[$k] = $min;
 }
 
-arsort($order);
+asort($order);
 
 $PDF = new LocationPDF();
 $PDF->AddPage();
