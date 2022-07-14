@@ -324,6 +324,11 @@ function iAddReservation (event) {
       div.appendChild(resources)
       div.appendChild(stuffs)
       const popup = new KLateral().open()
+
       popup.add(div, {title: `Véhicules du ${day.shortDate()}`})
+      const box = resources.getBoundingClientRect()
+      window.requestAnimationFrame(() => {
+        stuffs.style.setProperty('padding-top', `${box.height + 8}px`)
+      })
     })
   }

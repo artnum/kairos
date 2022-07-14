@@ -2,6 +2,13 @@
     background-color: lightslategray;
 }
 
+.kresource-container-resources {
+    position: fixed;
+    max-width: 560px;
+    background-color: white;
+    top: 44px;
+}
+
 .kresource-container > div, .kresource-container {
     display: flex;
     flex-direction: row;
@@ -18,7 +25,7 @@
 }
 
 .kresource-stuff {
-    width: 258px;
+    width: 252px;
     min-height: max-content;
     display: block !important;
     padding: 6px;
