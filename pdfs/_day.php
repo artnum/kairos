@@ -236,6 +236,7 @@ foreach ($order as $k => $v) {
         $targets[] = $kobject->get('target');
         $kpdf->tab(1);
         $entry = $kentry->get($kobject->get('target'));
+        if (intval($entry->get('disabled')) === 1) { continue; }
 
         $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 40, 'multiline' => true, 'break' => false]);
         $kpdf->tab(2);
