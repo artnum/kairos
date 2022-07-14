@@ -7,6 +7,7 @@
     max-width: 560px;
     background-color: white;
     top: 44px;
+    pointer-events: none;
 }
 
 .kresource-container > div, .kresource-container {
