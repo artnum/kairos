@@ -29,9 +29,11 @@ function KMouse (node) {
         })
     })
     .then(box => {
-        let x = KAIROS.mouse.clientX + 20
-        if (x + 260 > window.innerWidth) {
-            x -= 300;
+        let x = KAIROS.mouse.clientX
+        if (x + box.width + 20 > window.innerWidth) {
+            x -= (box.width + 20);
+        } else {
+            x += 20
         }
         window.requestAnimationFrame(() => {
             domNode.style.left =  `${x}px`
