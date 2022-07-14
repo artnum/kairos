@@ -50,6 +50,7 @@
 .kresource-resource {
     padding: 6px;
     cursor: pointer;
+    pointer-events: auto;
 }
 
 .kresource-resource[data-used] {
