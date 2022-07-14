@@ -80,7 +80,7 @@ function KUIReservation (object) {
                     </div>
                 `
                 KMouse(node)
-            }, 1500)
+            }, 800)
         }
         this.showRelation()
     })
