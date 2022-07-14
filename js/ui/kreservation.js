@@ -66,14 +66,33 @@ function KUIReservation (object) {
     this.loadRelation()
     this.domNode.addEventListener('mouseenter', event => {
         if (KAIROS.getState('lockShowHideRelation')) { return }
+        if (!this.hoverTime) {
+            this.hoverTime = setTimeout(() => {
+                const affaire = this.object.getRelation('kaffaire')
+                if (!affaire) { return }
+                const project = affaire.getRelation('kproject')
+                if (!project) { return }            
+                const node = document.createElement('DIV')
+                node.innerHTML = `
+                    <div class="k-content">
+                        <div class="k-field uid"><span class="k-value">${project.getFirstTextValue('', 'reference')}</span> <span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+                        <div class="k-field reference"><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span> <span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+                    </div>
+                `
+                KMouse(node)
+            }, 1500)
+        }
         this.showRelation()
     })
     this.domNode.addEventListener('mouseleave', event => {
         if (KAIROS.getState('lockShowHideRelation')) { return }
+        if (this.hoverTime) { window.clearTimeout(this.hoverTime); this.hoverTime = undefined}
+        KMouse.end()
         this.hideRelation()
     })
     this.domNode.addEventListener('click', (event) => {
         if (KAIROS.getState('cutToolActive')) { return }
+        
         this.popDetails()
     })
     this.domNode.addEventListener('dblclick', (event) => {

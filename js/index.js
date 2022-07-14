@@ -167,6 +167,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kresource.js', 'script'],
         ['../js/ui/k-exchange.js', 'script'],
 
+        ['../js/ui/kmouse.js', 'script'],
 
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],

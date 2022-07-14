@@ -6,6 +6,7 @@
 @import 'kcalendar.css';
 @import 'kproject.css';
 @import 'kresource.css';
+@import 'kmouse.css';
 
 
 body, html { margin: 0; padding: 0; }
