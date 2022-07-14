@@ -1,5 +1,11 @@
 /* popup at mouse pointer */
 function KMouse (node) {
+    if (KMouse._event = undefined) {
+        window.addEventListener('scroll', event => {
+            KMouse.end()
+        }, {passive: true})
+        KMouse._event = true
+    }
     if (KMouse._popped !== undefined) {
         const domNode = KMouse._popped
         KMouse._popped = undefined
@@ -29,7 +35,7 @@ function KMouse (node) {
         }
         window.requestAnimationFrame(() => {
             domNode.style.left =  `${x}px`
-            domNode.style.top =  `${KAIROS.mouse.clientY - box.height}px`
+            domNode.style.top =  `${KAIROS.mouse.clientY - window.scrollY - box.height}px`
         })
     })
 }
