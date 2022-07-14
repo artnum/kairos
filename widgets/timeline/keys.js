@@ -51,7 +51,7 @@ define([
     constructor: function () {
       this.func = null
       this.suggest = null
-      this.commandLetters = [ 'j', 'm', 'r', 't', 'p' , 'k', 'i' ]
+      this.commandLetters = [ 'j', 'm', 'r', 'p' , 'k', 'i' ]
 
       window.addEventListener('click', function (event) {
         if (this.CommandMode) {
