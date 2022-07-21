@@ -3,9 +3,13 @@
 include('base.php');
 global $KAppConf;
 
+$H = 0;
+
 function drawHeaders ($pdf) {
+    global $H;
     $i = 1;
-    $pdf->block('header');
+    $H++;
+    $pdf->block('header' . $H);
     $tableStart = $pdf->get_block_origin();
     $pdf->drawLine($pdf->getMargin('L'), $tableStart, $pdf->getDimension('W') - $pdf->getMargin('L') - $pdf->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
 
@@ -117,15 +121,16 @@ $order = [];
 foreach ($byProjects as $k => $kobjects) {
     $min = 999999;
     foreach ($kobjects as $kobject) {
-         $affaire = $kaffaire->get($kobject->get('affaire'));
-	 $status = $kobject->get('status');
-	 if ($affaire)  { 
-	    if (!$status) { $status = $affaire->get('status'); }
-	    if (intval($status) === 5) { $min = 999998; break; }
-	    if (intval($status) === 4) { $min = 999999; break; }
-	}
-	$person = $kentry->get($kobject->get('target'));
-	if (intval($person->get('order')) < 0) { continue; }
+        $affaire = $kaffaire->get($kobject->get('affaire'));
+        $status = $kobject->get('status');
+        if ($affaire)  { 
+            if (!$status) { $status = $affaire->get('status'); }
+            $kobject->set('__status', intval($status));
+            if (intval($status) === 5) { $min = 999998; break; }
+            if (intval($status) === 4) { $min = 999999; break; }
+        }
+        $person = $kentry->get($kobject->get('target'));
+        if (intval($person->get('order')) < 0) { continue; }
         if ($min > intval($person->get('order'))) { $min = intval($person->get('order')); }
     }
     $order[$k] = $min;
@@ -169,10 +174,27 @@ $kpdf = $PDF;
 $tableStart = drawHeaders($PDF);
 
 $i = 0;
-
+$lastOrder = 0;
 foreach ($order as $k => $v) {
     $kobjects = $byProjects[$k];
     $kobject = $kobjects[0];
+
+    if ($lastOrder !== $kobject->get('__status') && ($kobject->get('__status') === 5 || $kobject->get('__status') === 4)) {
+
+        drawTable($PDF, $tableStart);
+        if ($PDF->GetY() + $height > $PDF->getDimension('H') - 30) {
+            $PDF->AddPage();
+        } else {
+            $PDF->br();
+            $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#000000', 'width' => 1.5]);
+            $PDF->br();
+        }
+        $tableStart = drawHeaders($PDF);
+        $PDF->reset_blocks();
+        $i = 0;
+    }
+    $lastOrder = $kobject->get('__status');
+
     $affaire = $kaffaire->get($kobject->get('affaire'));
 
     if ($affaire === null)  { continue; }
@@ -201,7 +223,7 @@ foreach ($order as $k => $v) {
         $height = count($targets) * $PDF->getFontSize();
     }
 
-    if ($PDF->GetY() + $height > $PDF->getDimension('H') - 20) {
+    if ($PDF->GetY() + $height > $PDF->getDimension('H') - 30) {
         drawTable($PDF, $tableStart);
         $PDF->AddPage();
         $tableStart = drawHeaders($PDF);
