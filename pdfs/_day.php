@@ -182,13 +182,16 @@ foreach ($order as $k => $v) {
     if ($lastOrder !== $kobject->get('__status') && ($kobject->get('__status') === 5 || $kobject->get('__status') === 4)) {
 
         drawTable($PDF, $tableStart);
-        if ($PDF->GetY() + $height > $PDF->getDimension('H') - 30) {
+        if ($PDF->GetY() > $PDF->getDimension('H') - 60) {
+            $PDF->br();
+            $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#000000', 'width' => 1.5]);
             $PDF->AddPage();
         } else {
             $PDF->br();
             $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#000000', 'width' => 1.5]);
-            $PDF->br();
+	        $PDF->br();
         }
+
         $tableStart = drawHeaders($PDF);
         $PDF->reset_blocks();
         $i = 0;
@@ -223,7 +226,7 @@ foreach ($order as $k => $v) {
         $height = count($targets) * $PDF->getFontSize();
     }
 
-    if ($PDF->GetY() + $height > $PDF->getDimension('H') - 30) {
+    if ($PDF->GetY() + $height > $PDF->getDimension('H') - 40) {
         drawTable($PDF, $tableStart);
         $PDF->AddPage();
         $tableStart = drawHeaders($PDF);
