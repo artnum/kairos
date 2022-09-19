@@ -39,6 +39,7 @@ KAffaireFormUI.prototype.render = function () {
     return this.formUI.render({
         reference: {label: 'Référence'},
         status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
+        closed: {label: 'Terminé', type: 'on-off'},
         meeting: {label: 'Rendez-vous'},
         contact: {label: 'Personne de contact'},
         phone: {label: 'Téléphone', type: 'phone'},

@@ -651,6 +651,7 @@ KUIReservation.prototype.renderForm = function () {
             id: {label: 'Numéro', readonly: true},
             version: {label: 'Version', readonly: true},
             locked: {label: 'Verrouillée', type: 'on-off'},
+            closed: {label: 'Terminé', type: 'on-off'},
             _kproject_name: {label: 'Projet', readonly: true},
             begin: {label: 'Début', type: 'datehour', readonly: this.object.get('locked') === '1'},
             end: {label: 'Fin', type: 'datehour', readonly: this.object.get('locked') === '1'},
@@ -775,6 +776,8 @@ KUIReservation.prototype.render = function () {
             const project = affaire.getRelation('kproject')
             if (!project) { resolve(null); return }
 
+            const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null)
+
             const beginDate = new KDate(this.object.get('begin'))
             const endDate = new KDate(this.object.get('end'))
             let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
@@ -809,6 +812,8 @@ KUIReservation.prototype.render = function () {
  
             this.object.bindUINode(this)
             window.requestAnimationFrame(() => {
+                if (ended) { this.domNode.classList.add('k-closed') }
+                else { this.domNode.classList.remove('k-closed') }
                 if (gap) { this.domNode.classList.add('k-left-open') }
                 else { this.domNode.classList.remove('k-left-open') }
                 if (virtualEnd) { this.domNode.classList.add('k-right-open') }

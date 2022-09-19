@@ -15,6 +15,11 @@
 
 }
 
+.kreservation.k-closed {
+    filter: grayscale(100%);
+    opacity: 0.7;
+}
+
 .kreservation.k-left-open {
     border-left: 1px dotted transparent;
 }
