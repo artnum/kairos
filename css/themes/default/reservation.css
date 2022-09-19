@@ -20,6 +20,14 @@
     opacity: 0.7;
 }
 
+.kreservation .options i.fa-folder {
+    display: none;
+}
+
+.kreservation.k-folder .options i.fa-folder {
+    display: unset;
+}
+
 .kreservation.k-left-open {
     border-left: 1px dotted transparent;
 }
