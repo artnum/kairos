@@ -776,8 +776,9 @@ KUIReservation.prototype.render = function () {
             const project = affaire.getRelation('kproject')
             if (!project) { resolve(null); return }
 
-            const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null)
+            const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null && this.object.get('closed') !== '0')
             const folder = affaire.get('folder') !== '0'
+            const locked = parseInt(this.object.get('locked'))
 
             const beginDate = new KDate(this.object.get('begin'))
             const endDate = new KDate(this.object.get('end'))
@@ -817,6 +818,8 @@ KUIReservation.prototype.render = function () {
                 else { this.domNode.classList.remove('k-closed') }
                 if (folder) { this.domNode.classList.add('k-folder') }
                 else { this.domNode.classList.remove('k-folder') }
+                if (locked) { this.domNode.classList.add('k-locked') }
+                else { this.domNode.classList.remove('k-locked') }
                 if (gap) { this.domNode.classList.add('k-left-open') }
                 else { this.domNode.classList.remove('k-left-open') }
                 if (virtualEnd) { this.domNode.classList.add('k-right-open') }
@@ -837,7 +840,7 @@ KUIReservation.prototype.render = function () {
                 if (changeDom) {
                     this.domProduced = true
                     this.domNode.innerHTML = `<div class="content">
-                            <span class="field options"><i class="fas fa-folder"> </i> ${parseInt(this.object.get('locked')) === 1 ? '<i class="fa fa-lock"> </i>' : ''}</span>
+                            <span class="field options"><i class="fas fa-folder"> </i> <i class="fa fa-lock"> </i></span>
                             <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                             <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
                             <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>

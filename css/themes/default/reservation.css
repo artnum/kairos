@@ -28,6 +28,14 @@
     display: unset;
 }
 
+.kreservation .options i.fa-lock {
+    display: none;
+}
+
+.kreservation.k-locked .options i.fa-lock {
+    display: unset;
+}
+
 .kreservation.k-left-open {
     border-left: 1px dotted transparent;
 }
