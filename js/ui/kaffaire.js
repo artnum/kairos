@@ -40,6 +40,7 @@ KAffaireFormUI.prototype.render = function () {
         reference: {label: 'Référence'},
         status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
         closed: {label: 'Terminé', type: 'on-off'},
+        folder: {label: 'Dossier', type: 'on-off'},
         meeting: {label: 'Rendez-vous'},
         contact: {label: 'Personne de contact'},
         phone: {label: 'Téléphone', type: 'phone'},

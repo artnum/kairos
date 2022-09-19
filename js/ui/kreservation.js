@@ -777,6 +777,7 @@ KUIReservation.prototype.render = function () {
             if (!project) { resolve(null); return }
 
             const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null)
+            const folder = affaire.get('folder') !== '0'
 
             const beginDate = new KDate(this.object.get('begin'))
             const endDate = new KDate(this.object.get('end'))
@@ -834,7 +835,7 @@ KUIReservation.prototype.render = function () {
                 if (changeDom) {
                     this.domProduced = true
                     this.domNode.innerHTML = `<div class="content">
-                            <span class="field options">${parseInt(this.object.get('locked')) === 1 ? '<i class="fa fa-lock"> </i>' : ''}</span>
+                            <span class="field options">${folder ? '<i class="fas fa-folder"> </i>' : '' } ${parseInt(this.object.get('locked')) === 1 ? '<i class="fa fa-lock"> </i>' : ''}</span>
                             <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
                             <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
                             <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
