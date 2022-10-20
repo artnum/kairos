@@ -39,7 +39,7 @@ function KLoadResources (resources) {
     })
 }
 
-window.addEventListener('load', event => {
+window.addEventListener('klogin-done', event => {
     const resources = [
         ['../conf/error.js', 'script'],
         [`../js/kairos.js?${localStorage.getItem('klogin-token')}`, 'script'],

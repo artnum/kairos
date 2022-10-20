@@ -122,8 +122,15 @@ KStore.prototype.delete = function (id) {
             if (!result.success) { throw new Error('ERR:Server') }
             if (!result.length) { throw new Error('ERR:NoResults') }
             const data = Array.isArray(result.data) ? result.data[0] : result.data
-            if (!data.id) { throw new Error('ERR:Server') }
-            resolve(data.id)
+            if (data[id]) {
+                if (!data[id]) { throw new Error('ERR:Server') }
+                return resolve(data[id])
+            }
+            if (data.id) {
+                if (data.id !== id) { throw new Error('ERR:Server')}
+                return resolve(data.id)
+            }
+            throw new Error('ERR:Server')
         })
         .catch(reason => {
             reject(reason)
