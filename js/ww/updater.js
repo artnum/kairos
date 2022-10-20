@@ -1,7 +1,6 @@
 /* eslint-env worker */
-/* global objectHash */
 importScripts('../../conf/app.js')
-importScripts('../kairos.js')
+importScripts(`../kairos.js?${location.search.substring(1)}`)
 importScripts('../gevent.js')
 importScripts('../stores/user.js')
 importScripts('lib/updater-count.js')
@@ -186,7 +185,7 @@ function targetMessages (msg, force = false) {
         .then(json => {
           if (!json) { return; }
           if (!json.success) { return ;}
-          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], newVTimeLine(), force, msg.clientid)
+          cacheAndSend(Array.isArray(json.data) ? json.data : [json.data], force, msg.clientid)
         })
       }
       break
@@ -198,51 +197,6 @@ function getIntervention (entry) {
     resolve([])
     return
   })
-}
-
-/* count, for each day, the number of complements by color as to send a resume */
-function pComplements (vTimeLine, idx, entry, key) {
-  if (!entry.complements) { return }
-  if (!Array.isArray(entry.complements)) { return }
-  if (entry.complements.length <= 0) { return }
-  for (let i = 0; i < entry.complements.length; i++) {
-    let c = entry.complements[i]
-    let num = parseInt(c.number)
-    if (isNaN(num)) { return }
-    if (!vTimeLine[idx][key][c.type.color]) { vTimeLine[idx][key][c.type.color] = { count: 0} }
-    if (parseInt(c.follow) === 1) {
-      vTimeLine[idx][key][c.type.color].count += num
-      vTimeLine[idx][key][c.type.color].type = c.type.id
-    } else {
-      let begin = dstamp(c.begin)
-      let end = dstamp(c.end)
-      if (end > vTimeLine[idx].date - 86400000 && begin <= vTimeLine[idx].date) {
-        vTimeLine[idx][key][c.type.color].count += num 
-        vTimeLine[idx][key][c.type.color].type = c.type.id
-      }
-    }
-  }
-}
-
-const ProcessPipeline = {
-  complements: {
-    fn: pComplements
-  }
-}
-
-/* do processing for each day of the timeline */
-function processDays (vTimeLine, options) {
-  for (let i = 0; i < vTimeLine.length; i++) {
-    for (let key in ProcessPipeline) {
-      vTimeLine[i][key] = {}
-      for (let j = 0; j < vTimeLine[i].entries.length; j++) {
-        ProcessPipeline[key].fn(vTimeLine, i, vTimeLine[i].entries[j], key)
-      }
-      if (Object.keys(vTimeLine[i][key]).length > 0) {
-        self.postMessage({op: key, value: vTimeLine[i][key], date: vTimeLine[i].datestr, options: options})
-      }
-    }
-  }
 }
 
 function updateEntry(entryId, clientid) {
@@ -289,19 +243,14 @@ function deleteEntry (entryId, clientid) {
   })
 }
 
-function cacheAndSend (data, vTimeLine, force = false) {
+function cacheAndSend (data, force = false) {
   new Promise((resolve, reject) => {
     const entries = new Map()
     let promises = []
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
       let end = dstamp(entry.end)
-      
-      for (let i = 0; i < vTimeLine.length; i++) {
-        if (end > vTimeLine[i].date - 86400000 && begin <= vTimeLine[i].date) {
-          vTimeLine[i].entries.push(entry)
-        }
-      }
+
       promises.push(new Promise((resolve, reject) => {
         getIntervention(entry).then((interventions) => {
           entry.interventions = interventions
@@ -357,44 +306,12 @@ function cacheAndSend (data, vTimeLine, force = false) {
         PostPoned[k] = [...PostPoned[k], ...entries[k]]
       }
     }
-
-    const url = new URL(`${KAIROS.getBase()}/store/User`)
-    url.searchParams.set('search.function', 'machiniste')
-    url.searchParams.set('search.disabled', '0')
-    url.searchParams.set('search.temporary', '0')
-    fetch(url)
-    .then((response) => {
-      if (!response.ok) { return {length: 0, data: null}}
-      return response.json()
-    }).then(result => {
-      if (result.length > 0) {
-          return processDays(vTimeLine, {machinist: result})
-      }
-      processDays(vTimeLine)
-    })
   })
-}
-
-function newVTimeLine () {
-  let days = Math.floor((Range.end.getTime() - Range.begin.getTime()) / 86400000)
-  let vTimeLine = []
-  for (let i = 0; i < days; i++) {
-    let x = new Date()
-    x.setTime(Range.begin.getTime() + (i * 86400000))
-    x.setHours(12, 0, 0)
-    let dstr = x.toISOString().split('T')[0]
-    x.setHours(23, 59, 59)
-    vTimeLine[i] = {
-      date: x,
-      datestr: dstr,
-      entries: []
-    }
-  }
-  return vTimeLine
 }
 
 const Status = new Map()
 function checkMachineState () {
+  return // not in use yet
   if (!Run) { return }
   const url = new URL(`${KAIROS.getBase()}/store/Evenement/.machinestate`)
   fetch(url)
@@ -493,7 +410,7 @@ function runUpdater () {
   })
   .then((json) => {
     if (json.length > 0) {
-      cacheAndSend(json.data, newVTimeLine())
+      cacheAndSend(json.data)
     }
   })
   .catch(reason => console.log(reason))

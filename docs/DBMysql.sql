@@ -57,13 +57,18 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0
 	"reservation_time"    INT UNSIGNED NOT NULL DEFAULT 0, -- effective time (a 24h work spans over 3 days, this would be set de 24 * 60 * 60 (seconds))
 	                                                       -- while end - begin would be much more than 24h.
-	"reservation_locked" TINYINT UNSIGNED NOT NULL DEFAULT 0
-	) CHARACTER SET "utf8mb4";
+	"reservation_locked" TINYINT UNSIGNED NOT NULL DEFAULT 0,
+	"reservation_dbegin" CHAR(10) NOT NULL DEFAULT '',
+	"reservation_dend" CHAR(10) NOT NULL DEFAULT ''
+) CHARACTER SET "utf8mb4";
 CREATE INDEX "reservationBeginIdx" ON "reservation"("reservation_begin"(32));
 CREATE INDEX "reservationEndIdx" ON "reservation"("reservation_end"(32));
 CREATE INDEX "reservationDeletedIdx" ON "reservation"("reservation_deleted");
 CREATE INDEX "idxReservationModification" ON "reservation" ("reservation_modification");
 CREATE INDEX "idxReservationTarget" ON "reservation" ("reservation_target");
+CREATE INDEX "idxReservationDbegin" ON "reservation" ("reservation_dbegin");
+CREATE INDEX "idxReservationDend" ON "reservation" ("reservation_dend");
+
 
 
 CREATE TABLE IF NOT EXISTS "user" 		( 

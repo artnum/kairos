@@ -41,10 +41,8 @@ function KLoadResources (resources) {
 
 window.addEventListener('load', event => {
     const resources = [
-
-        ['../conf/app.js', 'script'],
         ['../conf/error.js', 'script'],
-        ['../js/kairos.js', 'script'],
+        [`../js/kairos.js?${localStorage.getItem('klogin-token')}`, 'script'],
         ['../js/kairos-ui.js', 'script'],
         ['../js/days.js', 'script'],
         ['../node_modules/popper.js/dist/umd/popper.min.js', 'script'],

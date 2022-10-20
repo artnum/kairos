@@ -103,6 +103,68 @@ function iFollowGrowAddReservation (event) {
   this.currentGrowAdd[1].position()
 }
 
+function iZoomCurrentBox (event) {
+  event.stopPropagation()
+  const Viewport = new KView()
+  const {x, y} = Viewport.getCurrentBox()
+  if (document.getElementById(`zoomed_box_${x}_${y}`)) { return }
+  if (window.ZoomedBox) { window.ZoomedBox() }
+  if (Viewport.getCell(x, y).size < 1) { return }
+  const view = document.createElement('DIV')
+  view.id = `zoomed_box_${x}_${y}`
+  let xpos = Viewport.getPixelX(x + 1) - 28
+  if (xpos + 300 > Viewport.get('viewport-width')) {
+    xpos = Viewport.getPixelX(x) - 363
+  }
+  view.style.setProperty('left', `${xpos}px`)
+
+  const entries = Viewport.getObjectsOnGrid(x, y)
+  view.classList.add('kreservation-popup')
+  view.style.setProperty('position', 'absolute')
+  let top = -1
+  const copies = []
+  for (const [_, entry] of entries) {
+    if (top  < 0) {
+      const uinode = entry.getUINode()
+      top = Viewport.getPixelY(uinode.parent.dataObject._ROW)
+    }
+    const kobject = entry.copy()
+    copies.push(kobject)
+    const ui = new KUIReservation(kobject, {copy: true})
+    ui.setWidth(300)
+    ui.setTop(0)
+    ui.fixPosition()
+    ui.render()
+    .then(domNode => {
+      domNode.style.setProperty('order', entry.get('displayOrder'))
+      domNode.style.setProperty('position', 'relative')
+      window.requestAnimationFrame(() => {
+        view.appendChild(domNode)
+      })
+    })
+  }
+  window.ZoomedBox = () => {
+    copies.forEach(o => o.deleteObject())
+    window.requestAnimationFrame(() => { view.parentNode.removeChild(view) })
+    window.ZoomedBox = undefined
+    return true
+  }
+
+  KClosable.new(view, {function: window.ZoomedBox })
+
+  const totalHeight = copies.length * Viewport.get('entry-height') + 14
+  if (totalHeight + top > Viewport.get('viewport-height')) {
+    top -= (copies.length - 1) * Viewport.get('entry-height') 
+  } else {
+    top -= 14
+  }
+  view.style.setProperty('top', `${top}px`)
+
+  window.requestAnimationFrame(() => {
+    document.body.appendChild(view)
+  })
+}
+
 function iGrowAddReservation (event) {
   if (!event.shiftKey) { return }
   if (this.currentGrowAdd) { return }

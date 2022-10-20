@@ -84,8 +84,32 @@ KAIROS.getBase = function () {
   }
   return `${window.location.origin}/${KAIROS.base}`
 }
+KAIROS.getServer = function () {
+  if (self) {
+    return `${self.location.origin}`
+  }
+  return `${window.location.origin}`
+}
 
-KAIROS.fetcher = new Worker(`${KAIROS.getBase()}/js/ww/fetcher.js`)
+KAIROS.getBaseName = function () {
+  return KAIROS.base.replace(/\//g, '')
+}
+
+KAIROS.URL = function (tpl) {
+  tpl = tpl.replace('%KBASE%', KAIROS.getBase())
+  tpl = tpl.replace('%KSERVER%', KAIROS.getServer())
+  tpl = tpl.replace('%KBASENAME%', KAIROS.getBaseName())
+  return new URL(tpl, KAIROS.getServer())
+}
+
+if (typeof document !== 'undefined') {
+  const scriptNode = document.currentScript
+  const url = new URL(scriptNode.src, window.location)
+  KAIROS.fetcher = new Worker(`${KAIROS.getBase()}/js/ww/fetcher.js?${url.search.substring(1)}`)
+} else {
+  KAIROS.fetcher = new Worker(`${KAIROS.getBase()}/js/ww/fetcher.js?${location.search.substring(1)}`)
+}
+
 KAIROS.fetcher.onmessage = function (msgEvent) {
   const msg = msgEvent.data
   const request = KAIROS.fetch.__pending.get(msg.id)
@@ -122,24 +146,6 @@ KAIROS.fetcher.onmessage = function (msgEvent) {
   } catch(reason) {
     console.log(reason)
   }
-}
-
-KAIROS.getServer = function () {
-  if (self) {
-    return `${self.location.origin}`
-  }
-  return `${window.location.origin}`
-}
-
-KAIROS.getBaseName = function () {
-  return KAIROS.base.replace(/\//g, '')
-}
-
-KAIROS.URL = function (tpl) {
-  tpl = tpl.replace('%KBASE%', KAIROS.getBase())
-  tpl = tpl.replace('%KSERVER%', KAIROS.getServer())
-  tpl = tpl.replace('%KBASENAME%', KAIROS.getBaseName())
-  return new URL(tpl, KAIROS.getServer())
 }
 
 KAIROS.uuidV4 = function () {

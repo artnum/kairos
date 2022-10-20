@@ -55,7 +55,7 @@ UserStore.getCurrentUser = function () {
 }
 
 UserStore.prototype.cleanUrl = function (id) {
-    let s = id.split('/')
+    let s = String(id).split('/')
     if (s[0] === 'store' || s[0] === '') {
       s.shift()
       if (s[0] === 'store') {

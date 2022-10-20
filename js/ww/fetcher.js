@@ -3,7 +3,7 @@ importScripts('../../conf/app.js')
 const Kache = new Map()
 const Pending = new Map()
 let Nocache = false
-
+const authToken = location.search.substring(1) || ''
 self.onmessage = function (msgEvent) {
     const msg = msgEvent.data
     if (!msg) { return }
@@ -155,6 +155,7 @@ function doFetch (cacheReqId, request) {
         genRequestId(cacheReqId, dateRequestBegin)
         .then (requestId => {
             request.headers.set('X-Request-Id', requestId)
+            request.headers.set('Authorization', `Bearer ${authToken}`)
             return [fetch(request), requestId]
         })
         .then(([resPromise, requestId]) => {

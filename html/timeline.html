@@ -7,10 +7,39 @@
 <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
 <link rel="icon" type="image/png" href="../resources/images/favicon.png" />
 <link rel="icon" type="image/svg+xml" href="../resources/images/favicon.svg" />
+<script src="../conf/app.js"></script>
 <script src="../js/index.js"></script>
+
 </head>
 <body class="claro">
   <script>
+    if (!localStorage.getItem('klogin-token')) {
+
+      KAIROS.getBase = function () {
+        if (self) {
+          return `${self.location.origin}/${KAIROS.base}`
+        }
+        return `${window.location.origin}/${KAIROS.base}`
+      }
+      KAIROS.getServer = function () {
+        if (self) {
+          return `${self.location.origin}`
+        }
+        return `${window.location.origin}`
+      }
+
+      KAIROS.getBaseName = function () {
+        return KAIROS.base.replace(/\//g, '')
+      }
+
+      KAIROS.URL = function (tpl) {
+        tpl = tpl.replace('%KBASE%', KAIROS.getBase())
+        tpl = tpl.replace('%KSERVER%', KAIROS.getServer())
+        tpl = tpl.replace('%KBASENAME%', KAIROS.getBaseName())
+        return new URL(tpl, KAIROS.getServer())
+      }
+      window.location = `${KAIROS.URL(KAIROS.kaalURL)}/admin?${window.location}`
+    }
    var Images = new Array()
    function preload() {
      for (let i = 0; i < preload.arguments.length; i++) {
@@ -25,32 +54,6 @@
    )
    
 Notification.requestPermission();
-function storageAvailable(type) {
-  try {
-    var storage = window[type],
-      x = '__storage_test__';
-    storage.setItem(x, x);
-    storage.removeItem(x);
-    return true;
-  } catch(e) {
-    return e instanceof DOMException && (
-        // everything except Firefox
-        e.code === 22 ||
-        // Firefox
-        e.code === 1014 ||
-        // test name field too, because code might not be present
-        // everything except Firefox
-        e.name === 'QuotaExceededError' ||
-        // Firefox
-        e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
-      // acknowledge QuotaExceededError only if there's something already stored
-      storage.length !== 0;
-  }
-}
-
-if(! storageAvailable('localStorage') && ! storageAvailable('sessionStorage')) {
-  document.write('<h1>Web Storage API not available</h1><p>This works only with "localStorage" and "sessionStorage" from Web Storage API. Activate or allow that.</p>');
-}
 dojoConfig = {
 	requestProvider: "dojo/request/xhr",
 	parseOnLoad: true,

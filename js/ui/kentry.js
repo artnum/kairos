@@ -116,6 +116,7 @@ KUIEntry.prototype.placeReservation = function (reservation) {
                 if (!box) { continue }
                 for (let i = 0; i < max; i++) {
                     if (box[i]) {
+                        box[i].setOrder(i)
                         box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
                         box[i].setHeight(entryHeight - 4)
                     }

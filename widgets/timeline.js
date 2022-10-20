@@ -110,9 +110,8 @@ define([
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
 
       if (KAIROS.centerTodayRatio) {
-        this.center.setTime(this.center.getTime() + this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
+        this.center.setTime(this.center.getTime() - this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
       }
-
       this.Viewport = new KView()
       this.Viewport.setEntryHeight(78)
       this.Viewport.setEntryInnerHeight(74)
@@ -150,7 +149,7 @@ define([
       })
 
       this.zoomCss = document.createElement('style')
-      this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js`)
+      this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js?${localStorage.getItem('klogin-token')}`)
       this.Updater.onmessage = function (e) {
         if (!e || !e.data || !e.data.op) { return }
         switch (e.data.op) {
@@ -668,6 +667,9 @@ define([
         switch(event.key) {
           case 'Enter': return iAddReservation(event).bind(this)
           case 'Delete': return iDeleteReservation(event).bind(this)
+          case 'F3': 
+            event.preventDefault()
+            return iZoomCurrentBox(event)
         }
       })
       document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
@@ -960,8 +962,7 @@ define([
     },
 
     today: function () {
-      this.set('center', new Date())
-      this.update(true)
+      this.move(Math.round((this.center.getTime() - (new Date()).getTime()) / 86400000) + 6)
     },
 
     chooseDay: function () {
@@ -991,6 +992,7 @@ define([
     moveXRight: function (x) {
       this.center = djDate.add(this.center, 'day', Math.abs(x))
       this.Viewport.move(-x)
+      this.firstDay = this.Viewport.get('date-origin')
       this.resizeTimeline()
       this.update()
     },
@@ -1007,6 +1009,7 @@ define([
     moveXLeft: function (x) {
       this.center = djDate.add(this.center, 'day', -Math.abs(x))
       this.Viewport.move(x)
+      this.firstDay = this.Viewport.get('date-origin')
       this.resizeTimeline()
       this.update()
     },
@@ -1099,13 +1102,13 @@ define([
     },
 
     drawTimeline: function () {
-      var avWidth = this.domNode.offsetWidth
-      var currentWeek = 0
-      var dayCount = 0
-      var currentMonth = -1
-      var dayMonthCount = 0
-      var currentYear = -1
-      var months = []
+      const avWidth = this.domNode.offsetWidth
+      let currentWeek = 0
+      let dayCount = 0
+      let currentMonth = -1
+      let dayMonthCount = 0
+      let currentYear = -1
+      const months = []
       this.todayOffset = -1
       this.weekOffset = -1
       this.destroyWeekNumber()
@@ -1127,8 +1130,10 @@ define([
         this.Holidays.addYear(this.center.getFullYear())
       }
     
-      this.firstDay = new Date()
-      this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
+      if (!this.firstDay) {
+        this.firstDay = new Date()
+        this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
+      }
       for (const entry of this.Entries) {
         entry[1].set('origin', this.firstDay)
       }
@@ -1274,7 +1279,7 @@ define([
 
             /* priority on showing holiday : a non working staturday can be used to work, if it's an holiday, need to pay more */
             if(this.Holidays.isHolidayInAnyOf(day, KAIROS.holidays)) {
-              classes.push('nowork'),
+              classes.push('nowork')
               classes.push('holiday')
             } else if (KAIROS.days[day.getDay()].chunks === null) {
               classes.push('nowork')
@@ -1357,6 +1362,7 @@ define([
               kentry.set('origin', this.firstDay)
               .then(_ => {
                 this.Viewport.bindObjectToRow(row, kentry)
+                kentry._ROW = row
                 kentry.set('row', row)
                 resolve(kentry)
               })
@@ -1569,7 +1575,7 @@ define([
       var widget = null
 
       for (const [_, entry] of this.Entries) {
-        if (entry.target === data['target']) {
+        if (entry.target === data.target) {
           widget = entry
           break
         }
@@ -1589,7 +1595,7 @@ define([
         window.scroll(0, pos.y - middle)
         var reservation = null
 
-        for (k in widget.entries) {
+        for (const k in widget.entries) {
           if (widget.entries[k].id === data.id) {
             reservation = widget.entries[k]
             break
@@ -1816,7 +1822,7 @@ define([
           if (found !== '1' && regexp.test(entry.KEntry?.data?.kmodel)) {
             found = '1'
           }
-          if (found !== '1') {
+          if (found !== '1' && entry.tags) {
             for (let i = 0; i < entry.tags.length; i++) {
               if (regexp.test(entry.tags[i])) {
                 found = '1'
@@ -1846,6 +1852,7 @@ define([
               }
             }
           }
+          if (!entry.domNode) { return }
           entry.domNode.dataset.active = found
         } else {
           entry.domNode.dataset.active = '1'; 

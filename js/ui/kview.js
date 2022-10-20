@@ -39,8 +39,6 @@ KViewCell.prototype.indexOf = function (id) {
 
 KViewCell.prototype.entries = function () {
     let i = 0
-    const kstore = new KObjectGStore()
-
     const iter = {
         next: function () {
             if (i < this.content.length) {
@@ -156,6 +154,15 @@ KView.prototype.compute = function () {
         }
     }
 
+}
+
+/* Convert grid x to pixel x */
+KView.prototype.getPixelX = function (gridX) {
+    return (gridX + 1) * this.data.get('day-width') + this.gridOffset
+}
+
+KView.prototype.getPixelY = function (gridY) {
+    return this.data.get('entry-height') * gridY + this.data.get('margin-top')
 }
 
 /* convert visual y to grid y */
@@ -508,11 +515,11 @@ KView.prototype.handleMouseMove = function () {
 
 KView.prototype.handleKeyMove = function (event) {
     if (
-        event.target instanceof HTMLInputElement
-        || event.target instanceof HTMLTextAreaElement
-        || event.target instanceof HTMLButtonElement
-        || event.target instanceof HTMLFormElement
-        || event.target instanceof HTMLSelectElement
+        event.target instanceof HTMLInputElement || 
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLButtonElement ||
+        event.target instanceof HTMLFormElement ||
+        event.target instanceof HTMLSelectElement
        ) 
     {
         return  
@@ -587,7 +594,7 @@ KView.prototype.handleKeyMove = function (event) {
     this.currentBox[0] += nextBox[0]
     this.currentBox[1] += nextBox[1]
     if (this.currentBox[0] < 0) { this.currentBox[0] = this.get('day-count') - 1 }
-    if (this.currentBox[1] < 0) { this.currentBox[1] }
+    if (this.currentBox[1] < 0) { this.currentBox[1] = this.get('entry-count') - 1 }
 
     if (this.currentBox[0] > this.get('day-count') - 1) {
         this.currentBox[0] = 0
@@ -626,14 +633,32 @@ KView.prototype.getCurrentGridBox = function () {
         flat: ((this.currentBox[0] + this.gridOffset) * this.get('entry-count')) + this.getY(this.currentBox[1])}
 }
 
+/* x and y hint where object is about so we don't search the whole array */
 KView.prototype.getAllCellForObject = function (id, x, y) {
     const cells = []
-    let cell = this.getCell(x, y)
-    while (cell.has(id)) {
+    while (x >= 0) {
+        const cell = this.getCell(x--, y)
+        if (!cell.has(id)) { break }
         cells.push(cell)
-        cell = this.getCell(++x, y)
+    }
+    while (x < this.cell.length) {
+        const cell = this.getCell(++x, y)
+        if (!cell.has(id)) { break }
+        cells.push(cell)
     }
     return cells
+}
+
+KView.prototype.findObjectOnGrid = function (id) {
+    let firstFound = false
+    const cells = []
+    for (const cell of this.grid) {
+        if (!cell.has(id) && firstFound) { break }
+        if (cell.has(id)) {
+            firstFound = true
+            cells.push(cell)
+        }
+    }
 }
 
 KView.prototype.setObjectOnGrid = function (id, object, x0, x1, y) {
@@ -648,6 +673,16 @@ KView.prototype.getObjectsOnGrid = function (x, y) {
     return cell.entries()
 }
 
+KView.prototype.removeObject = function (id) {
+    let firstFound = false
+    for (const cell of this.grid) {
+        if (!cell.has(id) && firstFound) { break }
+        if (cell.has(id)) {
+            firstFound = true
+            cell.delete(id)
+        }
+    }
+}
 
 KView.prototype.removeObjectOnGrid = function (id, x, y) {
     const cells = this.getAllCellForObject(id, x, y)

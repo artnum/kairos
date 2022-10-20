@@ -273,11 +273,7 @@ KEntry.prototype.handleMessage = function (msg) {
             const viewport = new KView()
             if (this.entries.has(msgData.reservation.uuid)) {
                 const reservation = this.entries.get(msgData.reservation.uuid)
-                const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
-                for (const row of rows) {
-                    console.log(row)
-                    row.delete(`${reservation.getType()}:${reservation.get('uid')}`)
-                }
+                viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
                 this.entries.delete(msgData.reservation.uuid)
             }
             break

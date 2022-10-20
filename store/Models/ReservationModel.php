@@ -54,17 +54,6 @@ class ReservationModel extends artnum\SQL
       }
 
       $options['fromSeven'] = $options['to'] - (86400 * 7);
-
-      /* SELECT "reservation_creator",
-             COUNT("reservation_id") AS "reservation_totUser",
-             MIN("reservation_created") AS "reservation_first",
-             MAX("reservation_created") AS "reservation_last", 
-            (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >=  1577836800  AND "reservation_created" <= 1608545832 AND COALESCE("reservation_deleted", 0) = 0) AS reservation_total
-         FROM "reservation"
-         WHERE "reservation_created" >=  1577836800  AND "reservation_created" <= 1608545832 AND COALESCE("reservation_deleted", 0) = 0 
-         GROUP BY idFromUrl(reservation_creator) 
-         ORDER BY "reservation_totUser" DESC;
-       */
       $query = 'SELECT idFromUrl("reservation_creator") AS "reservation_id", "reservation_creator", COUNT("reservation_id") AS "reservation_totUser",
                   MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
                   (SELECT COUNT("reservation_id") FROM "reservation" WHERE "reservation_created" >= :from AND "reservation_created" <= :to AND COALESCE("reservation_deleted", 0) = 0 AND "reservation_status" <> 3) AS "reservation_total",
@@ -99,7 +88,8 @@ class ReservationModel extends artnum\SQL
    function getMachineStats($options)
    {
       $result = new \artnum\JStore\Result();
-      $from;
+      $from = null;
+      $to = null;
       if (empty($options['from'])) {
          $from = new DateTime('now');
          $from->setDate($from->format('Y'), 1, 1);
@@ -109,7 +99,6 @@ class ReservationModel extends artnum\SQL
          $from = new DateTime($options['from']);
          $options['from'] = $from->format('U');
       }
-      $to;
       if (empty($options['to'])) {
          $to = new DateTime('now');
          $options['to'] = $to->format('U');
@@ -121,7 +110,6 @@ class ReservationModel extends artnum\SQL
       $diffPeriod = $from->diff($to, true);
       $sundaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 7);
       $saturdaysPeriod = intval($diffPeriod->days / 7) + ($from->format('N') + $diffPeriod->days % 7 >= 6);
-
 
       $query = 'SELECT "reservation_target" AS "reservation_id", "reservation_target", COUNT("reservation_id") AS "reservation_totUser",
                   MAX("reservation_created") AS "reservation_last", MIN("reservation_created") as "reservation_first",
@@ -260,25 +248,15 @@ class ReservationModel extends artnum\SQL
       }
    }
 
-   function getVersion($id, &$result = null)
+   function getVersion($id)
    {
-      try {
-         $db = $this->get_db(true);
-         $st = $db->prepare('SELECT "reservation_version" FROM "reservation" WHERE "reservation_id" = :id');
-         $st->bindValue(':id', $id['id'], \PDO::PARAM_INT);
-         $st->execute();
-         $value = $st->fetch();
+      $db = $this->get_db(true);
+      $st = $db->prepare('SELECT "reservation_version" FROM "reservation" WHERE "reservation_id" = :id');
+      $st->bindValue(':id', $id, \PDO::PARAM_INT);
+      $st->execute();
+      $value = $st->fetch();
 
-         if ($result === null) {
-            $result = new \artnum\JStore\Result();
-            $result->addItem(['id' => $id['id'], 'version' => $value['reservation_version']]);
-         } else {
-            $result->setItem(0, ['id' => $id['id'], 'version' => $value['reservation_version']]);
-         }
-      } catch (\Exception $e) {
-         $result->addError($e->getMessage(), $e);
-      }
-      return $result;
+      return ['id' => $id, 'version' => $value['reservation_version']];  
    }
 
    function _write($data, $id = NULL)
@@ -287,11 +265,17 @@ class ReservationModel extends artnum\SQL
       if ($id === null && empty($data['uuid'])) {
          $data['uuid'] = Uuid::uuid4()->toString();
       }
+
+      foreach (['begin', 'end'] as $field) {
+         if (!empty($data[$field])) {
+            $b = new DateTime($data['begin']);
+            $data['d' . $field] = $b->format('Y-m-d');
+         }
+      }
+
       $result = parent::_write($data, $id);
-      $id = $result->getItem(0);
-      if ($id !== null) {
-         $this->getVersion($id, $result);
-         $item = $result->getItem(0);
+      if ($result['count'] > 0) {
+         $item = $this->getVersion($result['id']);
          $MSGSrv->send(json_encode([
             'operation' => 'write',
             'type' => 'reservation',
@@ -308,8 +292,8 @@ class ReservationModel extends artnum\SQL
       $time = time();
       $data = ['reservation_id' => $id, 'reservation_deleted' => $time, 'reservation_modification' => $time, 'reservation_version' => 'force'];
       $_id = $this->update($data);
-      $result = new artnum\JStore\Result([$id => $id !== false], 1);
-      
+      $this->response->start_output();
+      $this->response->print(['id' => $_id]);
       if ($_id !== false) {
          $MSGSrv->send(json_encode([
             'operation' => 'delete',
@@ -318,6 +302,6 @@ class ReservationModel extends artnum\SQL
             'id' => $_id
          ]));
       }
-      return $result;
+      return ['count' => 1];
    }
 }

@@ -197,7 +197,7 @@ KContactObject.prototype.getDOMLabel = function (hidden = {}, short = false) {
     if (Object.keys(hidden).length > 0) {
         p.classList.add('dynamic')
         p.addEventListener('click', (event) => {
-            if (!event.target instanceof HTMLElement) { return }
+            if (!(event.target instanceof HTMLElement)) { return }
             if (event.target.nodeName !== 'SPAN') { return }
             if (!event.target.classList.contains('name')) { return }
             const p = event.target.parentNode
@@ -349,9 +349,9 @@ KContactObject.prototype.edit = function (addrNode) {
                     case 'locality': break
                     case 'saveto':
                         if (pair[1] === 'local') {
-                            contact['local'] = true
+                            contact.local = true
                         } else {
-                            contact['local'] = false
+                            contact.local = false
                         }
                         break
                     case 'mobile':
@@ -381,10 +381,10 @@ KContactObject.prototype.edit = function (addrNode) {
                             contact.sn = pair[1]
                         }
                         break
-                    case 'np': contact['postalcode'] = pair[1]; break
-                    case 'country': contact['c'] = pair[1]; break
-                    case 'canton': contact['st'] = pair[1]; break
-                    case 'city': contact['l'] = pair[1]; break
+                    case 'np': contact.postalcode = pair[1]; break
+                    case 'country': contact.c = pair[1]; break
+                    case 'canton': contact.st = pair[1]; break
+                    case 'city': contact.l = pair[1]; break
                 }
             }
             fetch(`${KAIROS.getBase()}/store/Contacts`, {method: 'POST', body: JSON.stringify(contact)})
@@ -573,7 +573,7 @@ KContactText.prototype.getDOMLabel = function (hidden = {}, short = false) {
     if (Object.keys(hidden).length > 0) {
         p.classList.add('dynamic')
         p.addEventListener('click', (event) => {
-            if (!event.target instanceof HTMLElement) { return }
+            if (!(event.target instanceof HTMLElement)) { return }
             if (event.target.nodeName !== 'SPAN' && event.target.nodeName !== 'DIV') { return }
             if (!event.target.classList.contains('name')) { return }
             const p = event.target.parentNode
@@ -665,7 +665,7 @@ KContactStore.prototype.getType = function (type = 'any') {
 
 KContactStore.prototype.get = function (id) {
     return new Promise((resolve, reject) => {
-        const parts = id.split('/')
+        const parts = String(id).split('/')
         const url = new URL(`${this.baseUrl}/${parts.pop()}`)
         fetch(url)
         .then(response => {

@@ -14,6 +14,11 @@ KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
             if (details.type && details.id && KAIROS.remoteType[details.type]) {
                 const kstore = new KStore(KAIROS.remoteType[details.type])
                 kstore.get(details.id)
+                .then(kobject => {
+                    console.log(kobject)
+                    const duplicates = this.getDuplicate(kobject.getType(), kobject.get('uid'))
+                    duplicates.forEach(o => { console.log(o, kobject.getBody()); o.update(kobject.getBody() )})
+                })
             } 
             break
         case 'delete':
@@ -22,6 +27,11 @@ KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
                 if (kobject) {
                     kobject.deleteObject()
                     this.delete(KAIROS.remoteType[details.type], details.id)
+                }
+                const duplicates = this.getDuplicate(KAIROS.remoteType[details.type], details.id)
+                if (duplicates) {
+                    duplicates.forEach(kobject => kobject.deleteObject())
+                    this.deleteDuplicate(KAIROS.remoteType[details.type], details.id)
                 }
             } 
             break
@@ -37,6 +47,34 @@ KObjectGStore.prototype.put = function (kobject) {
         }
         this.store.get(type).set(String(uid), kobject)
     }
+}
+
+KObjectGStore.prototype.putDuplicate = function (kobject) {
+    const uid = kobject.get('uid')
+    const type = kobject.getType()
+    if (uid && type) {
+        if (!this.store.get(`${type}-duplicate`)) {
+            this.store.set(`${type}-duplicate`, new Map())
+        }
+        if (!this.store.get(`${type}-duplicate`).get(String(uid))) {
+            this.store.get(`${type}-duplicate`).set(String(uid), [])
+        }
+        this.store.get(`${type}-duplicate`).get(String(uid)).push(kobject)
+    }
+}
+
+KObjectGStore.prototype.getDuplicate = function (type, uid) {
+    if (uid === undefined) {
+        [type, uid] = type.split('/', 2)
+    }
+
+    const tstore = this.store.get(`${type}-duplicate`)
+    if (tstore) {
+        const dup = tstore.get(String(uid))
+        if (!dup) { return [] }
+        return dup
+    }
+    return []
 }
 
 KObjectGStore.prototype.get = function (type, uid) {
@@ -82,6 +120,34 @@ KObjectGStore.prototype.deleteRelations = function (type, uid) {
     }
 }
 
+KObjectGStore.prototype.deleteDuplicate = function (type, uid) {
+    if (uid === undefined) {
+        [type, uid] = type.split('/', 2)
+    }
+
+    const tstore = this.store.get(`${type}-duplicate`)
+    if (tstore) {
+        return tstore.delete(String(uid))
+    }
+    return false
+}
+
+KObjectGStore.prototype.deleteSpecificDuplicate = function (type, uid, duplicateCount) {
+    if (uid === undefined) {
+        [type, uid] = type.split('/', 2)
+    }
+
+    const tstore = this.store.get(`${type}-duplicate`)
+    if (tstore) {
+        duplicates = tstore.get(String(uid))
+        if (!duplicates) { return }
+        const idx = duplicates.findIndex(o => o.get('duplicateCount') === duplicateCount)
+        duplicates.splice(idx, 1)
+        return tstore.set(String(uid), duplicates)
+    }
+    return true
+}
+
 KObjectGStore.prototype.delete = function (type, uid) {
     if (uid === undefined) {
         [type, uid] = type.split('/', 2)
@@ -95,24 +161,28 @@ KObjectGStore.prototype.delete = function (type, uid) {
     return false
 }
 
-function KObject (type, data) {
+function KObject (type, data, copy = false) {
     this.type = type
     this.data = new Map()
     this.relation = new Map()
     this.evtTarget = new EventTarget()
     this.UINode = null
     this.deleted = false
+    this.isCopy = copy
+    this.duplicateCount = 0
     this.lastChange = performance.now()
     const kgstore =  new KObjectGStore()
 
     for (const key in data) {
         this.setItem(key, data[key])
     }
-    if (this.getItem('uid')) {
-        const previous = kgstore.get(type, this.getItem('uid'))
-        if (previous) {
-            previous.update(data)
-            return previous
+    if (!copy) {
+        if (this.getItem('uid')) {
+            const previous = kgstore.get(type, this.getItem('uid'))
+            if (previous) {
+                previous.update(data)
+                return previous
+            }
         }
     }
 
@@ -135,11 +205,13 @@ function KObject (type, data) {
                 case 'getAllRelations': return object.getAllRelations.bind(object)
                 case 'setRelation': return object.setRelation.bind(object)
                 case 'addRelation': return object.addRelation.bind(object)
+                case 'addRelationID': return object.addRelationID.bind(object)
                 case 'deleteRelation': return object.deleteRelation.bind(object)
                 case 'getType': return object.getType.bind(object)
                 case 'addEventListener': return object.addEventListener.bind(object)
                 case 'removeEventListener': return object.removeEventListener.bind(object)
                 case 'toString': return object.doToString.bind(object)
+                case 'unbindUINode': return object.doUnbindUINode.bind(object)
                 case 'bindUINode': return object.doBindUINode.bind(object)
                 case 'getUINode': return object.doGetUINode.bind(object)
                 case 'update': return object.doUpdate.bind(object)
@@ -150,6 +222,8 @@ function KObject (type, data) {
                 case 'deleteObject': return object.doDeleteObject.bind(object)
                 case 'relation': return undefined
                 case 'clone': return object.doClone.bind(object)
+                case 'copy': return object.copy.bind(object)
+
             }
             return object.getItem(name)
         },
@@ -175,12 +249,14 @@ function KObject (type, data) {
                 case 'getAllRelations':
                 case 'setRelation':
                 case 'addRelation':
+                case 'addRelationID':
                 case 'deleteRelation':
                 case 'getType':
                 case 'addEventListener':
                 case 'removeEventListener':
                 case 'toString':
                 case 'bindUINode':
+                case 'unbindUINode':
                 case 'getUINode':
                 case 'update':
                 case 'toXML':
@@ -189,6 +265,7 @@ function KObject (type, data) {
                 case 'getBody':
                 case 'deleteObject':
                 case 'clone':
+                case 'copy':
                     return {
                         writable: false,
                         enumerable: false,
@@ -219,8 +296,8 @@ function KObject (type, data) {
             return false
         }
     })
-    kobject.toXML()
-    kgstore.put(kobject)
+    if (!copy) { kgstore.put(kobject) }
+    else { kgstore.putDuplicate(kobject) }
     return kobject
 }
 
@@ -230,24 +307,42 @@ KObject.prototype.doClone = function () {
         data.set(key, value)
     }
 
-    if (KAIROS.stores[this.type]['version'] && KAIROS.stores[this.type]['version'].remote) {
-        data.delete(KAIROS.stores[this.type]['version'].remote)
+    if (KAIROS.stores[this.type].version && KAIROS.stores[this.type].version.remote) {
+        data.delete(KAIROS.stores[this.type].version.remote)
     }
-    if (KAIROS.stores[this.type]['uid'] && KAIROS.stores[this.type]['uid'].remote) {
-        data.delete(KAIROS.stores[this.type]['uid'].remote)
+    if (KAIROS.stores[this.type].uid && KAIROS.stores[this.type].uid.remote) {
+        data.delete(KAIROS.stores[this.type].uid.remote)
     } else {
         for (const name of ['id', 'uid', 'uuid', 'IDent']) {
             if (data.has(name)) { data.delete(name); break }
         }
     }
-    if (KAIROS.stores[this.type]['notClonable']) {
-        for (const attr of KAIROS.stores[this.type]['notClonable']) {
+    if (KAIROS.stores[this.type].notClonable) {
+        for (const attr of KAIROS.stores[this.type].notClonable) {
             data.delete(attr)
         }
     }
     return new KObject(this.getType(), Object.fromEntries(data))
 }
 
+KObject.prototype.copy = function () {
+    const data = new Map()
+    for (const [key, value] of this.data) {
+        data.set(key, value)
+    }
+
+    const object = new KObject(this.getType(), Object.fromEntries(data), true)
+    for (const [key, value] of this.relation.entries()) {
+        if (Array.isArray(value)) {
+            value.forEach(r => object.addRelationID(key, r))
+            continue
+        }
+        object.addRelationID(key, value)
+    }
+    object.unbindUINode()
+    object.set('duplicateCount', ++this.duplicateCount)
+    return object
+}
 
 KObject.prototype.isObjectDestroyed = function () {
     return this.deleted
@@ -282,10 +377,23 @@ KObject.prototype.doUpdate = function (data) {
         }
     }
     this.evtTarget.dispatchEvent(new CustomEvent('update', {detail: {kobject: this}}))
+    if (!this.isCopy) {
+        const kgstore = new KObjectGStore()
+        const duplicates = kgstore.getDuplicate(this.getType(), this.getItem('uid'))
+        duplicates.forEach(o => { o.update(this.doGetBody()) })
+    }
 }
 
 KObject.prototype.doDeleteObject = function () {
+    const kgstore = new KObjectGStore()
     this.evtTarget.dispatchEvent(new CustomEvent('delete', {detail: {kobject: this}}))
+    if (!this.isCopy) {
+        const duplicates = kgstore.getDuplicate(this.getType(), this.getItem('uid'))
+        duplicates.forEach(o => { o.delete() })
+        kgstore.deleteDuplicate(this.getType(), this.getItem('uid'))
+        return
+    }
+    kgstore.deleteSpecificDuplicate(this.getType(), this.getItem('uid'), this.getItem('duplicateCount'))
 }
 
 KObject.prototype.deleteItem = function (name) {
@@ -419,6 +527,18 @@ KObject.prototype.addRelation = function (type, kobject) {
     return this.relation.set(type, currentRelation)
 }
 
+KObject.prototype.addRelationID = function (type, uid) {
+    if (!this.relation.has(type)) { return this.relation.set(type, uid) }
+    const currentRelation = this.relation.get(type)
+    if (!Array.isArray(currentRelation)) {
+        if (currentRelation === uid) { return true }
+        return this.relation.set(type, [currentRelation, uid])
+    }
+    if (currentRelation.indexOf(uid) !== -1) { return true }
+    currentRelation.push(uid)
+    return this.relation.set(type, currentRelation)
+}
+
 KObject.prototype.getRelation = function (type) {
     if (this.relation.has(type)) {
         const relations = this.relation.get(type)
@@ -458,6 +578,10 @@ KObject.prototype.getType = function () {
 
 KObject.prototype.doBindUINode = function (uinode) {
     this.UINode = uinode
+}
+
+KObject.prototype.doUnbindUINode = function (uinode) {
+    this.UINode = null
 }
 
 KObject.prototype.doGetUINode = function () {

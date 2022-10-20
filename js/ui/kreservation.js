@@ -1,4 +1,8 @@
-function KUIReservation (object) {
+function KUIReservation (object, options = {readonly: false, copy: false}) {
+    if (options.copy) { 
+        this.copy = true
+        options.readonly = true
+    }
     const uiNode = object.getUINode()
     if (uiNode) { return uiNode }
     this.EvtTarget = new EventTarget()
@@ -9,8 +13,10 @@ function KUIReservation (object) {
     this.id = object.get('uuid')
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('kreservation')
-    this.domNode.setAttribute('draggable', true)
-    this.domNode.id = this.object.get('uuid')
+    this.positionFixed = false
+    if (!options.readonly) { this.domNode.setAttribute('draggable', true) }
+    if (!options.copy) { this.domNode.id = this.object.get('uuid') }
+    else { this.domNode.id = `${this.object.get('uuid')}-copy-${performance.now()}`}
 
     this.kaffaire = object.getRelation('kaffaire')
     if (this.kaffaire) {
@@ -19,77 +25,79 @@ function KUIReservation (object) {
     if (this.kproject) {
         this.domNode.dataset.kproject = this.kproject.get('uid')
     }
+    if (!options.readonly) {
+        this.domNode.addEventListener('dragstart', event => {
+            if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
+            //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
+            event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
+            if (event.ctrlKey) {
+                event.dataTransfer.dropEffect = 'copy'
+            } else {
+                event.dataTransfer.dropEffect = 'move'
+            }
+        }, {capture: true})
+        this.domNode.addEventListener('drop', event => {
+            event.preventDefault()
+        })
+        this.domNode.addEventListener('dragover', event => {
+            event.preventDefault()
+        })
+        this.domNode.addEventListener('contextmenu', event => {
+            event.preventDefault()
+            if (KAIROS.getState('startSetRelation')) {
+                const source = KAIROS.getState('startSetRelation')
+                this.setRelation(source, this)
+                .then(() => {
+                    source.hideRelation()
+                    KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
+                })
+                KAIROS.unsetState('startSetRelation')
+                return
+            }
 
-    this.domNode.addEventListener('dragstart', event => {
-        if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
-        //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
-        event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
-        if (event.ctrlKey) {
-            event.dataTransfer.dropEffect = 'copy'
-        } else {
-            event.dataTransfer.dropEffect = 'move'
-        }
-    }, {capture: true})
-    this.domNode.addEventListener('mousedown', (event) => {
-        event.stopPropagation()
-    }, {passive: true})
-    this.domNode.addEventListener('drop', event => {
-        event.preventDefault()
-    })
-    this.domNode.addEventListener('dragover', event => {
-        event.preventDefault()
-    })
-    this.domNode.addEventListener('contextmenu', event => {
-        event.preventDefault()
-        if (KAIROS.getState('startSetRelation')) {
-            const source = KAIROS.getState('startSetRelation')
-            this.setRelation(source, this)
-            .then(() => {
-                source.hideRelation()
-                KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
-            })
-            KAIROS.unsetState('startSetRelation')
-            return
-        }
-
-        if (KAIROS.getState('lockShowHideRelation')) {
-            this.hideRelation()
-        } else {
-            this.select()
-            this.showRelation()
-            KAIROS.setState('startSetRelation', this)
-        }
-        KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
-    })
+            if (KAIROS.getState('lockShowHideRelation')) {
+                this.hideRelation()
+            } else {
+                this.select()
+                this.showRelation()
+                KAIROS.setState('startSetRelation', this)
+            }
+            KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
+        })
+    }
     this.relations = new Map()
     this.shownRelations = []
     this.loadRelation()
-    this.domNode.addEventListener('mouseenter', event => {
-        if (KAIROS.getState('lockShowHideRelation')) { return }
-        if (!this.hoverTime) {
-            this.hoverTime = setTimeout(() => {
-                const affaire = this.object.getRelation('kaffaire')
-                if (!affaire) { return }
-                const project = affaire.getRelation('kproject')
-                if (!project) { return }            
-                const node = document.createElement('DIV')
-                node.innerHTML = `
-                    <div class="k-content">
-                        <div class="k-field uid"><span class="k-value">${project.getFirstTextValue('', 'reference')}</span> <span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
-                        <div class="k-field reference"><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span> <span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-                    </div>
-                `
-                KMouse(node)
-            }, 800)
-        }
-        this.showRelation()
-    })
-    this.domNode.addEventListener('mouseleave', event => {
-        if (KAIROS.getState('lockShowHideRelation')) { return }
-        if (this.hoverTime) { window.clearTimeout(this.hoverTime); this.hoverTime = undefined}
-        KMouse.end()
-        this.hideRelation()
-    })
+    if (!options.readonly) {
+        this.domNode.addEventListener('mouseenter', event => {
+            if (KAIROS.getState('lockShowHideRelation')) { return }
+            if (!this.hoverTime) {
+                this.hoverTime = setTimeout(() => {
+                    const affaire = this.object.getRelation('kaffaire')
+                    if (!affaire) { return }
+                    const project = affaire.getRelation('kproject')
+                    if (!project) { return }            
+                    const node = document.createElement('DIV')
+                    node.innerHTML = `
+                        <div class="k-content">
+                            <div class="k-field uid"><span class="k-value">${project.getFirstTextValue('', 'reference')}</span> <span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+                            <div class="k-field reference"><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span> <span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+                        </div>
+                    `
+                    KMouse(node)
+                }, 800)
+            }
+            this.showRelation()
+        })
+    }
+    if (!options.readonly) {
+        this.domNode.addEventListener('mouseleave', event => {
+            if (KAIROS.getState('lockShowHideRelation')) { return }
+            if (this.hoverTime) { window.clearTimeout(this.hoverTime); this.hoverTime = undefined}
+            KMouse.end()
+            this.hideRelation()
+        })
+    }
     this.domNode.addEventListener('click', (event) => {
         if (KAIROS.getState('cutToolActive')) { return }
         
@@ -102,8 +110,8 @@ function KUIReservation (object) {
         .then(domNode => {
             const klateral = new KLateral()
             const ktab = klateral.add(domNode, { 
-              title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
-              id: this.object.get('uid')
+            title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+            id: this.object.get('uid')
             })
             ktab.addEventListener('focus', () => {
                 this.select()
@@ -120,6 +128,10 @@ function KUIReservation (object) {
             this.showRelation()
         })
     })
+
+    this.domNode.addEventListener('mousedown', (event) => {
+        event.stopPropagation()
+    }, {passive: true})
     object.addEventListener('update', this.render.bind(this))
     const affaire = this.object.getRelation('kaffaire')
     if (affaire) {
@@ -190,6 +202,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                     }
                     const end1 = displayedRelation.source.object.get('end')
                     const end2 = displayedRelation.closure.object.get('end')
+                    if (!displayedRelation.source.domNode || displayedRelation.closure.domNode) { continue }
                     const leaderline = this.newLeaderLine({
                         start: displayedRelation.source.domNode,
                         end: displayedRelation.closure.domNode, 
@@ -208,6 +221,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                 if (!object) { continue }
                 const ui = object.getUINode()
                 if (!ui) { continue }
+                if (!ui.domNode) { continue }
                 if (ui.domNode.parentNode) {
                     let color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
                     if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
@@ -240,6 +254,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         relative = 'top'
                     }
                     const node = document.getElementById(object.get('target'))
+                    if (!node) { continue }
                     const leaderline = this.newLeaderLine({
                         start: this.domNode,
                         end: node,
@@ -274,6 +289,7 @@ KUIReservation.prototype.showRelation = function (from = []) {
                         relative = 'top'
                     }
                     const node = document.getElementById(object.get('target'))
+                    if (!node) { continue }
                     const leaderline = this.newLeaderLine({
                         start: node,
                         end: this.domNode,
@@ -476,39 +492,36 @@ KUIReservation.prototype.popDetails = function () {
     }
 
     this.select()
-    if (this.detailsPopped) {
-        this.unpopDetails()
-    } else {
-         const div = document.createElement('DIV')
-        div.classList.add('k-reservation-details')
-        //const step = new KStepProgressUI()
+    if (this.detailsPopped) { return this.unpopDetails() }
 
-        div.innerHTML = `
-        <div class="k-command">
-            <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
-            <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
-        </div>
-        <div class="k-progress"></div>
-        <div class="k-content">
-            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+    const div = document.createElement('DIV')
+    div.classList.add('k-reservation-details')
+    //const step = new KStepProgressUI()
 
-            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-        </div>
-        <div class="k-command">
-            <button data-action="print-affaire" class="ui k-small">Imprimer</button>
-        </div>`
-        //div.querySelector('.k-progress').appendChild(step.domNode)
-        for (const kcomm of div.querySelectorAll('.k-command')) {
-            kcomm.addEventListener('click', this.doCommand.bind(this))
-        }
-        document.body.appendChild(div)
-        this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
-        const closable = new KClosable()
-        closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
+    div.innerHTML = `
+    <div class="k-command">
+        <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
+        <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
+    </div>
+    <div class="k-progress"></div>
+    <div class="k-content">
+        <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+        <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+
+        <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+        <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+        <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+    </div>
+    <div class="k-command">
+        <button data-action="print-affaire" class="ui k-small">Imprimer</button>
+    </div>`
+    for (const kcomm of div.querySelectorAll('.k-command')) {
+        kcomm.addEventListener('click', this.doCommand.bind(this))
     }
+    document.body.appendChild(div)
+    this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
+    const closable = new KClosable()
+    closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
 }
 
 KUIReservation.prototype.unpopDetails = function () {
@@ -596,20 +609,49 @@ KUIReservation.prototype.doCommand = function (event) {
     }
 }
 
-KUIReservation.prototype.reload = function (object) {
+KUIReservation.prototype.reload = function (object) { }
 
+KUIReservation.prototype.fixPosition = function () {
+    this.positionFixed = true
+}
+
+KUIReservation.prototype.setOrder = function (order) {
+    this.object.set('displayOrder', order)
+    window.requestAnimationFrame(() => { this.domNode.style.setProperty('order', order) })
+    if (!this.copy) {
+        const kstore = new KObjectGStore()
+        const duplicates = kstore.getDuplicate(this.object.getType(), this.object.get('uid'))
+        if (duplicates) {
+            duplicates.forEach(o => o.getUINode().setOrder(order))
+        }
+    }
+}
+
+KUIReservation.prototype.getOrder = function () {
+    if (!this.object.has('displayOrder')) { return null }
+    return this.object.get('displayOrder')
 }
 
 KUIReservation.prototype.setTop = function (top) {
+    if (this.positionFixed) { return }
     this.top = top
     window.requestAnimationFrame(() => { this.domNode.style.top = `${top}px` })
 }
 
 KUIReservation.prototype.setHeight = function (height) {
+    if (this.positionFixed) { return }
     this.height = height
     window.requestAnimationFrame(() => { 
         this.domNode.style.height = `${height}px`
         this.domNode.style.maxHeight = `${height}px`
+    })
+}
+
+KUIReservation.prototype.setWidth = function (width) {
+    if (this.positionFixed) { return }
+    this.width = width
+    window.requestAnimationFrame(() => { 
+        this.domNode.style.height = `${width}px`
     })
 }
 
@@ -754,16 +796,18 @@ KUIReservation.prototype.render = function () {
             resolve()
             return
         }
-        
-        let changeDom = true
-        if (!this.lastObjectChange) {
-            this.lastObjectChange = this.object.get('last-change')
-        } else {
-            if (this,this.lastObjectChange === this.object.get('last-change')) { changeDom = false }
-        }
 
-        if (!this.domProduced) {
-            changeDom = true
+        let changeDom = true
+        if (!this.copy) {
+            if (!this.lastObjectChange) {
+                this.lastObjectChange = this.object.get('last-change')
+            } else {
+                if (this,this.lastObjectChange === this.object.get('last-change')) { changeDom = false }
+            }
+
+            if (!this.domProduced) {
+                changeDom = true
+            }
         }
 
         const kstore = new KStore('kstatus')
@@ -779,34 +823,37 @@ KUIReservation.prototype.render = function () {
             const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null && this.object.get('closed') !== '0')
             const folder = affaire.get('folder') !== '0'
             const locked = parseInt(this.object.get('locked'))
-
-            const beginDate = new KDate(this.object.get('begin'))
-            const endDate = new KDate(this.object.get('end'))
-            let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
-            let rightbox = this.Viewport.getRelativeColFromDate(endDate)
             let gap = null
             let virtualEnd = null
-            if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
-            if (leftbox < 0) {
-                if (rightbox < 0) {
-                    this.removeDomNode();
-                    resolve(null);
-                    return
+            let width = 40
+            let left = 0
+            let offset = 0
+            if (this.width) { width = this.width }
+            if (!this.copy) {
+                const beginDate = new KDate(this.object.get('begin'))
+                const endDate = new KDate(this.object.get('end'))
+                let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
+                let rightbox = this.Viewport.getRelativeColFromDate(endDate)
+                if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
+                if (leftbox < 0) {
+                    if (rightbox < 0) {
+                        this.removeDomNode();
+                        resolve(null);
+                        return
+                    }
+                    leftbox = 0
                 }
-                leftbox = 0
+                if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+
+                left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
+                offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * this.Viewport.get('second-width')
+                if (rightbox === Infinity) { width = this.Viewport.get('viewport-width') - (left + offset) }
+                else {
+                    width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * this.Viewport.get('second-width') - offset
+                }
+
+                if (width < 10) { width = 10}
             }
-            if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
-
-
-            let width = 0
-            const left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
-            let offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * this.Viewport.get('second-width')
-            if (rightbox === Infinity) { width = this.Viewport.get('viewport-width') - (left + offset) }
-            else {
-                width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * this.Viewport.get('second-width') - offset
-            }
-
-            if (width < 10) { width = 10}
  
             this.props.set('left', left + offset )          
             this.props.set('width', width)
@@ -869,6 +916,11 @@ KUIReservation.prototype.removeDomNode = function () {
 }
 
 KUIReservation.prototype.deleteMe = function () {
+    if (!this.copy) {
+        const viewport = new KView()
+        viewport.removeObject(`${this.object.getType()}:${this.object.get('uid')}`)
+        this.parent.removeReservation(this)
+    }
     window.requestAnimationFrame(() => {
         if (this.renderedForm) {
             if (this.renderForm.parentNode) {
