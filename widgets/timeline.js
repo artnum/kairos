@@ -1187,7 +1187,7 @@ define([
           switch(event.target.dataset.action) {
             default: return;
             case 'get-pdf-day':
-              return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}`, '_blank')
+              return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}?auth=Bearer ${localStorage.getItem('klogin-token')}`, '_blank')
             case 'plan-resource':
               return KIOpenResourceAllocation(date);
           }

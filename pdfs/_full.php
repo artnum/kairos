@@ -53,14 +53,14 @@ $daysNumber = floor(($END->getTimestamp() - $BEGIN->getTimestamp()) / 86400);
 $dayBegin = explode('+', $BEGIN->format('c'))[0];
 $dayEnd = explode('+', $END->format('c'))[0];
 
-$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--']);
-$kentry = new KStore($KAppConf, 'kentry');
-$kuser = new KStore($KAppConf, 'kperson');
+$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $_GET['auth']);
+$kentry = new KStore($KAppConf, 'kentry', [], $_GET['auth']);
+$kuser = new KStore($KAppConf, 'kperson', [], $_GET['auth']);
 
-$kaffaire = new KStore($KAppConf, 'kaffaire');
-$kproject = new KStore($KAppConf, 'kproject');
-$kstatus = new KStore($KAppConf, 'kstatus');
-$kalloc = new KStore($KAppConf, 'krallocation');
+$kaffaire = new KStore($KAppConf, 'kaffaire', [], $_GET['auth']);
+$kproject = new KStore($KAppConf, 'kproject', [], $_GET['auth']);
+$kstatus = new KStore($KAppConf, 'kstatus', [], $_GET['auth']);
+$kalloc = new KStore($KAppConf, 'krallocation', [], $_GET['auth']);
 
 $reservations = $kreservation->query([
    '#and' => [

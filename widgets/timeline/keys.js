@@ -237,7 +237,8 @@ define([
 
             if (begin !== '') { url.searchParams.set('begin', begin) }
             if (end !== '') { url.searchParams.set('end', end) }
-    
+            url.searchParams.set('auth', `Bearer ${localStorage.getItem('klogin-token')}`)
+            
             window.open(url, '_blank')
             popup.close()
           })

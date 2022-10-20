@@ -4,7 +4,7 @@ require('kfetch.php');
 require('kobject.php');
 require('kappconf.php');
 class KStore {
-    function __construct($conf, $type, $bindQuery = []) {
+    function __construct($conf, $type, $bindQuery = [], $auth = null) {
         $this->type = $type;
         $this->conf = $conf;
         $this->url = $conf->get('stores.' . $type . '.store');
@@ -12,6 +12,7 @@ class KStore {
         if (!empty($bindQuery)) {
             $this->bindedQuery = $bindQuery;
         }
+        $this->auth = $auth;
     }
 
     function query ($query, &$outQuery = null) {
@@ -26,7 +27,11 @@ class KStore {
             }
         }
         $outQuery = $query;
-        $response = kfetch($this->url . '/_query', ['method' => 'POST', 'body' => $query]);
+        $options = ['method' => 'POST', 'body' => $query];
+        if ($this->auth) {
+            $options['headers'] = ['Authorization' => $this->auth];
+        }
+        $response = kfetch($this->url . '/_query', $options);
         if (!$response->ok) { return []; }
         $result = $response->json();
         if (intval($result['length']) <= 0) { return []; }
@@ -45,7 +50,11 @@ class KStore {
             $id = explode('/', $id);
             $id = array_pop($id);
         }
-        $response = kfetch($this->url . '/' . $id);
+        $options = [];
+        if ($this->auth) {
+            $options['headers'] = ['Authorization' => $this->auth];
+        }
+        $response = kfetch($this->url . '/' . $id, $options);
         if (!$response->ok) { return null; }
         $result = $response->json();
         if (intval($result['length']) <= 0) { return null; }

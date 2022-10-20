@@ -39,12 +39,12 @@ function drawTable ($pdf, $tableStart) {
     $pdf->drawLine($pdf->getDimension('W') - $pdf->getMargin('L'), $tableStart, $tableStop - $tableStart, -90, 'line', ['color' => '#c4007a']);
 }
 
-$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--']);
-$kentry = new KStore($KAppConf, 'kentry');
-$kaffaire = new KStore($KAppConf, 'kaffaire');
-$kproject = new KStore($KAppConf, 'kproject');
-$kstatus = new KStore($KAppConf, 'kstatus');
-$kalloc = new KStore($KAppConf, 'krallocation');
+$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $_GET['auth']);
+$kentry = new KStore($KAppConf, 'kentry', [], $_GET['auth']);
+$kaffaire = new KStore($KAppConf, 'kaffaire', [], $_GET['auth']);
+$kproject = new KStore($KAppConf, 'kproject', [], $_GET['auth']);
+$kstatus = new KStore($KAppConf, 'kstatus', [], $_GET['auth']);
+$kalloc = new KStore($KAppConf, 'krallocation', [], $_GET['auth']);
 
 
 $day = $_GET['id'];
