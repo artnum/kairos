@@ -31,12 +31,13 @@ self.onmessage = function (msgEvent) {
             .then(reqCacheId => {
                 const request = new Request(msg.url, msg.options)
                 doFetch(reqCacheId, request)
-                .then(([content, contentType, requestId]) => {
+                .then(([content, contentType, requestId, status]) => {
                     self.postMessage({
                         op: 'fetch',
                         id: msg.id,
                         error: false, 
                         content: content,
+                        status: status,
                         headers: {
                             'Content-Type': contentType,
                             'X-Request-Id': requestId
@@ -160,7 +161,6 @@ function doFetch (cacheReqId, request) {
         })
         .then(([resPromise, requestId]) => {
             return resPromise.then(response => {
-                if (!response.ok) { throw new Error('ERR:Server') }
                 const contentType = contentTypeParse(response.headers.get('Content-Type'))
                 switch(contentType) {
                     default:
@@ -188,10 +188,10 @@ function doFetch (cacheReqId, request) {
                 }
                 if (pending) {
                     for(const otherResolve of pending) {
-                        otherResolve([content, contentType, requestId])
+                        otherResolve([content, contentType, requestId, response.status])
                     }
                 }
-                resolve([content, contentType, requestId])
+                resolve([content, contentType, requestId, response.status])
             })
             .catch(reason => {
                 reject(reason)

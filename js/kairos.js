@@ -118,6 +118,7 @@ KAIROS.fetcher.onmessage = function (msgEvent) {
   try {
     switch (msg.op) {
       case 'query': 
+        if (msg.status === 401 && typeof window !== undefined) { window.location.reload() }
         if (msg.error) {
           request[1](msg.content)
         } else {
@@ -125,6 +126,7 @@ KAIROS.fetcher.onmessage = function (msgEvent) {
         }
       break
       case 'fetch':
+        if (msg.status === 401 && typeof window !== undefined) { window.location.reload() }
         if (msg.error) {
           request[1](msg.content)
         } else {
