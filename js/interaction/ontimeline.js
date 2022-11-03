@@ -130,7 +130,7 @@ function iZoomCurrentBox (event) {
     }
     const kobject = entry.copy()
     copies.push(kobject)
-    const ui = new KUIReservation(kobject, {copy: true})
+    const ui = new KUIReservation(kobject, {copy: entry})
     ui.setWidth(300)
     ui.setTop(0)
     ui.fixPosition()
@@ -372,11 +372,15 @@ function iAddReservation (event) {
               resolve(affaire)
             })
           })
+          .catch(_ => {
+            resolve(null)
+          })
         }))
       }
 
       return Promise.all(qAffaires)
       .then(affaires => {
+        affaires.filter(a => a !== null)
         const kr = new KResource(r1data, affaires, day, 'afftbcar')
         return kr.render()
       })
