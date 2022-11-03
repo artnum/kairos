@@ -380,7 +380,7 @@ function iAddReservation (event) {
 
       return Promise.all(qAffaires)
       .then(affaires => {
-        affaires.filter(a => a !== null)
+        affaires = affaires.filter(a => a !== null)
         const kr = new KResource(r1data, affaires, day, 'afftbcar')
         return kr.render()
       })
