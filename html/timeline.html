@@ -11,7 +11,6 @@
   <link rel="icon" type="image/svg+xml" href="../resources/images/favicon.svg" />
   <script src="../conf/app.js"></script>
   <script src="../js/index.js"></script>
-
 </head>
 
 <body class="claro">
@@ -39,56 +38,81 @@
       tpl = tpl.replace('%KBASENAME%', KAIROS.getBaseName())
       return new URL(tpl, KAIROS.getServer())
     }
+
+    function checkBuildNumberAndReload() {
+      return new Promise(resolve => {
+        const currentBuild = localStorage.getItem('kairos-build-number')
+        fetch(`${KAIROS.getBase()}/build_number`)
+        .then(response => {
+          if (!response.ok) { throw new Error() }
+          return response.text()
+        })
+        .then(buildNumber => {
+          localStorage.setItem('kairos-build-number', buildNumber)
+          if (parseInt(currentBuild) !== parseInt(buildNumber)) {
+            throw new Error()
+          }
+          resolve()
+        })
+        .catch(_ => {
+          window.location.reload(true)
+          resolve()
+        })
+      })
+    }
+
     function goToLogin() {
       window.location = `${KAIROS.URL(KAIROS.kaalURL)}/admin?${window.location}`
     }
-
-    if (!localStorage.getItem('klogin-token')) {
-      goToLogin()
-    } else {
-      const authUrl = `${KAIROS.URL(KAIROS.kaalURL)}/auth.php/check`
-      const authToken = localStorage.getItem('klogin-token')
-      fetch(authUrl, { method: 'POST', body: JSON.stringify({ auth: authToken }) })
-        .then(response => {
-          if (!response.ok) { throw new Error() }
-          return response.json()
-        })
-        .then(result => {
-          if (!result.done) { throw new Error() }
-          Notification.requestPermission();
-          dojoConfig = {
-            requestProvider: "dojo/request/xhr",
-            parseOnLoad: true,
-            isDebug: true,
-            locale: 'fr-ch',
-            baseUrl: './',
-            packages: [
-              { name: "location", location: '../widgets/' },
-              { name: "artnum", location: 'https://artnum.ch/code/js/' },
-              { name: "artnumd", location: '/js/' }
-            ]
-          }
-          window.dispatchEvent(new CustomEvent('klogin-done'))
-        })
-        .catch(e => {
-          goToLogin()
-        })
-    }
-
-    window.addEventListener('kairos-ready', event => {
-      document.title = `[KAIROS] ${KAIROS.title}`
-      require([
-        "location/timeline",
-        "dojo/domReady!"
-      ], function (timeline) {
-        KAIROS.getClientId()
-          .then(cid => {
-            window.App = new timeline()
-            KAIROS.timeline = window.App
-            document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
-            KAIROS.timeline.run()
+    checkBuildNumberAndReload()
+    .then(() => {
+      if (!localStorage.getItem('klogin-token')) {
+        goToLogin()
+      } else {
+        const authUrl = `${KAIROS.URL(KAIROS.kaalURL)}/auth.php/check`
+        const authToken = localStorage.getItem('klogin-token')
+        fetch(authUrl, { method: 'POST', body: JSON.stringify({ auth: authToken }) })
+          .then(response => {
+            if (!response.ok) { throw new Error() }
+            return response.json()
           })
-      });
+          .then(result => {
+            if (!result.done) { throw new Error() }
+            Notification.requestPermission();
+            dojoConfig = {
+              requestProvider: "dojo/request/xhr",
+              parseOnLoad: true,
+              isDebug: true,
+              locale: 'fr-ch',
+              baseUrl: './',
+              packages: [
+                { name: "location", location: '../widgets/' },
+                { name: "artnum", location: 'https://artnum.ch/code/js/' },
+                { name: "artnumd", location: '/js/' }
+              ]
+            }
+            window.dispatchEvent(new CustomEvent('klogin-done'))
+          })
+          .catch(e => {
+            goToLogin()
+          })
+      }
+
+      window.addEventListener('kairos-ready', event => {
+        document.title = `[KAIROS] ${KAIROS.title}`
+        require([
+          "location/timeline",
+          "dojo/domReady!"
+        ], function (timeline) {
+          KAIROS.getClientId()
+            .then(cid => {
+              window.App = new timeline()
+              KAIROS.timeline = window.App
+              document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
+              KAIROS.timeline.run()
+            })
+        });
+      })
     })
   </script>
   <div id="loadingOverlay">&nbsp;</div>
