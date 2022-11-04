@@ -336,10 +336,10 @@ function iAddReservation (event) {
   }
 
   function KIOpenResourceAllocation (day) {
-    const r1 = new KStore('kstatus', {type: 2})
+    const r1 = new KStore('kstatus', {type: 2, deleted: 0})
     const stuffs = new KStore('kreservation')
     const kaffaire = new KStore('kaffaire')
-    const kstatus = new KStore('kstatus', {type: 1})
+    const kstatus = new KStore('kstatus', {type: 1, deleted: 0})
     const dayEnd = new KDate()
     dayEnd.setTime(day.getTime())
     const dayBegin = new KDate()
