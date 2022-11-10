@@ -4,10 +4,16 @@ function KLateralTab (id, klateral) {
     this.destroyed = false
     this.scroll = 0
     this.evtTarget = new EventTarget()
+    this.buttons = new Map()
 }
 
 KLateralTab.prototype.addEventListener = function (event, listener, options) {
+    console.log(event)
     this.evtTarget.addEventListener(event, listener, options)
+}
+
+KLateralTab.prototype.dispatchEvent = function (event) {
+    this.evtTarget.dispatchEvent(event)
 }
 
 KLateralTab.prototype.destroy = function () {
@@ -30,11 +36,27 @@ KLateralTab.prototype.setScroll = function(scroll) {
 }
 
 KLateralTab.prototype.focus = function () {
-    this.evtTarget.dispatchEvent(new CustomEvent('focus'))
+    return this.evtTarget.dispatchEvent(new CustomEvent('focus'))
 }
 
 KLateralTab.prototype.blur = function () {
-    this.evtTarget.dispatchEvent(new CustomEvent('blur'))
+    return this.evtTarget.dispatchEvent(new CustomEvent('blur'))
+}
+
+KLateralTab.prototype.addButton = function (type, button) {
+    return this.buttons.set(type, button)
+}
+
+KLateralTab.prototype.removeButton = function (type) {
+    return this.buttons.delete(type)
+}
+
+KLateralTab.prototype.getButton = function (type) {
+    return this.buttons.get(type)
+}
+
+KLateralTab.prototype.getButtons = function() {
+    return this.buttons
 }
 
 function KLateral () {
@@ -55,8 +77,9 @@ function KLateral () {
     this.domNode.innerHTML = `
         <div class="khead"><div class="scroll left">&lt;</div><div class="ktab"></div><div class="scroll right">&gt;</div></div>
         <div class="kcontent"><div class="cwrapper"></div></div>
-        <div class="kaction"><button data-action="__close">Fermer</button></div>
+        <div class="kaction"><button class="mbutton" data-action="__close">Fermer</button></div>
         `
+    MButton.parse(this.domNode)
     this.tab = this.domNode.firstElementChild.firstElementChild.nextElementSibling
     this.content = this.domNode.lastElementChild.previousElementSibling.firstElementChild
     this.action = this.domNode.lastElementChild
@@ -163,7 +186,7 @@ KLateral.prototype.add = function (content, opt = {}) {
             this.showTab(tabId)
             this.open()
             this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${tabId}`, {detail: {tabEntry}}))
-            return
+            return 
         }
     }
 
@@ -197,7 +220,36 @@ KLateral.prototype.add = function (content, opt = {}) {
 
     const tab = new KLateralTab(index, this)
     this.tabs.set(String(index), tab)
-    
+
+    if (opt.action && Array.isArray(opt.action)) {
+        opt.action.forEach(action => {
+            const type = action.type !== undefined ? action.type : 'normal'
+            const button = new MButton(action.label)
+            button.addEventListener('click', (event) => {
+                tab.dispatchEvent(new CustomEvent('k-action', {
+                    detail: 
+                    {
+                        tab: tab,
+                        action: action.name,
+                        target: button.getDomNode()
+                    }
+                })) 
+            })
+            switch(type) {
+                case 'normal':
+                default: break
+                case 'danger': button.setColorFlavor('red'); break
+                case 'risk': button.setColorFlavor('yellow'); break
+            }
+            const domNode = button.getDomNode()
+            domNode.dataset.tabIndex = index
+            this.domNode.querySelector('div.kaction').appendChild(domNode)
+
+            button.place()
+            tab.addButton(action.name, button)
+        })
+    }
+
     this.showTab(index)
     if (this.tabs.size > 0 && !this.isOpen) {
         this.open()
@@ -235,6 +287,12 @@ KLateral.prototype.getTab = function (idx) {
 KLateral.prototype.remove = function (idx) {
     const tab = this.tabs.get(String(idx))
     if (tab) { tab.blur() }
+    tab.getButtons().forEach(button => {
+        const node = button.getDomNode()
+        if (node) {
+            window.requestAnimationFrame(() => { node.parentNode.removeChild(node) })
+        }
+    })
     if (!this.evtTarget.dispatchEvent(new CustomEvent(`destroy-tab-${idx}`, {detail: {tab}}))) {
         return
     }
@@ -247,6 +305,7 @@ KLateral.prototype.remove = function (idx) {
     }
     if (tabTitle) { this.tab.removeChild(tabTitle) }
     if (tab) { tab.destroy() }
+    if (!this.content) { return }
     this.content.removeChild(tabContent)
     this.tabCurrent = 0
     if (this.tabs.size > 0) {
@@ -258,6 +317,12 @@ KLateral.prototype.remove = function (idx) {
 
 KLateral.prototype.hideTab = function (idx) {
     const tab = this.tabs.get(String(idx))
+    tab.getButtons().forEach(button => {
+        const node = button.getDomNode()
+        if (node) {
+            window.requestAnimationFrame(() => { node.parentNode.removeChild(node) })
+        }
+    })
     this.evtTarget.dispatchEvent(new CustomEvent(`hide-tab-${idx}`, {detail: {tab}}))
     tab.blur()
     const [tabTitle, tabContent] = this.getTab(idx)
@@ -276,6 +341,13 @@ KLateral.prototype.showTab = function (idx) {
         }
     }
     const tab = this.tabs.get(String(idx))
+    const parent = this.domNode.querySelector('div.kaction')
+    tab.getButtons().forEach(button => {
+        const node = button.getDomNode()
+        if (node) {
+            window.requestAnimationFrame(() => { parent.appendChild(node) })
+        }
+    })
     if (this.tabCurrent !== 0) {
         this.tabPrevSelected = this.tabCurrent
         this.hideTab(this.tabCurrent)

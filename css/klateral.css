@@ -136,3 +136,10 @@
     color: white;
     background-color: black;
 }
+
+.klateral .mbutton {
+    max-width: 120px;
+}
+.klateral .mbutton button {
+    font-size: 14px;
+}
