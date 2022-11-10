@@ -287,7 +287,7 @@ class EvenementModel extends artnum\SQL {
     $this->SQL = $dbs['sql'];
   }
 
-  function _write($data, $id = NULL) {
+  function _write($data, &$id = NULL) {
      global $MSGSrv;
      $result = parent::_write($data, $id);
      $item = $result->getItem(0);
@@ -302,7 +302,7 @@ class EvenementModel extends artnum\SQL {
      return $result;
   }
 
-  function _delete($id) {
+  function _delete(&$id) {
      global $MSGSrv;
       $result = parent::_delete($id);
       $item = $result->getItem(0);

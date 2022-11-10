@@ -14,7 +14,7 @@ class ArrivalModel extends artnum\SQL {
       $this->conf('datetime', array('reported', 'inprogress', 'done'));
    }
 
-   function _write($data, $id = NULL) {
+   function _write($data, &$id = NULL) {
       global $MSGSrv;
       $result = parent::_write($data, $id);
       $id = $result->getItem(0);
@@ -29,7 +29,7 @@ class ArrivalModel extends artnum\SQL {
       return $result;
    }
 
-   function _delete($id) {
+   function _delete(&$id) {
       global $MSGSrv;
       $result = parent::_delete($id);
       $item = $result->getItem(0);

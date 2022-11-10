@@ -22,7 +22,7 @@ class HistoireModel extends artnum\SQL {
     });
   }
   
-  function _write($data, $id = NULL) {
+  function _write($data, &$id = NULL) {
     if (isset($data['original']) && !empty($data['original'])) {
       $data['original'] = gzencode(json_encode($data['original']), 6); // 
     }

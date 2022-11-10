@@ -8,7 +8,7 @@ class CountReservationModel extends artnum\SQL {
     $this->set_req('get', 'SELECT * from "\\Table" LEFT JOIN "count" ON "\\Table"."countReservation_count" = "count"."count_id"');
   }
 
-  function _write($data, $id = NULL)
+  function _write($data, &$id = NULL)
    {
       global $MSGSrv;
       $result = parent::_write($data, $id);
@@ -24,7 +24,7 @@ class CountReservationModel extends artnum\SQL {
       return $result;
    }
 
-   function _delete($id) {
+   function _delete(&$id) {
       global $MSGSrv;
       $result = parent::_delete($id);
       $item = $result->getItem(0);

@@ -12,7 +12,7 @@ class ReservationContactModel extends artnum\SQL {
       ));
    }
 
-   function _write($data, $id = NULL) {
+   function _write($data, &$id = NULL) {
       global $MSGSrv;
 
       if (!empty($data['target'])) {
@@ -33,7 +33,7 @@ class ReservationContactModel extends artnum\SQL {
       return $result;
    }
 
-   function _delete($id) {
+   function _delete(&$id) {
       global $MSGSrv;
       $oldEntry = $this->_read($id);
       $result = parent::_delete($id);

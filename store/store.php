@@ -90,5 +90,6 @@ if (!empty($_SERVER['HTTP_X_CLIENT_ID'])) {
   $KConf->setVar('clientid', '');
 }
 
-$store->run($KConf);
+$store->init($KConf);
+$store->run();
 ?>

@@ -259,7 +259,7 @@ class ReservationModel extends artnum\SQL
       return ['id' => $id, 'version' => $value['reservation_version']];  
    }
 
-   function _write($data, $id = NULL)
+   function _write($data, &$id = NULL)
    {
       global $MSGSrv;
       if ($id === null && empty($data['uuid'])) {

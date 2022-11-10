@@ -202,7 +202,7 @@ class ContactsModel extends artnum\LDAP {
     return $entry;
   }
 
-  function do_write($data, $overwrite = false) {
+  function do_write($data, $overwrite = false, &$id = null) {
     if ($data['local']) {
       $this->local = true;
     }

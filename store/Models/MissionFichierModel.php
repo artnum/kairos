@@ -94,7 +94,7 @@ class MissionFichierModel extends artnum\SQL {
     return $retVal;
   }
   
-  function _delete ($id) {
+  function _delete (&$id) {
     $retVal = new \artnum\JStore\Result();
     $id = explode(',', $id);
     if (count($id) !== 2) { return FALSE; }
@@ -116,11 +116,11 @@ class MissionFichierModel extends artnum\SQL {
     return $retVal;
   }
 
-  function _overwrite ($data, $id = NULL) {
+  function _overwrite ($data, &$id = NULL) {
     return $this->write($data, $id);
   }
   
-  function _write ($data, $id = NULL) {
+  function _write ($data, &$id = NULL) {
     $retVal = new \artnum\JStore\Result();
     try {
       $db = $this->get_db(false);
