@@ -27,8 +27,17 @@ function iSelectReservation(event) {
                 const klateral = new KLateral()
                 const ktab = klateral.add(domNode, { 
                   title: `Réservation ${reservation.get('uid')}:${reservation.get('version')}`,
-                  id: reservation.get('uid')
+                  id: reservation.get('uid'),
+                  action: [
+                    {name: 'duplicate-at-end', label: 'Créer la fin'},
+                    {name: 'delete', label: 'Supprimer'}
+                  ]
                 })
+                if (ktab) {
+                  ktab.addEventListener('k-action', event => {
+                    ui.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
+                  })
+                }
                 ui.addEventListener('close', event => {
                     ktab.close()
                 })

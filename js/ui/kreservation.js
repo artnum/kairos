@@ -10,13 +10,23 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.props = new Map()
     this.Viewport = new KView()
     this.parent = null
+    this.copy = false
+    this.original = null
+    this.copyCount = 0
+    if (options.copy) { 
+        this.original = options.copy
+        this.original.copyCount++
+        this.copy = true
+    }
+    this.eventInstalled = []
     this.id = object.get('uuid')
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('kreservation')
     this.positionFixed = false
     if (!options.readonly) { this.domNode.setAttribute('draggable', true) }
-    if (!options.copy) { this.domNode.id = this.object.get('uuid') }
-    else { this.domNode.id = `${this.object.get('uuid')}-copy-${performance.now()}`}
+
+    if (!this.copy) { this.domNode.id = this.object.get('uuid') }
+    else { this.domNode.id = `${this.object.get('uuid')}-copy-${this.original.copyCount}`}
 
     this.kaffaire = object.getRelation('kaffaire')
     if (this.kaffaire) {
@@ -70,6 +80,29 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.loadRelation()
     if (!options.readonly) {
         this.domNode.addEventListener('mouseenter', event => {
+            const other = JSON.parse(this.object.get('other'))
+            if (other) {
+                (() => {
+                    this.setUpOtherLeaderLine = new Promise(resolve => {                   
+                        if (!other.link) { return }
+                        if (!other.link.to) { return }
+                        const store = new KStore('kreservation')
+                        store.get(other.link.to)
+                        .then(otherNode => {
+                            if (!otherNode) { return }
+                            const otherDom = document.getElementById(otherNode.get('uuid'))
+                            if (!otherDom) { return }
+                            if (this.otherLeaderLine) { this.otherLeaderLine.remove() }
+                            if (other.link.direction === 'left') {
+                                this.otherLeaderLine = new LeaderLine(this.domNode, otherDom, {dash: {animation: true}})
+                            } else {
+                                this.otherLeaderLine = new LeaderLine(otherDom, this.domNode, {dash: {animation: true}})
+                            }
+                            resolve()
+                        })
+                    })
+                })()
+            }
             if (KAIROS.getState('lockShowHideRelation')) { return }
             if (!this.hoverTime) {
                 this.hoverTime = setTimeout(() => {
@@ -92,6 +125,14 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     }
     if (!options.readonly) {
         this.domNode.addEventListener('mouseleave', event => {
+            if (this.setUpOtherLeaderLine) {
+                this.setUpOtherLeaderLine
+                .then(() => {
+                    this.otherLeaderLine.remove()
+                    this.otherLeaderLine = null
+                    this.setUpOtherLeaderLine = null
+                })
+            }
             if (KAIROS.getState('lockShowHideRelation')) { return }
             if (this.hoverTime) { window.clearTimeout(this.hoverTime); this.hoverTime = undefined}
             KMouse.end()
@@ -110,17 +151,26 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         .then(domNode => {
             const klateral = new KLateral()
             const ktab = klateral.add(domNode, { 
-            title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
-            id: this.object.get('uid')
+                title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+                id: this.object.get('uid'),
+                action: [
+                    {name: 'duplicate-at-end', label: 'Créer la fin'},
+                    {name: 'delete', label: 'Supprimer', type: 'danger'}
+                ]
             })
-            ktab.addEventListener('focus', () => {
-                this.select()
-                this.showRelation()
-            })
-            ktab.addEventListener('blur', () => {
-                this.unselect()
-                this.hideRelation()
-            })
+            if (ktab) {
+                ktab.addEventListener('k-action', event => {
+                    this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
+                })
+                ktab.addEventListener('focus', () => {
+                    this.select()
+                    this.showRelation()
+                })
+                ktab.addEventListener('blur', () => {
+                    this.unselect()
+                    this.hideRelation()
+                })
+            }
             this.addEventListener('close', event => {
                 ktab.close()
             })
@@ -538,8 +588,7 @@ KUIReservation.prototype.unpopDetails = function () {
 
 KUIReservation.prototype.doCommand = function (event) {
     const action = event.target.dataset.action
-
-
+    
     switch(action) {
         case 'begin-am':
             (() => {
@@ -685,7 +734,6 @@ KUIReservation.prototype.renderForm = function () {
         </fieldset>
         <fieldset class="k-form-ui" name="affaire"><legend>Travail</legend>
         </fieldset>
-        <button name="delete" class="mbutton">Supprimer</button>
         `
 
         const rform = new KFormUI(this.object)
@@ -702,7 +750,6 @@ KUIReservation.prototype.renderForm = function () {
             creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
             technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
             status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}, readonly: this.object.get('locked') === '1'},
-
         })
         .then(domNode => {
             for (const fieldset of form.getElementsByTagName('FIELDSET')) {
@@ -750,8 +797,67 @@ KUIReservation.prototype.renderForm = function () {
                 }
             }
         })
-
-        const buttons = MButton.parse(form)
+        if (!this.eventInstalled.includes('delete')) {
+            this.addEventListener('delete', event => {
+                console.log(event.detail)
+                KConfirm(`Supprimer la réservation ${reservation.get('uid')} ?`, event.detail.target)
+                .then(confirmed => {
+                    if (!confirmed) { return }
+                    const kstore = new KStore('kreservation')
+                    kstore.delete(reservation.get('uid')) 
+                    .then(result => {
+                        if (!result) { KAIROS.error('ERR:Server'); return; }
+                        reservation.getUINode().unrender()
+                        reservation.destroy()
+                        this.dispatchEvent(new CustomEvent('close', {detail: this}))
+                    })
+                })
+            })
+            this.eventInstalled.push('delete')
+        }
+        if (!this.eventInstalled.includes('duplicate-at-end')) {
+            this.addEventListener('duplicate-at-end', event => {
+                const other = JSON.parse(reservation.get('other'))
+                let confirmed = Promise.resolve(true)
+                if (other) {
+                    confirmed = KConfirm('La fin existe déjà, êtes-vous sûr de vouloir procéder', event.detail.target)
+                }
+                confirmed
+                .then(confirmed => {
+                    if (!confirmed) { return }
+                    const travail = reservation.getRelation('kaffaire')
+                    if (travail.get('end')) {
+                        const clone = reservation.clone()
+                        const begin = new Date(travail.get('end'))
+                        const end = new Date(travail.get('end'))
+                        const beginHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
+                        const endHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[1])
+                        begin.setHours(beginHour[0], beginHour[1], 0, 0)
+                        end.setHours(endHour[0], endHour[1], 0, 0)
+                        clone.set('begin', begin)
+                        clone.set('end', end)
+                        clone.set('other', JSON.stringify({
+                            link: {
+                                to: reservation.get('uid'),
+                                direction: 'right'
+                            }
+                        }))
+                        KStore.save(clone)
+                        .then(clone => {
+                            reservation.set('other', JSON.stringify({
+                                link: {
+                                    to: clone.get('uid'),
+                                    direction: 'left'
+                                }
+                            }))
+                            KStore.save(reservation)
+                        })
+                    }
+                })
+            })
+            this.eventInstalled.push('duplicate-at-end')
+        }
+        /*const buttons = MButton.parse(form)
         for (const button of buttons) {
             switch(button.name) {
                 case 'delete': button.addEventListener('click', () => { 
@@ -765,7 +871,7 @@ KUIReservation.prototype.renderForm = function () {
                     })
                 }); break
             }
-        }
+        }*/
         this.renderedForm = form
         resolve(form)
     })
