@@ -214,3 +214,17 @@
     height: var(--button-height);
     display: inline-block;
 }
+
+*[data-action] {
+    cursor: pointer;
+}
+
+button[data-action] {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+button {
+	cursor: pointer;
+    color: var(--default-color)
+}

@@ -267,9 +267,9 @@ MButton.prototype.setColorFlavor = function (flavor) {
     default: flavor = ''; break
   }
   window.requestAnimationFrame(() => {
-    this.Button.classList.remove('yellow', 'red', 'green')    
+    this.Button.classList.remove('yellow', 'red', 'green', 'flavored')    
     if (flavor) {
-      this.Button.classList.add(flavor)
+      this.Button.classList.add(flavor, 'flavored')
     }
   })
 }
