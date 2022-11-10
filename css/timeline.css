@@ -407,16 +407,6 @@ table.count .reference {
   min-width: 26ch;
 }
 
-*[data-action] {
-    cursor: pointer;
-}
-
-
-button {
-	cursor: pointer;
-    color: var(--default-color)
-}
-
 .complementDiv {
 	position: relative;
 	height: 100%;

@@ -51,12 +51,12 @@ KTaskBar.prototype.place = function () {
     for (let n = this.taskbar.firstElementChild; n; n = n.nextElementSibling) {
         if (n.classList.contains('klist')) {
             const y = j * 154
-            KAIROSAnim.push(() => { n.style.left = `${y}px` })
+            window.requestAnimationFrame(() => { n.style.left = `${y}px` })
             j++
             continue
         }
         const y = offset + i * 302
-        KAIROSAnim.push(() => { n.style.left = `${y}px` })
+        window.requestAnimationFrame(() => { n.style.left = `${y}px` })
         i++
     }
 }
@@ -68,7 +68,7 @@ KTaskBar.prototype.minimize = function (titleNode, maximizeCallback) {
     task.dataset.type = 'task'
     task.classList.add('ktask')
     task.appendChild(titleNode)
-    KAIROSAnim.push(() => { this.taskbar.appendChild(task) })
+    new Promise(resolve => { window.requestAnimationFrame(() => { this.taskbar.appendChild(task); resolve() }) })
     .then(() => {
         this.place()
     })
@@ -82,9 +82,12 @@ KTaskBar.prototype.maximize = function (tid) {
     if (!task.node) { return }
     task.callback()
     this.tasks.delete(tid)
-    KAIROSAnim.push(() => { 
-        if (!task.node.parentNode) { return }
-        task.node.parentNode.removeChild(task.node)
+    new Promise(resolve => {w
+        window.requestAnimationFrame(() => { 
+            if (!task.node.parentNode) { return resolve() }
+            task.node.parentNode.removeChild(task.node)
+            resolve()
+        })
     })
     .then(() => {
         this.place()
@@ -273,6 +276,7 @@ function KPopup (title, opts = {}) {
         mouseX: 0,
         mouseY: 0
     }
+    this.isModal = !!opts.modal
     this.title.appendChild(this.closeIcon)
     
     this.minimizedTab
@@ -280,10 +284,10 @@ function KPopup (title, opts = {}) {
     this.domNode.stopLoading = this.stopLoading.bind(this)
 
     if (opts.fitContent) {
-        this.popup.style.minHeight = 'max-content'
-        this.popup.style.maxHeight = 'max-content'
-        this.popup.style.minWidth = 'max-content'
-        this.popup.style.maxWidth = 'max-content'
+        this.popup.style.minHeight = 'fit-content'
+        this.popup.style.maxHeight = 'fit-content'
+        this.popup.style.minWidth = 'fit-content'
+        this.popup.style.maxWidth = 'fit-content'
     } else {
         if (opts.minWidth) {
             this.popup.style.minWidth = opts.minWidth
@@ -369,6 +373,67 @@ function KPopup (title, opts = {}) {
     this.opened = null
 }
 
+KPopup.prototype.makeItModal = function () {
+    const node = document.createElement('DIV')
+    node.style.setProperty('width', '100%')
+    node.style.setProperty('height', '100%')
+    node.style.setProperty('top', '0')
+    node.style.setProperty('left', '0')
+    node.style.setProperty('bottom', '0')
+    node.style.setProperty('right', '0')
+    node.style.setProperty('position', 'fixed')
+    node.style.setProperty('padding', '0')
+    node.style.setProperty('margin', '0')
+    node.style.setProperty('z-index', KAIROS.zMax())
+    node.style.setProperty('background-color', 'rgba(255,255,255,0.3)')
+    node.addEventListener('keydown', event => {
+        event.stopPropagation()
+        event.preventDefault()
+        event.target.focus()
+    }, {capture: true})
+    node.addEventListener('keyup', event => {
+        event.stopPropagation()
+        event.preventDefault()
+        event.target.focus()
+    }, {capture: true})
+    node.addEventListener('keypress', event => {
+        event.stopPropagation()
+        event.preventDefault()
+        event.target.focus()
+    }, {capture: true})
+    node.addEventListener('click', event => {
+        event.stopPropagation()
+        event.preventDefault()
+    }, {capture: true})
+    node.addEventListener('mousedown', event => {
+        event.stopPropagation()
+        event.preventDefault()
+    }, {capture: true})
+    node.addEventListener('mouseup', event => {
+        event.stopPropagation()
+        event.preventDefault()
+    }, {capture: true})
+    this.modal = node
+    window.requestAnimationFrame(() => {
+        document.body.style.setProperty('overflow', 'hidden')
+        document.body.style.setProperty('max-width', '100vw')
+        document.body.style.setProperty('max-height', '100vh')
+        document.body.appendChild(node)
+    })
+}
+
+KPopup.prototype.destroyModal = function() {
+    const node = this.modal
+    if (!node) { return }
+    window.requestAnimationFrame(() => {
+        document.body.style.removeProperty('overflow')
+        document.body.style.removeProperty('max-width')
+        document.body.style.removeProperty('max-height')
+        document.body.removeChild(node)
+    })
+    this.modal = null
+}
+
 KPopup.prototype.mouseMove = function(event) {
     const bounding = this.popup.getClientRects()[0]
     if (!bounding) { return }
@@ -419,8 +484,13 @@ KPopup.prototype.removeEventListener = function (type, callback, options = {}) {
 
 KPopup.prototype.focus = function (event) {
     const zmax = KAIROS.zMax()
-    return KAIROSAnim.push(() => {
-        this.popup.style.setProperty('z-index', zmax)
+    const zmax2 = KAIROS.zMax()
+    return new Promise(resolve => {
+        window.requestAnimationFrame(() => {
+            if (this.modal) { this.popup.style.setProperty('z-index', zmax) }
+            this.popup.style.setProperty('z-index', zmax2)
+            resolve()
+        })
     })
 }
 
@@ -492,7 +562,6 @@ KPopup.prototype.setReference = function (htmlNode) {
     } else if (htmlNode.domNode && htmlNode.domNode instanceof HTMLElement) {
         this.reference = htmlNode.domNode
     }
-    this.popup.style.setProperty('z-index', KAIROS.zMax())
     this.popup.style.setProperty('position', 'fixed')
 }
 
@@ -534,14 +603,13 @@ KPopup.prototype.position = function () {
 KPopup.prototype.open = function (frombind = false) {
     return new Promise ((resolve, reject) => {
         if (this.opened) { resolve(); return }
+        if (this.isModal) { this.makeItModal() }
+        this.popup.style.setProperty('z-index', KAIROS.zMax())
+
         this.opened = KAIROS.stackClosable(this.close.bind(this))
         KAIROSAnim.push(() => {
             if (!this.popup.parentNode) {
-                if (this.reference) {
-                    this.reference.parentNode.appendChild(this.popup)
-                } else {
-                    document.body.appendChild(this.popup)
-                }
+                document.body.appendChild(this.popup)
             }
             this.place()
         })
@@ -559,14 +627,18 @@ KPopup.prototype.close = function (frombind = false) {
         KAIROS.removeClosableFromStack(this.close.bind(this))
         this.opened = null
         this.evttarget.dispatchEvent(new CustomEvent('close'))
+        this.destroyModal()
         if (this.minimizedTab) { 
             this.taskbar.remove(this.minimizedTab)
             resolve()
         } else {
-            KAIROSAnim.push(() => {
-                if (this.popup.parentNode) {
-                    this.popup.parentNode.removeChild(this.popup)
-                }
+            new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                    if (this.popup.parentNode) {
+                        this.popup.parentNode.removeChild(this.popup)
+                    }
+                    resolve()
+                })
             })
             .then(() => {
                 resolve()
@@ -576,8 +648,11 @@ KPopup.prototype.close = function (frombind = false) {
 }
 
 KPopup.prototype.setContent = function (html) {
-    return KAIROSAnim.push(() => {
-        this.domNode.innerHTML = html
+    return new Promise(resolve => {
+        window.requestAnimationFrame(() => { 
+            this.domNode.innerHTML = html
+            resolve()
+        })
     })
 }
 
@@ -585,8 +660,11 @@ KPopup.prototype.setContentDiv = function (div) {
     let oldPopup = this.domNode
     this.domNode = div
     this.domNode.classList.add('content')
-    return KAIROSAnim.push(() => {
-        oldPopup.parentNode.replaceChild(this.domNode, oldPopup)
+    return new Promise(resolve => {
+        window.requestAnimationFrame(() => {
+            oldPopup.parentNode.replaceChild(this.domNode, oldPopup)
+            resolve()
+        })
     })
 }
 
@@ -600,9 +678,9 @@ function KConfirm (text = ``, reference = null) {
     return new Promise((resolve) => {
         let popup
         if (reference) {
-            popup = new KPopup('Confirmation d\'action', {reference, fitContent: true})
+            popup = new KPopup('Confirmation d\'action', {reference, fitContent: true, modal: true})
         } else {
-            popup = new KPopup('Confirmation d\'action')
+            popup = new KPopup('Confirmation d\'action', {modal: true})
         }
 
         const form = document.createElement('FORM')

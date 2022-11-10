@@ -176,6 +176,7 @@
     border: 2px solid black;
     background-color: white;
     box-shadow: 6px 6px 3px 0px rgba(0,0,0,0.75);
+    align-items: center;
 }
 
 .kpopup .close, .kpopup .minimize {
@@ -218,6 +219,7 @@
     margin: 0;
     padding: 4px;
     font-size: initial;
+    overflow-x: hidden;
     overflow-y: auto;
     align-items: center;
 }
@@ -235,4 +237,8 @@
 .kpopup .reservation.wait {
     cursor: wait;   
     border-bottom: 4px solid rgba(255,0,0,1);
+}
+
+.kpopup button {
+    max-width: 120px;
 }
