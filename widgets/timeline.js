@@ -946,7 +946,15 @@ define([
     eWheel: function (event) {
       this.toolTip_hide()
       if (this._mask) { return }
-      var move = 1
+      if (event.shiftKey) {
+        if (event.deltaY < 0) {
+          this.moveXRight(7)
+        } else {
+          this.moveXLeft(7)
+        }
+        return
+      }
+      const move = 1
       if (event.deltaX < 0) {
         this.moveXLeft(move)
       } else if (event.deltaX > 0) {
@@ -1167,31 +1175,33 @@ define([
           }
         }
 
-        day.setHours(12, 0, 0)
-        let subLineCell = document.createElement('SPAN')
-        subLineCell.dataset.date = day.toISOString().split('T')[0]
-        subLineCell.innerHTML = `<i  data-action="get-pdf-day" class="far fa-calendar-alt"></i> <i data-action="plan-resource" class="fas fa-car"></i>`
-        subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
-        subLineCell.style.width = `var(--blocksize)`
-        subLineFrag.appendChild(subLineCell)
+        if (this.Viewport.get('day-width') > 15) {
+          day.setHours(12, 0, 0)
+          let subLineCell = document.createElement('SPAN')
+          subLineCell.dataset.date = day.toISOString().split('T')[0]
+          subLineCell.innerHTML = `<i  data-action="get-pdf-day" class="far fa-calendar-alt"></i> <i data-action="plan-resource" class="fas fa-car"></i>`
+          subLineCell.setAttribute('id', `sub-${day.toISOString().split('T')[0]}`)
+          subLineCell.style.width = `var(--blocksize)`
+          subLineFrag.appendChild(subLineCell)
 
-        subLineCell.addEventListener('click', event => {
-          event.stopPropagation()
-          let node = event.target
-          while (node && !node.dataset.date) { node = node.parentNode }
-          if (!node || !node.dataset.date) { return }
-          
-          const date = new Date(node.dataset.date)
-          if (isNaN(date.getTime())) { return }
+          subLineCell.addEventListener('click', event => {
+            event.stopPropagation()
+            let node = event.target
+            while (node && !node.dataset.date) { node = node.parentNode }
+            if (!node || !node.dataset.date) { return }
+            
+            const date = new Date(node.dataset.date)
+            if (isNaN(date.getTime())) { return }
 
-          switch(event.target.dataset.action) {
-            default: return;
-            case 'get-pdf-day':
-              return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}?auth=Bearer ${localStorage.getItem('klogin-token')}`, '_blank')
-            case 'plan-resource':
-              return KIOpenResourceAllocation(date);
-          }
-        })
+            switch(event.target.dataset.action) {
+              default: return;
+              case 'get-pdf-day':
+                return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}?auth=Bearer ${localStorage.getItem('klogin-token')}`, '_blank')
+              case 'plan-resource':
+                return KIOpenResourceAllocation(date);
+            }
+          })
+        }
 
         var d = this.makeDay(day)
         d.domNode.style.display = 'inline-block'

@@ -46,6 +46,14 @@
     margin: 0.5ex 1ch;
 }
 
+.kreservation .content .field.options.hidden {
+    display: none;
+}
+
+.kreservation .content .field.options i {
+    margin: 0 0.2ch;
+}
+
 .kreservation .content .reference {
     font-weight: bold;
 }
@@ -62,6 +70,12 @@
     left: 0;
     bottom: 0;
 
+}
+.kreservation .color-bar.full-height {
+    top: 0;
+    bottom: unset;
+    min-height: 100%;
+    max-height: 100%;
 }
 
 .kreservation.selected {
@@ -273,11 +287,16 @@
     padding: 1ch;
     font-size: 14px;
     font-size: 'B612';
-    width: 660px;
-    height: 180px;
+    width: 'fit-content';
+    height: 'fit-content';
     background-color: rgb(70, 70, 70);
     box-shadow: 2px 5px 5px 0px rgb(70, 70, 70);
     color:white;
+}
+
+.k-reservation-details.small-view {
+    border: 2px solid white;
+    box-shadow: 2px 5px 5px 0px white;
 }
 
 .k-reservation-details .k-field {

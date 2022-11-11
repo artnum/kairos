@@ -13,6 +13,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.copy = false
     this.original = null
     this.copyCount = 0
+    this.smallView = false
     if (options.copy) { 
         this.original = options.copy
         this.original.copyCount++
@@ -227,6 +228,7 @@ KUIReservation.prototype.setRelation = function (source, closure) {
 }
 
 KUIReservation.prototype.showRelation = function (from = []) {
+    if (this.smallView) { return }
     if (from.indexOf(this.object.get('id')) !== -1) { return }
     from.push(this.object.get('id'))
     this.relationPromise
@@ -548,28 +550,47 @@ KUIReservation.prototype.popDetails = function () {
     div.classList.add('k-reservation-details')
     //const step = new KStepProgressUI()
 
-    div.innerHTML = `
-    <div class="k-command">
-        <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
-        <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
-    </div>
-    <div class="k-progress"></div>
-    <div class="k-content">
-        <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-        <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+    if (this.smallView) {
+        div.classList.add('small-view')
+        div.innerHTML = `
+        <div class="k-content">
+            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
 
-        <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-        <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-        <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-    </div>
-    <div class="k-command">
-        <button data-action="print-affaire" class="ui k-small">Imprimer</button>
-    </div>`
-    for (const kcomm of div.querySelectorAll('.k-command')) {
-        kcomm.addEventListener('click', this.doCommand.bind(this))
+            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+        </div>`
+        div.style.setProperty('z-index', KAIROS.zMax())
+        div.style.setProperty('position', 'fixed')
+        div.style.setProperty('top', '0px')
+        div.style.setProperty('left', `${this.Viewport.get('margin-left')}px`)
+        document.body.appendChild(div)
+        this.detailsPopped = [{destroy: function () { return} }, div]
+    } else {
+    div.innerHTML = `
+        <div class="k-command">
+            <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
+            <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
+        </div>
+        <div class="k-progress"></div>
+        <div class="k-content">
+            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+
+            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+        </div>
+        <div class="k-command">
+            <button data-action="print-affaire" class="ui k-small">Imprimer</button>
+        </div>`
+        for (const kcomm of div.querySelectorAll('.k-command')) {
+            kcomm.addEventListener('click', this.doCommand.bind(this))
+        }
+        document.body.appendChild(div)
+        this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
     }
-    document.body.appendChild(div)
-    this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
     const closable = new KClosable()
     closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
 }
@@ -926,9 +947,19 @@ KUIReservation.prototype.render = function () {
             const project = affaire.getRelation('kproject')
             if (!project) { resolve(null); return }
 
+            let direction = ''
+            if (this.object.get('other')) {
+                const other = JSON.parse(this.object.get('other'))
+                if (other.link && other.link.direction) {
+                    direction = other.link.direction !== 'right' ? '<i class="fas fa-long-arrow-alt-right"></i>' : '<i class="fas fa-long-arrow-alt-left"></i>'
+                }
+            }
             const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null && this.object.get('closed') !== '0')
             const folder = affaire.get('folder') !== '0'
             const locked = parseInt(this.object.get('locked'))
+
+            const options = (locked || folder || direction !== '')
+
             let gap = null
             let virtualEnd = null
             let width = 40
@@ -957,56 +988,75 @@ KUIReservation.prototype.render = function () {
                 else {
                     width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * this.Viewport.get('second-width') - offset
                 }
-
-                if (width < 10) { width = 10}
             }
  
             this.props.set('left', left + offset )          
             this.props.set('width', width)
-
- 
             this.object.bindUINode(this)
-            window.requestAnimationFrame(() => {
-                if (ended) { this.domNode.classList.add('k-closed') }
-                else { this.domNode.classList.remove('k-closed') }
-                if (folder) { this.domNode.classList.add('k-folder') }
-                else { this.domNode.classList.remove('k-folder') }
-                if (locked) { this.domNode.classList.add('k-locked') }
-                else { this.domNode.classList.remove('k-locked') }
-                if (gap) { this.domNode.classList.add('k-left-open') }
-                else { this.domNode.classList.remove('k-left-open') }
-                if (virtualEnd) { this.domNode.classList.add('k-right-open') }
-                else { this.domNode.classList.remove('k-right-open') }
 
-                this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
-                this.domNode.style.left = `${this.props.get('left')}px`
-                if (this.height !== undefined) {
-                    this.domNode.style.height = `${this.height}px`
-                } else {
-                    this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
-                }
+            if (this.Viewport.get('day-width') <= 15) {
+                this.smallView = true
+                window.requestAnimationFrame(() => {
+                    this.domNode.style.width = `${width.toPrecision(2)}px`
+                    this.domNode.style.left = `${this.props.get('left')}px`
+                    if (this.height !== undefined) {
+                        this.domNode.style.height = `${this.height}px`
+                    } else {
+                        this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
+                    }
+    
+                    if (this.top !== undefined) {
+                        this.domNode.style.top = `${this.top}px`
+                    }
 
-                if (this.top !== undefined) {
-                    this.domNode.style.top = `${this.top}px`
-                }
+                    this.domNode.innerHTML = `<div class="full-height color-bar"> </div>`
+                    this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                    resolve(this.domNode)
+                })
+            } else {
+                this.smallView = false
+                window.requestAnimationFrame(() => {
+                    if (ended) { this.domNode.classList.add('k-closed') }
+                    else { this.domNode.classList.remove('k-closed') }
+                    if (folder) { this.domNode.classList.add('k-folder') }
+                    else { this.domNode.classList.remove('k-folder') }
+                    if (locked) { this.domNode.classList.add('k-locked') }
+                    else { this.domNode.classList.remove('k-locked') }
+                    if (gap) { this.domNode.classList.add('k-left-open') }
+                    else { this.domNode.classList.remove('k-left-open') }
+                    if (virtualEnd) { this.domNode.classList.add('k-right-open') }
+                    else { this.domNode.classList.remove('k-right-open') }
 
-                if (changeDom) {
-                    this.domProduced = true
-                    this.domNode.innerHTML = `<div class="content">
-                            <span class="field options"><i class="fas fa-folder"> </i> <i class="fa fa-lock"> </i></span>
-                            <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
-                            <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
-                            <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
-                            <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
-                            <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
-                        </div>
-                        <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
-                        this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
-                }
-                if (this.detailsPopped) { this.detailsPopped[0].update() }
-                if (this.shownRelations.length > 0) { this.showRelation() }
-                resolve(this.domNode)
-            })
+                    this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
+                    this.domNode.style.left = `${this.props.get('left')}px`
+                    if (this.height !== undefined) {
+                        this.domNode.style.height = `${this.height}px`
+                    } else {
+                        this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
+                    }
+
+                    if (this.top !== undefined) {
+                        this.domNode.style.top = `${this.top}px`
+                    }
+
+                    if (changeDom) {
+                        this.domProduced = true
+                        this.domNode.innerHTML = `<div class="content">
+                                <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
+                                <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
+                                <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
+                                <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
+                                <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                                <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                            </div>
+                            <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
+                            this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                    }
+                    if (this.detailsPopped) { this.detailsPopped[0].update() }
+                    if (this.shownRelations.length > 0) { this.showRelation() }
+                    resolve(this.domNode)
+                })
+            }
         })
     })
     return this.rendered

@@ -15,13 +15,6 @@ const kMouseFollow = event => {
     kMouseFollow._last_start = performance.now()
     KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? (event.pageY || event.clientX)
     KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
-    const diplaysCoords = document.querySelector('input[data-dojo-attach-point="nSearchMachineLive"]')
-    if (diplaysCoords){
-        const kview = new KView()
-        const localBox = kview.getCurrentBox()
-        const globalBox = kview.getCurrentGridBox()
-        diplaysCoords.value = `${event.clientX},${event.clientY} | ${localBox.x},${localBox.y} | ${globalBox.x},${globalBox.y}=>${globalBox.flat}`
-    }
     KAIROS.mouse.clientX = event.pageX || event.clientX 
     KAIROS.mouse.clientY = event.pageY || event.clientY
     for (const [_, cb] of KAIROS.mouse.follow) {

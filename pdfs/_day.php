@@ -241,9 +241,8 @@ foreach ($order as $k => $v) {
     $kpdf->printTaggedLn(['%cb', $project->get('reference')], ['max-width' => 40, 'break' => false]);
     $REFX = $kpdf->GetX();
     $kpdf->br();
-    $kpdf->printTaggedLn(['%c', $project->get('name')], ['max-width' => 40, 'multiline' => true ]);
+    $kpdf->printTaggedLn(['%c', trim($project->get('name'))], ['max-width' => 40, 'multiline' => true ]);
     if ($affaire->get('group')) { $kpdf->printTaggedLn(['%c', $affaire->get('group')], ['max-width' => 40, 'multiline' => true ]); }
-
     $kpdf->to_block_begin();
     $status = null;
 
@@ -254,8 +253,11 @@ foreach ($order as $k => $v) {
         return intval($entryA->get('order')) - intval($entryB->get('order'));
     });
 
+    $other = null;
+    $detail = '';
     $targets = [];
     foreach ($kobjects as $kobject) {
+        if (!$other && $kobject->get('other') !== null) { $other = $kobject->get('other'); }
         if (!$status) { $status = $kstatus->get($kobject->get('status')); }
         if (in_array($kobject->get('target'), $targets)) { continue; }
         $targets[] = $kobject->get('target');
@@ -268,7 +270,6 @@ foreach ($order as $k => $v) {
         if ($kobject->get('comment')) { $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 32, 'multiline' => true, 'break' => false]); }
         $kpdf->br();
     }
-
     if (!$status) {
         $status = $kstatus->get($affaire->get('status'));
     }
@@ -304,10 +305,37 @@ foreach ($order as $k => $v) {
 
     $kpdf->to_block_begin();
 
+    $header = '';
+    $details = '';
+    if ($other) {
+        $other = json_decode($kobject->get('other'), true);
+        if ($other['link']) {
+           $header = $other['link']['direction'] === 'right' ? '← ' : '→ ';
+           $otherReservation = $kreservation->get($other['link']['to']);
+           if (!$otherReservation->get('deleted')) {
+            $begin = new DateTime($otherReservation->get('begin'));
+            $dateFormater = new IntlDateFormatter(
+                    'fr_CH',  IntlDateFormatter::FULL,
+                    IntlDateFormatter::FULL,
+                    'Europe/Zurich',
+                    IntlDateFormatter::GREGORIAN,
+                    'dd MMMM y'
+                );
+                $detail = $dateFormater->format($begin);
+            }
+        }
+    }
     $kpdf->tab(3);
-    $kpdf->printTaggedLn(['%cb', str_replace("\n", ' ', $affaire->get('reference'))], ['multiline' => true, 'max-width' => 40]);
+    $kpdf->printTaggedLn(['%cb', $header . str_replace("\n", ' ', $affaire->get('reference'))], ['multiline' => true, 'max-width' => 40]);
     $kpdf->tab(3);
     $kpdf->printTaggedLn(['%c', str_replace("\n", ' ', $affaire->get('description'))], ['multiline' => true, 'max-width' => 40]);
+    
+    if (!empty($detail)) {
+        $kpdf->tab(3);
+        $kpdf->setFontSize(2);
+        $kpdf->printTaggedLn(['%c', '(' . ($header === '← ' ? '→ ' : '← ') . $detail . ')'], ['multiline' => true, 'max-width' => 40]);
+        $kpdf->setFontSize(3);
+    }
     $PDF->to_block_end();
     $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
     $PDF->close_block();
