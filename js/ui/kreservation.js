@@ -158,7 +158,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                         const kstore = new KStore('kreservation')
                         kstore.get(other.link.to)
                         .then(kobject => {
-                            if (!kobject.get('deleted')) { return resolve(true) }
+                            if (kobject.get('deleted') === null) { return resolve(true) }
                             resolve(false)
                         })
                         .catch(_ => {
@@ -171,7 +171,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                 const action = [                       
                     {name: 'delete', label: 'Supprimer', type: 'danger'}
                 ]
-                if (other && other.link && other.link.direction === 'left') {
+                if ((other && other.link && other.link.direction === 'left') || !other) {
                     action.unshift({name: 'duplicate-at-end', label: replan ? 'Replanifier la fin' : 'Créer la fin'})
                 }
                 const klateral = new KLateral()
@@ -868,6 +868,9 @@ KUIReservation.prototype.renderForm = function () {
                             const kstore = new KStore('kreservation')
                             kstore.get(other.link.to)
                             .then(clone => {
+                                if (clone.get('deleted') !== null) {
+                                    clone = reservation.clone()
+                                }
                                 const begin = new Date(travail.get('end'))
                                 const end = new Date(travail.get('end'))
                                 const beginHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
