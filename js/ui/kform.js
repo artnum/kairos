@@ -315,7 +315,7 @@ KFormUI.prototype.render = function (fields) {
                     case 'date':
                         const date = document.createElement('INPUT')
                         date.addEventListener('focus', event => {
-                            const kalendar = new CalendarUI(new Date(value))
+                            const kalendar = new CalendarUI(new KDate(value))
                             kalendar.render()
                             .then(node => {
                                 node.style.setProperty('z-index', KAIROS.zMax())

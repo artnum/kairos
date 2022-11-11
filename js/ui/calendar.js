@@ -8,6 +8,7 @@ function CalendarUI (date = new Date(), holiday = null, options = {}) {
     this.holiday = holiday
     this.evtTarget = new EventTarget()
     this.today = date
+    if (isNaN(this.today.getTime())) { this.today = new Date() }
     this.dates = []
     this.range = []
 
@@ -47,6 +48,7 @@ CalendarUI.prototype.getWeekdayName = function (weekday) {
 
 CalendarUI.prototype.getMonthName = function (month) {
     const today = new Date()
+    if (isNaN(month)) { month = today.getMonth() }
     today.setMonth(month, 15)
     return (new Intl.DateTimeFormat(undefined, {month: 'long'})).format(today) 
 }
