@@ -150,33 +150,55 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         if (this.poptimeout) { clearTimeout(this.poptimeout) }
         this.renderForm()
         .then(domNode => {
-            const klateral = new KLateral()
-            const ktab = klateral.add(domNode, { 
-                title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
-                id: this.object.get('uid'),
-                action: [
-                    {name: 'duplicate-at-end', label: 'Créer la fin'},
+            const other = JSON.parse(this.object.get('other'))
+            let waitOther = Promise.resolve(false)
+            if (other) {
+                if (other.link && other.link.to) {
+                    waitOther = new Promise((resolve) => {
+                        const kstore = new KStore('kreservation')
+                        kstore.get(other.link.to)
+                        .then(kobject => {
+                            if (!kobject.get('deleted')) { return resolve(true) }
+                            resolve(false)
+                        })
+                        .catch(_ => {
+                            resolve(false)
+                        })
+                    })
+                }
+            }
+            waitOther.then(replan => {
+                const action = [                       
                     {name: 'delete', label: 'Supprimer', type: 'danger'}
                 ]
+                if (other && other.link && other.link.direction === 'left') {
+                    action.unshift({name: 'duplicate-at-end', label: replan ? 'Replanifier la fin' : 'Créer la fin'})
+                }
+                const klateral = new KLateral()
+                const ktab = klateral.add(domNode, { 
+                    title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+                    id: this.object.get('uid'),
+                    action: action
+                })
+                if (ktab) {
+                    ktab.addEventListener('k-action', event => {
+                        this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
+                    })
+                    ktab.addEventListener('focus', () => {
+                        this.select()
+                        this.showRelation()
+                    })
+                    ktab.addEventListener('blur', () => {
+                        this.unselect()
+                        this.hideRelation()
+                    })
+                    this.addEventListener('close', event => {
+                        ktab.close()
+                    })
+                }
+                this.select()
+                this.showRelation()
             })
-            if (ktab) {
-                ktab.addEventListener('k-action', event => {
-                    this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
-                })
-                ktab.addEventListener('focus', () => {
-                    this.select()
-                    this.showRelation()
-                })
-                ktab.addEventListener('blur', () => {
-                    this.unselect()
-                    this.hideRelation()
-                })
-                this.addEventListener('close', event => {
-                    ktab.close()
-                })
-            }
-            this.select()
-            this.showRelation()
         })
     })
 
@@ -839,42 +861,70 @@ KUIReservation.prototype.renderForm = function () {
         if (!this.eventInstalled.includes('duplicate-at-end')) {
             this.addEventListener('duplicate-at-end', event => {
                 const other = JSON.parse(reservation.get('other'))
-                let confirmed = Promise.resolve(true)
                 if (other) {
-                    confirmed = KConfirm('La fin existe déjà, êtes-vous sûr de vouloir procéder', event.detail.target)
+                    if (other.link && other.link.to) {
+                        const travail = reservation.getRelation('kaffaire')
+                        if (travail.get('end')) {
+                            const kstore = new KStore('kreservation')
+                            kstore.get(other.link.to)
+                            .then(clone => {
+                                const begin = new Date(travail.get('end'))
+                                const end = new Date(travail.get('end'))
+                                const beginHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
+                                const endHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[1])
+                                begin.setHours(beginHour[0], beginHour[1], 0, 0)
+                                end.setHours(endHour[0], endHour[1], 0, 0)
+                                clone.set('begin', begin)
+                                clone.set('end', end)
+                                clone.set('other', JSON.stringify({
+                                    link: {
+                                        to: reservation.get('uid'),
+                                        direction: 'right'
+                                    }
+                                }))
+                                KStore.save(clone)
+                                .then(clone => {
+                                    reservation.set('other', JSON.stringify({
+                                        link: {
+                                            to: clone.get('uid'),
+                                            direction: 'left'
+                                        }
+                                    }))
+                                    KStore.save(reservation)
+                                })
+                            })
+                        }
+                    }
+                    return                    
                 }
-                confirmed
-                .then(confirmed => {
-                    if (!confirmed) { return }
-                    const travail = reservation.getRelation('kaffaire')
-                    if (travail.get('end')) {
-                        const clone = reservation.clone()
-                        const begin = new Date(travail.get('end'))
-                        const end = new Date(travail.get('end'))
-                        const beginHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
-                        const endHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[1])
-                        begin.setHours(beginHour[0], beginHour[1], 0, 0)
-                        end.setHours(endHour[0], endHour[1], 0, 0)
-                        clone.set('begin', begin)
-                        clone.set('end', end)
-                        clone.set('other', JSON.stringify({
+                const travail = reservation.getRelation('kaffaire')
+                if (travail.get('end')) {
+                    const clone = reservation.clone()
+                    const begin = new Date(travail.get('end'))
+                    const end = new Date(travail.get('end'))
+                    const beginHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[0])
+                    const endHour = KVDays.dec2HM(KVDays.getDayBeginEnd(begin, KAIROS)[1])
+                    begin.setHours(beginHour[0], beginHour[1], 0, 0)
+                    end.setHours(endHour[0], endHour[1], 0, 0)
+                    clone.set('begin', begin)
+                    clone.set('end', end)
+                    clone.set('other', JSON.stringify({
+                        link: {
+                            to: reservation.get('uid'),
+                            direction: 'right'
+                        }
+                    }))
+                    KStore.save(clone)
+                    .then(clone => {
+                        reservation.set('other', JSON.stringify({
                             link: {
-                                to: reservation.get('uid'),
-                                direction: 'right'
+                                to: clone.get('uid'),
+                                direction: 'left'
                             }
                         }))
-                        KStore.save(clone)
-                        .then(clone => {
-                            reservation.set('other', JSON.stringify({
-                                link: {
-                                    to: clone.get('uid'),
-                                    direction: 'left'
-                                }
-                            }))
-                            KStore.save(reservation)
-                        })
-                    }
-                })
+                        KStore.save(reservation)
+                    })
+                }
             })
             this.eventInstalled.push('duplicate-at-end')
         }
