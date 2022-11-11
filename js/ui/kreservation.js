@@ -171,10 +171,10 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                     this.unselect()
                     this.hideRelation()
                 })
+                this.addEventListener('close', event => {
+                    ktab.close()
+                })
             }
-            this.addEventListener('close', event => {
-                ktab.close()
-            })
             this.select()
             this.showRelation()
         })

@@ -340,6 +340,10 @@ KLateral.prototype.showTab = function (idx) {
             break
         }
     }
+    if (this.tabCurrent !== 0) {
+        this.tabPrevSelected = this.tabCurrent
+        this.hideTab(this.tabCurrent)
+    }
     const tab = this.tabs.get(String(idx))
     const parent = this.domNode.querySelector('div.kaction')
     tab.getButtons().forEach(button => {
@@ -348,10 +352,6 @@ KLateral.prototype.showTab = function (idx) {
             window.requestAnimationFrame(() => { parent.appendChild(node) })
         }
     })
-    if (this.tabCurrent !== 0) {
-        this.tabPrevSelected = this.tabCurrent
-        this.hideTab(this.tabCurrent)
-    }
     const [tabTitle, tabContent] = this.getTab(idx)
     if (!tabTitle) { return }
 
