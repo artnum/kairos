@@ -23,7 +23,6 @@ define([
   'dijit/registry',
 
   'location/timeline/popup',
-  'location/timeline/keys',
   'location/timeline/filters',
   'location/count',
   'location/countList',
@@ -51,7 +50,7 @@ define([
   djDomGeo,
   dtRegistry,
   
-  tlPopup, tlKeys, Filters,
+  tlPopup, Filters,
   Count,
   CountList,
   Reservation,
@@ -60,7 +59,7 @@ define([
 ) {
   return djDeclare('location.timeline', [
     dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
-    tlPopup, tlKeys, Filters ], {
+    tlPopup, Filters ], {
     center: null,
     offset: 260,
     blockSize: 42,
@@ -629,7 +628,6 @@ define([
         this.doSearchLocation(event.detail.reservation, true)
       })
 
-      window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), {passive: true})
