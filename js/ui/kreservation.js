@@ -84,6 +84,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             const other = JSON.parse(this.object.get('other'))
             if (other) {
                 (() => {
+                    if ((new KSettings()).get('dont-display-back-forth')) { return }
                     this.setUpOtherLeaderLine = new Promise(resolve => {                   
                         if (!other.link) { return }
                         if (!other.link.to) { return }
@@ -250,6 +251,7 @@ KUIReservation.prototype.setRelation = function (source, closure) {
 }
 
 KUIReservation.prototype.showRelation = function (from = []) {
+    if ((new KSettings()).get('dont-display-relation')) { return }
     if (this.smallView) { return }
     if (from.indexOf(this.object.get('id')) !== -1) { return }
     from.push(this.object.get('id'))
@@ -558,14 +560,17 @@ KUIReservation.prototype.popDetails = function () {
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')
     if (!project) { return }
-
-    if (this.domNode.classList.contains('selected')) {
-        this.lowlight()
-    } else {
-        this.highlight()
+    
+    if (!(new KSettings()).get('dont-allow-select')) { 
+        if (this.domNode.classList.contains('selected')) {
+            this.lowlight()
+        } else {
+            this.highlight()
+        }
+        this.select()
     }
 
-    this.select()
+    if ((new KSettings()).get('dont-show-details')) { return }
     if (this.detailsPopped) { return this.unpopDetails() }
 
     const div = document.createElement('DIV')

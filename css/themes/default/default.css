@@ -23,6 +23,7 @@
 @import '../../color.css';
 @import '../../mbutton.css';
 @import '../../kbar.css';
+@import '../../lds-ripple.css';
 @import 'kfieldset.css';
 @import 'klist.css';
 @import 'kproject.css';

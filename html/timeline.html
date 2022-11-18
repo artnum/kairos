@@ -104,6 +104,7 @@
           "location/timeline",
           "dojo/domReady!"
         ], function (timeline) {
+          const settings = new KSettings() // preload settings
           KAIROS.getClientId()
             .then(cid => {
               window.App = new timeline()

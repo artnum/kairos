@@ -616,6 +616,19 @@ define([
       this.view = {}
       this.set('zoom', 'week')
 
+      window.addEventListener('k-set-center', event => {
+        const origin = this.center
+        const target = event.detail.date
+        target.setHours(12, 0, 0, 0)
+        target.setTime(target.getTime() - ((Math.floor(this.domNode.offsetWidth / this.get('blockSize') / 2) - 2) * 86400000))
+        const diff = Math.floor((origin.getTime() - target.getTime()) / 86400000)
+        if (Math.abs(diff) > 365) { return KAIROS.error('Déplacement trop loin dans le temps') }
+        this.move(diff)
+      })
+      window.addEventListener('k-search-reservation', event => {
+        this.doSearchLocation(event.detail.reservation, true)
+      })
+
       window.addEventListener('keyup', this.keys.bind(this), {capture: true})
       this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
       this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
@@ -665,8 +678,8 @@ define([
       window.addEventListener('keyup', iGrowAddReservationEnd.bind(this))
       window.addEventListener('global-keypress', event => {
         switch(event.key) {
-          case 'Enter': return iAddReservation(event).bind(this)
-          case 'Delete': return iDeleteReservation(event).bind(this)
+          case 'Enter': return iAddReservation(event)
+          case 'Delete': return iDeleteReservation(event)
           case 'F3': 
             event.preventDefault()
             return iZoomCurrentBox(event)
@@ -1001,7 +1014,6 @@ define([
       this.center = djDate.add(this.center, 'day', Math.abs(x))
       this.Viewport.move(-x)
       this.firstDay = this.Viewport.get('date-origin')
-      this.resizeTimeline()
       this.update()
     },
     moveOneRight: function () {
@@ -1018,7 +1030,6 @@ define([
       this.center = djDate.add(this.center, 'day', -Math.abs(x))
       this.Viewport.move(x)
       this.firstDay = this.Viewport.get('date-origin')
-      this.resizeTimeline()
       this.update()
     },
     moveOneLeft: function () {

@@ -28,6 +28,18 @@ const K_ERROR = 3
 
 KAIROS.lastInputBlured = []
 
+
+window.addEventListener('k-message', event => {
+    switch (event.detail.type) {
+        default:
+        case 'error':
+            return KAIROS.error(event.detail.content)
+        case 'warning':
+            return KAIROS.warn(event.detail.content)
+        case 'info':
+            return KAIROS.info(event.detail.content)
+    }
+})
 window.addEventListener('mousemove', kMouseFollow)
 window.addEventListener('touchmove', kMouseFollow)
 window.addEventListener('dragover', kMouseFollow)
@@ -79,10 +91,9 @@ window.addEventListener('keydown', (event) => {
                 }
             }
             return
+        case 'F2':
+            return new KCommandOverlay()
         case 'F5':
-            if (KAIROS.kache.c) {
-                KAIROS.kache.c = new Map()
-            }
             if (event.ctrlKey) {
                 KAIROS.abortAllRequest()
             } else {
@@ -221,8 +232,8 @@ KAIROS.log = function (level, txt, code) {
     document.body.classList.add(`${level}`)
 
     const logLine = document.getElementById('LogLine')
-    const zmax = KAIROS.zMax()
-    KAIROSAnim.push(() => { 
+    const zmax = KAIROS.zMax() * 2
+    window.requestAnimationFrame(() => { 
         logLine.style.setProperty('z-index', zmax)
         logLine.appendChild(div)
     })

@@ -281,11 +281,6 @@ KView.prototype.move = function (days) {
     const dateOrigin = this.get('date-origin')
     dateOrigin.setTime(dateOrigin.getTime() - (days * 86400000))
     this.set('date-origin', dateOrigin)
-    this.eventTarget.dispatchEvent(new CustomEvent('move', {
-        detail: {
-            left: days * this.data.get('day-width')
-        }
-    }))
 
     /* negative value add a row in front to create place for the new day in the futur 
      * positive value add a row at the back to create place for the new day in the past
@@ -365,6 +360,12 @@ KView.prototype.move = function (days) {
         const ui = o.getUINode()
         if (ui) { ui.unrender() }
     }
+
+    this.eventTarget.dispatchEvent(new CustomEvent('move', {
+        detail: {
+            left: days * this.data.get('day-width')
+        }
+    }))
 }
 
 KView.prototype.resize = function () {

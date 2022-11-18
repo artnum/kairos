@@ -220,6 +220,7 @@ function iAddReservation (event) {
     let ttime = 8
 
     const begin = new Date()
+    if (!this.firstDay) { return }
     begin.setTime(this.firstDay.getTime())
     begin.setTime(begin.getTime() + (x * 86400000))
 
@@ -256,88 +257,7 @@ function iAddReservation (event) {
       target: entry.id,
       affaire: travail.data.get('uid'),
       status: travail.data.get('status')
-  })
-  
-  /*
-    const reservationStore = new KStore('kreservation')
-    const reservations = travail.data.getRelation('kreservation')
-    let updateAll = Promise.resolve()
-    if (reservations) {
-      const targets = []
-      const byTargets = new Map()
-      for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-        if (targets.indexOf(reservation.get('target')) === -1) { 
-          targets.push(reservation.get('target')) 
-        }
-        if (!byTargets.has(reservation.get('target'))) {
-          byTargets.set(reservation.get('target'), [])
-        }
-        byTargets.get(reservation.get('target')).push(reservation)
-      }
-
-      ttime = ttime / (targets.length + 1)
-      
-      for (const [_, targetReservations] of byTargets.entries()) {
-        targetReservations.sort((a, b) => {
-            const aTime = new Date(a.get('begin'))
-            const bTime = new Date(b.get('begin'))
-            return aTime.getTime() - bTime.getTime()
-        })
-        const newRanges = KVDays.getRanges(new Date(targetReservations[0].get('begin')), ttime, KAIROS.days)
-        for (const rkey of newRanges.keys()) {
-            if (targetReservations[rkey]) {
-                reservationStore.set({
-                    id: targetReservations[rkey].get('uid'),
-                    time: newRanges[rkey][2],
-                    end: newRanges[rkey][1].toISO8601(),
-                    begin: newRanges[rkey][0].toISO8601(),
-                    version: parseInt(targetReservations[rkey].get('version')),
-                    status: travail.data.get('status')
-                }, targetReservations[rkey].get('uid'))
-            } else {
-                reservationStore.set({
-                    time: newRanges[rkey][2],
-                    end: newRanges[rkey][1].toISO8601(),
-                    begin: newRanges[rkey][0].toISO8601(),
-                    target: entry.id,
-                    affaire: travail.data.get('uid'),
-                    status: travail.data.get('status')
-                })
-            }
-        }
-        for (let i = newRanges.length; i < targetReservations.length; i++) {
-            reservationStore.delete(targetReservations[i].get('uid'))
-        }
-      }
-      /*
-
-      end.setTime(date.getTime() + duration)
-      const p = []
-      for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-        const begin = new Date(reservation.get('begin'))
-        const end = new Date()
-        end.setTime(begin.getTime() + duration)
-        p.push(reservationStore.set({id: reservation.get('uid'), end: end.toISOString(), version: reservation.get('version')}, reservation.get('uid')))
-      }
-      updateAll = Promise.allSettled(p)
-    }
-    const ranges = KVDays.getRanges(date, ttime, KAIROS.days)
-    updateAll
-    .then(_ => {
-      for (const range of ranges) {
-        reservationStore.set({
-            time: range[2],
-            begin: range[0].toISO8601(),
-            end: range[1].toISO8601(),
-            target: entry.id,
-            affaire: travail.data.get('uid'),
-            status: travail.data.get('status')
-        })
-        .then(result => {
-          KAIROS.info(`Nouvelle réservation`)
-        })
-      }
-    })*/
+    })
   }
 
   function iDeleteReservation (event) {

@@ -133,6 +133,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/address.js', 'script'],
         ['../js/kformdata.js', 'script'],
         ['../js/kvdays.js', 'script'],
+        ['../js/k-settings.js', 'script'],
         ['../js/ui/hour.js', 'script'],
         ['../js/sanitize.js', 'script'],
         ['../js/ui/radiolike.js', 'script'],
@@ -166,6 +167,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/k-exchange.js', 'script'],
 
         ['../js/ui/kmouse.js', 'script'],
+        ['../js/ui/k-command-overlay.js', 'script'],
 
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],

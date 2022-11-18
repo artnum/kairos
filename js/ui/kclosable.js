@@ -30,15 +30,22 @@ KClosable.new = function (domNode, options) {
     return kclosable.add(domNode, options)
 }
 
+KClosable.prototype.closeByIdx = function (index) {
+    const closable = this.remove(index)
+    return this.closeClosable(closable)
+}
+
 KClosable.prototype.remove = function (index) {
     let i = 0;
     for (; i < this.stack.length; i++) {
-        if (this.stack.index === parseInt(index)) {
+        if (this.stack[i].index === parseInt(index)) {
             break
         }
     }
     if (i >= this.stack.length) { return }
+    const closable = this.stack[i]
     this.stack.splice(i, 1)
+    return closable
 }
 
 KClosable.prototype.removeByFunction = function (fn) {

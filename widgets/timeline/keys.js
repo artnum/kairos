@@ -64,6 +64,7 @@ define([
         }
       }.bind(this))
       window.addEventListener('keydown', event => {
+        /*
         if (event.ctrlKey) { return }
         if (event.key === KAIROS.CommandWindow.escapeKey) {
           let cMode = this.switchCommandMode()
@@ -115,6 +116,7 @@ define([
             }
           }
         }
+        */
       }, {capture: true})
     },
 
