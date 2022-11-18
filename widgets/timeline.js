@@ -115,6 +115,41 @@ define([
       this.Viewport.setEntryHeight(78)
       this.Viewport.setEntryInnerHeight(74)
 
+      const kglobal = new KGlobal()
+      kglobal.watch('k-project-highlight', 'highlight-project', function (name, oldValue, newValue) {
+        if (oldValue) {
+          window.requestAnimationFrame(() => {
+            document.querySelectorAll(`div[data-kproject="${oldValue}"]`)
+            .forEach(node => {
+              node.style.removeProperty('--selected-color')
+              node.classList.remove('selected')
+            })
+          })
+        }
+        if (newValue) {
+          window.requestAnimationFrame(() => {
+            document.querySelectorAll(`div[data-kproject="${newValue}"]`)
+            .forEach(node => {
+              node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
+              node.classList.add('selected')
+            })
+          })
+        }
+      })
+
+      ;(new KView()).addRunOnMove(function () {
+        const prj = (new KGlobal()).get('k-project-highlight')
+        if (prj) {
+          window.requestAnimationFrame(() => {
+            document.querySelectorAll(`div[data-kproject="${prj}"]`)
+            .forEach(node => {
+              node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
+              node.classList.add('selected')
+            })
+          })
+        }
+      })
+
       this.Viewport.addEventListener('EnterColumn', event => {
         const frame = document.getElementById('VerticalLineFrame')
         let i = 0;

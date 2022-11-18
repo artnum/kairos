@@ -223,7 +223,7 @@ function KObject (type, data, copy = false) {
                 case 'relation': return undefined
                 case 'clone': return object.doClone.bind(object)
                 case 'copy': return object.copy.bind(object)
-
+                case 'dispatchEvent': return object.doDispatchEvent.bind(object)
             }
             return object.getItem(name)
         },
@@ -266,6 +266,7 @@ function KObject (type, data, copy = false) {
                 case 'deleteObject':
                 case 'clone':
                 case 'copy':
+                case 'dispatchEvent':
                     return {
                         writable: false,
                         enumerable: false,
@@ -361,6 +362,10 @@ KObject.prototype.addEventListener = function (type, listener, options) {
 
 KObject.prototype.removeEventListener = function (type, listener, options) {
     this.evtTarget.removeEventListener(type, listener, options)
+}
+
+KObject.prototype.doDispatchEvent = function (event) {
+    this.evtTarget.dispatchEvent(event)
 }
 
 KObject.prototype.doUpdate = function (data) {

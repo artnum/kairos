@@ -29,13 +29,6 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     if (!this.copy) { this.domNode.id = this.object.get('uuid') }
     else { this.domNode.id = `${this.object.get('uuid')}-copy-${this.original.copyCount}`}
 
-    this.kaffaire = object.getRelation('kaffaire')
-    if (this.kaffaire) {
-        this.kproject = this.kaffaire.getRelation('kproject')
-    }
-    if (this.kproject) {
-        this.domNode.dataset.kproject = this.kproject.get('uid')
-    }
     if (!options.readonly) {
         this.domNode.addEventListener('dragstart', event => {
             if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
@@ -94,13 +87,19 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                             if (!otherNode) { return }
                             const otherDom = document.getElementById(otherNode.get('uuid'))
                             if (!otherDom) { return }
-                            if (this.otherLeaderLine) { this.otherLeaderLine.remove() }
-                            if (other.link.direction === 'left') {
-                                this.otherLeaderLine = new LeaderLine(this.domNode, otherDom, {dash: {animation: true}})
-                            } else {
-                                this.otherLeaderLine = new LeaderLine(otherDom, this.domNode, {dash: {animation: true}})
+                            try {
+                                if (this.otherLeaderLine) { this.otherLeaderLine.remove() }
+                            
+                                if (other.link.direction === 'left') {
+                                    this.otherLeaderLine = new LeaderLine(this.domNode, otherDom, {dash: {animation: true}})
+                                } else {
+                                    this.otherLeaderLine = new LeaderLine(otherDom, this.domNode, {dash: {animation: true}})
+                                }
+                            } catch(_) {
+                                // nothing
+                            } finally {
+                                resolve()
                             }
-                            resolve()
                         })
                     })
                 })()
@@ -524,16 +523,7 @@ KUIReservation.prototype.highlight = function () {
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')
     if (!project) { return }
-    const color = `hsla(0, 100%, 50%, 1)`
-    const nodes = document.querySelectorAll(`[data-kproject="${project.get('uid')}"]`)
-    for (const node of nodes ){
-        window.requestAnimationFrame(() => { 
-            if (!node) { return }
-            node.style.setProperty('--selected-color', color)
-            node.classList.add('selected')
-        })
-    }
-    (new KView()).addRunOnMove(this.highlight.bind(this), `prj-${project.get('uid')}`)
+    (new KGlobal()).set('k-project-highlight', project.get('uid'))
 }
 
 KUIReservation.prototype.lowlight = function () {
@@ -544,15 +534,7 @@ KUIReservation.prototype.lowlight = function () {
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')
     if (!project) { return }
-    (new KView()).delRunOnMove(`prj-${project.get('uid')}`)
-    const nodes = document.querySelectorAll(`[data-kproject="${project.get('uid')}"]`)
-    for (const node of nodes ) {
-        window.requestAnimationFrame(() => {
-            if (!node) { return }
-            node.style.removeProperty('--selected-color')
-            node.classList.remove('selected')
-        })
-    }
+    (new KGlobal()).delete('k-project-highlight')
 }
 
 KUIReservation.prototype.popDetails = function () {
@@ -1051,6 +1033,23 @@ KUIReservation.prototype.render = function () {
             this.props.set('left', left + offset )          
             this.props.set('width', width)
             this.object.bindUINode(this)
+
+            this.kaffaire = this.object.getRelation('kaffaire')
+            if (this.kaffaire) {
+                    this.kproject = this.kaffaire.getRelation('kproject')
+                    if (this.kproject) {
+                        window.requestAnimationFrame(() => { this.domNode.dataset.kproject = this.kproject.get('uid') })
+                    }
+            }
+
+            const kglobal = new KGlobal()
+            const prj = kglobal.get('k-project-highlight')
+            if (prj && this.kproject.get('uid') !== prj) {
+                window.requestAnimationFrame(() => {
+                    this.domNode.style.removeProperty('--selected-color')
+                    this.domNode.classList.remove('selected')
+                })
+            }
 
             if (this.Viewport.get('day-width') <= 15) {
                 this.smallView = true

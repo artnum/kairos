@@ -102,6 +102,7 @@ KStore.prototype.relateEntry = function (kobject) {
                     relation.value.addRelation(kobject.getType(), kobject)
                 }
             }
+            kobject.dispatchEvent(new CustomEvent('relation-loaded'))
             resolve(kobject)
         })
         .catch(reason => {

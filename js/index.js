@@ -105,7 +105,9 @@ window.addEventListener('kairos-preload', event => {
         ['../css/balloon.css/balloon.min.css', 'css'],
         ['../css/klateral.css', 'css'],
         ['../css/kform.css', 'css'],
+        
         ['../resources/symbols.js', 'script'],  
+
         ['../js/animation.js', 'script'],
         ['../js/css.js', 'script'],
         ['../js/color.js', 'script'],
@@ -134,24 +136,23 @@ window.addEventListener('kairos-preload', event => {
         ['../js/kformdata.js', 'script'],
         ['../js/kvdays.js', 'script'],
         ['../js/k-settings.js', 'script'],
-        ['../js/ui/hour.js', 'script'],
+        ['../js/k-global.js', 'script'],
         ['../js/sanitize.js', 'script'],
+        ['../js/kevent.js', 'script'],
+        ['../js/kentry.js', 'script'],
+        ['../js/kaffaire.js', 'script'],
+        ['../js/kstore.js', 'script'],
+        ['../js/kobject.js', 'script'],
+
+        ['../js/ui/hour.js', 'script'],
         ['../js/ui/radiolike.js', 'script'],
         ['../js/ui/khtml.js', 'script'],
         ['../js/ui/klateral.js', 'script'],
         ['../js/ui/kreservation.js', 'script'],
         ['../js/ui/kentry-sort.js', 'script'],
         ['../js/ui/k-step-progress.js', 'script'],
-
         ['../js/ui/kselect.js', 'script'],
-        ['../js/kevent.js', 'script'],
-        ['../js/kentry.js', 'script'],
         ['../js/ui/kentry.js', 'script'],
-        ['../js/kaffaire.js', 'script'],
-        ['../js/kstore.js', 'script'],
-        ['../js/kobject.js', 'script'],
-        ['../js/interaction/ontimeline.js', 'script'],
-
         ['../js/ui/kform.js', 'script'],
         ['../js/ui/klist.js', 'script'],
         ['../js/ui/kview.js', 'script'],
@@ -165,7 +166,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kstate.js', 'script'],
         ['../js/ui/kresource.js', 'script'],
         ['../js/ui/k-exchange.js', 'script'],
-
         ['../js/ui/kmouse.js', 'script'],
         ['../js/ui/k-command-overlay.js', 'script'],
 
@@ -177,6 +177,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/lib/throttle.js', 'script'],
         ['../js/utils/time.js', 'script'],
         ['../js/utils/browser.js', 'script'],
+
+        ['../js/interaction/ontimeline.js', 'script'],
 
         ['../node_modules/artnum/DTable.js', 'script'],
         ['../node_modules/artnum/Date.js', 'script'],
