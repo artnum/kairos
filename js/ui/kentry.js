@@ -13,6 +13,15 @@ function KUIEntry (dataObject, opts = {}) {
     }
     this.getDomNode()
     .then(domNode => {
+        domNode.addEventListener('mouseenter', event => {
+            this.dataObject.get('name')
+            .then(value => {
+                (new KMouseIndicator()).setContent(value)
+            })
+        })
+        domNode.addEventListener('mouseleave', event => {
+            (new KMouseIndicator()).clearContent()
+        })
         dataObject.get('id')
         .then(uid => {
             domNode.id = uid

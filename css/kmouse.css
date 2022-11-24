@@ -5,3 +5,12 @@
     background-color: cornsilk;
     padding: 4px;
 }
+
+.k-mouse-indicator {
+    font-size: 10px;
+    background-color: white;
+    border: 1px dotted gray;
+    padding: 2px;
+    color: gray;
+    pointer-events: none;
+}

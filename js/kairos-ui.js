@@ -43,6 +43,7 @@ window.addEventListener('k-message', event => {
 window.addEventListener('mousemove', kMouseFollow)
 window.addEventListener('touchmove', kMouseFollow)
 window.addEventListener('dragover', kMouseFollow)
+window.addEventListener('wheel', kMouseFollow)
 window.addEventListener('keydown', (event) => {
     if (
         event.target instanceof HTMLInputElement
@@ -311,7 +312,7 @@ KAIROS.zMax = function (node = null) {
         for (const n of currentList) {
             if (!n.parentNode) { continue }
             KAIROS.keepAtTop.list.push(n)
-            KAIROSAnim.push(() => { n.style.setProperty('z-index', ++KAIROS.zMax.current) })
+            window.requestAnimationFrame(() => { n.style.setProperty('z-index', ++KAIROS.zMax.current) })
         }
     }
 
@@ -330,7 +331,7 @@ KAIROS.keepAtTop = function (node) {
 
 KAIROS.setAtTop = function (node) {
     if (node instanceof HTMLElement) {
-        node.style.setProperty('z-index', KAIROS.zMax())
+        window.requestAnimationFrame(() => { node.style.setProperty('z-index', KAIROS.zMax()) })
     }
 }
 
