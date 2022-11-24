@@ -268,7 +268,7 @@ class ReservationModel extends artnum\SQL
 
       foreach (['begin', 'end'] as $field) {
          if (!empty($data[$field])) {
-            $b = new DateTime($data['begin']);
+            $b = new DateTime($data[$field]);
             $data['d' . $field] = $b->format('Y-m-d');
          }
       }
