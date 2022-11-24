@@ -2,6 +2,7 @@ function KMouseIndicator () {
     if (KMouseIndicator._instance) { return KMouseIndicator._instance }
     KAIROS.addFollowMouse(this.move.bind(this))
     this.hasContent = false
+    this.enabled = true
     this.rect = {width: 0}
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('k-mouse-indicator')
@@ -26,6 +27,7 @@ KMouseIndicator.prototype.move = function (mouse) {
 }
 
 KMouseIndicator.prototype.setContent = function (content) {
+    if (!this.enabled) { return }
     this.hasContent = true
     new Promise(resolve => {
         window.requestAnimationFrame(() => {
@@ -46,5 +48,16 @@ KMouseIndicator.prototype.clearContent = function () {
         this.domNode.innerHTML = ''
         if (this.domNode.parentNode) { document.body.removeChild(this.domNode) }
     })
-
 }
+
+KMouseIndicator.prototype.disable = function () {
+    this.enabled = false
+    window.requestAnimationFrame(() => {
+        if (this.domNode.parentNode) { document.body.removeChild(this.domNode) }
+    })
+}
+
+KMouseIndicator.prototype.enable = function () {
+    this.enabled = true
+}
+

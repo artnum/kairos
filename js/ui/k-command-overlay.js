@@ -60,12 +60,19 @@ function KCommandOverlay() {
     `
     this.domNode.setAttribute('tab-index', 1)
     const kclosable = new KClosable()
-    const idx = kclosable.add(this.domNode)
-
+    const idx = kclosable.add(this.domNode, {function: () => {
+        window.removeEventListener('keydown', handleKeyEvents, { capture: true })
+        window.requestAnimationFrame(() => {
+            if (this.domNode.parentNode) { this.domNode.parentNode.removeChild(this.domNode) }
+        })
+        new KMouseIndicator().enable()
+    }})
+    new KMouseIndicator().disable()
     const handleKeyEvents = (event) => {
         window.removeEventListener('keydown', handleKeyEvents, { capture: true })
+        let key = event.key
         for (const op of operations) {
-            if (!op.input && op.key.toLowerCase() === event.key.toLowerCase()) {
+            if (!op.input && op.key.toLowerCase() === key.toLowerCase()) {
                 event.stopPropagation()
                 event.preventDefault()
                 window.requestAnimationFrame(() => {
@@ -80,10 +87,11 @@ function KCommandOverlay() {
                         window.requestAnimationFrame(() => {
                             this.domNode.classList.remove('loading')
                         })
+                        new KMouseIndicator().enable()
                     })
                 return
             }
-            if (op.input && op.key.toLowerCase() === event.key.toLowerCase()) {
+            if (op.input && op.key.toLowerCase() === key.toLowerCase()) {
                 event.stopPropagation()
                 event.preventDefault()
                 const sbox = this.goToSearchBox()
@@ -107,6 +115,7 @@ function KCommandOverlay() {
                             window.requestAnimationFrame(() => {
                                 this.domNode.classList.remove('loading')
                             })
+                            new KMouseIndicator().enable()
                         })
                 })
                 return
@@ -116,10 +125,8 @@ function KCommandOverlay() {
     window.addEventListener('keydown', handleKeyEvents, { capture: true })
     operations.forEach(operation => {
         const div = document.createElement('DIV')
+        div.dataset.key = operation.key
         div.classList.add('entry')
-        div.addEventListener('click', event => {
-            console.log(event)
-        })
         div.innerHTML = `<span class="key">${operation.key}</span><span class="description">${operation.label}</span>`
         this.container.appendChild(div)
     })
@@ -152,6 +159,14 @@ function KCommandOverlay() {
             const current = kset.get(event.target.name)
             kset.set(event.target.name, !current)
         })
+    })
+    this.domNode.querySelectorAll('div.entry').forEach(node => {
+        node.addEventListener('click', event => {
+            let node = event.target
+            while (node && !node.classList.contains('entry')) { node = node.parentNode }
+            if (!node) { return }
+            handleKeyEvents({key: node.dataset.key, preventDefault: () => {}, stopPropagation: () => {}})
+        }, {capture: true})
     })
 
     window.requestAnimationFrame(() => {
