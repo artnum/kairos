@@ -112,6 +112,17 @@ define([
         this.center.setTime(this.center.getTime() - this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
       }
       this.Viewport = new KView()
+      this.Viewport.addEventListener('LeaveRow', event => {
+        new KMouseIndicator().clearContent()
+      })
+      this.Viewport.addEventListener('EnterRow', event => {
+        const row = new KView().getRowObject(event.detail.currentRow)
+        if (!row) { return }
+        row.get('name')
+        .then(value => {
+          new KMouseIndicator().setContent(value)
+        })
+      })
       this.Viewport.setEntryHeight(78)
       this.Viewport.setEntryInnerHeight(74)
 

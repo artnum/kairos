@@ -199,6 +199,7 @@ KView.prototype.getObjectRow = function (object) {
 }
 
 KView.prototype.getRowObject = function (row) {
+    if (!this.rowDescription) { return null }
     return this.rowDescription[this.getY(row)][1]
 }
 
@@ -484,6 +485,7 @@ KView.prototype.handleMouseMove = function () {
 
     const previousBox = [this.currentBox[0], this.currentBox[1]]
     const currentBox = [-1, -1]
+    let changedBox = [false, false]
     const start = performance.now()
     new Promise(resolve => {
         if (KAIROS.mouse.clientX > marginLeft && KAIROS.mouse.clientX < window.innerWidth - marginRight) {
@@ -495,15 +497,20 @@ KView.prototype.handleMouseMove = function () {
         currentBox[1] = parseInt(Math.trunc(ypos / this.data.get('entry-height')))
 
         if (currentBox[0] !== this.currentBox[0]) {
+            changedBox[0] = true
             this.currentBox[0] = currentBox[0]
+            this.eventTarget.dispatchEvent(new CustomEvent('LeaveColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: previousBox[0]}}))
         }
+
         if (currentBox[1] !== this.currentBox[1]) {
+            changedBox[1] = true
             this.currentBox[1] = currentBox[1]
+            this.eventTarget.dispatchEvent(new CustomEvent('LeaveRow', {detail: {currentRow: this.currentBox[1], previousRow: previousBox[1]}}))
         }
 
         if (currentBox[0] > -1 && currentBox[1] > -1) {
-            if (currentBox[1] != previousBox[1]) { this.eventTarget.dispatchEvent(new CustomEvent('EnterRow', {detail: {currentRow: this.currentBox[1], previousRow: previousBox[1]}})) }
-            if (currentBox[0] != previousBox[0]) { this.eventTarget.dispatchEvent(new CustomEvent('EnterColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: previousBox[0]}})) }
+            if (changedBox[1] && currentBox[1] != previousBox[1]) { this.eventTarget.dispatchEvent(new CustomEvent('EnterRow', {detail: {currentRow: this.currentBox[1], previousRow: previousBox[1]}})) }
+            if (changedBox[0] && currentBox[0] != previousBox[0]) { this.eventTarget.dispatchEvent(new CustomEvent('EnterColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: previousBox[0]}})) }
         }
         resolve()
     })
@@ -618,8 +625,10 @@ KView.prototype.handleKeyMove = function (event) {
         }
         window.scroll(0, scrollY)
     }
-
+    
+    this.eventTarget.dispatchEvent(new CustomEvent('LeaveRow', {detail: {currentRow: this.currentBox[1], previousRow: this.currentBox[1] - nextBox[1]}}))
     this.eventTarget.dispatchEvent(new CustomEvent('EnterRow', {detail: {currentRow: this.currentBox[1], previousRow: this.currentBox[1] - nextBox[1]}}))
+    this.eventTarget.dispatchEvent(new CustomEvent('LeaveColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: this.currentBox[0] - nextBox[0]}}))
     this.eventTarget.dispatchEvent(new CustomEvent('EnterColumn', {detail: {currentColumn: this.currentBox[0], previousColumn: this.currentBox[0] - nextBox[0]}}))
 }
 
