@@ -20,6 +20,7 @@
                'function' => 'admin',
                'temporary' => '0'
             ]);
+            $this->response->setItemId($id);
             return $result;
          } else {
             return parent::_read($id);

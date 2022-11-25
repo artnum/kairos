@@ -5,8 +5,12 @@ require('../lib/dbs.php');
 require('../lib/ini.php');
 require('../lib/cacheid.php');
 require('../lib/get-entry.php');
+require('../lib/auth.php');
 require('../conf/wesrv.php');
 require('wesrv/lib/msg.php');
+
+use artnum\JStore\ACL;
+use artnum\JStore\Audit;
 
 $MSGSrv = new \wesrv\msg(WESRV_IP, WESRV_PORT, WESRV_KEY);
 $ini_conf = load_ini_configuration();
@@ -26,6 +30,7 @@ $memcache->addServer('localhost', 11211);
 $KConf->setVar('cache', $memcache);
 
 $pdo = init_pdo($ini_conf);
+$authpdo = init_pdo($ini_conf, 'authdb');
 if (is_null($pdo)) {
   throw new Exception('Storage database not reachable');
   exit(0);
@@ -90,6 +95,31 @@ if (!empty($_SERVER['HTTP_X_CLIENT_ID'])) {
   $KConf->setVar('clientid', '');
 }
 
+/* Authorization */
+$kauth = new KAALAuth($authpdo);
+
+$authContent = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
+if (!$kauth->check_auth(trim($authContent[1]))) {
+  http_response_code(403);
+  exit(0);
+}
+
+/* Access */
+$acl = new ACL([]);
+
+$acl->addRule('*', -1, ACL::LEVEL_ANY, true);
+
 $store->init($KConf);
-$store->run();
+
+if ($acl->check($store->getCollection(), $kauth->get_current_userid(), $store->getOperation(), $store->getOwner())) {
+  $store->setAcl($acl);
+  [$request, $response] = $store->run();
+
+  $audit = new Audit();
+  $audit->audit($request, $response, $kauth->get_current_userid());
+
+  exit(0);
+}
+
+http_response_code(403);
 ?>
