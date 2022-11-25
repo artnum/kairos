@@ -25,6 +25,7 @@ function init_pdo($ini, $type = 'storage') {
         break;
     }
   } catch (Exception $e) {
+    error_log($e->getMessage());
     return NULL;
   }
   return $pdo;
