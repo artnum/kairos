@@ -291,6 +291,7 @@ class ReservationModel extends artnum\SQL
       global $MSGSrv;
       $time = time();
       $data = ['reservation_id' => $id, 'reservation_deleted' => $time, 'reservation_modification' => $time, 'reservation_version' => 'force'];
+      $this->response->setItemId($id);
       $_id = $this->update($data);
       $this->response->start_output();
       $this->response->print(['id' => $_id]);
