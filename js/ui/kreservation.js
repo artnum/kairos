@@ -682,7 +682,7 @@ KUIReservation.prototype.doCommand = function (event) {
                 if (!kaffaire) { return }
                 const kproject = kaffaire.getRelation('kproject')
                 if (!kproject) { return }
-                window.open(KAIROS.URL(`${KAIROS.kaalURL}/admin/exec/export/bon.php?pid=${kproject.id}&travail=${kaffaire.id}`), '_blank')
+                window.open(KAIROS.URL(`${KAIROS.kaalURL}/admin/exec/export/bon.php?pid=${kproject.id}&travail=${kaffaire.id}&auth=Bearer ${localStorage.getItem('klogin-token')}`), '_blank')
             })()
             break
     }
