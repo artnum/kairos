@@ -87,8 +87,7 @@
             window.dispatchEvent(new CustomEvent('klogin-done'))
       })
       .catch(cause => {
-        console.log(cause)
-        //goToLogin()
+        goToLogin()
       })
 
       window.addEventListener('kairos-ready', event => {
