@@ -70,8 +70,9 @@ KLogin.prototype.genPassword = function (password) {
         crypto.getRandomValues(outKey.salt)
         crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey'])
         .then(cryptokey => {
+            /* TODO length is set to 256 for compatibility purpose, must change */
             return crypto.subtle.deriveKey({name: 'PBKDF2', hash: 'SHA-256', salt: outKey.salt, iterations: outKey.iterations}, 
-                cryptokey, {name: 'HMAC', hash: 'SHA-256'}, true, ['sign'])
+                cryptokey, {name: 'HMAC', hash: this.halgo, length: 256}, true, ['sign'])
         })
         .then(cryptokey => {
             return crypto.subtle.exportKey('raw', cryptokey)
