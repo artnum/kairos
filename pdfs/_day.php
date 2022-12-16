@@ -1,7 +1,19 @@
 <?php
 
 include('base.php');
+include('../lib/dbs.php');
 global $KAppConf;
+global $KConf;
+global $ini_conf;
+
+$authpdo = init_pdo($ini_conf, 'authdb');
+$KAuth = new KAALAuth($authpdo);
+$BaseURL = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['SERVER_NAME'];
+
+if (!$KAuth->check_auth($KAuth->get_auth_token(), $BaseURL . '/' . $_SERVER['REQUEST_URI'])) {
+  http_response_code(401);
+  exit(0);
+}
 
 $H = 0;
 
@@ -39,13 +51,12 @@ function drawTable ($pdf, $tableStart) {
     $pdf->drawLine($pdf->getDimension('W') - $pdf->getMargin('L'), $tableStart, $tableStop - $tableStart, -90, 'line', ['color' => '#c4007a']);
 }
 
-$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $_GET['auth']);
-$kentry = new KStore($KAppConf, 'kentry', [], $_GET['auth']);
-$kaffaire = new KStore($KAppConf, 'kaffaire', [], $_GET['auth']);
-$kproject = new KStore($KAppConf, 'kproject', [], $_GET['auth']);
-$kstatus = new KStore($KAppConf, 'kstatus', [], $_GET['auth']);
-$kalloc = new KStore($KAppConf, 'krallocation', [], $_GET['auth']);
-
+$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $KConf->get('security.authproxy'));
+$kentry = new KStore($KAppConf, 'kentry', [], $KConf->get('security.authproxy'));
+$kaffaire = new KStore($KAppConf, 'kaffaire', [], $KConf->get('security.authproxy'));
+$kproject = new KStore($KAppConf, 'kproject', [], $KConf->get('security.authproxy'));
+$kstatus = new KStore($KAppConf, 'kstatus', [], $KConf->get('security.authproxy'));
+$kalloc = new KStore($KAppConf, 'krallocation', [], $KConf->get('security.authproxy'));
 
 $day = $_GET['id'];
 $dayBegin = new DateTime($_GET['id'], new DateTimeZone('UTC'));

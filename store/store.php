@@ -97,11 +97,10 @@ try {
   }
 
   /* Authorization */
-  $kauth = new KAALAuth($authpdo);
-
-  $authContent = explode(' ', $_SERVER['HTTP_AUTHORIZATION']);
-  if (!$kauth->check_auth(trim($authContent[1]))) {
-    http_response_code(403);
+  $KAuth = new KAALAuth($authpdo);
+  $BaseURL = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['SERVER_NAME'];
+  if (!$KAuth->check_auth($KAuth->get_auth_token(), $BaseURL . '/' . $_SERVER['REQUEST_URI'])) {
+    http_response_code(401);
     exit(0);
   }
 
@@ -112,16 +111,14 @@ try {
 
   $store->init($KConf);
 
-  if ($acl->check($store->getCollection(), $kauth->get_current_userid(), $store->getOperation(), $store->getOwner())) {
+  if ($acl->check($store->getCollection(), $KAuth->get_current_userid(), $store->getOperation(), $store->getOwner())) {
     $store->setAcl($acl);
     [$request, $response] = $store->run();
-
     $audit = new SQLAudit($logpdo, true);
-    $audit->audit($request, $response, $kauth->get_current_userid());
+    $audit->audit($request, $response, $KAuth->get_current_userid());
 
     exit(0);
   }
-
   http_response_code(403);
 } catch (Exception $e) {
   error_log($e->getMessage());

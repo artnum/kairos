@@ -210,13 +210,10 @@ window.addEventListener('kairos-preload', event => {
             node.addEventListener('load', event => {
                 resolve()
             })
-        }))
-    
-        
+        }))   
     }
     Promise.allSettled(loaded)
     .then(() => {
         window.dispatchEvent(new CustomEvent('kairos-ready'))
-
     })
 })

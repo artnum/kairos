@@ -11,6 +11,8 @@
   <link rel="icon" type="image/svg+xml" href="../resources/images/favicon.svg" />
   <script src="../conf/app.js"></script>
   <script src="../js/index.js"></script>
+  <script src="../js/lib/login.js"></script>
+
 </head>
 
 <body class="claro">
@@ -66,37 +68,28 @@
     }
     checkBuildNumberAndReload()
     .then(() => {
-      if (!localStorage.getItem('klogin-token')) {
-        goToLogin()
-      } else {
-        const authUrl = `${KAIROS.URL(KAIROS.kaalURL)}/auth.php/check`
-        const authToken = localStorage.getItem('klogin-token')
-        fetch(authUrl, { method: 'POST', body: JSON.stringify({ auth: authToken }) })
-          .then(response => {
-            if (!response.ok) { throw new Error() }
-            return response.json()
-          })
-          .then(result => {
-            if (!result.done) { throw new Error() }
-            Notification.requestPermission();
-            dojoConfig = {
-              requestProvider: "dojo/request/xhr",
-              parseOnLoad: true,
-              isDebug: true,
-              locale: 'fr-ch',
-              baseUrl: './',
-              packages: [
-                { name: "location", location: '../widgets/' },
-                { name: "artnum", location: 'https://artnum.ch/code/js/' },
-                { name: "artnumd", location: '/js/' }
-              ]
-            }
+      klogin = new KLogin(KAIROS.URL(KAIROS.kaalURL))
+      klogin.isLogged()
+      .then(token => {
+        Notification.requestPermission();
+        dojoConfig = {
+          requestProvider: "dojo/request/xhr",
+          parseOnLoad: true,
+          isDebug: true,
+          locale: 'fr-ch',
+          baseUrl: './',
+          packages: [
+            { name: "location", location: '../widgets/' },
+            { name: "artnum", location: 'https://artnum.ch/code/js/' },
+            { name: "artnumd", location: '/js/' }
+          ]
+        }
             window.dispatchEvent(new CustomEvent('klogin-done'))
-          })
-          .catch(e => {
-            goToLogin()
-          })
-      }
+      })
+      .catch(cause => {
+        console.log(cause)
+        //goToLogin()
+      })
 
       window.addEventListener('kairos-ready', event => {
         document.title = `[KAIROS] ${KAIROS.title}`

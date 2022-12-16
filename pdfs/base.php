@@ -4,9 +4,13 @@ include('../lib/format.php');
 include('../lib/get-entry.php');
 include('../lib/k/kstore.php');
 include('../lib/k/kpdf.php');
+require('../lib/ini.php');
+require('../lib/auth.php');
 
 header('Cache-Control: no-cache, max-age=0');
 
+$ini_conf = load_ini_configuration();
+$KConf = new KConf($ini_conf);
 
 function dbHourToHour ($dbDT) {
    if (strpos($dbDT, 'T') === FALSE) { return null; }

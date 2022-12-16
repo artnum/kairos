@@ -1251,7 +1251,15 @@ define([
             switch(event.target.dataset.action) {
               default: return;
               case 'get-pdf-day':
-                return window.open(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}?auth=Bearer ${localStorage.getItem('klogin-token')}`, '_blank')
+                const klogin = new KLogin(KAIROS.URL(KAIROS.kaalURL))
+                klogin.genUrl(new URL(`${KAIROS.getBase()}/pdfs/day/${node.dataset.date}`), {}, klogin.getShareType('share-limited'))
+                .then(url => {
+                  return window.open(url, '_blank')
+                })
+                .catch(error => {
+                  KAIROS.error(error)
+                })
+                break
               case 'plan-resource':
                 return KIOpenResourceAllocation(date);
             }
