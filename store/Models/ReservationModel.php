@@ -211,41 +211,37 @@ class ReservationModel extends artnum\SQL
       }
       $columns_values_txt = implode(',', $columns_values);
 
-      try {
-         $db = $this->get_db(false);
-         if ($previous_version === 'force') {
-            $st = $db->prepare($this->req('update', array('COLVALTXT' => $columns_values_txt)));
-         } else {
-            $req = $this->req('update', array('COLVALTXT' => $columns_values_txt)) . ' AND "reservation_version" = :previous_version';
-            $st = $db->prepare($req);
-            $st->bindValue(':previous_version', intval($previous_version), \PDO::PARAM_INT);
-         }
-         foreach ($data as $k_data => &$v_data) {
-            $bind_type = $this->_type($k_data, $v_data);
-            if (is_null($bind_type)) {
-               $bind_type = \PDO::PARAM_STR;
-               if (is_null($v_data)) {
-                  $bind_type = \PDO::PARAM_NULL;
-               } else if (ctype_digit($v_data)) {
-                  $bind_type = \PDO::PARAM_INT;
-               } else if (is_bool($v_data)) {
-                  $bind_type = \PDO::PARAM_BOOL;
-               }
-            }
-
-            $st->bindParam(':' . $k_data, $v_data, $bind_type);
-         }
-         $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
-         $st->bindParam(':' . $this->IDName, $id, $bind_type);
-         $ex = $st->execute();
-         if (!$ex) {
-            return false;
-         }
-         return $id;
-      } catch (\Exception $e) {
-         $this->error('Database error : ' . $e->getMessage(), __LINE__, __FILE__);
-         return false;
+   
+      $db = $this->get_db(false);
+      if ($previous_version === 'force') {
+         $st = $db->prepare($this->req('update', array('COLVALTXT' => $columns_values_txt)));
+      } else {
+         $req = $this->req('update', array('COLVALTXT' => $columns_values_txt)) . ' AND "reservation_version" = :previous_version';
+         $st = $db->prepare($req);
+         $st->bindValue(':previous_version', intval($previous_version), \PDO::PARAM_INT);
       }
+      foreach ($data as $k_data => &$v_data) {
+         $bind_type = $this->_type($k_data, $v_data);
+         if (is_null($bind_type)) {
+            $bind_type = \PDO::PARAM_STR;
+            if (is_null($v_data)) {
+               $bind_type = \PDO::PARAM_NULL;
+            } else if (ctype_digit($v_data)) {
+               $bind_type = \PDO::PARAM_INT;
+            } else if (is_bool($v_data)) {
+               $bind_type = \PDO::PARAM_BOOL;
+            }
+         }
+
+         $st->bindParam(':' . $k_data, $v_data, $bind_type);
+      }
+      $bind_type = ctype_digit($id) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+      $st->bindParam(':' . $this->IDName, $id, $bind_type);
+      $ex = $st->execute();
+      if (!$ex) {
+         throw new Exception('Database error');
+      }
+      return $id;
    }
 
    function getVersion($id)
