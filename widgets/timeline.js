@@ -1400,65 +1400,71 @@ define([
         .then(result => {
           if (!result || !result.success) { reject(new Error('ERR:server')); return }
           const entries = Array.isArray(result.data) ? result.data : [result.data]
-          const load = []
-          for (const entry of entries) {
-            if (parseInt(entry.order) < 0) { continue }
-            if (entry.disabled !== '0') { continue; }
-            load.push(
-              KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
-              .then(kentry => {
-                kentry.sortValue = parseInt(entry.order)
-                kentry.get('id')
-                .then(uid => {
-                  this.Entries.set(uid, kentry)
+
+          return Promise.allSettled(
+            entries
+              .filter(e => Number(e.order) >= 0 && Number(e.disabled) === 0)
+              .map(entry  => {
+                return new Promise((resolve, reject) => { 
+                    KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
+                    .then(kentry => {
+                      kentry.sortValue = parseInt(entry.order)
+                      kentry.get('id')
+                      .then(uid => {
+                        this.Entries.set(uid, kentry)
+                        resolve(kentry)
+                      })
+                  })
+                  .catch(cause => {
+                    reject(new Error('Failed to load entry', {cause}))
+                  })
                 })
-                return kentry
               })
-            )
-          }
-          return Promise.all(load)
+          )
         })
         .then(loadedEntries => {
-
-          loadedEntries.sort((a, b) => {
-            return a.sortValue - b.sortValue
-          })
-
-
+          loadedEntries = loadedEntries
+            .filter(e => e.status === 'fulfilled')
+            .map(e => e.value)
+            .sort((a, b) => a.sortValue - b.sortValue)
+          
+          loadedEntries.forEach(e => e.register(this.Updater))
           this.Viewport.setEntryCount(loadedEntries.length)
+
           let i = 0
-          const entriesLoaded = []
-          for (const kentry of loadedEntries) {
-            const row = i
-            kentry.register(this.Updater)
-            entriesLoaded.push(new Promise((resolve) => {
-              kentry.set('origin', this.firstDay)
+          return Promise.allSettled(loadedEntries.map(e => {
+            return new Promise((resolve, reject) => {
+              const row = i++
+              e.set('origin', this.firstDay)
               .then(_ => {
-                this.Viewport.bindObjectToRow(row, kentry)
-                kentry._ROW = row
-                kentry.set('row', row)
-                resolve(kentry)
+                this.Viewport.bindObjectToRow(row, e)
+                e._ROW = row
+                e.set('row', row)
+                resolve(e)
               })
-            }))
-            i++
-          }
-          return Promise.all(entriesLoaded)
+              .catch(cause => {
+                reject(new Error('Failed to load entry', {cause}))
+              })
+            })
+          }))
         })
         .then(kentries => {
+          kentries = kentries
+            .filter(e => e.status === 'fulfilled')
+            .map(e => e.value)
+
           const next = Promise.resolve()
-          for (const kentry of kentries) {
+          kentries.forEach(e => {
             next.then(_ => {
-              return kentry.render()
-            })
-            .then(domNode => {
-              return new Promise((resolve) => {
-                window.requestAnimationFrame(() => {
-                  this.domEntries.appendChild(domNode)
-                  resolve()
+              return new Promise(resolve => {
+                e.render()
+                .then(domNode => {
+                  window.requestAnimationFrame(() => { this.domEntries.appendChild(domNode); resolve() })
                 })
               })
             })
-          }  
+            
+          })
           return next
         })
         .then(_ => {

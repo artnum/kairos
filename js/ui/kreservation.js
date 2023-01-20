@@ -998,8 +998,9 @@ KUIReservation.prototype.render = function () {
                     direction = other.link.direction !== 'right' ? '<i class="fas fa-long-arrow-alt-right"></i>' : '<i class="fas fa-long-arrow-alt-left"></i>'
                 }
             }
-            const ended = (affaire.get('closed') !== '0') || (this.object.get('closed') !== null && this.object.get('closed') !== '0')
-            const folder = affaire.get('folder') !== '0'
+        
+            const ended = (affaire.get('closed') !== 0) || (this.object.get('closed') !== null && this.object.get('closed') !== 0)
+            const folder = affaire.get('folder') !== 0
             const locked = parseInt(this.object.get('locked'))
 
             const options = (locked || folder || direction !== '')

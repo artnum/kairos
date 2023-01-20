@@ -96,8 +96,8 @@ self.onmessage = function (msg) {
       break
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
-        const targetId = msg.data.target
-        Channels.set(targetId,  msg.ports[0])
+        const targetId = String(msg.data.target)
+        Channels.set(targetId, msg.ports[0])
         Channels.get(targetId).onmessage = (m) => {
           targetMessages(m)
         }
@@ -112,7 +112,7 @@ self.onmessage = function (msg) {
       }
       break
     case 'symlinkTarget':
-      let targetId = msg.data.source
+      const targetId = String(msg.data.source)
       if (msg.data.source === undefined || msg.data.destination === undefined) { return }
       Symlinks.set(targetId, msg.data.destination)
       if (PostPoned[targetId]) {
@@ -144,9 +144,9 @@ self.onmessage = function (msg) {
       if (oldChannel === undefined) {
         oldChannel = Symlinks.get(entry.previous)
       }
-      let newChannel = Channels.get(entry.target)
+      let newChannel = Channels.get(String(entry.target))
       if (newChannel === undefined) {
-        newChannel = Symlinks.get(entry.target)
+        newChannel = Symlinks.get(String(entry.target))
       }
       oldChannel.postMessage({op: 'remove', reservation: entry, clientid: null})
       oldEntry[1] = newChannel
@@ -211,7 +211,7 @@ function updateEntry(entryId, clientid) {
     return Array.isArray(result.data) ? result.data[0] : result.data
   })
   .then(reservation => {
-    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    const channel = Channels.get(String(reservation.target)) || Channels.get(Symlinks.get(String(reservation.target)))
     const oldEntry = Entries.get(reservation.id)
     if (oldEntry) {
       const oldChannel = Channels.get(oldEntry[3]) || Channels.get(Symlinks.get(oldEntry[3]))
@@ -220,7 +220,7 @@ function updateEntry(entryId, clientid) {
       }
     }
     if (!channel) { return }
-    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime(), reservation.target])
+    Entries.set(reservation.id, [reservation.version, channel, new Date().getTime(), String(reservation.target)])
     channel.postMessage({op: 'update-reservation', reservation, clientid})
   })
   .catch(reason => {
@@ -238,7 +238,7 @@ function deleteEntry (entryId, clientid) {
     if (!result) { return }
     if (!result.success) { return }
     const reservation = Array.isArray(result.data) ? result.data[0] : result.data
-    const channel = Channels.get(reservation.target) || Channels.get(Symlinks.get(reservation.target))
+    const channel = Channels.get(String(reservation.target)) || Channels.get(Symlinks.get(String(reservation.target)))
     if (channel) { channel.postMessage({op: 'remove', reservation: Array.isArray(result.data) ? result.data[0] : result.data, clientid}) }
   })
 }
@@ -250,14 +250,13 @@ function cacheAndSend (data, force = false) {
     data.forEach((entry) => {
       let begin = dstamp(entry.begin)
       let end = dstamp(entry.end)
-
       promises.push(new Promise((resolve, reject) => {
         getIntervention(entry).then((interventions) => {
           entry.interventions = interventions
           if (parseInt(entry.modification) > LastMod) {
             LastMod = parseInt(entry.modification)
           }
-          let channel = entry.target
+          let channel = String(entry.target)
           if (Symlinks.has(channel)) {
             channel = Symlinks.get(channel)
           }
@@ -279,23 +278,25 @@ function cacheAndSend (data, force = false) {
                 entries[storedEntry[1]].push(entry)
                 Entries.delete(entry.id)
               }
-              Entries.set(entry.id, [entry.version, channel, new Date().getTime(), entry.target])
+              Entries.set(entry.id, [entry.version, channel, new Date().getTime(), String(entry.target)])
               entries[channel].push(entry)
             }
           } else {
-            Entries.set(entry.id, [entry.version, channel, new Date().getTime(), entry.target])
+            Entries.set(entry.id, [entry.version, channel, new Date().getTime(), String(entry.target)])
             entries[channel].push(entry)
           }
           resolve()
         })
       }))
     })
-    Promise.all(promises).then(() => {
+    Promise.all(promises)
+    .then(() => {
       resolve(entries)
     })
   }).then((entries) => {
     let processed = []
     for (let k in entries) {
+      console.log(k, Channels.has(k))
       if (Channels.has(k) && entries[k].length > 0) {
         Channels.get(k).postMessage({op: 'entries', value: entries[k]})
         processed.push(k)
