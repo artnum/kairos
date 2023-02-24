@@ -239,7 +239,7 @@ KView.prototype.swapRow = function (y1, y2) {
 /* gpos wrap around on X */
 KView.prototype.getGPos = function (x, y) {
     y = this.getY(y)
-    const gpos = x * this.get('entry-count') + y + (this.gridOffset)
+    const gpos = x * this.get('entry-count') + y + (this.gridOffset * this.get('entry-count'))
     return gpos
 }
 
