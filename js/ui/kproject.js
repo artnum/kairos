@@ -224,7 +224,11 @@ KProject.prototype.kaffaireNode = function (affaire) {
 KProject.prototype.printAffaire = function (affaire) {
     if (affaire) {
         const project = affaire.getRelation('kproject')
-        window.open(KAIROS.URL(`${KAIROS.kaalURL}/admin/exec/export/bon.php?pid=${project.id}&travail=${affaire.id}`), '_blank')
+        const klogin = new KLogin(KAIROS.URL(KAIROS.kaalURL))
+        klogin.genUrl(`${KAIROS.URL(KAIROS.kaalURL)}/admin/exec/export/bon.php`, {pid: project.id, travail: affaire.id}, klogin.getShareType('share-limited'))
+        .then(url => {
+            window.open(url, '_blank')
+        })
     }
 }
 
