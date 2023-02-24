@@ -4,6 +4,8 @@
     border: 1px solid black;
     background-color: cornsilk;
     padding: 4px;
+    pointer-events: none;
+    user-select: none;
 }
 
 .k-mouse-indicator {
@@ -13,4 +15,5 @@
     padding: 2px;
     color: gray;
     pointer-events: none;
+    user-select: none;
 }

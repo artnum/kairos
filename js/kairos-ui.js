@@ -28,6 +28,9 @@ const K_ERROR = 3
 
 KAIROS.lastInputBlured = []
 
+/* a transparent image to use when needed */
+KAIROS.transImg = new Image();
+KAIROS.transImg.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAADklEQVQIHQEDAPz/AAAAAAMAAW7VSZoAAAAASUVORK5CYII=';
 
 window.addEventListener('k-message', event => {
     switch (event.detail.type) {

@@ -296,7 +296,6 @@ function cacheAndSend (data, force = false) {
   }).then((entries) => {
     let processed = []
     for (let k in entries) {
-      console.log(k, Channels.has(k))
       if (Channels.has(k) && entries[k].length > 0) {
         Channels.get(k).postMessage({op: 'entries', value: entries[k]})
         processed.push(k)

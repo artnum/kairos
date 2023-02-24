@@ -180,6 +180,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/utils/browser.js', 'script'],
 
         ['../js/interaction/ontimeline.js', 'script'],
+        ['../js/interaction/kmultiselect.js', 'script'],
 
         ['../node_modules/artnum/DTable.js', 'script'],
         ['../node_modules/artnum/Date.js', 'script'],

@@ -218,7 +218,6 @@ define([
             }
             break
           case 'log':
-            console.log(e.data.data)
             break
         }
       }.bind(this)
@@ -693,7 +692,10 @@ define([
         if (!kident) { return }
         if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
-        let object = event.ctrlKey ? kGStore.get(kident.substr(6)).clone() : kGStore.get(kident.substr(6))
+        const originalObject = kGStore.get(kident.substr(6))
+        const OriginalY = parseFloat(originalObject.getUINode().clonedNode.style.top.substring(0, originalObject.getUINode().clonedNode.style.top.length - 2))
+        originalObject.getUINode().destroyClonedNode()
+        let object = event.ctrlKey ? originalObject.clone() : originalObject
         if (object.getType() !== 'kreservation') { return }
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
@@ -704,12 +706,57 @@ define([
         const newOrigin = new Date()
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         KVDays.initDayStartTime(newOrigin, KAIROS.days)
+
+        /*const beginDiff = newOrigin.getTime() - begin.getTime()
+        const yDiff = kview.getObjectRowById(entryNode.id) - originalY*/
         begin.setTime(newOrigin.getTime())
         end.setTime(begin.getTime() + diff)
         object.set('begin', begin.toISOString())
         object.set('end', end.toISOString())
-        object.set('target', entryNode.id)
-        kstore.set(object)
+        /*kview.getRowFromPX(OriginalY).get('id')
+        .then(id => {
+          object.set('target', id)
+          kstore.set(object)
+        })*/
+
+        const kmselect = new KMultiSelect()
+        if (kmselect.active) {
+          const main = kmselect.remove(originalObject.get('id'))
+          main.resetMultiple()
+          for(const r of kmselect.get()) {
+            const y = parseFloat(r.clonedNode.style.top.substring(0, r.clonedNode.style.top.length - 2))
+            r.destroyClonedNode()
+            const object = event.ctrlKey ? r.object.clone() : r.object
+            const begin = new Date(object.get('begin'))
+            const end = new Date(object.get('end'))
+            const diff = Math.abs(end.getTime() - begin.getTime())
+            if (event.shiftKey) {
+              begin.setTime(newOrigin.getTime())  
+            } else {
+              begin.setTime(begin.getTime() + beginDiff)
+            }
+            KVDays.initDayStartTime(begin, KAIROS.days)
+            end.setTime(begin.getTime() + diff)
+            object.set('begin', begin.toISOString())
+            object.set('end', end.toISOString())
+            if (event.altKey) {
+              kview.getRowFromPX(OriginalY).get('id')
+              .then(id => {
+                object.set('target', id)
+                kstore.set(object)
+              })
+            } else {
+              kview.getRowFromPX(y).get('id')
+              .then(id => {
+                object.set('target', id)
+                kstore.set(object)
+              })
+            }
+    
+            r.resetMultiple()
+          }
+          kmselect.clear()
+        }
       })
 
       this.domNode.addEventListener('dragover', event => {
@@ -723,7 +770,18 @@ define([
       window.addEventListener('global-keypress', event => {
         switch(event.key) {
           case 'Enter': return iAddReservation(event)
-          case 'Delete': return iDeleteReservation(event)
+          case 'Delete':
+            if (event.shiftKey) {
+              kmselect = new KMultiSelect()
+              if (kmselect.active) {
+                const kstore = new KStore('kreservation')
+                for (const uiobject of kmselect.get()) {
+                  kstore.delete(uiobject.object.get('id'))
+                }
+              }
+              return
+            }
+            return iDeleteReservation(event)
           case 'F3': 
             event.preventDefault()
             return iZoomCurrentBox(event)

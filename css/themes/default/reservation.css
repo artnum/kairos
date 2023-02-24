@@ -7,6 +7,7 @@
     overflow: hidden;
     text-overflow: clip;
     box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75);
+    cursor: pointer;
 }
 
 .kreservation.k-selected {
@@ -341,4 +342,8 @@
     padding: 5px;
     border: 2px solid black;
     box-shadow: 0px 0px 10px 15px rgba(0,0,0,0.7);
+}
+
+.kreservation.s-multiple {
+    background-color: lightcoral;
 }

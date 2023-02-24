@@ -21,6 +21,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     }
     this.eventInstalled = []
     this.id = object.get('uuid')
+    this.clonedNode = null
     this.domNode = document.createElement('DIV')
     this.domNode.classList.add('kreservation')
     this.positionFixed = false
@@ -31,20 +32,71 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
 
     if (!options.readonly) {
         this.domNode.addEventListener('dragstart', event => {
-            if (!event.ctrlKey) { if (this.object.get('locked') === '1') { event.preventDefault(); event.stopPropagation(); return false } }
-            //event.dataTransfer.setDragImage(KAIROS.images.move, 8, 8)
+            const kmselect = new KMultiSelect()
+
+            if (!event.ctrlKey) { 
+                if (this.object.get('locked') === '1') { 
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false 
+                }
+                if (kmselect.active) {
+                    for (const o of kmselect.get()) {
+                        o.resetMultiple()
+                    }
+                    kmselect.clear()
+                }
+            }
+            this.createClonedNode()
+            if (kmselect.active) {
+                for (const o of kmselect.get()) {
+                    o.createClonedNode()
+                }
+            }
             event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
+            event.dataTransfer.setDragImage(KAIROS.transImg, 0, 0);
+
             if (event.ctrlKey) {
                 event.dataTransfer.dropEffect = 'copy'
             } else {
                 event.dataTransfer.dropEffect = 'move'
             }
+            const box = this.domNode.getClientRects()
+            this.clonedNode.dataset.offsetX = Math.abs(event.clientX - box[0].x)
+            this.clonedNode.dataset.offsetY = Math.abs(event.clientY - box[0].y)
         }, {capture: true})
         this.domNode.addEventListener('drop', event => {
+            event.preventDefault() 
+        })
+        this.domNode.addEventListener('dragend', event => {
             event.preventDefault()
+            const kmselect = new KMultiSelect()
+            if (kmselect.active) {
+                for (const o of kmselect.get()) {
+                    o.destroyClonedNode()
+                    o.resetMultiple()
+                }
+            }
+            kmselect.clear()
+            this.destroyClonedNode()
         })
         this.domNode.addEventListener('dragover', event => {
             event.preventDefault()
+        })
+        this.domNode.addEventListener('drag', event => {
+            const x = KAIROS.mouse.clientX - this.clonedNode.dataset.offsetX
+            const y = KAIROS.mouse.clientY - this.clonedNode.dataset.offsetY
+            const relX = this.clonedNode.dataset.originalX - x
+            const relY =  this.clonedNode.dataset.originalY - y
+            this.moveClonedNode(x, y)
+            const kmselect = new KMultiSelect()
+            if (kmselect.active) {
+                for (const o of kmselect.get()) {
+                    if (o.id === this.id) { continue }
+                    o.moveClonedNode(parseFloat(o.clonedNode.dataset.originalX) - relX, parseFloat(o.clonedNode.dataset.originalY) - relY)
+                }
+            }
+            
         })
         this.domNode.addEventListener('contextmenu', event => {
             event.preventDefault()
@@ -141,8 +193,15 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         })
     }
     this.domNode.addEventListener('click', (event) => {
+        const kmselect = new KMultiSelect()
         if (KAIROS.getState('cutToolActive')) { return }
-        
+        if (event.ctrlKey) { this.unpopDetails(); this.toggleMultiple(); return }
+        if (kmselect.active) {
+            for(const o of kmselect.get()) {
+                o.resetMultiple()
+            }
+            kmselect.clear()
+        }
         this.popDetails()
     })
     this.domNode.addEventListener('dblclick', (event) => {
@@ -213,6 +272,54 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     object.addEventListener('delete', this.deleteMe.bind(this))
 
     object.bindUINode(this)
+}
+
+KUIReservation.prototype.moveClonedNode = function (x, y) {
+    window.requestAnimationFrame(() => {
+        this.clonedNode.style.left = `${x}px`
+        this.clonedNode.style.top = `${y}px`
+    })
+}
+
+KUIReservation.prototype.createClonedNode = function () {
+    if (this.clonedNode) { return }
+    const box = this.domNode.getClientRects()
+    console.log(box)
+    this.clonedNode = this.domNode.cloneNode(true)
+    this.clonedNode.dataset.originalX = box[0].x
+    this.clonedNode.dataset.originalY = box[0].y
+    this.clonedNode.id = `cloned-${this.domNode.id}`
+    this.clonedNode.style.opacity = '0.8'
+    window.requestAnimationFrame(() => { this.domNode.parentNode.appendChild(this.clonedNode) })
+}
+
+KUIReservation.prototype.destroyClonedNode = function () {
+    if (!this.clonedNode) { return }
+    const parent = this.clonedNode.parentNode
+    const node = this.clonedNode
+    window.requestAnimationFrame(() => parent.removeChild(node))
+    this.clonedNode = null
+}
+
+KUIReservation.prototype.toggleMultiple = function () {
+    if (this.multiple) {
+        return this.resetMultiple()
+    }
+    return this.setMultiple()
+}
+
+KUIReservation.prototype.resetMultiple = function () {
+    const kmselect = new KMultiSelect()
+    kmselect.remove(this.object.get('id'), this)
+    this.multiple = false
+    window.requestAnimationFrame(() => { this.domNode.classList.remove('s-multiple') })
+}
+
+KUIReservation.prototype.setMultiple = function () {
+    this.multiple = true
+    const kmselect = new KMultiSelect()
+    kmselect.add(this.object.get('id'), this)
+    window.requestAnimationFrame(() => { this.domNode.classList.add('s-multiple') })
 }
 
 KUIReservation.prototype.setRelation = function (source, closure) {
@@ -750,6 +857,7 @@ KUIReservation.prototype.getDomNode = function () {
 KUIReservation.prototype.unrender = function () {
     this.getDomNode()
     .then(domNode => {
+        if (!this.domNode.parentNode) { return }
         window.requestAnimationFrame(() => {
             if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
         })
@@ -961,7 +1069,7 @@ KUIReservation.prototype.unselect = function () {
 
 KUIReservation.prototype.render = function () {
     this.rendered = new Promise((resolve, reject) => {
-
+        this.domNode.dataset.rendered = (new Date()).getTime()
         if (this.object.isDestroyed()) {
             this.unrender()
             resolve()

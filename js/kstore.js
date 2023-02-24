@@ -128,8 +128,8 @@ KStore.prototype.delete = function (id) {
                 return resolve(data[id])
             }
             if (data.id) {
-                if (data.id !== id) { throw new Error('ERR:Server')}
-                return resolve(data.id)
+                if (parseInt(data.id) !== parseInt(id)) { throw new Error('ERR:Server')}
+                return resolve(parseInt(data.id))
             }
             throw new Error('ERR:Server')
         })

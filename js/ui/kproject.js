@@ -284,7 +284,7 @@ KProject.prototype.form = function () {
                 return a.getFirstTextValue('', 'group').localeCompare(b.getFirstTextValue('', 'group'))
             })
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                if (affaire.get('closed') !== '0') { continue }
+                if (affaire.get('closed') !== 0) { continue }
                 this.kaffaireNode(affaire)
                 .then(affaireNode => {
                     node.appendChild(affaireNode)
@@ -306,7 +306,7 @@ KProject.prototype.handleFormClick = function (event) {
             const affaires = this.project.getRelation('kaffaire')
             let currentAffaire = null
             for (const affaire of Array.isArray(affaires) ? affaires : [affaires]) {
-                if (affaire.get('uid') === target.dataset.affaire) {
+                if (affaire.get('uid') === parseInt(target.dataset.affaire)) {
                     currentAffaire = affaire
                 }
             }
