@@ -1,5 +1,6 @@
 /* global view object */
-function KViewCell () {
+function KViewCell (day) {
+    this.day = day
     this.content = []
     this.size = 0
 }
@@ -35,6 +36,12 @@ KViewCell.prototype.indexOf = function (id) {
         }
     }
     return -1
+}
+
+KViewCell.prototype.clear = function () {
+    this.content.forEach(element => element.object.mark('hide'))
+    this.content = []
+    this.size = 0
 }
 
 KViewCell.prototype.entries = function () {
@@ -136,13 +143,15 @@ KView.prototype.compute = function () {
 
     if (this.data.has('entry-count') && this.data.has('day-count')) {
         if (this.grid === null) {
+            const date = this.get('date-origin')
+            let day0 = Math.floor(date.getTime() / daysec / 1000)
             const height = this.data.get('entry-count')
             const width = 360
             const newGrid = new Array(width * height)
             
             /* copy old grid into new grid */
             for (i = 0; i < newGrid.length; i++) {
-                newGrid[i] = new KViewCell()
+                newGrid[i] = new KViewCell(day0 + Math.floor(i / (this.data.get('entry-count') + 1)))
             }
             this.rowDescription = new Array(height)
             for (let i = 0; i < height; i++) {
@@ -181,6 +190,10 @@ KView.prototype.getY = function (y) {
     }
     if (i + j >= this.rowDescription.length) { return 0 }
     return this.rowDescription[i + j][0] - 1
+}
+
+KView.prototype.getRowFromPX = function (px) {
+    return this.rowDescription[Math.round((px - this.data.get('margin-top')) / this.data.get('entry-height'))][1]
 }
 
 KView.prototype.getObjectRowById = function (id) {
@@ -226,7 +239,7 @@ KView.prototype.swapRow = function (y1, y2) {
 /* gpos wrap around on X */
 KView.prototype.getGPos = function (x, y) {
     y = this.getY(y)
-    const gpos = x * this.get('entry-count') + y + (this.gridOffset * this.get('entry-count'))
+    const gpos = x * this.get('entry-count') + y + (this.gridOffset)
     return gpos
 }
 
@@ -276,6 +289,42 @@ KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
 
 KView.prototype.getViewRange = function () {
     return [this.gridOffset, this.gridOffset + this.get('day-count')]
+}
+
+KView.prototype.clearLeftCol = function () {
+    for (let i = 0; i < this.get('entry-count'); i++) { 
+        this.grid[i].clear() 
+    }
+}
+
+KView.prototype.moveLeft = function () {
+    for (let i = 0; i < this.grid.length - this.get('entry-count'); i++) {
+        this.grid[i] = this.grid[i + this.get('entry-count')]
+    }
+}
+
+KView.prototype.clearRightCol = function () {
+    for (let i = this.grid.length - this.get('entry-count'); i < this.grid.length; i++) { 
+        this.grid[i].clear() 
+    }
+}
+
+KView.prototype.moveRight = function () {
+    for (let i = this.grid.length - this.get('entry-count') - 1; i >= this.get('entry-count'); i--) {
+        this.grid[i + this.get('entry-count')] = this.grid[i]
+    }
+    for (let i = 0; i < this.get('entry-count'); i++) {
+        console.log(i, this.grid[i].day)
+        this.grid[i].day--
+    }
+}
+
+KView.prototype.setObjectAt = function (x0, x1, y, id, object) {
+   /* const xgpos = this.getGPos(x0, y)
+    console.log(xgpos)
+    for (let i = xgpos; i <= x1 + xgpos; i++) {
+        this.grid[i].set(id, object)
+    }*/
 }
 
 KView.prototype.move = function (days) {

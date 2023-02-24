@@ -707,17 +707,17 @@ define([
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         KVDays.initDayStartTime(newOrigin, KAIROS.days)
 
-        /*const beginDiff = newOrigin.getTime() - begin.getTime()
-        const yDiff = kview.getObjectRowById(entryNode.id) - originalY*/
+        const beginDiff = newOrigin.getTime() - begin.getTime()
+        const yDiff = kview.getObjectRowById(entryNode.id) - originalY
         begin.setTime(newOrigin.getTime())
         end.setTime(begin.getTime() + diff)
         object.set('begin', begin.toISOString())
         object.set('end', end.toISOString())
-        /*kview.getRowFromPX(OriginalY).get('id')
+        kview.getRowFromPX(OriginalY).get('id')
         .then(id => {
           object.set('target', id)
           kstore.set(object)
-        })*/
+        })
 
         const kmselect = new KMultiSelect()
         if (kmselect.active) {
