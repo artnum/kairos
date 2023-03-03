@@ -246,8 +246,10 @@ KCommandOverlay.prototype.lastCreated = function (value) {
                 .then(status => {
                     const color = new Kolor(status ? status.color || 'lightgray' : 'lightgray')
                     const affaire = r.getRelation('kaffaire')
+                    if (!affaire) { return }
                     const project = affaire.getRelation('kproject')
-                    
+                    if (!project) { return }
+
                     const node = document.createElement('DIV')
                     node.innerHTML = `<span style="color: ${color.foreground()};background-color: ${color.hex()}" class="field uid"><input type="checkbox" /> ${project.getFirstTextValue('', 'reference')}</span>
                             <span class="field reference">${project.getFirstTextValue('', 'name')}</span>
