@@ -13,10 +13,10 @@ const kMouseFollow = event => {
         if (performance.now() - kMouseFollow._last_start < 50) { return }
     }
     kMouseFollow._last_start = performance.now()
-    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? (event.pageY || event.clientX)
-    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? (event.pageY || event.clientY)
-    KAIROS.mouse.clientX = event.pageX || event.clientX 
-    KAIROS.mouse.clientY = event.pageY || event.clientY
+    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
+    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? event.clientY
+    KAIROS.mouse.clientX = event.clientX 
+    KAIROS.mouse.clientY = event.clientY
     for (const [_, cb] of KAIROS.mouse.follow) {
         cb(KAIROS.mouse)
     }
@@ -25,6 +25,7 @@ const kMouseFollow = event => {
 const K_INFO = 1
 const K_WARN = 2
 const K_ERROR = 3
+const K_DEBUG = 4
 
 KAIROS.lastInputBlured = []
 
@@ -137,6 +138,64 @@ KAIROS.removeFollowMouse = function (index) {
 
 }
 
+KAIROS.errorMsg = function (err) {
+    let txt = err
+    if (err instanceof Error) {
+        txt = err.message
+    }
+    if (KError[txt]) {
+        txt = KError[txt][KAIROS.getCurrentLanguage()] !== undefined ? KError[txt][KAIROS.getCurrentLanguage()] : KError[txt].fr
+    } else {
+        if (err instanceof Error) { txt = `${err.name} : ${err.message}` }
+    }
+    if (err instanceof Error) {
+        if (err.fileName) {
+            const filename = err.fileName.split('?')[0].replace(KAIROS.getBase(), '')
+            txt += ` [${filename}]`
+        }
+        if (err.lineNumber) {
+            txt += `[line:${err.lineNumber}]`
+        }
+        if (err.columnNumber) {
+            txt += `[col:${err.columnNumber}]`
+        }
+    }
+
+    return txt
+}
+
+KAIROS.debug = function (msg, code = 0) {
+    if (KAIROS.debugOn) { 
+        if (msg instanceof Error) {
+            KAIROS.log('debug', KAIROS.errorMsg(msg), code)
+            for (let cause = msg.cause; cause; cause = cause.cause) {
+                KAIROS.log('debug', KAIROS.errorMsg(msg), code)
+            }
+            return
+        }
+
+        if (Array.isArray(msg)) {
+            let txt = ''
+            for(const e of msg) {
+                txt += e.toString() + ' '
+            }
+            KAIROS.log('debug', txt, code)
+            return
+        }
+
+        if (typeof msg === 'object') {
+            try {
+                KAIROS.log('debug', JSON.stringify(msg), code)
+            } catch (e) {
+                KAIROS.log('debug', 'Unknown debug object', code)
+            }
+            return
+        }
+
+        KAIROS.log('debug', msg, code)
+    }
+}
+
 KAIROS.info = function (txt, code = 0) {
     this.log('info', txt, code)
 }
@@ -157,6 +216,14 @@ KAIROS.error = function (msg, code = 0) {
     console.trace()
     console.groupEnd()
 }
+
+window.addEventListener('error', (e)  => {
+    KAIROS.debug(e.error)
+})
+
+window.addEventListener('unhandledrejection', e => {
+    KAIROS.debug(e.reason, -1)
+})
 
 KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {
     console.log(reason)
@@ -197,6 +264,7 @@ KAIROS.log = function (level, txt, code) {
         }, timeout)
         div.addEventListener('click', event => {
             const history = KAIROS.log._history.get(event.target.dataset.txt)
+            navigator.clipboard.writeText(event.target.dataset.txt + "\n")
             window.clearTimeout(history.timeout)
             history.domNode.parentNode.removeChild(history.domNode)
             document.body.classList.remove('info', 'error', 'warning')
@@ -226,11 +294,16 @@ KAIROS.log = function (level, txt, code) {
             div.appendChild(document.createElement('I'))
             div.lastChild.setAttribute('class', 'fas fa-exclamation-circle')
             break
+        case K_DEBUG:
+        case 'debug':
+            div.appendChild(document.createElement('I'))
+            div.lastChild.setAttribute('class', 'fas fa-bug')
+            break
     }
 
     div.classList.add('message', level)
     if (!code) { code = '' }
-    else { code = `(${code})` }
+    else { code = code < 0 ? '(Unhandled)' : `(${code})` }
 
     div.innerHTML += count > 1 ? ` ${txt} ${code} (${count})` : ` ${txt} ${code}`
     document.body.classList.add(`${level}`)

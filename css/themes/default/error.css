@@ -14,6 +14,7 @@
     border: 2px solid;
     border-bottom: none;
     cursor: pointer;
+    overflow-wrap: break-word;
 }
 
 .message.error {
@@ -29,4 +30,9 @@
 .message.info {
     background-color: var(--message-info-bg-color);
     border-color: var(--message-info-border-color);
+}
+
+.message.debug {
+    background-color: plum;
+    border-color: purple;
 }

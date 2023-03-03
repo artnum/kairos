@@ -7,7 +7,7 @@ function iSelectReservation(event) {
     const cell = Viewport.getCell(x, y)
 
     let node = event.target
-    while (node && !node.classList.contains('kentry')) { 
+    while (node && node.classList && !node.classList.contains('kentry')) { 
       if (node.classList.contains('kreservation')) { break }
       node = node.parentNode
     }

@@ -4,12 +4,14 @@ function KCommandOverlay() {
     const operations = [
         {
             key: 'A',
+            symbol: '<i class="fas fa-calendar-day"></i>',
             label: 'Se rendre à aujourd\'hui',
             input: false,
             cb: () => { return this.gotoDay(new Date()) }
         },
         {
             key: 'J',
+            symbol: '<i class="far fa-calendar-alt"></i>',
             label: 'Se rendre au jour',
             input: true,
             cb: (value) => { return this.gotoDay(value) }
@@ -25,12 +27,14 @@ function KCommandOverlay() {
         },*/
         {
             key: 'P',
+            symbol: '<i class="fas fa-tasks"></i>',
             label: 'Projets',
             input: false,
             cb: () => { return this.displayProjects() }
         },
         {
             key: 'K',
+            symbol: '<i class="fas fa-pen-nib"></i>',
             label: 'Wiki',
             input: false,
             cb: () => { 
@@ -41,9 +45,19 @@ function KCommandOverlay() {
         },
         {
             key: 'I',
+            symbol: '<i class="fas fa-print"></i>',
             label: 'Imprimer',
             input: false,
             cb: () => { return this.print() }
+        },
+        {
+            key: 'C',
+            symbol: '<i class="fas fa-menorah"></i>',
+            label: 'Dernières créations',
+            input: true,
+            defaultValue: 8,
+            cb: (value) => { return this.lastCreated(value) }
+
         }
     ]
     if (document.getElementById('commandModeOverlay')) {
@@ -95,12 +109,16 @@ function KCommandOverlay() {
                 event.stopPropagation()
                 event.preventDefault()
                 const sbox = this.goToSearchBox()
+                if (op.defaultValue) {
+                    sbox.placeholder = op.defaultValue
+                }
                 new Promise(resolve => {
                     sbox.addEventListener('keyup', event => {
                         if (event.key === 'Enter') { 
                             window.requestAnimationFrame(() => {
                                 this.domNode.classList.add('loading')
                             })
+                            sbox.placeholder = ''
                             return resolve(sbox.value) 
                         }
                     })
@@ -127,7 +145,7 @@ function KCommandOverlay() {
         const div = document.createElement('DIV')
         div.dataset.key = operation.key
         div.classList.add('entry')
-        div.innerHTML = `<span class="key">${operation.key}</span><span class="description">${operation.label}</span>`
+        div.innerHTML = `<span class="key">${operation.key}</span><span class="symbol">${operation.symbol}</span><span class="description">${operation.label}</span>`
         this.container.appendChild(div)
     })
 
@@ -190,6 +208,71 @@ KCommandOverlay.prototype.gotoDay = function (val) {
         if (isNaN(val.getTime())) { return reject() }
         window.dispatchEvent(new CustomEvent('k-set-center', { detail: { date: val } }))
         return resolve()
+    })
+}
+
+KCommandOverlay.prototype.lastCreated = function (value) {
+    return new Promise((resolve, reject) => {
+        if (!value) { value = 8 }
+        value = parseInt(value)
+        if (isNaN(value)) { value = 8 }
+        const date = new Date()
+        date.setHours(23, 59, 59, 0)
+        date.setTime(date.getTime() - (value * 86400000))
+        const store = new KStore('kreservation')
+        const sstore = new KStore('kstatus')
+        store.query({
+            'created': ['>=', Math.floor(date.getTime() / 1000)],
+            'deleted': '--'
+        })
+        .then(reservations => {
+            const popup = new KPopup(`Création des ${value} derniers jours`)
+            const div = document.createElement('DIV')
+            div.classList.add('k-last-created-popup')
+            const filtered = []
+            for (const r of reservations) {
+                if (!filtered.find((e) => {
+                    if (r.get('affaire') === e.get('affaire')) { return true }
+                    return false
+                })) {
+                    filtered.push(r)
+                }
+            }
+
+            filtered.sort((a, b) => { return  a.get('status') - b.get('status') })
+
+            filtered.forEach(r => {
+                sstore.get(r.get('status'))
+                .then(status => {
+                    const color = new Kolor(status ? status.color || 'lightgray' : 'lightgray')
+                    const affaire = r.getRelation('kaffaire')
+                    const project = affaire.getRelation('kproject')
+                    
+                    const node = document.createElement('DIV')
+                    node.innerHTML = `<span style="color: ${color.foreground()};background-color: ${color.hex()}" class="field uid"><input type="checkbox" /> ${project.getFirstTextValue('', 'reference')}</span>
+                            <span class="field reference">${project.getFirstTextValue('', 'name')}</span>
+                            <span class="field reference">${affaire.getFirstTextValue('', 'reference')}</span>
+                            <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                            <span class="field description">${r.getFirstTextValue('', 'comment')}</span>
+                    `
+                    node.firstElementChild.addEventListener('click', event => {
+                        const node = event.currentTarget
+                        const cbox = node.getElementsByTagName('INPUT')[0]
+                        if (cbox.checked) {
+                            cbox.checked = false
+                            node.parentNode.classList.remove('k-done')
+                        } else {
+                            cbox.checked = true
+                            node.parentNode.classList.add('k-done')
+                        }
+                    })
+                    window.requestAnimationFrame(_ => div.appendChild(node))
+                })
+            })
+            popup.setContentDiv(div)
+            popup.open()
+            return resolve()
+        })
     })
 }
 

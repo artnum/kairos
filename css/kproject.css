@@ -10,3 +10,31 @@
     max-height: 1em;
     overflow: hidden;
 }
+
+.k-last-created-popup {
+    display: block;
+    text-align: left;
+    align-items: flex-start !important;
+}
+
+.k-last-created-popup > div {
+    margin: 8px 0px;
+}
+
+.k-last-created-popup > div.k-done * {
+    text-decoration: line-through !important;
+}
+.k-last-created-popup .field {
+    padding: 4px 6px;
+    display: inline-block;
+}
+
+.k-last-created-popup .field.uid {
+    cursor: pointer;
+    min-width: 12ch;
+    max-width: 12ch;
+}
+.k-last-created-popup .field.description {
+    display: block;
+    clear: left;
+}

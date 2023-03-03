@@ -51,6 +51,7 @@
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
     },
     toDateString (date) {
+        if (!date) { return '' }
         const object = date instanceof Date ? date : new Date(date)
         if (isNaN(object.getTime())) { return '' }
 

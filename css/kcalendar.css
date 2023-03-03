@@ -74,11 +74,13 @@
     font-weight: bold;
 }
 .k-month-popper {
+    text-align: center;
     background-color: white;
-    font-size: 0.8em;
+    font-size: 1em;
     border: 1px solid black;
     overflow-y: scroll;
     max-height: 24ex;
+    min-width: 12ch;
 }
 .k-month-popper div {
     margin: 2px 2px;

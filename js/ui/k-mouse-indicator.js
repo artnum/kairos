@@ -17,7 +17,7 @@ function KMouseIndicator () {
 KMouseIndicator.prototype.move = function (mouse) {
     if (!this.hasContent) { return }
     let x = mouse.clientX + 15
-    let y = mouse.clientY
+    let y = mouse.clientY + window.scrollY
     if (this.rect.width + x > window.innerWidth) {
         x = mouse.clientX - (5 + this.rect.width)
     }

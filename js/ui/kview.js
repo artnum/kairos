@@ -542,7 +542,7 @@ KView.prototype.handleMouseMove = function () {
             currentBox[0] = parseInt(Math.trunc(xpos / this.data.get('day-width')))
         }
         
-        const ypos = KAIROS.mouse.clientY - marginTop
+        const ypos = KAIROS.mouse.clientY - marginTop + window.scrollY
         currentBox[1] = parseInt(Math.trunc(ypos / this.data.get('entry-height')))
 
         if (currentBox[0] !== this.currentBox[0]) {

@@ -82,7 +82,7 @@ KTaskBar.prototype.maximize = function (tid) {
     if (!task.node) { return }
     task.callback()
     this.tasks.delete(tid)
-    new Promise(resolve => {w
+    new Promise(resolve => {
         window.requestAnimationFrame(() => { 
             if (!task.node.parentNode) { return resolve() }
             task.node.parentNode.removeChild(task.node)
@@ -352,6 +352,10 @@ function KPopup (title, opts = {}) {
         }
     }, {capture: true})
 
+    this.popup.addEventListener('dblclick', event => {
+        event.stopPropagation()
+    })
+
     this.followIdx = KAIROS.addFollowMouse(this.mouseMove.bind(this))
 
     /* if placed at special position, don't move window */
@@ -542,7 +546,7 @@ KPopup.prototype.maximize = function (event, frombind = false) {
         }
     }
     if (!this.minimizedTab) { return }
-    this.taskbar.maximize(this.minimizedTab)
+    //this.taskbar.maximize(this.minimizedTab)
     this.minimizedTab = null
     KAIROSAnim.push(() => {
         this.originalParent.appendChild(this.popup)

@@ -1,4 +1,5 @@
 function CalendarUI (date = new Date(), holiday = null, options = {}) {
+    if (isNaN(date.getTime()) || date.getTime() === 0) { date = new Date() }
     this.domNode = document.createElement('DIV')
     this.domNode.setAttribute('tabindex', '0')
     this.domNode.classList.add('k-calendar')

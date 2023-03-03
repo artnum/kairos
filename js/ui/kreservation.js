@@ -85,7 +85,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         })
         this.domNode.addEventListener('drag', event => {
             const x = KAIROS.mouse.clientX - this.clonedNode.dataset.offsetX
-            const y = KAIROS.mouse.clientY - this.clonedNode.dataset.offsetY
+            const y = KAIROS.mouse.clientY - this.clonedNode.dataset.offsetY + window.scrollY
             const relX = this.clonedNode.dataset.originalX - x
             const relY =  this.clonedNode.dataset.originalY - y
             this.moveClonedNode(x, y)
@@ -207,58 +207,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.domNode.addEventListener('dblclick', (event) => {
         event.stopPropagation()
         if (this.poptimeout) { clearTimeout(this.poptimeout) }
-        this.renderForm()
-        .then(domNode => {
-            const other = JSON.parse(this.object.get('other'))
-            let waitOther = Promise.resolve(false)
-            if (other) {
-                if (other.link && other.link.to) {
-                    waitOther = new Promise((resolve) => {
-                        const kstore = new KStore('kreservation')
-                        kstore.get(other.link.to)
-                        .then(kobject => {
-                            if (kobject.get('deleted') === null) { return resolve(true) }
-                            resolve(false)
-                        })
-                        .catch(_ => {
-                            resolve(false)
-                        })
-                    })
-                }
-            }
-            waitOther.then(replan => {
-                const action = [                       
-                    {name: 'delete', label: 'Supprimer', type: 'danger'}
-                ]
-                if ((other && other.link && other.link.direction === 'left') || !other) {
-                    action.unshift({name: 'duplicate-at-end', label: replan ? 'Replanifier la fin' : 'Créer la fin'})
-                }
-                const klateral = new KLateral()
-                const ktab = klateral.add(domNode, { 
-                    title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
-                    id: this.object.get('uid'),
-                    action: action
-                })
-                if (ktab) {
-                    ktab.addEventListener('k-action', event => {
-                        this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
-                    })
-                    ktab.addEventListener('focus', () => {
-                        this.select()
-                        this.showRelation()
-                    })
-                    ktab.addEventListener('blur', () => {
-                        this.unselect()
-                        this.hideRelation()
-                    })
-                    this.addEventListener('close', event => {
-                        ktab.close()
-                    })
-                }
-                this.select()
-                this.showRelation()
-            })
-        })
+        this.open()
     })
 
     this.domNode.addEventListener('mousedown', (event) => {
@@ -274,8 +223,64 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     object.bindUINode(this)
 }
 
+KUIReservation.prototype.open = function () {
+    this.renderForm()
+    .then(domNode => {
+        const other = JSON.parse(this.object.get('other'))
+        let waitOther = Promise.resolve(false)
+        if (other) {
+            if (other.link && other.link.to) {
+                waitOther = new Promise((resolve) => {
+                    const kstore = new KStore('kreservation')
+                    kstore.get(other.link.to)
+                    .then(kobject => {
+                        if (kobject.get('deleted') === null) { return resolve(true) }
+                        resolve(false)
+                    })
+                    .catch(_ => {
+                        resolve(false)
+                    })
+                })
+            }
+        }
+        waitOther.then(replan => {
+            const action = [                       
+                {name: 'delete', label: 'Supprimer', type: 'danger'}
+            ]
+            if ((other && other.link && other.link.direction === 'left') || !other) {
+                action.unshift({name: 'duplicate-at-end', label: replan ? 'Replanifier la fin' : 'Créer la fin'})
+            }
+            const klateral = new KLateral()
+            const ktab = klateral.add(domNode, { 
+                title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+                id: this.object.get('uid'),
+                action: action
+            })
+            if (ktab) {
+                ktab.addEventListener('k-action', event => {
+                    this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
+                })
+                ktab.addEventListener('focus', () => {
+                    this.select()
+                    this.showRelation()
+                })
+                ktab.addEventListener('blur', () => {
+                    this.unselect()
+                    this.hideRelation()
+                })
+                this.addEventListener('close', event => {
+                    ktab.close()
+                })
+            }
+            this.select()
+            this.showRelation()
+        })
+    })
+}
+
 KUIReservation.prototype.moveClonedNode = function (x, y) {
     window.requestAnimationFrame(() => {
+        if (!this.clonedNode) { return }
         this.clonedNode.style.left = `${x}px`
         this.clonedNode.style.top = `${y}px`
     })
@@ -284,7 +289,6 @@ KUIReservation.prototype.moveClonedNode = function (x, y) {
 KUIReservation.prototype.createClonedNode = function () {
     if (this.clonedNode) { return }
     const box = this.domNode.getClientRects()
-    console.log(box)
     this.clonedNode = this.domNode.cloneNode(true)
     this.clonedNode.dataset.originalX = box[0].x
     this.clonedNode.dataset.originalY = box[0].y
@@ -1143,7 +1147,7 @@ KUIReservation.prototype.render = function () {
                 }
             }
  
-            this.props.set('left', left + offset )          
+            this.props.set('left', left + offset )
             this.props.set('width', width)
             this.object.bindUINode(this)
 
