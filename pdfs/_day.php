@@ -81,7 +81,12 @@ $kobjects = $kreservation->query([
     ]
 ]);
 
+/* direction on logistic must be ordered according to direction, so build that
+ * layer of table, then merge so they are processed in correct order
+ */
 $atEnd = [];
+$atEnd0_5 = [];
+$atEnd1 = [];
 $atEnd2 = [];
 $byProjects = [];
 
@@ -96,12 +101,41 @@ foreach($kobjects as $kobject) {
 
     $affaireid = $affaire->get('id');
     if (intval($status) === 5) {
-        if (!isset($atEnd[$project->get('id') . $status . $affaireid])) {
-            $atEnd[$project->get('id') . $status . $affaireid] = [];
+        if ($kobject->get('other') === null) {
+            if (!isset($atEnd[$project->get('id') . $status . $affaireid])) {
+                $atEnd[$project->get('id') . $status . $affaireid] = [];
+            }
+            $atEnd[$project->get('id') . $status . $affaireid][] = $kobject;
+            continue;
         }
-    
-        $atEnd[$project->get('id') . $status . $affaireid][] = $kobject;
-        continue;
+
+        try {
+            $other = json_decode($kobject->get('other'));
+            if (!isset($other->link) || !isset($other->link->direction)) {
+                throw new Exception();
+            }
+
+            if ($other->link->direction === 'left') {
+                if (!isset($atEnd0_5[$project->get('id') . $status . $affaireid])) {
+                    $atEnd0_5[$project->get('id') . $status . $affaireid] = [];
+                }
+                $atEnd0_5[$project->get('id') . $status . $affaireid][] = $kobject;
+                continue;
+            }
+            if (!isset($atEnd1[$project->get('id') . $status . $affaireid])) {
+                $atEnd1[$project->get('id') . $status . $affaireid] = [];
+            }
+            $atEnd1[$project->get('id') . $status . $affaireid][] = $kobject;
+            continue;
+        } catch (Exception $e) {
+            if ($kobject->get('other') === null) {
+                if (!isset($atEnd[$project->get('id') . $status . $affaireid])) {
+                    $atEnd[$project->get('id') . $status . $affaireid] = [];
+                }
+                $atEnd[$project->get('id') . $status . $affaireid][] = $kobject;
+                continue;
+            }
+        }
     }
 
     if (intval($status) === 4) {
@@ -126,7 +160,7 @@ foreach ($byProjects as &$byProject) {
     });
 }
 
-$byProjects = array_merge($byProjects, $atEnd, $atEnd2);
+$byProjects = array_merge($byProjects, $atEnd, $atEnd0_5, $atEnd1, $atEnd2);
 
 $order = [];
 foreach ($byProjects as $k => $kobjects) {
