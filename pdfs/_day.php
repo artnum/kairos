@@ -96,6 +96,7 @@ foreach($kobjects as $kobject) {
     if (!$affaire)  { continue; }
     if (!$status) { $status = $affaire->get('status'); }
     if (!$kobject->get('status') && $status) { $kobject->set('status', $status); }
+    if ($kobject->get('status') === 9) { continue; }
     $project = $kproject->get($affaire->get('project'));
     if (!$project) { continue; }
 
