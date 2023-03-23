@@ -209,8 +209,9 @@ $dateFormater = new IntlDateFormatter(
     IntlDateFormatter::GREGORIAN,
     'EEEE, dd MMMM y'
 );
+$strDate = $dateFormater->format((new DateTime($day)));
 $PDF->br();
-$PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $dateFormater->format((new DateTime($day)))]);
+$PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $strDate]);
 $PDF->setFontSize(3);
 $PDF->br();
 
@@ -388,4 +389,4 @@ foreach ($order as $k => $v) {
 }
 drawTable($PDF, $tableStart);
 
-$PDF->Output('I', 'Planning du ' . $dateFormater->format((new DateTime($day))) .  '.pdf', true); 
+$PDF->Output('I', 'Planning du ' . $strDate.  '.pdf', true); 
