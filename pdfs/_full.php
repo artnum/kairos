@@ -1,5 +1,18 @@
 <?php
 include ('base.php');
+include('../lib/dbs.php');
+global $KAppConf;
+global $KConf;
+global $ini_conf;
+
+$authpdo = init_pdo($ini_conf, 'authdb');
+$KAuth = new KAALAuth($authpdo);
+$BaseURL = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['SERVER_NAME'];
+
+if (!$KAuth->check_auth($KAuth->get_auth_token(), $BaseURL . '/' . $_SERVER['REQUEST_URI'])) {
+  http_response_code(401);
+  exit(0);
+}
 
 class FullPlan extends artnum\PDF {
    function __construct($options = array()) {
@@ -53,14 +66,14 @@ $daysNumber = floor(($END->getTimestamp() - $BEGIN->getTimestamp()) / 86400);
 $dayBegin = explode('+', $BEGIN->format('c'))[0];
 $dayEnd = explode('+', $END->format('c'))[0];
 
-$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $_GET['auth']);
-$kentry = new KStore($KAppConf, 'kentry', [], $_GET['auth']);
-$kuser = new KStore($KAppConf, 'kperson', [], $_GET['auth']);
+$kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $KConf->get('security.authproxy'));
+$kentry = new KStore($KAppConf, 'kentry', [], $KConf->get('security.authproxy'));
+$kuser = new KStore($KAppConf, 'kperson', [], $KConf->get('security.authproxy'));
 
-$kaffaire = new KStore($KAppConf, 'kaffaire', [], $_GET['auth']);
-$kproject = new KStore($KAppConf, 'kproject', [], $_GET['auth']);
-$kstatus = new KStore($KAppConf, 'kstatus', [], $_GET['auth']);
-$kalloc = new KStore($KAppConf, 'krallocation', [], $_GET['auth']);
+$kaffaire = new KStore($KAppConf, 'kaffaire', [], $KConf->get('security.authproxy'));
+$kproject = new KStore($KAppConf, 'kproject', [], $KConf->get('security.authproxy'));
+$kstatus = new KStore($KAppConf, 'kstatus', [], $KConf->get('security.authproxy'));
+$kalloc = new KStore($KAppConf, 'krallocation', [], $KConf->get('security.authproxy'));
 
 $reservations = $kreservation->query([
    '#and' => [
@@ -75,7 +88,6 @@ $users = $kuser->query([
    'deleted' => '--',
    'order' => ['>', -1, 'int']
 ]);
-
 
 uasort($users, function ($a, $b) {
    return intval($a->get('order')) - intval($b->get('order'));
@@ -259,9 +271,9 @@ foreach ($reservations as $reservation) {
 
    $currentUser = null;
    foreach ($users as $user) {
-      if ($reservation->get('target') === $user->get('id')) { $currentUser = $user; break; }
+      if (intval($reservation->get('target')) === intval($user->get('id'))) { $currentUser = $user; break; }
    }
-   if(!$currentUser) {  continue; }
+   if(!$currentUser) { continue; }
 
    $pdf->vtab($currentUser->get('pdf-index'));
    $pdf->SetX($origin);
@@ -329,11 +341,5 @@ foreach ($reservations as $reservation) {
       $pdf->SetX($origin + $width);
    }
 }
-
-
-
-
-
-
 
 $pdf->Output('I', 'Plan.pdf', true); 

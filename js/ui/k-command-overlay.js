@@ -355,19 +355,21 @@ KCommandOverlay.prototype.print = function () {
             popup.close()
         })
         form.addEventListener('submit', event => {
-        event.preventDefault()
-        const data = new FormData(form)
+            event.preventDefault()
+            const data = new FormData(form)
 
-        const url = new URL(`${KAIROS.getBase()}/pdfs/full/`)
-        const begin = data.get('begin')
-        const end = data.get('end')
-
-        if (begin !== '') { url.searchParams.set('begin', begin) }
-        if (end !== '') { url.searchParams.set('end', end) }
-        url.searchParams.set('auth', `Bearer ${localStorage.getItem('klogin-token')}`)
-        
-        window.open(url, '_blank')
-            popup.close()
+            const begin = data.get('begin')
+            const end = data.get('end')
+            const params = {}
+            if (begin !== '') { params.begin = begin }
+            if (end !== '') { params.end = end }
+            const klogin = new KLogin(KAIROS.URL(KAIROS.kaalURL))
+            klogin.genUrl(new URL(`${KAIROS.getBase()}/pdfs/full/`), params, klogin.getShareType('share-limited'))
+            .then(url => {
+                window.open(url, '_blank')
+                popup.close()
+            })
+    
         })
         popup.setContentDiv(form)
         popup.open()
