@@ -106,7 +106,10 @@ window.addEventListener('kairos-preload', event => {
         ['../css/klateral.css', 'css'],
         ['../css/kform.css', 'css'],
         
-        ['../resources/symbols.js', 'script'],  
+        ['../resources/symbols.js', 'script'],
+
+        [`${KAIROS.URL(KAIROS.kaalURL)}/admin/js/string.js`, 'script'],
+        [`${KAIROS.URL(KAIROS.kaalURL)}/admin/js/fetch.js`, 'script'],
 
         ['../js/animation.js', 'script'],
         ['../js/css.js', 'script'],
@@ -152,6 +155,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kentry-sort.js', 'script'],
         ['../js/ui/k-step-progress.js', 'script'],
         ['../js/ui/kselect.js', 'script'],
+
+
         ['../js/ui/kentry.js', 'script'],
         ['../js/ui/kform.js', 'script'],
         ['../js/ui/klist.js', 'script'],
@@ -169,6 +174,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kmouse.js', 'script'],
         ['../js/ui/k-command-overlay.js', 'script'],
         ['../js/ui/k-mouse-indicator.js', 'script'],
+        ['../js/ui/k-corner-box.js', 'script'],
+        [`${KAIROS.URL(KAIROS.kaalURL)}/admin/js/store/group.js`, 'script'],
 
         ['../js/stores/user.js', 'script'],
         ['../js/stores/locality.js', 'script'],

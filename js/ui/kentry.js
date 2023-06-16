@@ -3,10 +3,15 @@ function KUIEntry (dataObject, opts = {}) {
         'reference': {remote: 'id'},
         'name': {remote: 'name'}
     }, opts)
+    this.parentNode = null
+    this.hidden = false
     this.dataObject = dataObject
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
     this.kview = new KView()
+    this.hidden = false
+    this.order = 0
+    this.content = new Map()
     this.boxes = new Array(this.kview.get('day-count'))
     for (let i = 0; i < this.boxes.length; i++) {
         this.boxes[i] = []
@@ -21,15 +26,89 @@ function KUIEntry (dataObject, opts = {}) {
     this.object = dataObject
 }
 
-KUIEntry.prototype.render = function () {
+KUIEntry.prototype.removeDomNode = function () {
+    return new Promise(resolve => {
+        this.getDomNode()
+        .then(domNode => {
+            if (!domNode.parentNode) { return resolve() }
+            window.requestAnimationFrame(() => {
+                this.parentNode.removeChild(domNode)
+                return resolve()
+            })
+        })
+    })
+}
+
+KUIEntry.prototype.addDomNode = function () {
+    if (!this.parentNode) { return Promise.resolve() }
+    return new Promise(resolve => {
+        this.getDomNode()
+        .then(domNode => {
+            if (domNode.parentNode) { return resolve() }
+            window.requestAnimationFrame(() => {
+                this.parentNode.appendChild(domNode)
+                return resolve()
+            })
+        })
+    })
+}
+
+KUIEntry.prototype.setHidden = function (hidden = true) {
+    this.hidden = hidden
+}
+
+KUIEntry.prototype.applyState = function () {
+    return new Promise(resolve => {
+        if (this.hidden) {
+            this.removeDomNode()
+            .then(() => {
+                this.hideContent()
+                return resolve()
+            })
+        } else {
+            this.addDomNode()
+            .then(() => {
+                this.showContent()
+                return resolve()
+            })
+        }
+    })
+}
+
+KUIEntry.prototype.setOrder = function (order) {
+    this.order = order
+}
+
+KUIEntry.prototype.hideContent = function () {
+    this.hidden = true
+    this.content.forEach(uireservation => {
+        uireservation.unrender()
+    })
+}
+
+KUIEntry.prototype.showContent = function () {
+    this.hidden = false
+    this.content.forEach(uireservation => {
+        uireservation.render()
+    })
+}
+
+KUIEntry.prototype.render = function (parentNode = null) {
+    if (parentNode !== null) { this.parentNode = parentNode}
     return new Promise ((resolve, reject) => {
         this.html
         .then(khtml => {
             khtml.domNode.classList.add('kentry')
+            khtml.domNode.style.order = this.order
             this.data.gets(khtml.getProperties())
             .then(fields => {
                 for (const [k, v] of fields) {
                     khtml.set(k, v)
+                }
+                if (this.parentNode) {
+                    window.requestAnimationFrame(() => {
+                        this.parentNode.appendChild(khtml.domNode)
+                    })
                 }
                 resolve(khtml.domNode)
             })
@@ -39,96 +118,84 @@ KUIEntry.prototype.render = function () {
 
 KUIEntry.prototype.removeReservation = function (reservation) {
     return new Promise((resolve, reject) => {
-        let boxes = []
-        let max = 1
-        for (let i = 0; i < this.boxes.length; i++) {
-            if (!this.boxes[i]) { continue }
-            for (let j = 0; j < this.boxes[i].length; j++) {
-                if (this.boxes[i][j].id === reservation.id) {
-                    boxes.push(this.boxes[i])
-                    this.boxes[i].splice(j, 1)
-                    if (this.boxes[i].length > max) { max = this.boxes[i].length }
-                }
-            }
-        }
-        this.getDomNode()
-        .then(refNode => {
-            const entryHeight = this.kview.get('entry-inner-height') / max
-            for (const box of boxes) {
-                for (let i = 0; i < box.length; i++) {
-                    if (box[i]) {
-                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
-                        box[i].setHeight(entryHeight)
-                    }
-                }
-            }
-            resolve()
-        })
+        const uireservation = this.content.get(reservation.id)
+        this.content.delete(reservation.id)
+        uireservation.unrender()
+        .then(_ => resolve())
+        .catch(cause => reject(cause))
     })
 }
 
 KUIEntry.prototype.placeReservation = function (reservation) {
     return new Promise((resolve, reject) => {
+        if (this.hidden) { return resolve() }
         const uireservation = new KUIReservation(reservation)
-        Promise.all([
-            uireservation.render(),
-            this.getContainerDomNode(),
-            this.getDomNode(),
-            this.object.get('origin'),
-            uireservation.setParent(this),
-        ])
-        .then(([domNode, parentNode, refNode, origin]) => {
-            const begin = uireservation.object.get('begin')
-            const end = uireservation.object.get('end')
-            if (begin === '') {resolve(); return }
-            if (end === '') { resolve() ; return }
-            if (!domNode) { resolve(); return }
-            const kview = new KView()
-            let leftbox = kview.getRelativeColFromDate(new Date(begin))
-            let rightbox =  kview.getRelativeColFromDate(new Date(end))
-            if (!isFinite(leftbox)) { uireservation.removeDomNode(); resolve(); return } // begin is far away on right sid
-            if (leftbox < 0) { 
-                if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
-                leftbox = 0
-            }
-            if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+        this.content.set(reservation.id, uireservation)
+        uireservation.setRow(this.dataObject.id)
+        uireservation.render()
+        .then(_ => resolve())
+        .catch(cause => reject(cause))
+        return
+        const begin = uireservation.object.get('begin')
+        const end = uireservation.object.get('end')
+        console.log(begin, end)
+        if (begin === '') {resolve(); return }
+        if (end === '') { resolve() ; return }
+        const kview = new KView()
+        let leftbox = kview.getRelativeColFromDate(new Date(begin))
+        let rightbox =  kview.getRelativeColFromDate(new Date(end))
+        /*this.kview.setObjectAt(leftbox, rightbox, 0, reservation.get('id'), reservation)
+        uireservation.render()*/
+        if (!isFinite(leftbox)) { uireservation.removeDomNode(); resolve(); return } // begin is far away on right sid
+        if (leftbox < 0) { 
 
-            domNode.style.top = `${refNode.getBoundingClientRect().top + window.scrollY}px`
-            const left = leftbox * kview.get('day-width') + kview.get('margin-left')
-            let max = 1
-            let boxes = []
-            for (let i = leftbox; i <= rightbox; i++) {
-                if (!this.boxes[i]) { this.boxes[i] = [] }
-                boxes.push(this.boxes[i])
-                let isIn = false
-                for (let j = 0; j < this.boxes[i].length; j++) {
-                    if (this.boxes[i][j].id === uireservation.id) {
-                        isIn = true
-                        break
-                    }
+            if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
+            leftbox = 0
+        }
+        console.log('place reservaiton 3')
+        if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+        console.log('place reservaiton 4')
+        console.log('boxes left', leftbox, 'right', rightbox)
+        for (let i = leftbox; i <= rightbox; i++) {
+            console.log('box ', i)
+            if (!this.boxes[i]) { this.boxes[i] = [] }
+            let isIn = false
+            for (let j = 0; j < this.boxes[i].length; j++) {
+                if (this.boxes[i][j].id === uireservation.id) {
+                    isIn = true
+                    break
                 }
-                if (!isIn) { this.boxes[i].push(uireservation) }
-                if (max < this.boxes[i].length) { max = this.boxes[i].length }
             }
-            
+            if (!isIn) { 
+                console.log('push in box', this.boxes[i], uireservation)
+                this.boxes[i].push(uireservation) 
+            }
+            //if (max < this.boxes[i].length) { max = this.boxes[i].length }
+        }
+        return resolve()
+            /*
             const entryHeight = this.kview.get('entry-inner-height') / max
             for (const box of boxes) {
                 if (!box) { continue }
+                // sorting by id allow stable positionning over time
+                box.sort((a, b) => String(a.id).localeCompare(b.id))
                 for (let i = 0; i < max; i++) {
                     if (box[i]) {
                         box[i].setOrder(i)
-                        box[i].setTop(refNode.getBoundingClientRect().top + window.scrollY + (entryHeight * i))
-                        box[i].setHeight(entryHeight - 4)
+                        box[i].setHeight(entryHeight)
                     }
                 }
             }
-            if (!domNode.parentNode) {
-                window.requestAnimationFrame(() => {
-                    parentNode.appendChild(domNode)
-                })
-            }
-            resolve()
-        })
+            uireservation.render()
+            .then(domNode => {
+                if (!domNode) { return resolve() }
+                if (!domNode.parentNode) {
+                    window.requestAnimationFrame(() => {
+                        parentNode.appendChild(domNode)
+                    })
+                }
+                resolve()
+            })*/
     })
 }
 
@@ -141,8 +208,6 @@ KUIEntry.prototype.handleEvent = function (event) {
             begin: now.toISOString(),
             end: new Date(now.getTime() + KAIROS.defaults.reservation.duration * 3600).toISOString(),
             target: id
-        })
-        .then(result => {
         })
     })
 }
@@ -168,16 +233,4 @@ KUIEntry.prototype.getDomNode = function () {
 KUIEntry.prototype.resize = function () {
 }
 
-KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {
-    if (!oldOrigin) { return }
-    const diff = Math.floor((newOrigin.getTime() - oldOrigin.getTime()) / 86400000)
-    for (i = 0; i < Math.abs(diff); i++) {
-        if (diff < 0) {
-            this.boxes.pop()
-            this.boxes.unshift([])
-        } else {
-            this.boxes.shift()
-            this.boxes.push([])
-        }
-    }
-}
+KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {}

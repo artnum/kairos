@@ -14,6 +14,9 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.original = null
     this.copyCount = 0
     this.smallView = false
+    this.hidden = false
+    this.rowid = -1
+    this.order = 0
     if (options.copy) { 
         this.original = options.copy
         this.original.copyCount++
@@ -213,14 +216,22 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.domNode.addEventListener('mousedown', (event) => {
         event.stopPropagation()
     }, {passive: true})
-    object.addEventListener('update', this.render.bind(this))
+    object.addEventListener('update', () => { this.render() })
     const affaire = this.object.getRelation('kaffaire')
     if (affaire) {
-        affaire.addEventListener('update', this.render.bind(this))
+        affaire.addEventListener('update', () => { this.render() })
     }
     object.addEventListener('delete', this.deleteMe.bind(this))
 
     object.bindUINode(this)
+}
+
+KUIReservation.prototype.setRow = function (rowId) {
+    this.rowid = rowId
+}
+
+KUIReservation.prototype.setHidden = function (hidden = true) {
+    this.hidden = hidden
 }
 
 KUIReservation.prototype.open = function () {
@@ -810,6 +821,7 @@ KUIReservation.prototype.fixPosition = function () {
 }
 
 KUIReservation.prototype.setOrder = function (order) {
+    this.order = order
     this.object.set('displayOrder', order)
     window.requestAnimationFrame(() => { this.domNode.style.setProperty('order', order) })
     if (!this.copy) {
@@ -827,13 +839,12 @@ KUIReservation.prototype.getOrder = function () {
 }
 
 KUIReservation.prototype.setTop = function (top) {
-    if (this.positionFixed) { return }
-    this.top = top
-    window.requestAnimationFrame(() => { this.domNode.style.top = `${top}px` })
+    return
 }
 
 KUIReservation.prototype.setHeight = function (height) {
     if (this.positionFixed) { return }
+    height -= 2
     this.height = height
     window.requestAnimationFrame(() => { 
         this.domNode.style.height = `${height}px`
@@ -851,22 +862,12 @@ KUIReservation.prototype.setWidth = function (width) {
 
 KUIReservation.prototype.getDomNode = function () {
     return new Promise((resolve, reject) => {
+        if (!this.rendered) { return resolve(null) }
         this.rendered
         .then(domNode => {
-            resolve(this.domNode)
+            resolve(domNode)
         })
     })
-}
-
-KUIReservation.prototype.unrender = function () {
-    this.getDomNode()
-    .then(domNode => {
-        if (!this.domNode.parentNode) { return }
-        window.requestAnimationFrame(() => {
-            if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
-        })
-    })
-    if (this.detailsPopped) { this.unpopDetails() }
 }
 
 KUIReservation.prototype.renderForm = function () {
@@ -945,7 +946,6 @@ KUIReservation.prototype.renderForm = function () {
         })
         if (!this.eventInstalled.includes('delete')) {
             this.addEventListener('delete', event => {
-                console.log(event.detail)
                 KConfirm(`Supprimer la réservation ${reservation.get('uid')} ?`, event.detail.target)
                 .then(confirmed => {
                     if (!confirmed) { return }
@@ -1071,8 +1071,33 @@ KUIReservation.prototype.unselect = function () {
     }
 }
 
+KUIReservation.prototype.unrender = function () {
+    this.domProduced = false
+    this.getDomNode()
+    .then(domNode => {
+        if (!domNode) { return }
+        window.requestAnimationFrame(() => {
+            if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
+        })
+    })
+    if (this.detailsPopped) { this.unpopDetails() }
+}
+
 KUIReservation.prototype.render = function () {
+    if (this.hidden) { return Promise.resolve() }
+    if (this.rowid < 0) { return Promise.resolve() }
     this.rendered = new Promise((resolve, reject) => {
+        const kview = new KView()
+        if (this.height === undefined) { 
+            this.setHeight(this.Viewport.get('entry-inner-height').toPrecision(2))
+        }
+        // this constants give a good looking spacing, it takes into account borders and all
+        const rowTop = kview.getRowTop(this.rowid)
+        
+        if (rowTop < 0) { return this.unrender() }
+        const top = rowTop - 3 + (this.order * (this.height + 3))
+        /* Set top at any render */
+        this.domNode.style.top = `${top}px`
         this.domNode.dataset.rendered = (new Date()).getTime()
         if (this.object.isDestroyed()) {
             this.unrender()
@@ -1080,23 +1105,9 @@ KUIReservation.prototype.render = function () {
             return
         }
 
-        let changeDom = true
-        if (!this.copy) {
-            if (!this.lastObjectChange) {
-                this.lastObjectChange = this.object.get('last-change')
-            } else {
-                if (this,this.lastObjectChange === this.object.get('last-change')) { changeDom = false }
-            }
-
-            if (!this.domProduced) {
-                changeDom = true
-            }
-        }
-
         const kstore = new KStore('kstatus')
         kstore.get(this.object.get('status'))
         .then(status => {
-            const kview = new KView()
             const color = status ? status.color || 'lightgray' : 'lightgray'
             const affaire = this.object.getRelation('kaffaire')
             if (!affaire) { resolve(null); return }
@@ -1173,16 +1184,8 @@ KUIReservation.prototype.render = function () {
                 window.requestAnimationFrame(() => {
                     this.domNode.style.width = `${width.toPrecision(2)}px`
                     this.domNode.style.left = `${this.props.get('left')}px`
-                    if (this.height !== undefined) {
-                        this.domNode.style.height = `${this.height}px`
-                    } else {
-                        this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
-                    }
-    
-                    if (this.top !== undefined) {
-                        this.domNode.style.top = `${this.top}px`
-                    }
-
+                    this.domNode.style.height = `${this.height}px`
+               
                     this.domNode.innerHTML = `<div class="full-height color-bar"> </div>`
                     this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
                     resolve(this.domNode)
@@ -1208,24 +1211,18 @@ KUIReservation.prototype.render = function () {
                     } else {
                         this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
                     }
-
-                    if (this.top !== undefined) {
-                        this.domNode.style.top = `${this.top}px`
-                    }
-
-                    if (changeDom) {
-                        this.domProduced = true
-                        this.domNode.innerHTML = `<div class="content">
-                                <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
-                                <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
-                                <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
-                                <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
-                                <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
-                                <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
-                            </div>
-                            <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
-                            this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
-                    }
+                    this.domProduced = true
+                    this.domNode.innerHTML = `<div class="content">
+                            <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
+                            <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
+                            <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
+                            <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
+                            <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
+                            <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                        </div>
+                        <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
+                        this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                
                     if (this.detailsPopped) { this.detailsPopped[0].update() }
                     if (this.shownRelations.length > 0) { this.showRelation() }
                     resolve(this.domNode)
@@ -1233,6 +1230,7 @@ KUIReservation.prototype.render = function () {
             }
         })
     })
+    this.rendered
     return this.rendered
 }   
 

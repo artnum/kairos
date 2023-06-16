@@ -85,6 +85,34 @@ function KView () {
     KView._instance = this
 }
 
+/**
+ * Return the current absolute Y position of the mouse.
+ * @returns {number} Pixel position of the mouse.
+ */
+KView.prototype.getMouseYPosition = function () {
+    return KAIROS.mouse.clientY + window.scrollY
+}
+
+/**
+ * Return the current absolute X position of the mouse.
+ * @returns {number} Pixel position of the mouse.
+ */
+KView.prototype.getMouseXPosition = function () {
+    return KAIROS.mouse.clientX
+}
+
+/**
+ * 
+ * @returns {number} -1 if mouse is at left side, 1 if mouse is at right side, 0 otherwhise
+ */
+KView.prototype.isMouseAtWindowBorder = function () {
+    const x = this.getMouseXPosition()
+    if (x <= 30 || x + 30 >= window.innerWidth) {
+        return x <= 30 ? -1 : 1 
+    }
+    return 0
+}
+
 KView.prototype.addRunOnMove = function (callback, id = null) {
     if (id === null) { id = ++this.runOnMoveId }
     this.runOnMove.set(id, callback)
@@ -155,14 +183,23 @@ KView.prototype.compute = function () {
             }
             this.rowDescription = new Array(height)
             for (let i = 0; i < height; i++) {
-                this.rowDescription[i] = [i + 1, null]
+                this.rowDescription[i] = [i, null, true]
             }
             this.grid = newGrid
             this.gridOffset = Math.round(width / 2)
-            console.log('GRID IS UP')
         }
     }
 
+}
+
+KView.prototype.showRow = function (idx) {
+    this.rowDescription[idx][2] = true
+    this.rowDescription[idx][1].KUI.setHidden(false)
+}
+
+KView.prototype.hideRow = function (idx) {
+    this.rowDescription[idx][2] = false
+    this.rowDescription[idx][1].KUI.setHidden(true)
 }
 
 /* Convert grid x to pixel x */
@@ -174,35 +211,96 @@ KView.prototype.getPixelY = function (gridY) {
     return this.data.get('entry-height') * gridY + this.data.get('margin-top')
 }
 
-/* convert visual y to grid y */
+/**
+ * Get absolute row
+ * @param {number} y Position of the row
+ * @returns 
+ */
 KView.prototype.getY = function (y) {
-    if (y < 0) { return 0 }
-    let i = 0
-    let j = 0
-    if (!this.rowDescription) { return 0 }
-    while (i < y) {
-        if (i + j >= this.rowDescription.length) { return 0 }
-        if (this.rowDescription[i + j][0] < 0) { 
-            i--
-            j++
-        }
-        i++
-    }
-    if (i + j >= this.rowDescription.length) { return 0 }
-    return this.rowDescription[i + j][0] - 1
+    if (!this.rowDescription) { return -1 }
+    if (y < 0) { return - 1}
+    if (y >= this.rowDescription.length) { return - 1 }
+    return y
 }
 
+/** 
+ * Get row index in based on virtual Y position. The index is only for the
+ * currently shown rows, hidden ones are skipped.
+ * @param {number} y Position of the row
+ * @returns {number} Index, in rowDescription, of the row
+ */
+KView.prototype.getRowIndex = function (y) {
+    if (!this.rowDescription) { return -1 }
+    if (y < 0) { return -1 }
+    let pos = 0
+    for (let i = 0; i < this.rowDescription.length; i++) {
+        if (this.rowDescription[i][1] === null 
+            || this.rowDescription[i][0] < 0
+            || !this.rowDescription[i][2]) { continue }    
+        if (y === 0) { pos = i; break }
+        y--
+    }
+
+    if (pos >= this.rowDescription.length || !this.rowDescription[pos][2]) { return -1 }
+    return pos
+}
+
+/**
+ * Get the relative Y position for a given rowid
+ * @param {number} rowid Id of the row
+ * @returns {number} Relative position
+ */
+KView.prototype.getRelativeRowY = function (rowid) {
+    let r = 0
+    for (let i = 0; i < this.rowDescription.length; i++) {
+        if (this.rowDescription[i][1] === null 
+            || this.rowDescription[i][0] < 0
+            || !this.rowDescription[i][2]) { continue }
+        if (String(this.rowDescription[i][1].id) === String(rowid)) {
+            return r
+        }
+        r++
+    }
+    return -1
+}
+
+KView.prototype.getRowIndexFromPX = function (px) {
+    return this.getRowIndex(this.getYFromPX(px))
+}
+
+/**
+ * Get the row at given pixel position.
+ * @param {number} px Absolute number of pixels in Y position
+ * @returns {object|null} Row object if found or null
+ */
 KView.prototype.getRowFromPX = function (px) {
-    return this.rowDescription[Math.round((px - this.data.get('margin-top')) / this.data.get('entry-height'))][1]
+    if (!this.rowDescription) { return null }
+    const y = this.getYFromPX(px)
+    if (y < 0) { return null }
+    const row = this.rowDescription[this.getRowIndex(y)]
+    if (!row) { return null }
+    return row[1]
+}
+
+/**
+ * Get the Y position from a given pixel position
+ * @param {number} px Absolute number of pixels in Y position
+ * @returns {number} Y position
+ */
+KView.prototype.getYFromPX = function (px) {
+    if (!this.rowDescription) { return -1 }
+    const y = Math.abs(Math.floor((px - this.data.get('margin-top')) / this.data.get('entry-height')))
+    if (y < 0 || y >= this.rowDescription.length) { return -1 }
+    return y
 }
 
 KView.prototype.getObjectRowById = function (id) {
-    let i = 0
-    for (const row of this.rowDescription) {
-        if (String(row[1].id) === String(id)) {
+    for (let i = 0; i < this.rowDescription.length; i++) {
+        if (!this.rowDescription[i]) { continue; }
+        if (!this.rowDescription[i][1]) { continue; }
+        if (String(this.rowDescription[i][1].id) === String(id)) {
             return i
         }
-        i++
     }
     return -1
 }
@@ -213,12 +311,15 @@ KView.prototype.getObjectRow = function (object) {
 
 KView.prototype.getRowObject = function (row) {
     if (!this.rowDescription) { return null }
-    return this.rowDescription[this.getY(row)][1]
+    const y = this.getRowIndex(row)
+    if (y === -1) { return null }
+    return this.rowDescription[y][1]
 }
 
 KView.prototype.bindObjectToRow = function (row, object) {
-    const y = this.getY(row)
-    this.rowDescription[y][1] = object
+    row = parseInt(row)
+    if (row < 0 || row >= this.rowDescription.length) { return }
+    this.rowDescription[row][1] = object
 }
 
 KView.prototype.getEffectiveHeight = function () {
@@ -238,7 +339,7 @@ KView.prototype.swapRow = function (y1, y2) {
 
 /* gpos wrap around on X */
 KView.prototype.getGPos = function (x, y) {
-    y = this.getY(y)
+    y = this.getRowIndex(y)
     const gpos = x * this.get('entry-count') + y + (this.gridOffset * this.get('entry-count'))
     return gpos
 }
@@ -287,6 +388,23 @@ KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
     return row
 }
 
+/**
+ * Get the top position of a given row.
+ * @param {number|object} row Row object, ui object or id
+ * @returns {number} Top position in pixels
+ */
+KView.prototype.getRowTop = function (row) {
+    if (row instanceof KEntry) {
+        row = row.id
+    } else if (row instanceof KUIEntry) {
+        row = row.dataObject.id
+    }
+    if (row < 0) { return -1 }
+    const topPos = this.getRelativeRowY(row)
+    if (topPos < 0) { return -1 }
+    return this.data.get('margin-top') + (this.data.get('entry-height') * topPos)
+}
+
 KView.prototype.getViewRange = function () {
     return [this.gridOffset, this.gridOffset + this.get('day-count')]
 }
@@ -314,7 +432,6 @@ KView.prototype.moveRight = function () {
         this.grid[i + this.get('entry-count')] = this.grid[i]
     }
     for (let i = 0; i < this.get('entry-count'); i++) {
-        console.log(i, this.grid[i].day)
         this.grid[i].day--
     }
 }
@@ -328,6 +445,7 @@ KView.prototype.setObjectAt = function (x0, x1, y, id, object) {
 }
 
 KView.prototype.move = function (days) {
+    if (!this.grid) { return }
     const dateOrigin = this.get('date-origin')
     dateOrigin.setTime(dateOrigin.getTime() - (days * 86400000))
     this.set('date-origin', dateOrigin)
@@ -374,6 +492,8 @@ KView.prototype.move = function (days) {
     const displacement = Math.abs(this.get('entry-count') * days * 2)
     range[1] = range[1] * this.get('entry-count')
     range[0] = range[0] * this.get('entry-count')
+    return this.render([range[0] - displacement, range[1] + displacement])
+
     const toUnrender = new Map()
     const toPlace = new Map()
     for (let i = range[0] - displacement; i <= range[1] + displacement; i++) {
@@ -386,6 +506,7 @@ KView.prototype.move = function (days) {
                     continue
                 }
                 const p = this.getRowObject(Math.round((i - (range[0] - displacement))  % this.get('entry-count')))
+                if (!p) { continue }
                 toPlace.set(object.get('id'), [p.KUI, object])
                 toUnrender.set(object.get('id'), null)
             }
@@ -403,7 +524,22 @@ KView.prototype.move = function (days) {
     }
 
     for (const [_, p] of toPlace) {
+        const uinode = p[1].getUINode()
+        if (uinode) {
+            p[0].getDomNode()
+            .then(domNode => {
+                uinode.setRow(p[0].dataObject.id)
+                uinode.render(domNode).then(node => {
+                    if (!node || !domNode) { return }
+                    domNode.appendChild(node)    
+                })
+            })
+            continue 
+        }
         p[0].placeReservation(p[1])
+        .then(uireservation => {
+            uireservation.render()
+        })
     }
     for (const [_, o] of toUnrender) {
         if (!o) { continue }
@@ -418,8 +554,69 @@ KView.prototype.move = function (days) {
     }))
 }
 
+KView.prototype.render = kdebounce(function (range = null) {
+    if (!range) {
+        range = this.getViewRange()
+        range[1] = range[1] * this.get('entry-count')
+        range[0] = range[0] * this.get('entry-count')
+    }
+    const toUnrender = new Map()
+    const toPlace = new Map()
+    for (let i = range[0]; i <= range[1]; i++) {
+        const cell = this.grid[i]
+        if (!cell) { continue }
+        if (i >= range[0] && i <= range[1]) {
+            for (const [key, object] of cell.entries()) {        
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }
+                const p = this.getRowObject(Math.round((i - (range[0]))  % this.get('entry-count')))
+                if (!p) { continue }
+                toPlace.set(object.get('id'), [p.KUI, object])
+                toUnrender.set(object.get('id'), null)
+            }
+        } else {
+            for (const [key, object] of cell.entries()) {
+                if(object.isDestroyed()) {
+                    cell.delete(key)
+                    continue
+                }        
+                if (!toUnrender.has(object.get('id'))) {
+                    toUnrender.set(object.get('id'), object)
+                }
+            }
+        }
+    }
+
+    for (const [_, p] of toPlace) {
+        const uinode = p[1].getUINode()
+        if (uinode) {
+            p[0].getDomNode()
+            .then(domNode => {
+                uinode.render(domNode).then(node => {
+                    if (!node || !domNode) { return }
+                    domNode.appendChild(node)    
+                })
+            })
+            continue 
+        }
+        p[0].placeReservation(p[1])
+        .then(uireservation => {
+            if (!uireservation) { return }
+            uireservation.render()
+        })
+    }
+    for (const [_, o] of toUnrender) {
+        if (!o) { continue }
+        const ui = o.getUINode()
+        if (ui) { ui.unrender() }
+    }
+}, 100)
+
 KView.prototype.resize = function () {
     this.compute()  
+    return this.render()
     const range = this.getViewRange()
     range[1] = range[1] * this.get('entry-count')
     range[0] = range[0] * this.get('entry-count')
@@ -433,6 +630,7 @@ KView.prototype.resize = function () {
                     continue
                 }        
                 const p = this.getRowObject(Math.round((i - range[0])  % this.get('entry-count')))
+                if (!p) { continue }
                 p.KUI.placeReservation(object)
             }
         } else {
@@ -542,8 +740,7 @@ KView.prototype.handleMouseMove = function () {
             currentBox[0] = parseInt(Math.trunc(xpos / this.data.get('day-width')))
         }
         
-        const ypos = KAIROS.mouse.clientY - marginTop + window.scrollY
-        currentBox[1] = parseInt(Math.trunc(ypos / this.data.get('entry-height')))
+        currentBox[1] = this.getYFromPX(KAIROS.mouse.clientY + window.scrollY)
 
         if (currentBox[0] !== this.currentBox[0]) {
             changedBox[0] = true
@@ -682,13 +879,13 @@ KView.prototype.handleKeyMove = function (event) {
 }
 
 KView.prototype.getCurrentBox = function () {
-    return {x: this.currentBox[0], y: this.currentBox[1]}
+    return {x: this.currentBox[0], y: this.getRowIndex(this.currentBox[1])}
 }
 
 KView.prototype.getCurrentGridBox = function () {
     return {
         x: this.currentBox[0] + this.gridOffset, 
-        y: this.getY(this.currentBox[1]), 
+        y: this.getRowIndex(this.currentBox[1]), 
         flat: ((this.currentBox[0] + this.gridOffset) * this.get('entry-count')) + this.getY(this.currentBox[1])}
 }
 

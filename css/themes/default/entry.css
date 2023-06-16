@@ -7,6 +7,9 @@
     margin: 0;
     padding: 0;
     border: 1px solid transparent;
+    border-bottom: 1px solid rgba(220, 210, 210, 0.5);
+
+    background: linear-gradient(180deg, transparent 0%, rgba(220, 220, 220, 0.2) 96%);
     height: var(--default-entry-height);
     min-height: var(--default-entry-height);
 }
@@ -30,10 +33,6 @@
 
 .kdragging .kentry.khover {
     border-color: red
-}
-
-.reservationContainer .kentry:nth-child(even) {
-    background-color: hsla(0, 0%, 10%, 0.05);
 }
 
 .reservationContainer .entry .control .tools  {

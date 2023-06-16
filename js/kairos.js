@@ -1,4 +1,27 @@
 const GLOBAL = new Function('return this')() || (42, eval)('this')
+
+function kdebounce (fn, delay) {
+  let timeout = null
+  return function(...args) {
+      if (timeout) { clearTimeout(timeout) }
+      timeout = setTimeout(() => {
+          fn.call(this, ...args)
+          timeout = null
+      }, delay)    
+  }
+}
+
+function kthrottle (fn, delay) {
+  let timeout = null
+  return function(...args) {
+      if (timeout) { return }
+      timeout = setTimeout(() => {
+          fn.call(this, ...args)
+          timeout = null
+      }, delay)
+  }
+}
+
 KAIROS.timeline = null
 KAIROS.dataVersion = 2
 KAIROS.Cache = {
@@ -303,6 +326,9 @@ KAIROS.fetch = function (url, options = {}) {
       KAIROS.fetch.__pending = new Map()
     }
     const id = ++KAIROS.fetch.__id
+    if (typeof options.body === 'object') {
+      options.body = JSON.stringify(options.body)
+    }
     if (options.headers && options.headers instanceof Headers) {
       const headers = {}
       for (const k of options.headers.keys()) {
@@ -323,6 +349,24 @@ KAIROS.fetch = function (url, options = {}) {
       options.headers['X-Client-Id'] = cid
       KAIROS.fetcher.postMessage({op, url: url instanceof URL ? url.toString() : url, options: options, id})
       KAIROS.fetch.__pending.set(id, [resolve, reject])
+    })
+  })
+}
+
+KAIROS.fetch2 = function (url, options) {
+  return new Promise((resolve ,reject) => {
+    KAIROS.fetch(url, options)
+    .then(response => {
+      if (!response.ok) { throw new Error('Response is not ok') }
+      return response.json()
+    })
+    .then(data => {
+      if (data.length <= 0) { return resolve([]) }
+      if (!Array.isArray(data.data)) { return resolve([data.data]) }
+      return resolve(data.data)
+    })
+    .catch(cause => {
+      reject(new Error('Erreur réseau', {cause}))
     })
   })
 }

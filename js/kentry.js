@@ -40,8 +40,8 @@ KEntry.prototype.resize = function () {
     return this.KUI.resize()
 }
 
-KEntry.prototype.render = function () {
-    return this.KUI.render()
+KEntry.prototype.render = function (parentNode = null) {
+    return this.KUI.render(parentNode)
 }
 
 KEntry.prototype.ready = function () {
@@ -54,6 +54,9 @@ KEntry.prototype.set = function(name, value) {
         .then(_ => {
             if (name === 'origin') {
                 this.KUI.moveOrigin(value, this.data.get(name))
+            }
+            if (name === 'row') {
+                this.KUI.setOrder(value)
             }
             resolve(this.data.set(name, value))
         })
@@ -226,9 +229,9 @@ KEntry.prototype.getEvents = function () {
 }
 
 KEntry.prototype.processReservationList = function (list, start = 0) {
-    window.requestIdleCallback(deadline => {
         const viewport = new KView()
-        while (deadline.timeRemaining() > 1 && start < list.length) {
+        const p = []
+        while (start < list.length) {
             const entry = list[start]
             const uuid = entry.uuid
             const y = viewport.getObjectRow(this)
@@ -243,7 +246,7 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                         row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
                     }
                 }
-                this.KUI.placeReservation(reservation)
+                p.push(this.KUI.placeReservation(reservation))
             } else {
                 const reservation = new KObject('kreservation', entry)
                 this.entries.set(entry.uuid, reservation)
@@ -253,18 +256,21 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                     row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
                 }
  
-                new KStore('kreservation').relateEntry(reservation)
-                .then(kobject => {
-                    this.KUI.placeReservation(kobject)
-                })
-                .catch(reason => {
-                    KAIROS.error(reason)
-                })
+                p.push(new Promise(resolve => {
+                    new KStore('kreservation').relateEntry(reservation)
+                    .then(kobject => {
+                        this.KUI.placeReservation(kobject).then(_ => resolve())
+                    })
+                    .catch(reason => {
+                        KAIROS.error(reason)
+                    })
+                }))
             }
             start++
         }
-        if (start < list.length) { return this.processReservationList(list, start) }
-    }, {timeout: 1000})
+        Promise.allSettled(p).then(x => {
+             viewport.render()
+        })
 }
 
 KEntry.prototype.handleMessage = function (msg) {

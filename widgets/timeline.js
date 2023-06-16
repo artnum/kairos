@@ -89,6 +89,7 @@ define([
       this.lastDay = null
       this.firstDay = null
       this.odd = true
+      this.borderTimeInterval = null
   
       this.lastClientXY = []
       this.lastMod = ''
@@ -104,6 +105,7 @@ define([
       this.FirstLoad = true
       this.Holidays = null
       this.Tooltips = {}
+      this.followMouse.stop = true
 
       this.center = new Date()
       this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
@@ -175,15 +177,17 @@ define([
         }
       })
       this.Viewport.addEventListener('EnterRow', event => {
-        let i = 0;
-        for (let node = this.domEntries.firstElementChild; node; node = node.nextElementSibling) {
-          if (event.detail.currentRow === i) {
-            node.classList.add('khover')
-          }
-          if (event.detail.currentRow !== i) {
-            node.classList.remove('khover')
-          }
-          i++
+        const kview = new KView()
+        const inRow = kview.getRowObject(event.detail.currentRow)
+        
+        this.domNode.querySelectorAll('.reservationContainer div.khover').forEach(node => {
+          window.requestAnimationFrame(() => node.classList.remove('khover'))
+        })
+        if (inRow) {
+          inRow.KUI.getDomNode()
+          .then(node => {
+            window.requestAnimationFrame(() => node.classList.add('khover'))
+          })
         }
       })
 
@@ -214,7 +218,7 @@ define([
                   html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
                 }
               }
-              KAIROSAnim.push(() => { node.innerHTML = html })
+              window.requestAnimationFrame(() => { node.innerHTML = html })
             }
             break
           case 'log':
@@ -653,8 +657,7 @@ define([
     postCreate: function () {
       this.fixedHeader.style.zIndex = KAIROS.zMax()
       const ktaskbar = new KTaskBar()
-
-      this.nSearchMachineLive.addEventListener('keyup', this.searchMachineLive.bind(this))
+      const cornerBox = new KCornerBox()
 
       this.bc = new BroadcastChannel('KAIROS-Location-bc')
       this.view = {}
@@ -681,11 +684,16 @@ define([
         window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
       })
       this.domNode.addEventListener('dragend', event => {
+        this.stopBorderAutoScroll()
         window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
       })
       this.domNode.addEventListener('drop', event => {
         event.preventDefault()
+        this.stopBorderAutoScroll()
+        const kview = new KView()
+
         let entryNode = event.target
+        const YPosition = kview.getMouseYPosition()
         while (entryNode && entryNode.classList && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
         if (!entryNode) { return ; }
         const kident = event.dataTransfer.getData('text/plain')
@@ -693,27 +701,23 @@ define([
         if (!kident.startsWith('kid://')) { return }
         kGStore = new KObjectGStore()
         const originalObject = kGStore.get(kident.substr(6))
-        const OriginalY = parseFloat(originalObject.getUINode().clonedNode.style.top.substring(0, originalObject.getUINode().clonedNode.style.top.length - 2))
         originalObject.getUINode().destroyClonedNode()
         let object = event.ctrlKey ? originalObject.clone() : originalObject
+        if (event.ctrlKey) { console.log(object) }
         if (object.getType() !== 'kreservation') { return }
         const kstore = new KStore(object.getType())
         const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
         const diff = end.getTime() - begin.getTime()
-        const kview = new KView()
-        const originalX = kview.getXFromDate(begin)
-        const originalY = kview.getObjectRowById(object.get('target'))
         const newOrigin = new Date()
         newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
         KVDays.initDayStartTime(newOrigin, KAIROS.days)
 
         const beginDiff = newOrigin.getTime() - begin.getTime()
-        const yDiff = kview.getObjectRowById(entryNode.id) - originalY
         begin.setTime(newOrigin.getTime())
         end.setTime(begin.getTime() + diff)
         object.set('begin', begin.toISOString())
         object.set('end', end.toISOString())
-        kview.getRowFromPX(OriginalY).get('id')
+        kview.getRowFromPX(YPosition).get('id')
         .then(id => {
           object.set('target', id)
           kstore.set(object)
@@ -763,6 +767,24 @@ define([
         event.preventDefault()
       })
       
+      this.domNode.addEventListener('drag', kdebounce(event => {
+        const kview = new KView()
+        const atBorder = kview.isMouseAtWindowBorder()
+        if (atBorder === -1) {
+          if (!this.borderTimeInterval) {
+            this.borderTimeInterval = window.setInterval(() => this.move(1), 250)
+          }
+        } else if (atBorder === 1) {
+          if (!this.borderTimeInterval) {
+            this.borderTimeInterval = window.setInterval(() => this.move(-1), 250)
+          }
+        } else {
+          this.stopBorderAutoScroll()   
+        }
+      }, 20))
+
+      window.addEventListener('mousemove', () => this.followMouse())
+      window.addEventListener('touchmove', () => this.followMouse())
       window.addEventListener('dblclick', iAddReservation.bind(this))
       window.addEventListener('click', iGrowAddReservation.bind(this))
       window.addEventListener('mousemove', iFollowGrowAddReservation.bind(this))
@@ -787,7 +809,11 @@ define([
             return iZoomCurrentBox(event)
         }
       })
-      document.addEventListener('mouseout', (event) => { if (event.target.nodeName === 'HTML') { this.followMouse.stop = true } })
+      document.body.addEventListener('mouseleave', () => this.followMouse.stop = true)
+      window.addEventListener('blur', () => {
+        this.followMouse.stop = true
+        this.stopBorderAutoScroll()
+      })
       window.addEventListener('resize', () => { this.set('zoom', this.get('zoom')) }, {passive: true})
       this.domNode.addEventListener('wheel', this.eWheel.bind(this), {passive: true})
       this.wheelStopSignal = null
@@ -814,27 +840,6 @@ define([
         }
       })
 
-      djOn(window, 'hashchange, load', djLang.hitch(this, () => {
-        var that = this
-        window.setTimeout(() => { /* hack to work in google chrome */
-          if (window.location.hash) {
-            if (Number(window.location.hash.substr(1))) {
-              that.doSearchLocation(window.location.hash.substr(1), true)
-            } else {
-              var sub = window.location.hash.substr(1)
-              switch (String(sub.substr(0, 3)).toLowerCase()) {
-                case 'dec':
-                  if (String(sub.substr(4, 1) === '*')) {
-                  } else {
-                    new Count({'data-id': sub.substr(3)}) // eslint-disable-line
-                  }
-                  break
-              }
-            }
-          }
-        }, 500)
-      }))
-
       this.view.rectangle = getPageRect()
       this.bc.onmessage = function (event) {
         this.handleBCMessage(event)
@@ -850,6 +855,13 @@ define([
           }
         }
       }, {capture: true})
+    },
+
+    stopBorderAutoScroll: function () {
+      if (this.borderTimeInterval) {
+        clearInterval(this.borderTimeInterval)
+        this.borderTimeInterval = null
+      }
     },
 
     countList: function () {
@@ -965,37 +977,25 @@ define([
       }
       
       if (event.type === 'mouseup' || event.type === 'touchstart') {
-        KAIROSAnim.push(() => {
-          document.body.classList.remove('kmove')
-        })
-        if (this.mouseUpDown.timeout) {
-          clearInterval(this.mouseUpDown.timeout)
-          this.mouseUpDown.timeout = null
-        }
-        this.eventStarted = null
+        window.requestAnimationFrame(() => document.body.classList.remove('kmove'))
         this.followMouse.stop = true
       } else {
-        this.mouseUpDown.timeout = setTimeout(() => {
-          KAIROSAnim.push(() => {
-            document.body.classList.add('kmove')
-          })
-          this.eventStarted = event
-          if (KAIROS.mouse.clientX >= 200) {
-            this.followMouse.multiplicator = 1
-            if (event.target.classList.contains('weekNumber')) {
-              this.followMouse.multiplicator = 7
-            }
-            if (event.target.classList.contains('monthName')) {
-              this.followMouse.multiplicator = 30
-            }
-            this.followMouse.stop = false
-            this.followMouse()
+        window.requestAnimationFrame(() => document.body.classList.add('kmove'))
+        if (KAIROS.mouse.clientX >= 200) {
+          this.followMouse.multiplicator = 1
+          if (event.target.classList.contains('weekNumber')) {
+            this.followMouse.multiplicator = 7
           }
-        }, 100)
+          if (event.target.classList.contains('monthName')) {
+            this.followMouse.multiplicator = 30
+          }
+          this.followMouse.stop = false
+        }
       }
     },
 
-    followMouse: function () {
+    followMouse: kthrottle(function () {
+      if (this.followMouse.stop) { return }
       KAIROS.clearSelection()
       if (!this.followMouse.multiplicator) { this.followMouse.multiplicator = 1 }
       if (!this.followMouse.accumulator) { this.followMouse.accumulator = {x: 0, y: 0} }
@@ -1018,11 +1018,7 @@ define([
         window.scrollTo(0, top - Math.abs(this.followMouse.accumulator.y))
       }
       this.followMouse.accumulator.y = 0
-     
-      if (!this.followMouse.stop) {
-        setTimeout(_ => { this.followMouse() }, 15)
-      }
-    },
+    }, 30),
 
     showSight: function (event) {
       let none = true
@@ -1117,6 +1113,8 @@ define([
       this.Viewport.move(-x)
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
+      this.drawTimeline()
+
     },
     moveOneRight: function () {
       this.moveXRight(1)
@@ -1133,6 +1131,7 @@ define([
       this.Viewport.move(x)
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
+      this.drawTimeline()
     },
     moveOneLeft: function () {
       this.moveXLeft(1)
@@ -1352,7 +1351,7 @@ define([
       this.Viewport.setViewportWidth(this.get('zoom') * this.get('blockSize'))
       this.Viewport.setMargins(120, 14, 50, this.get('offset'))
 
-      KAIROSAnim.push(() => {
+      window.requestAnimationFrame(() => {
         this.subline.innerHTML = ''
         this.subline.appendChild(subLineFrag)
         this.line.appendChild(docFrag)
@@ -1511,19 +1510,7 @@ define([
             .filter(e => e.status === 'fulfilled')
             .map(e => e.value)
 
-          const next = Promise.resolve()
-          kentries.forEach(e => {
-            next.then(_ => {
-              return new Promise(resolve => {
-                e.render()
-                .then(domNode => {
-                  window.requestAnimationFrame(() => { this.domEntries.appendChild(domNode); resolve() })
-                })
-              })
-            })
-            
-          })
-          return next
+          return kentries.map(e => e.render(this.domEntries))
         })
         .then(_ => {
           resolve()
@@ -1675,7 +1662,6 @@ define([
 
     update: function (force = false) {
       this.refresh()
-      this.resize()
       this.Viewport.runRunOnMove()
     },
 

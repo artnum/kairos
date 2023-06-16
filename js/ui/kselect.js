@@ -1,4 +1,4 @@
-function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: true, realSelect: false }) {
+function KSelectUI(input, store, options = {}) {
     if (!(input instanceof HTMLInputElement)) {
         throw new Error('Not an Input element')
     }
@@ -10,6 +10,7 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
     this.input = input
     this.mutObserve.observe(this.input, {attributes: true})
     this.attribute = this.attribute
+    options = Object.assign({ attribute: 'name', allowFreeText: true, realSelect: false, noneElement: false }, options)
 
     /* on firefox, capture event happen after bubble event. It is unclear,
      * from w3c model event, if it is right or not, but, anyway, this allow
@@ -30,6 +31,7 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
     })
     
     this.store = store
+    this.options = options
     if (options.realSelect) {
         this.realSelectUI()
     }
@@ -55,12 +57,18 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
             switch (prop) {
                 case 'value':
                     if (!value && !obj.allowFreeText) { break }
+                    if (String(value).length <= 0) { break }
+                    if (options.noneElement && value === '###') {
+                        obj.setLabel(' < Aucune sélection > ')
+                        obj.setValue('###')
+                        return 
+                    }
                     input.dataset.loading = '1'
                     store.get(value)
                     .then((entry) => {
                         if (entry) {
                             obj.lastEntry = entry
-                            obj.setLabel(entry[options.attribute])
+                            obj.setLabel(entry.label ? entry.label : entry[options.attribute])
                             obj.setValue(entry.value)
                             obj.colorize(entry.color)
                         } else {
@@ -210,6 +218,7 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
         return Promise.resolve()
     }
 
+    this.degenerate = degenerate
     const generate = (value = null) => {
         return new Promise((resolve, reject) => {
             const input = this.input
@@ -225,10 +234,7 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
             if (value === null) {
                 value = input.value
             }
-            let currentValue = undefined
-            if (options.realSelect && !options.allowFreeText) {
-                currentValue = input.dataset.value
-            }
+
             let currentRequest = performance.now()
             this.latestRequest = currentRequest
             let posCount = 0
@@ -236,11 +242,9 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
             .then((data) => {
                 if (this.latestRequest !== currentRequest) { return }
                 const frag = document.createDocumentFragment()
-
-                let selected = null
                 for (const entry of data) {
                     const s = document.createElement('DIV')
-                    s.dataset.value = entry.uid
+                    s.dataset.value = entry.value ? entry.value : (entry.uid ? entry.uid : entry.id)
                     if (entry.color || entry.symbol) {
                         const symbol = document.createElement('SPAN')
                         symbol.innerHTML = ' ■ '
@@ -253,54 +257,43 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
                             s.dataset.color = CSSColor(entry.color)
                         }
                         s.appendChild(symbol)
-                        s.innerHTML += entry[options.attribute]
+                        s.innerHTML += entry.label ? entry.label : entry[options.attribute]
                     } else {
-                        s.innerHTML = entry[options.attribute]
+                        s.innerHTML = entry.label ? entry.label : entry[options.attribute]
                     }
-                    s.dataset.label = entry[options.attribute] ?  entry[options.attribute] : s.textContent
+                    s.dataset.label = entry.label ? entry.label : (entry[options.attribute] ?  entry[options.attribute] : s.textContent)
 
-                    s.addEventListener('mouseover', (event) => {
-                        if (this.mouseOverBlock) { this.mouseOverBlock = false; return }
-                        for (let i = list.firstElementChild; i; i = i.nextElementSibling) {
-                            if (i !== event.target) {
-                                i.dataset.hover = '0'
-                            }
-                        }
-                        event.target.dataset.hover = '1'
-                    })
-                    s.addEventListener('mousedown', (event) => {
-                        event.stopPropagation();
-                        this.select(event.target);
-                        degenerate()
-                    })
+                    s.addEventListener('mouseenter', event => this.handleMouseEnter(event.currentTarget) )
+                    s.addEventListener('mouseleave', event => this.handleMouseLeave(event.currentTarget) )
+                    s.addEventListener('mousedown', event => this.handleMousDown(event.currentTarget) )
+
                     posCount++
                     s.dataset.position = posCount
                     frag.appendChild(s)
                 }
                 const frame = new Promise((resolve) => {
+                    if (options.noneElement) {
+                        const s = document.createElement('DIV')
+                        s.innerHTML = ' < Aucune selection > '
+                        s.dataset.value = '###'
+                        s.dataset.label = ' < Aucune selection > '
+                        s.addEventListener('mouseenter', event => this.handleMouseEnter(event.currentTarget) )
+                        s.addEventListener('mouseleave', event => this.handleMouseLeave(event.currentTarget) )
+                        s.addEventListener('mousedown', event => this.handleMousDown(event.currentTarget) )
+                        frag.insertBefore(s, frag.firstElementChild)
+                    }
                     window.requestAnimationFrame(() => {
                         list.innerHTML = ''
                         list.appendChild(frag)
-                        if (selected) {
-                            selected.dataset.hover = '1'
-                            resolve()
-                            return true
-                        } else {
-                            if (!options.allowFreeText) {
-                                resolve()
-                                return true
-                            }
-                        }
-                        resolve()
-                        return false
+                        return resolve()
                     })
                 })
-                frame.then((state) => {
+                frame.then(_ => {
                     resolve()
                     input.focus()
                 })
             })
-            .catch(r => { resolve() })
+            .catch(r => { console.log(r); resolve() })
         })
     }
 
@@ -350,19 +343,26 @@ function KSelectUI(input, store, options = { attribute: 'name', allowFreeText: t
     return obj
 }
 
+KSelectUI.prototype.handleMouseEnter = function (node) {
+    if (this.mouseOverBlock) { this.mouseOverBlock = false; return }
+    window.requestAnimationFrame(() => node.dataset.hover = '1')
+}
+
+KSelectUI.prototype.handleMouseLeave = function (node) {
+    if (this.mouseOverBlock) { this.mouseOverBlock = false; return }
+    window.requestAnimationFrame(() => node.dataset.hover = '0')
+}
+
+KSelectUI.prototype.handleMousDown = function (node) {
+    this.select(node);
+    this.degenerate()
+}
+
 KSelectUI.prototype.mutation = function (mutations) {
     for (const mutation of mutations) {
         if (mutation.attributeName === 'data-value') {
-            this.mutObserve.disconnect()
+            if (this.object.value === mutation.target.dataset.value) { continue }
             this.object.value = mutation.target.dataset.value
-            this.mutObserve.observe(this.input, {attributes: true})
-            continue
-        }
-        if (mutation.attributeName === 'class') {
-            this.inputEventTarget.className = mutation.target.className
-            this.mutObserve.disconnect()
-            mutation.target.className = ''
-            this.mutObserve.observe(this.input, {attributes: true})
             continue
         }
     }

@@ -6,6 +6,16 @@ function KObjectGStore () {
     return this
 }
 
+KObjectGStore.prototype.getObjectsByMark = function (mark) {
+    const objects = []
+    
+    this.store.forEach(map => {
+        map.forEach(object => { if (object.marked(mark)) { objects.push(object)} })
+    })
+    
+    return objects;
+}
+
 KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
     const details = event.detail
     switch (details.operation) {
@@ -165,6 +175,7 @@ function KObject (type, data, copy = false) {
     this.type = type
     this.data = new Map()
     this.relation = new Map()
+    this.mark = []
     this.evtTarget = new EventTarget()
     this.UINode = null
     this.deleted = false
@@ -224,6 +235,9 @@ function KObject (type, data, copy = false) {
                 case 'clone': return object.doClone.bind(object)
                 case 'copy': return object.copy.bind(object)
                 case 'dispatchEvent': return object.doDispatchEvent.bind(object)
+                case 'mark': return object.markObject.bind(object)
+                case 'unmark': return object.unmarkObject.bind(object)
+                case 'marked': return object.markedObject.bind(object)
             }
             return object.getItem(name)
         },
@@ -267,6 +281,9 @@ function KObject (type, data, copy = false) {
                 case 'clone':
                 case 'copy':
                 case 'dispatchEvent':
+                case 'mark':
+                case 'unmark':
+                case 'marked':
                     return {
                         writable: false,
                         enumerable: false,
@@ -345,6 +362,20 @@ KObject.prototype.copy = function () {
     return object
 }
 
+KObject.prototype.markObject = function (name) {
+    if (this.mark.indexOf(name) === -1) { this.mark.push(name) }
+}
+
+KObject.prototype.unmarkObject = function (name) {
+    const idx = this.mark.indexOf(name)
+    if (idx === -1) { return }
+    this.mark.splice(idx, 1)
+}
+
+KObject.prototype.markedObject = function (name) {
+    return this.mark.indexOf(name) !== -1
+}
+
 KObject.prototype.isObjectDestroyed = function () {
     return this.deleted
 }
@@ -353,6 +384,7 @@ KObject.prototype.destroyObject = function () {
     const kgstore =  new KObjectGStore()
     this.lastChange = performance.now()
     this.deleted = true
+    this.doGetUINode().unrender()
     kgstore.delete(this.getType(), this.getItem('uid'))
 }
 

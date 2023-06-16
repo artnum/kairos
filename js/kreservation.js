@@ -157,19 +157,22 @@ KReservation.prototype.get = function (name) {
     if (name === 'uid') { return this.data.reservation.get('uuid') }
     const tree = name.split('.')
     if (tree.length === 1) {
-      return this.data.reservation.get(tree.pop())
-    } else {
-      switch(tree.shift()) {
-        case '_': return this.data[category]
-        case 'locality': return this.data.locality.get(tree.pop())
-        case 'machine': return this.data.machine.get(tree.pop())
-        case 'creator': return this.data.creator.get(tree.pop())
-        case 'technician': return this.data.technician.get(tree.pop())
-        case 'addresses': return this.data.addresses.get(tree.pop())
-        case 'arrival': return this.data.arrival.get(tree.pop())
-        case 'status': return this.data.status.get(tree.pop())
-      }
-    } 
+      const name = tree.pop()
+      return this.data.reservation.get(name)
+    }
+    
+    switch(tree.shift()) {
+      case '_': return this.data[category]
+      case 'locality': return this.data.locality.get(tree.pop())
+      case 'machine': return this.data.machine.get(tree.pop())
+      case 'creator': return this.data.creator.get(tree.pop())
+      case 'technician': return this.data.technician.get(tree.pop())
+      case 'addresses': return this.data.addresses.get(tree.pop())
+      case 'arrival': return this.data.arrival.get(tree.pop())
+      case 'status': return this.data.status.get(tree.pop())
+    }
+
+    return ''
   } catch (reason) {
     KAIROS.bug(reason)
     return undefined

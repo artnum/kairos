@@ -8,19 +8,32 @@ KAIROS.debounce = function (callback, timeout = 250) {
 }
 
 KAIROS.mouse = {follow: new Map(), index: 0}
-const kMouseFollow = event => {
+const kMouseFollow = kthrottle(event => {
+    let clientX = 0
+    let clientY = 0
+
+    if (event instanceof MouseEvent) {
+        clientX = event.clientX
+        clientY = event.clientY
+    } else if (event instanceof TouchEvent) {
+        clientX = event.touches.item(0).clientX
+        clientY = event.touches.item(0).clientY
+    } else {
+        return
+    }
+
     if (kMouseFollow._last_start) {
         if (performance.now() - kMouseFollow._last_start < 50) { return }
     }
     kMouseFollow._last_start = performance.now()
-    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? event.clientX
-    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? event.clientY
-    KAIROS.mouse.clientX = event.clientX 
-    KAIROS.mouse.clientY = event.clientY
+    KAIROS.mouse.lastX = KAIROS.mouse.clientX ?? clientX
+    KAIROS.mouse.lastY = KAIROS.mouse.clientY ?? clientY
+    KAIROS.mouse.clientX = clientX 
+    KAIROS.mouse.clientY = clientY
     for (const [_, cb] of KAIROS.mouse.follow) {
         cb(KAIROS.mouse)
     }
-}
+}, 40)
 
 const K_INFO = 1
 const K_WARN = 2

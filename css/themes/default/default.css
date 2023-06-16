@@ -113,6 +113,8 @@ body.waiting * {
 }
 
 .reservationContainer {
+    display: flex;
+    flex-direction: column;
     margin: 115px 0 0 0;
 }
 
@@ -457,4 +459,14 @@ input[type=number]::-webkit-outer-spin-button {
     background-color: gray;
     color: white;
     font-weight: bold;
+}
+
+
+.k-corner-box {
+    position: fixed;
+    top: 5px;
+    left: 5px;
+    width: 240px;
+    height: 90px;
+    background-color: transparent;
 }
