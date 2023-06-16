@@ -12,10 +12,6 @@ function KUIEntry (dataObject, opts = {}) {
     this.hidden = false
     this.order = 0
     this.content = new Map()
-    this.boxes = new Array(this.kview.get('day-count'))
-    for (let i = 0; i < this.boxes.length; i++) {
-        this.boxes[i] = []
-    }
     this.getDomNode()
     .then(domNode => {
         dataObject.get('id')
@@ -135,67 +131,6 @@ KUIEntry.prototype.placeReservation = function (reservation) {
         uireservation.render()
         .then(_ => resolve())
         .catch(cause => reject(cause))
-        return
-        const begin = uireservation.object.get('begin')
-        const end = uireservation.object.get('end')
-        console.log(begin, end)
-        if (begin === '') {resolve(); return }
-        if (end === '') { resolve() ; return }
-        const kview = new KView()
-        let leftbox = kview.getRelativeColFromDate(new Date(begin))
-        let rightbox =  kview.getRelativeColFromDate(new Date(end))
-        /*this.kview.setObjectAt(leftbox, rightbox, 0, reservation.get('id'), reservation)
-        uireservation.render()*/
-        if (!isFinite(leftbox)) { uireservation.removeDomNode(); resolve(); return } // begin is far away on right sid
-        if (leftbox < 0) { 
-
-            if (rightbox < 0) { uireservation.removeDomNode(); resolve(); return }
-            leftbox = 0
-        }
-        console.log('place reservaiton 3')
-        if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
-        console.log('place reservaiton 4')
-        console.log('boxes left', leftbox, 'right', rightbox)
-        for (let i = leftbox; i <= rightbox; i++) {
-            console.log('box ', i)
-            if (!this.boxes[i]) { this.boxes[i] = [] }
-            let isIn = false
-            for (let j = 0; j < this.boxes[i].length; j++) {
-                if (this.boxes[i][j].id === uireservation.id) {
-                    isIn = true
-                    break
-                }
-            }
-            if (!isIn) { 
-                console.log('push in box', this.boxes[i], uireservation)
-                this.boxes[i].push(uireservation) 
-            }
-            //if (max < this.boxes[i].length) { max = this.boxes[i].length }
-        }
-        return resolve()
-            /*
-            const entryHeight = this.kview.get('entry-inner-height') / max
-            for (const box of boxes) {
-                if (!box) { continue }
-                // sorting by id allow stable positionning over time
-                box.sort((a, b) => String(a.id).localeCompare(b.id))
-                for (let i = 0; i < max; i++) {
-                    if (box[i]) {
-                        box[i].setOrder(i)
-                        box[i].setHeight(entryHeight)
-                    }
-                }
-            }
-            uireservation.render()
-            .then(domNode => {
-                if (!domNode) { return resolve() }
-                if (!domNode.parentNode) {
-                    window.requestAnimationFrame(() => {
-                        parentNode.appendChild(domNode)
-                    })
-                }
-                resolve()
-            })*/
     })
 }
 

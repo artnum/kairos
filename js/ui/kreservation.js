@@ -17,6 +17,8 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.hidden = false
     this.rowid = -1
     this.order = 0
+    this.stackSize = 1
+    this.height = this.Viewport.get('entry-height') - 3
     if (options.copy) { 
         this.original = options.copy
         this.original.copyCount++
@@ -843,6 +845,7 @@ KUIReservation.prototype.setTop = function (top) {
 }
 
 KUIReservation.prototype.setHeight = function (height) {
+    /*
     if (this.positionFixed) { return }
     height -= 2
     this.height = height
@@ -850,6 +853,7 @@ KUIReservation.prototype.setHeight = function (height) {
         this.domNode.style.height = `${height}px`
         this.domNode.style.maxHeight = `${height}px`
     })
+    */
 }
 
 KUIReservation.prototype.setWidth = function (width) {
@@ -1054,6 +1058,13 @@ KUIReservation.prototype.renderForm = function () {
     })
 }
 
+KUIReservation.prototype.setStackMaxSize = function (size) {
+    if (this.stackSize < size) {
+        this.stackSize = size 
+        this.height = ((this.Viewport.get('entry-height') - 4) / this.stackSize).toPrecision(2)
+    }
+}
+
 KUIReservation.prototype.select = function () {
     if (!this.selected) {
         this.selected = true
@@ -1088,14 +1099,16 @@ KUIReservation.prototype.render = function () {
     if (this.rowid < 0) { return Promise.resolve() }
     this.rendered = new Promise((resolve, reject) => {
         const kview = new KView()
-        if (this.height === undefined) { 
-            this.setHeight(this.Viewport.get('entry-inner-height').toPrecision(2))
-        }
         // this constants give a good looking spacing, it takes into account borders and all
         const rowTop = kview.getRowTop(this.rowid)
         
         if (rowTop < 0) { return this.unrender() }
-        const top = rowTop - 3 + (this.order * (this.height + 3))
+        let top = (rowTop - 3) + (this.order * this.height)
+        let height = this.height
+        if (this.stackSize > 1) {
+            top += this.stackSize
+            height = this.height - this.stackSize 
+        }
         /* Set top at any render */
         this.domNode.style.top = `${top}px`
         this.domNode.dataset.rendered = (new Date()).getTime()
@@ -1184,7 +1197,7 @@ KUIReservation.prototype.render = function () {
                 window.requestAnimationFrame(() => {
                     this.domNode.style.width = `${width.toPrecision(2)}px`
                     this.domNode.style.left = `${this.props.get('left')}px`
-                    this.domNode.style.height = `${this.height}px`
+                    this.domNode.style.height = `${height}px`
                
                     this.domNode.innerHTML = `<div class="full-height color-bar"> </div>`
                     this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
@@ -1206,11 +1219,8 @@ KUIReservation.prototype.render = function () {
 
                     this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
                     this.domNode.style.left = `${this.props.get('left')}px`
-                    if (this.height !== undefined) {
-                        this.domNode.style.height = `${this.height}px`
-                    } else {
-                        this.domNode.style.height = `${this.Viewport.get('entry-inner-height').toPrecision(2)}px`
-                    }
+                    this.domNode.style.height = `${height}px`
+                
                     this.domProduced = true
                     this.domNode.innerHTML = `<div class="content">
                             <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
