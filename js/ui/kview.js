@@ -311,9 +311,8 @@ KView.prototype.getObjectRow = function (object) {
 
 KView.prototype.getRowObject = function (row) {
     if (!this.rowDescription) { return null }
-    const y = this.getRowIndex(row)
-    if (y === -1) { return null }
-    return this.rowDescription[y][1]
+    if (!this.rowDescription[row]) { return null }
+    return this.rowDescription[row][1]
 }
 
 KView.prototype.bindObjectToRow = function (row, object) {
@@ -345,6 +344,7 @@ KView.prototype.getGPos = function (x, y) {
 }
 
 KView.prototype.getCell = function (x, y) {
+    if (!this.grid) { return null }
     return this.grid[this.getGPos(x, y)]
 }
 
@@ -487,7 +487,8 @@ KView.prototype.move = function (days) {
     return this.render([range[0] - displacement, range[1] + displacement])
 }
 
-KView.prototype.render = kdebounce(function (range = null) {
+
+KView.prototype._directRender = function (range = null) {
     if (!this.grid) { return }
     if (!range) {
         range = this.getViewRange()
@@ -516,6 +517,8 @@ KView.prototype.render = kdebounce(function (range = null) {
             }
             if (!object.cell0) { object.cell0 = i }
             if (object.cell0 > i) { object.cell0 = i }
+            if (!object.cellN) { object.cellN = i }
+            if (object.cellN < i) { object.cellN = i }
             toPlace.set(object.get('id'), [p.KUI, object])
             toUnrender.set(object.get('id'), null)
             order++
@@ -549,7 +552,9 @@ KView.prototype.render = kdebounce(function (range = null) {
     }
 
     window.setTimeout(() => this._clearOutsideRange(range), 3)
-}, 10)
+}
+
+KView.prototype.render = kdebounce(function (range) { this._directRender(range) }, 10)
 
 KView.prototype._clearOutsideRange = function (range) {
     const toUnrender = new Map()
@@ -559,6 +564,7 @@ KView.prototype._clearOutsideRange = function (range) {
         /* unrender outside range */
         for (const [key, object] of cell.entries()) {
             if (object.cell0 && object.cell0 !== i) { continue }
+            if (object.cellN && object.cellN !== i) { continue }
             toUnrender.set(object.get('id'), object)
             if(object.isDestroyed()) {
                 cell.delete(key)
@@ -571,6 +577,7 @@ KView.prototype._clearOutsideRange = function (range) {
         /* unrender outside range */
         for (const [key, object] of cell.entries()) {
             if (object.cell0 && object.cell0 !== i) { continue }
+            if (object.cellN && object.cellN !== i) { continue }
             toUnrender.set(object.get('id'), object)
             if(object.isDestroyed()) {
                 cell.delete(key)
@@ -587,7 +594,7 @@ KView.prototype._clearOutsideRange = function (range) {
 
 KView.prototype.resize = function () {
     this.compute()  
-    return this.render()
+    return this._directRender()
 }
 
 KView.prototype.setMargins = function (top, right, bottom, left) {

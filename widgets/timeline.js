@@ -118,7 +118,8 @@ define([
         new KMouseIndicator().clearContent()
       })
       this.Viewport.addEventListener('EnterRow', event => {
-        const row = new KView().getRowObject(event.detail.currentRow)
+        const kview = new KView()
+        const row = kview.getRowObject(kview.getRowIndex(event.detail.currentRow))
         if (!row) { return }
         row.get('name')
         .then(value => {
@@ -1026,8 +1027,10 @@ define([
       for (let i = 0; i < this.days.length; i++) {
         var pos = djDomGeo.position(this.days[i].domNode, this.days[i].computedStyle)
         if (KAIROS.mouse.clientX >= pos.x && KAIROS.mouse.clientX <= (pos.x + pos.w)) {
-          KAIROSAnim.push(() => {
-            this.sight.setAttribute('style', 'width: ' + pos.w + 'px; height: ' + nodeBox.h + 'px; top: 0; left: ' + pos.x + 'px;')
+          window.requestAnimationFrame(() => {
+            this.sight.style.width = `${pos.w}px` 
+            this.sight.style.height = `${nodeBox.h}px`
+            this.sight.style.left = `${pos.x}px`
           })
           none = false
           break
@@ -1036,7 +1039,7 @@ define([
 
       if (none) {
         this.showSight.timeout = setTimeout(() => {
-          KAIROSAnim.push(() => {
+          window.requestAnimationFrame(() => {
             this.sight.removeAttribute('style')
           })
         }, 350)
@@ -1114,7 +1117,7 @@ define([
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
       this.drawTimeline()
-
+      this.drawVerticalLine()
     },
     moveOneRight: function () {
       this.moveXRight(1)
@@ -1132,6 +1135,7 @@ define([
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
       this.drawTimeline()
+      this.drawVerticalLine()
     },
     moveOneLeft: function () {
       this.moveXLeft(1)
@@ -1407,7 +1411,9 @@ define([
               classes.push('odd')
             }
 
-            /* priority on showing holiday : a non working staturday can be used to work, if it's an holiday, need to pay more */
+            /* priority on showing holiday : a non working staturday can be 
+               used to work, if it's an holiday, need to pay more
+            */
             if(this.Holidays.isHolidayInAnyOf(day, KAIROS.holidays)) {
               classes.push('nowork')
               classes.push('holiday')

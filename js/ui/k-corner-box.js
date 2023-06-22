@@ -21,7 +21,7 @@ KCornerBox.prototype.render = function () {
                 kv.showRow(idx)
             })
             kv.rowDescription.map(row => row[1].KUI.applyState() )
-            return
+            return kv._directRender()
         }
         
         KAIROS.fetch2(KAIROS.URL(`${KAIROS.kaalURL}/GroupUser/_query`), {method: 'POST', body: {group: value}})
@@ -34,7 +34,7 @@ KCornerBox.prototype.render = function () {
             return Promise.allSettled(kv.rowDescription.map(row => row[1].KUI.applyState()))
         })
         .then(_ => {
-            kv.resize()
+            kv._directRender()
         })
     })
     const groups = new KSelectUI(

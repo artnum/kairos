@@ -135,14 +135,12 @@ function iZoomCurrentBox (event) {
   for (const [_, entry] of entries) {
     if (top  < 0) {
       const uinode = entry.getUINode()
-      top = Viewport.getPixelY(uinode.parent.dataObject._ROW)
+      top = Viewport.getRowTop(uinode.rowid)
     }
     const kobject = entry.copy()
     copies.push(kobject)
     const ui = new KUIReservation(kobject, {copy: entry})
     ui.setWidth(300)
-    ui.setTop(0)
-    ui.fixPosition()
     ui.render()
     .then(domNode => {
       domNode.style.setProperty('order', entry.get('displayOrder'))
@@ -154,7 +152,7 @@ function iZoomCurrentBox (event) {
   }
   window.ZoomedBox = () => {
     copies.forEach(o => o.deleteObject())
-    window.requestAnimationFrame(() => { view.parentNode.removeChild(view) })
+    window.requestAnimationFrame(() => { if (view.parentNode) { view.parentNode.removeChild(view) } })
     window.ZoomedBox = undefined
     return true
   }

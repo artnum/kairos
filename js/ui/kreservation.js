@@ -4,7 +4,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         options.readonly = true
     }
     const uiNode = object.getUINode()
-    if (uiNode) { return uiNode }
+    if (uiNode && !options.copy) { return uiNode }
     this.EvtTarget = new EventTarget()
     this.object = object
     this.props = new Map()
@@ -71,7 +71,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             this.clonedNode.dataset.offsetY = Math.abs(event.clientY - box[0].y)
         }, {capture: true})
         this.domNode.addEventListener('drop', event => {
-            event.preventDefault() 
+            event.preventDefault()
         })
         this.domNode.addEventListener('dragend', event => {
             event.preventDefault()
@@ -823,6 +823,7 @@ KUIReservation.prototype.fixPosition = function () {
 }
 
 KUIReservation.prototype.setOrder = function (order) {
+    if (order < this.order) { return }
     this.order = order
     this.object.set('displayOrder', order)
     window.requestAnimationFrame(() => { this.domNode.style.setProperty('order', order) })
@@ -1096,13 +1097,13 @@ KUIReservation.prototype.unrender = function () {
 
 KUIReservation.prototype.render = function () {
     if (this.hidden) { return Promise.resolve() }
-    if (this.rowid < 0) { return Promise.resolve() }
+    if (!this.copy && this.rowid < 0) { return Promise.resolve() }
     this.rendered = new Promise((resolve, reject) => {
         const kview = new KView()
         // this constants give a good looking spacing, it takes into account borders and all
-        const rowTop = kview.getRowTop(this.rowid)
-        
-        if (rowTop < 0) { return this.unrender() }
+        let rowTop = kview.getRowTop(this.rowid)
+        if (this.copy) { rowTop = 0 }
+        if (rowTop < 0) { this.unrender(); return resolve() }
         let top = (rowTop - 3) + (this.order * this.height)
         let height = this.height
         if (this.stackSize > 1) {
@@ -1114,8 +1115,7 @@ KUIReservation.prototype.render = function () {
         this.domNode.dataset.rendered = (new Date()).getTime()
         if (this.object.isDestroyed()) {
             this.unrender()
-            resolve()
-            return
+            return resolve()
         }
 
         const kstore = new KStore('kstatus')
@@ -1123,9 +1123,9 @@ KUIReservation.prototype.render = function () {
         .then(status => {
             const color = status ? status.color || 'lightgray' : 'lightgray'
             const affaire = this.object.getRelation('kaffaire')
-            if (!affaire) { resolve(null); return }
+            if (!affaire) { return resolve(null) }
             const project = affaire.getRelation('kproject')
-            if (!project) { resolve(null); return }
+            if (!project) { return resolve(null) }
 
             let direction = ''
             if (this.object.get('other')) {
@@ -1201,6 +1201,8 @@ KUIReservation.prototype.render = function () {
                
                     this.domNode.innerHTML = `<div class="full-height color-bar"> </div>`
                     this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
+                    this.stackSize = 0
+                    this.order = 0
                     resolve(this.domNode)
                 })
             } else {
@@ -1235,6 +1237,8 @@ KUIReservation.prototype.render = function () {
                 
                     if (this.detailsPopped) { this.detailsPopped[0].update() }
                     if (this.shownRelations.length > 0) { this.showRelation() }
+                    this.stackSize = 0
+                    this.order = 0
                     resolve(this.domNode)
                 })
             }

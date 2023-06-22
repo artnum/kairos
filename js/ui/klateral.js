@@ -8,7 +8,6 @@ function KLateralTab (id, klateral) {
 }
 
 KLateralTab.prototype.addEventListener = function (event, listener, options) {
-    console.log(event)
     this.evtTarget.addEventListener(event, listener, options)
 }
 
