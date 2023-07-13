@@ -1261,7 +1261,7 @@ KUIReservation.prototype.deleteMe = function () {
     if (!this.copy) {
         const viewport = new KView()
         viewport.removeObject(`${this.object.getType()}:${this.object.get('uid')}`)
-        this.parent.removeReservation(this)
+        if (this.parent) { this.parent.removeReservation(this) }
     }
     window.requestAnimationFrame(() => {
         if (this.renderedForm) {
