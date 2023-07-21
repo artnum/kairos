@@ -748,37 +748,25 @@ KView.prototype.handleKeyMove = function (event) {
             break
         case 'Left':
         case 'ArrowLeft':
-            if (event.shiftKey) {
-                nextBox[0] = -Math.round(this.get('day-count') / 3)
-            } else {
-                nextBox[0] = -1
-            }
-            event.preventDefault()
-            break
-        case 'Right':
-        case 'ArrowRight':
-            if (event.shiftKey) {
-                nextBox[0] = Math.round(this.get('day-count') / 3)
-            } else {
-                nextBox[0] = 1
-            }
-            event.preventDefault()
-            break
-        case 'PageUp':
-            event.preventDefault()
-            if (event.shiftKey) {
-                this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: 7}}))
-            } else {
-                this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: 3}}))
-            }
-            return
-        case 'PageDown':
             event.preventDefault()
             if (event.shiftKey) {
                 this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: -7}}))
             } else {
                 this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: -3}}))
             }
+            break
+        case 'Right':
+        case 'ArrowRight':
+            event.preventDefault()
+            if (event.shiftKey) {
+                this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: 7}}))
+            } else {
+                this.eventTarget.dispatchEvent(new CustomEvent('requestDayMove', {detail: {days: 3}}))
+            }
+            break
+        case 'PageUp':
+            return
+        case 'PageDown':
             return
         case 'End':
             event.preventDefault()
