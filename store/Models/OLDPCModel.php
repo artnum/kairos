@@ -92,7 +92,7 @@ class PCModel extends artnum\JStore\OP {
     return false;
   }
   
-  function _read($arg) {
+  function _read($arg, $options = null) {
     if ($this->_exists($arg)) {
       return array($this->entries[$arg], 1);
     }

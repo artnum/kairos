@@ -103,7 +103,7 @@ class TagsModel extends artnum\SQL {
       return $results;
    }
 
-   function read($id) {
+   function read($id, $options) {
       $retVal = new \artnum\JStore\Result();
       $retVal->addItem($this->get($id));
       return $retVal;

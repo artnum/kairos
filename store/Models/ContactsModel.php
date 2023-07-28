@@ -124,7 +124,7 @@ class ContactsModel extends artnum\LDAP {
     }
   }
 
-  function _read($dn) {
+  function _read($dn, $options = null) {
     $this->local = false;
     $result = new \artnum\JStore\Result();
     try {

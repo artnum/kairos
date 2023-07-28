@@ -7,7 +7,7 @@
          $this->conf('auto-increment', true);
       }
    
-      function _read ($id) {
+      function _read ($id, $options) {
          if ($id === '__SYSTEM') {
             $result = new \artnum\JStore\Result();
             $result->addItem([

@@ -47,7 +47,7 @@ class MachineModel extends artnum\LDAP {
     return array_merge($entry, $details);
   }
 
-  function _read ($id) {
+  function _read ($id, $options = null) {
     $result = new \artnum\JStore\Result();
     try {
       $conn = $this->DB->readable();

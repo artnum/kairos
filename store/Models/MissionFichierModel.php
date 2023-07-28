@@ -6,7 +6,7 @@ class MissionFichierModel extends artnum\SQL {
     parent::__construct($db, 'missionFichier', 'missionFichier_fichier', []);
   }
 
-  function _read ($id) {
+  function _read ($id, $options = null) {
     $retVal = new \artnum\JStore\Result();
     $id = explode(',', $id);
     if (count($id) !== 2) {
