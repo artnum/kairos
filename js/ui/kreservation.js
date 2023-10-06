@@ -676,56 +676,77 @@ KUIReservation.prototype.popDetails = function () {
         this.select()
     }
 
+
+
     if ((new KSettings()).get('dont-show-details')) { return }
     if (this.detailsPopped) { return this.unpopDetails() }
 
     const div = document.createElement('DIV')
     div.classList.add('k-reservation-details')
     //const step = new KStepProgressUI()
+    fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
+    .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
+    })
+    .then(result => {
+        return new Promise((resolve) => {
+            if (result.length < 1) { return resolve('') }
+            const kperson = new KStore('kperson')
+            kperson.get(result.data[0].userid)
+            .then(person => {
+                resolve(`${(new KDate(result.data[0].time * 1000)).fullDate()} par ${person.getFirstTextValue('', 'name')}`)
+            })
+        })
+    })
+    .then(lastmod => {
+        if (this.smallView) {
+            div.classList.add('small-view')
+            div.innerHTML = `
+            <div class="k-content">
+                <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+                <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
 
-    if (this.smallView) {
-        div.classList.add('small-view')
+                <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+                <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+                <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+                <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
+            </div>`
+            div.style.setProperty('z-index', KAIROS.zMax())
+            div.style.setProperty('position', 'fixed')
+            div.style.setProperty('top', '0px')
+            div.style.setProperty('left', `${this.Viewport.get('margin-left')}px`)
+            document.body.appendChild(div)
+            this.detailsPopped = [{destroy: function () { return} }, div]
+        } else {
         div.innerHTML = `
-        <div class="k-content">
-            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+            <div class="k-command">
+                <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
+                <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
+            </div>
+            <div class="k-progress"></div>
+            <div class="k-content">
+                <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+                <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
 
-            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-        </div>`
-        div.style.setProperty('z-index', KAIROS.zMax())
-        div.style.setProperty('position', 'fixed')
-        div.style.setProperty('top', '0px')
-        div.style.setProperty('left', `${this.Viewport.get('margin-left')}px`)
-        document.body.appendChild(div)
-        this.detailsPopped = [{destroy: function () { return} }, div]
-    } else {
-    div.innerHTML = `
-        <div class="k-command">
-            <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
-            <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
-        </div>
-        <div class="k-progress"></div>
-        <div class="k-content">
-            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+                <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+                <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+                <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+                <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
 
-            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-        </div>
-        <div class="k-command">
-            <button data-action="print-affaire" class="ui k-small">Imprimer</button>
-        </div>`
-        for (const kcomm of div.querySelectorAll('.k-command')) {
-            kcomm.addEventListener('click', this.doCommand.bind(this))
+            </div>
+            <div class="k-command">
+                <button data-action="print-affaire" class="ui k-small">Imprimer</button>
+            </div>`
+            for (const kcomm of div.querySelectorAll('.k-command')) {
+                kcomm.addEventListener('click', this.doCommand.bind(this))
+            }
+            document.body.appendChild(div)
+            this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
         }
-        document.body.appendChild(div)
-        this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
-    }
-    const closable = new KClosable()
-    closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
+        const closable = new KClosable()
+        closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
+    })
 }
 
 KUIReservation.prototype.unpopDetails = function () {

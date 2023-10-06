@@ -301,4 +301,19 @@ class ReservationModel extends artnum\SQL
       }
       return ['count' => 1];
    }
+
+   function getLastModification ($request) {
+      $id = $request->getParameter('id');
+      if ($id === null) { return ['count' => 0]; }
+      
+      $audit = $this->kconf->getVar('audit');
+      $action = $audit->get_item_action('MODIFY', 'Reservation', $id);
+      if (!$action) { 
+         $action = $audit->get_item_action('CREATE', 'Reservation', $id);
+         if (!$action) { return ['count' => 0]; }
+      }
+      $this->response->start_output();
+      $this->response->print($action);
+      return ['count' => 1];
+   }
 }
