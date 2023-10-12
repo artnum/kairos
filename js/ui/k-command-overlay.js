@@ -281,7 +281,7 @@ KCommandOverlay.prototype.lastCreated = function (value) {
 KCommandOverlay.prototype.displayProjects = function () {
     return new Promise((resolve, reject) => {
     const kstore = new KStore('kproject')
-    kstore.query({ '#and': { closed: '--', deleted: '--' } })
+    kstore.query({ '#and': { closed: '--', deleted: '--' } }, {dontrelate: true})
         .then(results => {
             const klateral = new KLateral().open()
 

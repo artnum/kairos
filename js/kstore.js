@@ -173,8 +173,10 @@ KStore.prototype.get = function (id) {
     })
 }
 
-KStore.prototype.query = function (query) {
+KStore.prototype.query = function (query, options = {dontrelate: false}) {
     return new Promise((resolve, reject) => {
+        if (typeof options !== 'object') { options = {} }
+        options = Object.assign({dontrelate: false}, options)
         if (this.bindQuery) {
             const originalQuery = query
             query = {'#and': {
@@ -200,6 +202,10 @@ KStore.prototype.query = function (query) {
             const promises = []
             for (const data of Array.isArray(result.data) ? result.data : [result.data]) {
                 const kobject = new KObject(this.type, data)
+                if (options.dontrelate) {
+                    promises.push(Promise.resolve(kobject))
+                    continue
+                }
                 promises.push(this.relateEntry(kobject))
             }
             Promise.allSettled(promises)
