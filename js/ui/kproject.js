@@ -12,7 +12,6 @@ KProject.prototype.render = function () {
         const project = this.project
         const div = document.createElement('DIV')
         div.classList.add('k-project')
-        const affaire = project.getRelation('kaffaire')
         div.id = project.get('uid')
         const kcolor = new KColor()
         let color = kcolor.get(`kproject:${this.project.get('uid')}`)
@@ -28,48 +27,14 @@ KProject.prototype.render = function () {
         div.dataset.words = words.filter((w,i) => { return words.indexOf(w) === i}).map(v => { return v.toLowerCase()}).join(' ')
     
         let nearestEnd = Infinity
-        let affaireHtml = ''
-        let timeToPlan = 0
-        let timePlanned = 0
-        if (affaire) {
-            for (const aff of Array.isArray(affaire) ? affaire : [affaire]) {
-                if (aff.get('closed') !== '0') { continue }
-                
-                const end = new Date(aff.get('end'))
-                if (!isNaN(end.getTime())) {
-                    if (end.getTime() < nearestEnd) {
-                        nearestEnd = end.getTime()
-                    }
-                }
-                let time = 0
-                const reservations = aff.getRelation('kreservation')
-                if (reservations) {
-                    for (const reservation of Array.isArray(reservations) ? reservations : [reservations]) {
-                        if (reservation === undefined) { continue }
-                        const rtime = parseInt(reservation.get('time'))
-                        if (!isNaN(rtime)) { time += rtime }
-                    }
-                }
-                timePlanned += time
-                let affaireTime = parseInt(aff.get('time'))
-                if (!affaireTime) { affaireTime = 8 * 3600 }
-                timeToPlan = affaireTime
-            }
-        }
 
         const nearestDate = new Date()
         if (nearestEnd !== Infinity && nearestEnd !== 0) {
             nearestDate.setTime(nearestEnd)
         }
-
-        let percentPlanned = Math.round(timePlanned * 100 / timeToPlan)
         
         div.innerHTML = `
         <h1>${project.getCn()} - ${project.get('name')} - ${isNaN(nearestDate.getTime()) ? 'Pas de date'  : nearestDate.toLocaleDateString()}</h1>
-        <div style="width: 100%; height: 26px; overflow: hidden;">
-            <div class="k-progress k-progress-${percentPlanned <= 100 ? String(Math.ceil(percentPlanned / 5) * 5) : 'over'}"></div>
-            <div style="float: left">${percentPlanned}% du temps plannifié</div>
-        </div>
         `
         if (nearestEnd === Infinity) {
             div.style.setProperty('order', Math.floor(today.getTime() / 1000 + 86400 * 3650))
