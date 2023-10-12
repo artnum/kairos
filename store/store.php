@@ -106,7 +106,9 @@ try {
 
   /* Access */
   $acl = new ACL([]);
-
+  $audit = new SQLAudit($logpdo, true);
+  $KConf->setVar('audit', $audit);
+  
   $acl->addRule('*', -1, ACL::LEVEL_ANY, true);
 
   $store->init($KConf);
@@ -114,7 +116,6 @@ try {
   if ($acl->check($store->getCollection(), $KAuth->get_current_userid(), $store->getOperation(), $store->getOwner())) {
     $store->setAcl($acl);
     [$request, $response] = $store->run();
-    $audit = new SQLAudit($logpdo, true);
     $audit->audit($request, $response, $KAuth->get_current_userid());
 
     exit(0);
