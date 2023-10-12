@@ -44,6 +44,7 @@ KAffaireFormUI.prototype.render = function () {
         meeting: {label: 'Rendez-vous'},
         contact: {label: 'Personne de contact'},
         phone: {label: 'Téléphone', type: 'phone'},
+        urlgps: {label: 'Localisation GPS', type: 'text'},
         description: {label: 'Description', type: 'multitext'},
         time: {label: 'Durées', type: 'hour'},
         force: {label: 'Nombre de personne', type: 'text'},
