@@ -882,7 +882,7 @@ KUIReservation.prototype.setWidth = function (width) {
     if (this.positionFixed) { return }
     this.width = width
     window.requestAnimationFrame(() => { 
-        this.domNode.style.height = `${width}px`
+        this.domNode.style.width = `${width}px`
     })
 }
 
@@ -1121,6 +1121,7 @@ KUIReservation.prototype.render = function () {
     if (!this.copy && this.rowid < 0) { return Promise.resolve() }
     this.rendered = new Promise((resolve, reject) => {
         const kview = new KView()
+        let zindex = 10
         // this constants give a good looking spacing, it takes into account borders and all
         let rowTop = kview.getRowTop(this.rowid)
         if (this.copy) { rowTop = 0 }
@@ -1128,8 +1129,13 @@ KUIReservation.prototype.render = function () {
         let top = (rowTop - 3) + (this.order * this.height)
         let height = this.height
         if (this.stackSize > 1) {
-            top += this.stackSize
+            // what was the reason of that ???
+            //top += this.stackSize 
             height = this.height - this.stackSize 
+        }
+        if (height < 1) {
+            zindex = 5 // reduce zindex, so that overflow goes behind if it happens
+            height = 2
         }
         /* Set top at any render */
         this.domNode.style.top = `${top}px`
@@ -1138,7 +1144,7 @@ KUIReservation.prototype.render = function () {
             this.unrender()
             return resolve()
         }
-
+  
         const kstore = new KStore('kstatus')
         kstore.get(this.object.get('status'))
         .then(status => {
@@ -1243,7 +1249,8 @@ KUIReservation.prototype.render = function () {
                     this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
                     this.domNode.style.left = `${this.props.get('left')}px`
                     this.domNode.style.height = `${height}px`
-                
+                    this.domNode.style.zIndex = zindex
+
                     this.domProduced = true
                     this.domNode.innerHTML = `<div class="content">
                             <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
