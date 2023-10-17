@@ -269,7 +269,7 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             start++
         }
         Promise.allSettled(p).then(x => {
-             viewport.render()
+            viewport.render(viewport.getObjectRow(this))
         })
 }
 

@@ -490,6 +490,13 @@ KView.prototype.move = function (days) {
 
 KView.prototype._directRender = function (range = null) {
     if (!this.grid) { return }
+    if (!Array.isArray(range)) {
+        range = [
+            this.getGPos(0, range),
+            this.getGPos(this.data.get('day-count'), range)
+        ]
+        console.log(range)
+    }
     if (!range) {
         range = this.getViewRange()
         range[1] = range[1] * this.get('entry-count')
