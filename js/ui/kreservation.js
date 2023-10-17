@@ -682,6 +682,7 @@ KUIReservation.prototype.popDetails = function () {
     if (this.detailsPopped) { return this.unpopDetails() }
 
     const div = document.createElement('DIV')
+    div.style.zIndex = 15 // lower reservation is 5, higher is 10, 15 is always on top of those
     div.classList.add('k-reservation-details')
     //const step = new KStepProgressUI()
     fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
