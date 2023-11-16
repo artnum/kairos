@@ -795,12 +795,14 @@ define([
           case 'Enter': return iAddReservation(event)
           case 'Delete':
             if (event.shiftKey) {
+              event.preventDefault()
               kmselect = new KMultiSelect()
               if (kmselect.active) {
                 const kstore = new KStore('kreservation')
                 for (const uiobject of kmselect.get()) {
                   kstore.delete(uiobject.object.get('id'))
                 }
+                kmselect.clear()
               }
               return
             }
