@@ -315,7 +315,7 @@ KFormUI.prototype.render = function (fields) {
                         return hour
                     case 'date':
                         const date = document.createElement('INPUT')
-                        data.setAttribute('autocomplete', 'off')
+                        date.setAttribute('autocomplete', 'off')
                         date.addEventListener('focus', event => {
                             const kalendar = new CalendarUI(new KDate(value))
                             kalendar.render()
@@ -359,7 +359,7 @@ KFormUI.prototype.render = function (fields) {
                             container.dataset.type = 'datehour'
 
                             const date = document.createElement('INPUT')
-                            data.setAttribute('autocomplete', 'off')
+                            date.setAttribute('autocomplete', 'off')
                             date.value = TimeUtils.toDateString(value)
                             date.setAttribute('type', 'text')
                             date.classList.add('k-input-hour', 'k-input-half')
