@@ -306,6 +306,7 @@ KFormUI.prototype.render = function (fields) {
                         return mtxt
                     case 'hour':
                         const hour = document.createElement('INPUT')
+                        hour.setAttribute('autocomplete', 'off')
                         hour.value = TimeUtils.toHourString(value)
                         hour.dataset.value = value
                         hour.setAttribute('type', 'text')
@@ -314,6 +315,7 @@ KFormUI.prototype.render = function (fields) {
                         return hour
                     case 'date':
                         const date = document.createElement('INPUT')
+                        data.setAttribute('autocomplete', 'off')
                         date.addEventListener('focus', event => {
                             const kalendar = new CalendarUI(new KDate(value))
                             kalendar.render()
@@ -357,6 +359,7 @@ KFormUI.prototype.render = function (fields) {
                             container.dataset.type = 'datehour'
 
                             const date = document.createElement('INPUT')
+                            data.setAttribute('autocomplete', 'off')
                             date.value = TimeUtils.toDateString(value)
                             date.setAttribute('type', 'text')
                             date.classList.add('k-input-hour', 'k-input-half')
@@ -395,6 +398,7 @@ KFormUI.prototype.render = function (fields) {
                             }
 
                             const hour = document.createElement('INPUT')
+                            hour.setAttribute('autocomplete', 'off')
                             hour.value = TimeUtils.dateToHourString(value)
                             hour.setAttribute('type', 'text')
                             hour.classList.add('k-input-hour', 'k-input-half')
@@ -411,6 +415,7 @@ KFormUI.prototype.render = function (fields) {
                         })()          
                     case 'kstore':
                         const input = document.createElement('INPUT')
+                        input.setAttribute('autocomplete', 'off')
                         const kstore = new KStore(field.storeType, field.query)
                         const kselect = new KSelectUI(input, kstore, {attribute: kstore.getSearchAttribute(), realSelect: true, allowFreeText: false})
                         kselect.value = value
