@@ -27,7 +27,7 @@ function drawHeaders ($pdf) {
 
     $pdf->background_block('#c4007a');
     $pdf->setColor('white');
-    foreach (['Chantier', 'Ouvrier', 'Remarque', 'Description', 'Véhicule', 'Caisse'] as $header) {
+    foreach (['Chantier', 'Ouvrier', 'Remarque', 'Description', 'Véhicule'] as $header) {
         $pdf->printTaggedLn(['%cb', $header]);
         $pdf->to_block_begin();
         $pdf->tab($i++);
@@ -193,9 +193,8 @@ $PDF->addTab(-0.5);*/
 
 $PDF->addTab(42);
 $PDF->addTab(72);
-$PDF->addTab(104);
-$PDF->addTab(144);
-$PDF->addTab(163);
+$PDF->addTab(121);
+$PDF->addTab(161);
 $PDF->addTab(180);
 
 $PDF->SetY(38);
@@ -314,7 +313,13 @@ foreach ($order as $k => $v) {
 
         $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 40, 'multiline' => true, 'break' => false]);
         $kpdf->tab(2);
-        if ($kobject->get('comment')) { $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 32, 'multiline' => true, 'break' => false]); }
+        if ($kobject->get('comment')) {
+            $comments = preg_split("/\r\n|\n/", $kobject->get('comment'));
+            foreach($comments as $comment) {
+                $kpdf->printTaggedLn(['%c', $comment], ['max-width' => 32, 'break' => true]); 
+                $kpdf->tab(2);
+            }
+        }
         $kpdf->br();
     }
     if (!$status) {
@@ -340,12 +345,6 @@ foreach ($order as $k => $v) {
                 $kpdf->to_block_begin();
             } else {
                 $kpdf->SetY($groups[$what->get('group')]);
-            }
-            if ($what) {
-                if ($what->get('group') === 'Caisse') { $kpdf->tab(5); }
-                else { $kpdf->tab(4); }
-                $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 20]);
-                $groups[$what->get('group')] = $kpdf->GetY();
             }
         }
     }
