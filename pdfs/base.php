@@ -1,4 +1,6 @@
 <?PHP
+define('FPDF_FONTPATH', __DIR__ . '/../../phplibs/tfpdf/font/');
+include('../vendor/autoload.php');
 include('artnum/autoload.php');
 include('../lib/format.php');
 include('../lib/get-entry.php');
