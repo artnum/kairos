@@ -1177,7 +1177,9 @@ KUIReservation.prototype.render = function () {
             if (this.width) { width = this.width }
             if (!this.copy) {
                 const beginDate = new KDate(this.object.get('begin'))
+                beginDate.setHours(7, 0, 0, 0)
                 const endDate = new KDate(this.object.get('end'))
+                endDate.setHours(17, 30, 0, 0)
                 let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
                 let rightbox = this.Viewport.getRelativeColFromDate(endDate)
                 if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
