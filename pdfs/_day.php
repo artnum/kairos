@@ -334,7 +334,7 @@ foreach ($order as $k => $v) {
         $entry = $kentry->get($kobject->get('target'));
         if (intval($entry->get('disabled')) === 1) { continue; }
 
-        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 28, 'multiline' => true, 'break' => false]);
+        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 30, 'multiline' => true, 'break' => false]);
         $YPos = $kpdf->GetY();
 
         $kpdf->SetY($YPos);
