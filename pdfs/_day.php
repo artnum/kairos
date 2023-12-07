@@ -17,39 +17,7 @@ if (!$KAuth->check_auth($KAuth->get_auth_token(), $BaseURL . '/' . $_SERVER['REQ
 
 $H = 0;
 
-function drawHeaders ($pdf) {
-    global $H;
-    $i = 1;
-    $H++;
-    $pdf->block('header' . $H);
-    $tableStart = $pdf->get_block_origin();
-    $pdf->drawLine($pdf->getMargin('L'), $tableStart, $pdf->getDimension('W') - $pdf->getMargin('L') - $pdf->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
 
-    $pdf->background_block('#c4007a');
-    $pdf->setColor('white');
-    foreach (['Chantier', 'Ouvrier', 'Remarque', 'Description', 'Véhicule'] as $header) {
-        $pdf->printTaggedLn(['%cb', $header]);
-        $pdf->to_block_begin();
-        $pdf->tab($i++);
-    }
-    $pdf->close_block();
-    return $tableStart;
-}
-
-function drawTable ($pdf, $tableStart) {
-    $tableStop = $pdf->getY();
-
-    $pdf->drawLine($pdf->getMargin('L'), $tableStart, $tableStop - $tableStart, -90, 'line', ['color' => '#c4007a']);
-    /*
-    $pdf->drawLine(62.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
-    $pdf->drawLine(82.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
-    $pdf->drawLine(112.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
-    $pdf->drawLine(152.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
-    $pdf->drawLine(171.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
-    */
-    $pdf->drawLine($pdf->getMargin('L'), $tableStop, $pdf->getDimension('W') - $pdf->getMargin('L') - $pdf->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
-    $pdf->drawLine($pdf->getDimension('W') - $pdf->getMargin('L'), $tableStart, $tableStop - $tableStart, -90, 'line', ['color' => '#c4007a']);
-}
 
 $kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $KConf->get('security.authproxy'));
 $kentry = new KStore($KAppConf, 'kentry', [], $KConf->get('security.authproxy'));
@@ -183,19 +151,75 @@ foreach ($byProjects as $k => $kobjects) {
 }
 asort($order);
 
-$PDF = new LocationPDF();
+
+class DayPDF extends LocationPDF {
+    protected int $tableStart = -1;
+    function AddPage ($orientation = '', $format = '', $keepmargins = false, $tocpage = false) {
+        if ($this->tableStart > 0) { $this->drawTable(); }
+        parent::AddPage($orientation, $format, $keepmargins, $tocpage);
+        if ($this->tableStart > 0) { $this->drawHeaders(); }
+        $this->tableStart = $this->GetY();
+    }
+
+    function setTableStart ($tableStart) {
+        $this->tableStart = $tableStart;
+    }
+
+    function drawTable () {
+        $tableStop = $this->getY();
+    
+        $this->drawLine($this->getMargin('L'), $this->tableStart, $tableStop - $this->tableStart, -90, 'line', ['color' => '#c4007a']);
+        /*
+        $pdf->drawLine(62.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
+        $pdf->drawLine(82.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
+        $pdf->drawLine(112.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
+        $pdf->drawLine(152.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
+        $pdf->drawLine(171.5, $tableStart, $tableStop - $tableStart, -90, 'dotted', ['color' => '#c4007a']);
+        */
+        $this->drawLine($this->getMargin('L'), $tableStop, $this->getDimension('W') - $this->getMargin('L') - $this->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
+        $this->drawLine($this->getDimension('W') - $this->getMargin('L'), $this->tableStart, $tableStop - $this->tableStart, -90, 'line', ['color' => '#c4007a']);
+    }
+
+    function drawHeaders () {
+        global $H;
+        $i = 1;
+        $H++;
+        $this->block('header' . $H);
+        $tableStart = $this->get_block_origin();
+        $this->drawLine($this->getMargin('L'), $tableStart, $this->getDimension('W') - $this->getMargin('L') - $this->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
+    
+        $this->background_block('#c4007a');
+        $this->setColor('white');
+        foreach (['Chantier', 'Ouvrier', 'Remarque', 'Description', 'Véhicule'] as $header) {
+            $this->printTaggedLn(['%cb', $header]);
+            $this->to_block_begin();
+            $this->tab($i++);
+        }
+        $this->close_block();
+        $this->setTaggedFont('c');
+
+
+        return $tableStart;
+    }
+
+    function Output($dest = '', $name = '', $isUTF8 = false) {
+        if ($this->tableStart > 0) { $this->drawTable(); }
+        parent::Output($dest, $name, $isUTF8);
+    }
+}
+
+$PDF = new DayPDF();
+$PDF->addTab(42);
+$PDF->addTab(72);
+$PDF->addTab(121);
+$PDF->addTab(161);
+$PDF->addTab(180);
 $PDF->AddPage();
 //$PDF->DisableHeader();
 $PDF->setAutoPageBreak(false, 20);
 $PDF->unsetHeaderFooterEvenOnly();
 /*$PDF->addTab(3);
 $PDF->addTab(-0.5);*/
-
-$PDF->addTab(42);
-$PDF->addTab(72);
-$PDF->addTab(121);
-$PDF->addTab(161);
-$PDF->addTab(180);
 
 $PDF->SetY(38);
 $currentName = '';
@@ -217,8 +241,8 @@ $PDF->br();
 
 $kpdf = $PDF;
 
-$tableStart = drawHeaders($PDF);
-
+$kpdf->drawHeaders();
+$kpdf->setTableStart($kpdf->getY());
 $i = 0;
 $lastOrder = 0;
 foreach ($order as $k => $v) {
@@ -226,8 +250,8 @@ foreach ($order as $k => $v) {
     $kobject = $kobjects[0];
 
     if ($lastOrder !== $kobject->get('__status') && ($kobject->get('__status') === 5 || $kobject->get('__status') === 4)) {
-
-        drawTable($PDF, $tableStart);
+        
+        $kpdf->drawTable();
         if ($PDF->GetY() > $PDF->getDimension('H') - 60) {
             $PDF->br();
             $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#000000', 'width' => 1.5]);
@@ -237,8 +261,8 @@ foreach ($order as $k => $v) {
             $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#000000', 'width' => 1.5]);
 	        $PDF->br();
         }
-
-        $tableStart = drawHeaders($PDF);
+        $kpdf->drawHeaders();
+        $kpdf->setTableStart($kpdf->getY());
         $PDF->reset_blocks();
         $i = 0;
     }
@@ -273,9 +297,7 @@ foreach ($order as $k => $v) {
     }
 
     if ($PDF->GetY() + $height > $PDF->getDimension('H') - 40) {
-        drawTable($PDF, $tableStart);
         $PDF->AddPage();
-        $tableStart = drawHeaders($PDF);
         $PDF->reset_blocks();
         $i = 0;
     }
@@ -302,6 +324,7 @@ foreach ($order as $k => $v) {
     $other = null;
     $detail = '';
     $targets = [];
+    $YCommentPos = null;
     foreach ($kobjects as $kobject) {
         if (!$other && $kobject->get('other') !== null) { $other = $kobject->get('other'); }
         if (!$status) { $status = $kstatus->get($kobject->get('status')); }
@@ -311,15 +334,10 @@ foreach ($order as $k => $v) {
         $entry = $kentry->get($kobject->get('target'));
         if (intval($entry->get('disabled')) === 1) { continue; }
 
-        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 40, 'multiline' => true, 'break' => false]);
-        $kpdf->tab(2);
-        if ($kobject->get('comment')) {
-            $comments = preg_split("/\r\n|\n/", $kobject->get('comment'));
-            foreach($comments as $comment) {
-                $kpdf->printTaggedLn(['%c', $comment], ['max-width' => 32, 'break' => true]); 
-                $kpdf->tab(2);
-            }
-        }
+        $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 43, 'multiline' => true, 'break' => false]);
+        $YPos = $kpdf->GetY();
+
+        $kpdf->SetY($YPos);
         $kpdf->br();
     }
     if (!$status) {
@@ -349,7 +367,7 @@ foreach ($order as $k => $v) {
             if ($what) {
                 if ($what->get('group') === 'Caisse') { continue; }
                 else { $kpdf->tab(4); }
-                $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 20]);
+                $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 23, 'multiline' => true]);
                 $groups[$what->get('group')] = $kpdf->GetY();
             }
         }
@@ -388,10 +406,26 @@ foreach ($order as $k => $v) {
         $kpdf->printTaggedLn(['%c', '(' . ($header === '← ' ? '→ ' : '← ') . $detail . ')'], ['multiline' => true, 'max-width' => 40]);
         $kpdf->setFontSize(3);
     }
+    foreach ($kobjects as $kobject) {
+        if ($kobject->get('comment')) {
+
+            $kpdf->to_block_begin();
+            if ($YCommentPos !== null) {
+                $kpdf->SetY($YCommentPos);
+            }
+            $kpdf->tab(2);
+            $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 49, 'break' => true, 'multiline' => true]); 
+            $kpdf->br();
+            $YCommentPos = $kpdf->GetY();
+        }
+    }
     $PDF->to_block_end();
     $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
+
+    if ($YCommentPos !== null && $YCommentPos > $PDF->GetY()) {
+        $PDF->SetY($YCommentPos);
+    }
     $PDF->close_block();
 }
-drawTable($PDF, $tableStart);
 
 $PDF->Output('I', 'Planning du ' . $strDate.  '.pdf', true); 

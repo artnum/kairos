@@ -1,6 +1,7 @@
 {
     "require": {
         "ramsey/uuid": "^4.2",
-        "setasign/tfpdf": "^1.33"
+        "setasign/tfpdf": "^1.33",
+        "artnum/bizcuit-pdf": "@dev"
     }
 }

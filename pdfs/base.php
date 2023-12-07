@@ -51,7 +51,7 @@ function e404($msg = 'aucun') {
    exit(0);
 }
 
-class BlankLocationPDF extends artnum\PDF {
+class BlankLocationPDF extends BizCuit\PDF {
    function __construct($options = array()) {
       parent::__construct($options);
 
@@ -76,6 +76,7 @@ class LocationPDF extends BlankLocationPDF {
     function __construct($options = array()) {
       parent::__construct($options);
       $this->NoHeaderFooter = false;
+      $this->setBottomContent(280);
     }
     function DisableHeader () {
        $this->NoHeader = true;
