@@ -346,6 +346,12 @@ foreach ($order as $k => $v) {
             } else {
                 $kpdf->SetY($groups[$what->get('group')]);
             }
+            if ($what) {
+                if ($what->get('group') === 'Caisse') { continue; }
+                else { $kpdf->tab(4); }
+                $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 20]);
+                $groups[$what->get('group')] = $kpdf->GetY();
+            }
         }
     }
 
