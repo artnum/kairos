@@ -114,18 +114,7 @@ define([
         this.center.setTime(this.center.getTime() - this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
       }
       this.Viewport = new KView()
-      this.Viewport.addEventListener('LeaveRow', event => {
-        new KMouseIndicator().clearContent()
-      })
-      this.Viewport.addEventListener('EnterRow', event => {
-        const kview = new KView()
-        const row = kview.getRowObject(kview.getRowIndex(event.detail.currentRow))
-        if (!row) { return }
-        row.get('name')
-        .then(value => {
-          new KMouseIndicator().setContent(value)
-        })
-      })
+
       this.Viewport.setEntryHeight(78)
       this.Viewport.setEntryInnerHeight(74)
 
@@ -726,8 +715,7 @@ define([
 
         const kmselect = new KMultiSelect()
         if (kmselect.active) {
-          const main = kmselect.remove(originalObject.get('id'))
-          main.resetMultiple()
+          kmselect.remove(originalObject.get('id'))
           for(const r of kmselect.get()) {
             const y = parseFloat(r.clonedNode.style.top.substring(0, r.clonedNode.style.top.length - 2))
             r.destroyClonedNode()

@@ -290,6 +290,7 @@ function CalendarInputUI (domNode, holiday = null, options = {}) {
         domNode = document.createElement('INPUT')
         domNode.setAttribute('type', 'text')
     }
+    domNode.setAttribute('autocomplete', 'off')
     this.holiday = holiday
     this.evtTarget = new EventTarget()
     this.options = options

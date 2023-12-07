@@ -105,7 +105,42 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         })
         this.domNode.addEventListener('contextmenu', event => {
             event.preventDefault()
-            if (KAIROS.getState('startSetRelation')) {
+            const kmselect = new KMultiSelect()
+            let contentMenu
+            if (kmselect.active) {
+                if (kmselect.size() > 1) {
+                    contextMenu = new KContextMenu(`Action (${kmselect.size()} éléments)`)
+                } else {
+                    contextMenu = new KContextMenu(`Action (${kmselect.size()} élément)`)
+                }
+            } else {
+                contextMenu = new KContextMenu('Action')
+            }
+            contextMenu.add('Imprimer', () => {
+                if (kmselect.active) {
+                    for (const o of kmselect.get()) {
+                        o.print()
+                    }
+                    return 
+                }
+                this.print()
+            })
+            contextMenu.separator()
+            contextMenu.add('Supprimer', () => {
+                if (kmselect.active) {
+                    for (const o of kmselect.get()) {
+                        o.delete()
+                    }
+                    kmselect.clear()
+                    return 
+                }
+                this.delete()
+            })
+
+            contextMenu.show(event.clientX, event.clientY)
+
+
+           /* if (KAIROS.getState('startSetRelation')) {
                 const source = KAIROS.getState('startSetRelation')
                 this.setRelation(source, this)
                 .then(() => {
@@ -123,7 +158,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                 this.showRelation()
                 KAIROS.setState('startSetRelation', this)
             }
-            KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
+            KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))*/
         })
     }
     this.relations = new Map()
@@ -131,6 +166,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.loadRelation()
     if (!options.readonly) {
         this.domNode.addEventListener('mouseenter', event => {
+            this.setCurrentInfo()
             const other = JSON.parse(this.object.get('other'))
             if (other) {
                 (() => {
@@ -162,27 +198,12 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                 })()
             }
             if (KAIROS.getState('lockShowHideRelation')) { return }
-            if (!this.hoverTime) {
-                this.hoverTime = setTimeout(() => {
-                    const affaire = this.object.getRelation('kaffaire')
-                    if (!affaire) { return }
-                    const project = affaire.getRelation('kproject')
-                    if (!project) { return }            
-                    const node = document.createElement('DIV')
-                    node.innerHTML = `
-                        <div class="k-content">
-                            <div class="k-field uid"><span class="k-value">${project.getFirstTextValue('', 'reference')}</span> <span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
-                            <div class="k-field reference"><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span> <span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-                        </div>
-                    `
-                    KMouse(node)
-                }, 800)
-            }
             this.showRelation()
         })
     }
     if (!options.readonly) {
         this.domNode.addEventListener('mouseleave', event => {
+            new KTaskBar().resetCurrentInfo()
             if (this.setUpOtherLeaderLine) {
                 this.setUpOtherLeaderLine
                 .then(() => {
@@ -192,7 +213,6 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                 })
             }
             if (KAIROS.getState('lockShowHideRelation')) { return }
-            if (this.hoverTime) { window.clearTimeout(this.hoverTime); this.hoverTime = undefined}
             KMouse.end()
             this.hideRelation()
         })
@@ -200,14 +220,13 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.domNode.addEventListener('click', (event) => {
         const kmselect = new KMultiSelect()
         if (KAIROS.getState('cutToolActive')) { return }
-        if (event.ctrlKey) { this.unpopDetails(); this.toggleMultiple(); return }
+        if (event.ctrlKey) { new KTaskBar().resetCurrentInfo(); this.toggleMultiple(); return }
         if (kmselect.active) {
             for(const o of kmselect.get()) {
                 o.resetMultiple()
             }
             kmselect.clear()
         }
-        this.popDetails()
     })
     this.domNode.addEventListener('dblclick', (event) => {
         event.stopPropagation()
@@ -226,6 +245,24 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     object.addEventListener('delete', this.deleteMe.bind(this))
 
     object.bindUINode(this)
+}
+
+KUIReservation.prototype.delete = function () {
+    const kstore = new KStore('kreservation')
+    kstore.delete(this.object.get('uid')) 
+    .then(() => this.deleteMe())
+}
+
+KUIReservation.prototype.print = function() {
+    const kaffaire = this.object.getRelation('kaffaire')
+    if (!kaffaire) { return }
+    const kproject = kaffaire.getRelation('kproject')
+    if (!kproject) { return }
+    const klogin = new KLogin(KAIROS.URL(KAIROS.kaalURL))
+    klogin.genUrl(`${KAIROS.URL(KAIROS.kaalURL)}/admin/exec/export/bon.php`, {pid: kproject.id, travail: kaffaire.id}, klogin.getShareType('share-limited'))
+    .then(url => {
+        window.open(url, '_blank')
+    })
 }
 
 KUIReservation.prototype.setRow = function (rowId) {
@@ -327,7 +364,7 @@ KUIReservation.prototype.toggleMultiple = function () {
 
 KUIReservation.prototype.resetMultiple = function () {
     const kmselect = new KMultiSelect()
-    kmselect.remove(this.object.get('id'), this)
+    kmselect.delete(this.object.get('id'), this)
     this.multiple = false
     window.requestAnimationFrame(() => { this.domNode.classList.remove('s-multiple') })
 }
@@ -335,7 +372,7 @@ KUIReservation.prototype.resetMultiple = function () {
 KUIReservation.prototype.setMultiple = function () {
     this.multiple = true
     const kmselect = new KMultiSelect()
-    kmselect.add(this.object.get('id'), this)
+    kmselect.add(this.object.get('id'), this, () => this.resetMultiple())
     window.requestAnimationFrame(() => { this.domNode.classList.add('s-multiple') })
 }
 
@@ -661,30 +698,12 @@ KUIReservation.prototype.lowlight = function () {
     (new KGlobal()).delete('k-project-highlight')
 }
 
-KUIReservation.prototype.popDetails = function () {
+KUIReservation.prototype.setCurrentInfo = function () {
     const affaire = this.object.getRelation('kaffaire')
     if (!affaire) { return }
     const project = affaire.getRelation('kproject')
     if (!project) { return }
     
-    if (!(new KSettings()).get('dont-allow-select')) { 
-        if (this.domNode.classList.contains('selected')) {
-            this.lowlight()
-        } else {
-            this.highlight()
-        }
-        this.select()
-    }
-
-
-
-    if ((new KSettings()).get('dont-show-details')) { return }
-    if (this.detailsPopped) { return this.unpopDetails() }
-
-    const div = document.createElement('DIV')
-    div.style.zIndex = 15 // lower reservation is 5, higher is 10, 15 is always on top of those
-    div.classList.add('k-reservation-details')
-    //const step = new KStepProgressUI()
     fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
     .then(response => {
         if (!response.ok) { throw new Error('ERR:Server') }
@@ -701,52 +720,14 @@ KUIReservation.prototype.popDetails = function () {
         })
     })
     .then(lastmod => {
-        if (this.smallView) {
-            div.classList.add('small-view')
-            div.innerHTML = `
-            <div class="k-content">
-                <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-                <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
-
-                <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-                <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-                <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-                <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
-            </div>`
-            div.style.setProperty('z-index', KAIROS.zMax())
-            div.style.setProperty('position', 'fixed')
-            div.style.setProperty('top', '0px')
-            div.style.setProperty('left', `${this.Viewport.get('margin-left')}px`)
-            document.body.appendChild(div)
-            this.detailsPopped = [{destroy: function () { return} }, div]
-        } else {
-        div.innerHTML = `
-            <div class="k-command">
-                <button data-action="begin-am" class="ui k-small">Commence le matin</button><button data-action="begin-pm" class="ui k-small">Commence l'après-midi</button>
-                <button data-action="end-am" class="ui k-small">Termine le matin</button><button data-action="end-pm" class="ui k-small">Termine l'après-midi</button>
-            </div>
-            <div class="k-progress"></div>
-            <div class="k-content">
-                <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-                <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
-
-                <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-                <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-                <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
-                <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
-
-            </div>
-            <div class="k-command">
-                <button data-action="print-affaire" class="ui k-small">Imprimer</button>
-            </div>`
-            for (const kcomm of div.querySelectorAll('.k-command')) {
-                kcomm.addEventListener('click', this.doCommand.bind(this))
-            }
-            document.body.appendChild(div)
-            this.detailsPopped = [Popper.createPopper(this.domNode, div), div]
-        }
-        const closable = new KClosable()
-        closable.add(div, {function: this.unpopDetails.bind(this), mouse: true, parent: this.domNode})
+        new KTaskBar().setCurrentInfo(
+            `<div>${project.getFirstTextValue('', 'reference')} ${project.getFirstTextValue('', 'name')}</div>
+            <div>${affaire.getFirstTextValue('', 'reference')} ${affaire.getFirstTextValue('', 'description')}</div>
+            ${this.object.get('comment') ? `<div>${this.object.get('comment') ?? ' '}</div>` : ''}
+            <div class="lastmod">${lastmod}</div>
+            `
+        )
+      
     })
 }
 
@@ -757,7 +738,6 @@ KUIReservation.prototype.unpopDetails = function () {
     window.requestAnimationFrame(() => {
         node.parentNode.removeChild(node)
     })
-    this.detailsPopped[0].destroy()
     this.detailsPopped = undefined
     return true
 }
@@ -1280,15 +1260,16 @@ KUIReservation.prototype.render = function () {
 }   
 
 KUIReservation.prototype.removeDomNode = function () {
+    new KTaskBar().resetCurrentInfo()
     window.requestAnimationFrame(() => {
         if (this.domNode && this.domNode.parentNode) {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
-    if (this.detailsPopped) { this.unpopDetails() }
 }
 
 KUIReservation.prototype.deleteMe = function () {
+    new KTaskBar().resetCurrentInfo()
     if (!this.copy) {
         const viewport = new KView()
         viewport.removeObject(`${this.object.getType()}:${this.object.get('uid')}`)
@@ -1306,5 +1287,4 @@ KUIReservation.prototype.deleteMe = function () {
             this.domNode.parentNode.removeChild(this.domNode)
         }
     })
-    if (this.detailsPopped) { this.unpopDetails() }
 }

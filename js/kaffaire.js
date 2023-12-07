@@ -127,29 +127,6 @@ KAffaire.prototype.has = function (uid)  {
 
 function KAffaireUI (kaffaire) {
     this.kaffaire = kaffaire
-    this.list = new KTaskBar()
-    const title = document.createElement('SPAN')
-    title.innerHTML = this.kaffaire.getCn()
-    title.classList.add('title')
-    this.listItem = this.list.list(title, this.kaffaire.get('relation.kreservation'), (item) => {
-            const node = document.getElementById(item.uuid)
-            if (node) { node.style.backgroundColor = 'red' }
-        } ,[
-        {label: `Fermer ${this.kaffaire.getName()}`, callback: (event) => {console.log(event)}}
-    ])
-    this.listItem.addEventListener('pop', event => {
-        for (const reservation of this.kaffaire.get('relation.kreservation')) {
-            const node = document.getElementById(reservation.uuid)
-            if (node) { node.style.backgroundColor = 'green' }
-        }
-    })
-    this.listItem.addEventListener('unpop', event => {
-        console.log(event)
-        for (const reservation of this.kaffaire.get('relation.kreservation')) {
-            const node = document.getElementById(reservation.uuid)
-            if (node) { node.style.removeProperty('background-color') }
-        }
-    })
 }
 
 KAffaireUI.prototype.render = function () {

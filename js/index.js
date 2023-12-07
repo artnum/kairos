@@ -155,6 +155,8 @@ window.addEventListener('kairos-preload', event => {
         ['../js/ui/kentry-sort.js', 'script'],
         ['../js/ui/k-step-progress.js', 'script'],
         ['../js/ui/kselect.js', 'script'],
+        ['../js/ui/k-task-bar.js', 'script'],
+        ['../js/ui/k-context-menu.js', 'script'],
 
 
         ['../js/ui/kentry.js', 'script'],

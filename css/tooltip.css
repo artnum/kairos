@@ -1,6 +1,5 @@
 .smallTooltip, .tooltip {
     z-index: 9999999;
-    padding: 4px;
     border: 1px solid hsla(var(--default-reverse-bg-color-base), 1);
     background-color: hsla(var(--default-reverse-bg-color-base), 1);
     color: hsla(var(--default-reverse-color-base), 1);
@@ -14,3 +13,42 @@
     font-size: 12pt;
 }
 
+#KContextMenu {
+    border-radius: 5px 5px 0px 0px;
+    background-color: black;
+    color: white;
+    font-weight: bold;
+    padding:0;
+    margin: 0;
+    box-shadow: 5px 5px 10px 0px hsla(var(--default-color-base), 0.6);
+}
+
+#KContextMenu .item, #KContextMenu .title  {
+    min-width: 16ch;
+    padding: 5px;
+    border-bottom: 1px solid gray;
+    margin: 5px;
+    cursor: pointer;
+}
+
+#KContextMenu .item:last-child {
+    border-bottom: none;
+}
+
+#KContextMenu .item:hover {
+    background-color:cornsilk;
+    color: black;
+
+}
+
+#KContextMenu .title {
+    border-radius: 5px 5px 0px 0px;
+
+    background-color:#535353;
+    color: white;
+    margin: 0px;
+    cursor: default;
+    border: none;
+    padding: 2px 5px;
+
+}

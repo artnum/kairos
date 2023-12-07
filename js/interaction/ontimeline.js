@@ -65,9 +65,7 @@ function iGrowAddReservationEnd (event) {
   const Viewport = new KView()
   const {x, y} = Viewport.getCurrentBox()
   const entry = Viewport.getRowObject(y)
-  const cell = Viewport.getCell(x, y)
-  const ktask = new KTaskBar()
-  const travail = ktask.getCurrentList()
+  const travail = new KTaskBar().getCurrentTaskData()
 
   if (!this.currentGrowAdd) { return }
   this.currentGrowAdd[1].remove()
@@ -92,8 +90,8 @@ function iGrowAddReservationEnd (event) {
     begin: this.currentGrowAdd[0].toISO8601(),
     end: end.toISO8601(),
     target: this.currentGrowAdd[3],
-    affaire: travail.data.get('uid'),
-    status: travail.data.get('status')
+    affaire: travail.get('uid'),
+    status: travail.get('status')
   })
   this.currentGrowAdd = null
 
@@ -178,8 +176,7 @@ function iGrowAddReservation (event) {
   const Viewport = new KView()
   const {x, y} = Viewport.getCurrentBox()
   const entry = Viewport.getRowObject(y)
-  const ktask = new KTaskBar()
-  const travail = ktask.getCurrentList()
+  const travail = new KTaskBar().getCurrentTaskData()
 
   if (!entry || !travail) { 
     if (!entry) { KAIROS.error('Pas de ressource sélectionnée') }
@@ -209,8 +206,7 @@ function iAddReservation (event) {
     const {x, y} = Viewport.getCurrentBox()
     const entry = Viewport.getRowObject(y)
     const cell = Viewport.getCell(x, y)
-    const ktask = new KTaskBar()
-    const travail = ktask.getCurrentList()
+    const travail = new KTaskBar().getCurrentTaskData()
 
     if (cell.size > 0 && !travail && !(event instanceof MouseEvent)) {
       return iSelectReservation.bind(this)(event)
@@ -253,8 +249,8 @@ function iAddReservation (event) {
       begin: begin.toISO8601(),
       end: end.toISO8601(),
       target: entry.id,
-      affaire: travail.data.get('uid'),
-      status: travail.data.get('status')
+      affaire: travail.get('uid'),
+      status: travail.get('status')
     })
   }
 

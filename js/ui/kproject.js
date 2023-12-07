@@ -280,20 +280,11 @@ KProject.prototype.handleFormClick = function (event) {
                 }
             }
             const ktask = new KTaskBar()
-            const listItem = ktask.list(`${this.project.get('reference')} <span data-uplink="kaffaire:${currentAffaire.get('uid')}" data-uplink-attr="reference">${currentAffaire.get('reference')}</span>`, {}, function () { }, {}, currentAffaire)
-            listItem.addEventListener('pop', event => {
-                const item = event.detail.data
-                const kproject = item.getRelation('kproject')
-                const ui = kproject.getUINode()
-                if (ui) { ui.highlight() }
-            })
-            listItem.addEventListener('unpop', event => {
-                const item = event.detail.data
-                const kproject = item.getRelation('kproject')
-                const ui = kproject.getUINode()
-                if (ui) { ui.lowlight() }
-            })
-            listItem.select()
+            ktask.setCurrentTask(
+                'Planifier',
+                `${this.project.get('reference')} ${this.project.get('name')} - ${currentAffaire.get('reference')}`,
+                currentAffaire
+            )
             return
         case 'edit-affaire':
             return
