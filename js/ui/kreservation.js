@@ -790,12 +790,12 @@ KUIReservation.prototype.showDetails = function () {
             <div class="k-close" data.action="close"><i data-action='close' class="fas fa-times"></i></div>
         </div>
         <div class="k-content">
-            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'reference'))}</span></div>
+            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'name'))}</span></div>
 
-            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
-            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
-            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${KSano.txt(affaire.getFirstTextValue('', 'reference'))}</span></div>
+            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${KSano.multiText(affaire.getFirstTextValue('', 'description'))}</span></div>
+            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${KSano.multiText(this.object.getFirstTextValue('', 'comment'))}</span></div>
             <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
         </div>`
         div.addEventListener('click', event => {

@@ -56,6 +56,10 @@ const KSano = {
             return result.join(', ')
         }
         return KSano.txt(value.toString())
+    },
+    multiText: function (value) {
+        const txt = KSano.txt(value)
+        return txt.replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
     }
 }
 
