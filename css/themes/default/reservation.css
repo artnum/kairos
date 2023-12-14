@@ -291,7 +291,10 @@
     padding: 1ch;
     font-size: 14px;
     font-size: 'B612';
-    width: 'fit-content';
+    width: 711px;
+    max-width: 711px;
+    min-width: 711px;
+    max-height: 400px;
     height: 'fit-content';
     background-color: rgb(70, 70, 70);
     box-shadow: 2px 5px 5px 0px rgb(70, 70, 70);
@@ -331,6 +334,8 @@
 
 .k-reservation-details .k-content .k-value {
     display: inline-block;
+    max-height: 20ex;
+    overflow: scroll;
 }
 
 .k-reservation-details .k-content .k-label {

@@ -756,7 +756,7 @@ KUIReservation.prototype.setCurrentInfo = function () {
     })
 }
 
-KUIReservation.prototype.showDetails = function (x, y) {
+KUIReservation.prototype.showDetails = function () {
     const kglobal = new KGlobal()
     this.hideDetails()
 
@@ -803,6 +803,8 @@ KUIReservation.prototype.showDetails = function (x, y) {
         })
         div.style.setProperty('z-index', KAIROS.zMax())
         div.style.setProperty('position', 'fixed')
+        const x = window.innerWidth / 2 - 360
+        const y = window.innerHeight / 2 - 200
         div.style.setProperty('top', `${y}px`)
         div.style.setProperty('left', `${x}px`)
         document.body.appendChild(div)
