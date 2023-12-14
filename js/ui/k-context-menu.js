@@ -2,6 +2,7 @@ function KContextMenu(title) {
     this._init(title);
     /* chain of promises to ensure that items are kept in order */
     this._requestAnimationPipeline = Promise.resolve()
+    this._mousePosition = [0, 0]
 }
 
 KContextMenu.prototype = {
@@ -28,6 +29,7 @@ KContextMenu.prototype = {
     },
 
     show: function (x, y) {
+        this._mousePosition = [x, y]
         window.requestAnimationFrame(() => {
             this._contextMenu.style.display = 'block';
             this._contextMenu.style.position = 'fixed';
@@ -48,7 +50,7 @@ KContextMenu.prototype = {
         node.addEventListener('click', event => {
             let res
             try {
-                res = action(event)
+                res = action(event, this._mousePosition[0], this._mousePosition[1])
             } catch (e) {
                 console.error(e)
             }

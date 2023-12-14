@@ -298,6 +298,28 @@
     color:white;
 }
 
+.k-reservation-details .k-header {
+    font-size: 16px;
+    margin-bottom: 1ch;
+    background-color: white;
+    color: black;
+}
+
+.k-reservation-details .k-header .k-close {
+    float: right;
+    cursor: pointer;
+    min-width: 20px;
+    max-width: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.k-reservation-details .k-header .k-close:hover {
+    background-color: red;
+    color: white;
+}
+
 .k-reservation-details.small-view {
     border: 2px solid white;
     box-shadow: 2px 5px 5px 0px white;

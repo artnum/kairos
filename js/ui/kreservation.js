@@ -116,7 +116,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             } else {
                 contextMenu = new KContextMenu('Action')
             }
-            
+
             const kglobal = new KGlobal()
             if (kglobal.has('k-project-highlight-locked') 
                     && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
@@ -130,7 +130,9 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
                     kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
                 })
             }
-
+            contextMenu.add('Détails', (_, x, y) => {
+                this.showDetails(x, y)
+            })
             contextMenu.add('Imprimer', () => {
                 if (kmselect.active) {
                     for (const o of kmselect.get()) {
@@ -754,14 +756,67 @@ KUIReservation.prototype.setCurrentInfo = function () {
     })
 }
 
-KUIReservation.prototype.unpopDetails = function () {
-    if (!this.detailsPopped) { return false }
-    this.unselect()
-    const node = this.detailsPopped[1]
-    window.requestAnimationFrame(() => {
-        node.parentNode.removeChild(node)
+KUIReservation.prototype.showDetails = function (x, y) {
+    const kglobal = new KGlobal()
+    this.hideDetails()
+
+    fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
+    .then(response => {
+        if (!response.ok) { throw new Error('ERR:Server') }
+        return response.json()
     })
-    this.detailsPopped = undefined
+    .then(result => {
+        return new Promise((resolve) => {
+            if (result.length < 1) { return resolve('') }
+            const kperson = new KStore('kperson')
+            kperson.get(result.data[0].userid)
+            .then(person => {
+                resolve(`${(new KDate(result.data[0].time * 1000)).fullDate()} par ${person.getFirstTextValue('', 'name')}`)
+            })
+        })
+    })
+    .then(lastmod => {
+        const affaire = this.object.getRelation('kaffaire')
+        if (!affaire) { return }
+        const project = affaire.getRelation('kproject')
+        if (!project) { return }
+        
+        const div = document.createElement('DIV')
+        div.style.zIndex = 15 // lower reservation is 5, higher is 10, 15 is always on top of those
+        div.classList.add('k-reservation-details') 
+        div.innerHTML = `
+        <div class="k-header">
+            <div class="k-title">Détails réservation ${this.object.get('id')}</div>
+            <div class="k-close" data.action="close"><i data-action='close' class="fas fa-times"></i></div>
+        </div>
+        <div class="k-content">
+            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${project.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${project.getFirstTextValue('', 'name')}</span></div>
+
+            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${affaire.getFirstTextValue('', 'reference')}</span></div>
+            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${affaire.getFirstTextValue('', 'description')}</span></div>
+            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${this.object.getFirstTextValue('', 'comment')}</span></div>
+            <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
+        </div>`
+        div.addEventListener('click', event => {
+            if (event.target.dataset.action === 'close') { this.hideDetails() }
+        })
+        div.style.setProperty('z-index', KAIROS.zMax())
+        div.style.setProperty('position', 'fixed')
+        div.style.setProperty('top', `${y}px`)
+        div.style.setProperty('left', `${x}px`)
+        document.body.appendChild(div)
+        kglobal.set('k-reservation-details', div)
+        new KClosable().add(div, {'function': () => { return this.hideDetails() }, mouse: true})
+    })
+}
+
+KUIReservation.prototype.hideDetails = function () {
+    const kglobal = new KGlobal()
+    if (!kglobal.has('k-reservation-details')) { return false }
+    const div = kglobal.get('k-reservation-details')
+    window.requestAnimationFrame(() => { div.remove() })
+    kglobal.delete('k-reservation-details')
     return true
 }
 
