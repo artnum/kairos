@@ -335,7 +335,8 @@
 .k-reservation-details .k-content .k-value {
     display: inline-block;
     max-height: 20ex;
-    overflow: scroll;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .k-reservation-details .k-content .k-label {
