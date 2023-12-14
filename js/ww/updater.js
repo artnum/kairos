@@ -215,7 +215,7 @@ function updateEntry(entryId, clientid) {
     const oldEntry = Entries.get(reservation.id)
     if (oldEntry) {
       const oldChannel = Channels.get(oldEntry[3]) || Channels.get(Symlinks.get(oldEntry[3]))
-      if (oldChannel !== channel) {
+      if (oldEntry[3] !== String(reservation.target) && oldChannel) {
         oldChannel.postMessage({op: 'remove', reservation, clientid})
       }
     }

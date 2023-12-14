@@ -277,16 +277,26 @@ KEntry.prototype.handleMessage = function (msg) {
     const msgData = msg.data
     switch (msgData.op) {
         case 'remove':
-            const viewport = new KView()
-            if (this.entries.has(msgData.reservation.uuid)) {
-                const reservation = this.entries.get(msgData.reservation.uuid)
-                viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
-                this.entries.delete(msgData.reservation.uuid)
-            }
+            (() => {
+                const viewport = new KView()
+                if (this.entries.has(msgData.reservation.uuid)) {
+                    const reservation = this.entries.get(msgData.reservation.uuid)
+                    viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
+                    this.entries.delete(msgData.reservation.uuid)
+                }
+            })()
             break
         case 'update-reservation':
         case 'add':
-            this.processReservationList([msgData.reservation])
+            (() => {
+                /* remove object first */
+                const viewport = new KView()
+                if (this.entries.has(msgData.reservation.uuid)) {
+                    const reservation = this.entries.get(msgData.reservation.uuid)
+                    viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
+                }
+                this.processReservationList([msgData.reservation])
+            })()
             break
         case 'entries':
             this.processReservationList(msgData.value)

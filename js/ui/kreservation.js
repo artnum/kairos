@@ -1,7 +1,6 @@
 function KUIReservation (object, options = {readonly: false, copy: false}) {
     if (options.copy) { 
         this.copy = true
-        options.readonly = true
     }
     const uiNode = object.getUINode()
     if (uiNode && !options.copy) { return uiNode }
@@ -35,7 +34,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     if (!this.copy) { this.domNode.id = this.object.get('uuid') }
     else { this.domNode.id = `${this.object.get('uuid')}-copy-${this.original.copyCount}`}
 
-    if (!options.readonly) {
+    if (!options.readonly && !this.copy) {
         this.domNode.addEventListener('dragstart', event => {
             const kmselect = new KMultiSelect()
 
@@ -103,81 +102,111 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             }
             
         })
-        this.domNode.addEventListener('contextmenu', event => {
-            event.preventDefault()
+    } else {
+        this.domNode.addEventListener('dragstart', event => {
             const kmselect = new KMultiSelect()
-            let contentMenu
-            if (kmselect.active) {
-                if (kmselect.size() > 1) {
-                    contextMenu = new KContextMenu(`Action (${kmselect.size()} éléments)`)
-                } else {
-                    contextMenu = new KContextMenu(`Action (${kmselect.size()} élément)`)
-                }
+            kmselect.clear()
+            event.dataTransfer.setData('text/plain', `kid://${this.object.getType()}/${this.object.get('uid')}`)
+            event.dataTransfer.setDragImage(KAIROS.transImg, 0, 0);
+
+            if (event.ctrlKey) {
+                event.dataTransfer.dropEffect = 'copy'
             } else {
-                contextMenu = new KContextMenu('Action')
+                event.dataTransfer.dropEffect = 'move'
             }
 
-            const kglobal = new KGlobal()
-            if (kglobal.has('k-project-highlight-locked') 
-                    && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
-                contextMenu.add('Annuler surlignage', () => {
-                    this.lowlight()
-                    kglobal.delete('k-project-highlight-locked')
-                })
-            } else {
-                contextMenu.add('Surligner', () => {
-                    this.highlight()
-                    kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
-                })
+            let removeParent = false
+            if (this.domNode.parentNode.children.length === 1) {
+                window.ZoomedBox = undefined
+                removeParent = true
             }
-            contextMenu.add('Détails', (_, x, y) => {
-                this.showDetails(x, y)
-            })
-            contextMenu.add('Imprimer', () => {
-                if (kmselect.active) {
-                    for (const o of kmselect.get()) {
-                        o.print()
-                    }
-                    return 
+            window.requestAnimationFrame(() => {
+                const parentNode = this.domNode.parentNode
+                parentNode.removeChild(this.domNode)
+                if (removeParent) {
+                    parentNode.remove()
                 }
-                this.print()
+                document.body.appendChild(this.domNode)
+                this.domNode.style.position = 'fixed'
+                this.domNode.style.left = `${KAIROS.mouse.clientX}px`
+                this.domNode.style.top = `${KAIROS.mouse.clientY}px`
             })
-            contextMenu.separator()
-            contextMenu.add('Supprimer', () => {
-                if (kmselect.active) {
-                    for (const o of kmselect.get()) {
-                        o.delete()
-                    }
-                    kmselect.clear()
-                    return 
-                }
-                this.delete()
+            
+        }, {capture: true})
+        this.domNode.addEventListener('drop', event => {
+            event.preventDefault()
+        })
+        this.domNode.addEventListener('dragend', event => {
+            event.preventDefault()
+            const node = this.domNode
+            window.requestAnimationFrame(() => {
+                if (!node) { return }
+                node.remove()
             })
-
-            contextMenu.show(event.clientX, event.clientY)
-
-
-           /* if (KAIROS.getState('startSetRelation')) {
-                const source = KAIROS.getState('startSetRelation')
-                this.setRelation(source, this)
-                .then(() => {
-                    source.hideRelation()
-                    KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))
-                })
-                KAIROS.unsetState('startSetRelation')
-                return
-            }
-
-            if (KAIROS.getState('lockShowHideRelation')) {
-                this.hideRelation()
-            } else {
-                this.select()
-                this.showRelation()
-                KAIROS.setState('startSetRelation', this)
-            }
-            KAIROS.setState('lockShowHideRelation', !KAIROS.getState('lockShowHideRelation'))*/
+        })
+        this.domNode.addEventListener('dragover', event => {
+            event.preventDefault()
+        })
+        this.domNode.addEventListener('drag', event => {
+            window.requestAnimationFrame(() => {
+                this.domNode.style.left = `${KAIROS.mouse.clientX}px`
+                this.domNode.style.top = `${KAIROS.mouse.clientY}px`
+            })
         })
     }
+    this.domNode.addEventListener('contextmenu', event => {
+        event.preventDefault()
+        const kmselect = new KMultiSelect()
+        let contextMenu
+        if (kmselect.active) {
+            if (kmselect.size() > 1) {
+                contextMenu = new KContextMenu(`Action (${kmselect.size()} éléments)`)
+            } else {
+                contextMenu = new KContextMenu(`Action (${kmselect.size()} élément)`)
+            }
+        } else {
+            contextMenu = new KContextMenu('Action')
+        }
+
+        const kglobal = new KGlobal()
+        if (kglobal.has('k-project-highlight-locked') 
+                && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
+            contextMenu.add('Annuler surlignage', () => {
+                this.lowlight()
+                kglobal.delete('k-project-highlight-locked')
+            })
+        } else {
+            contextMenu.add('Surligner', () => {
+                this.highlight()
+                kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
+            })
+        }
+        contextMenu.add('Détails', (_, x, y) => {
+            this.showDetails(x, y)
+        })
+        contextMenu.add('Imprimer', () => {
+            if (kmselect.active) {
+                for (const o of kmselect.get()) {
+                    o.print()
+                }
+                return 
+            }
+            this.print()
+        })
+        contextMenu.separator()
+        contextMenu.add('Supprimer', () => {
+            if (kmselect.active) {
+                for (const o of kmselect.get()) {
+                    o.delete()
+                }
+                kmselect.clear()
+                return 
+            }
+            this.delete()
+        })
+
+        contextMenu.show(event.clientX, event.clientY)
+    })
     this.relations = new Map()
     this.shownRelations = []
     this.loadRelation()
