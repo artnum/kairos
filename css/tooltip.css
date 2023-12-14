@@ -26,24 +26,30 @@
 #KContextMenu .item, #KContextMenu .title  {
     min-width: 16ch;
     padding: 5px;
-    border-bottom: 1px solid gray;
     margin: 5px;
     cursor: pointer;
 }
 
-#KContextMenu .item:last-child {
-    border-bottom: none;
+#KContextMenu .separator {
+    border-bottom: 1px solid gray;
+    max-height: 2px;
+    padding: 0px;
+    margin: 0px 5px
 }
 
 #KContextMenu .item:hover {
     background-color:cornsilk;
     color: black;
+}
 
+#KContextMenu .separator:hover {
+    background-color: black;
+    color: white;
 }
 
 #KContextMenu .title {
+    border-bottom: 1px solid gray;
     border-radius: 5px 5px 0px 0px;
-
     background-color:#535353;
     color: white;
     margin: 0px;

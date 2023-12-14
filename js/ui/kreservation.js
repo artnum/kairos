@@ -116,6 +116,21 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             } else {
                 contextMenu = new KContextMenu('Action')
             }
+            
+            const kglobal = new KGlobal()
+            if (kglobal.has('k-project-highlight-locked') 
+                    && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
+                contextMenu.add('Annuler surlignage', () => {
+                    this.lowlight()
+                    kglobal.delete('k-project-highlight-locked')
+                })
+            } else {
+                contextMenu.add('Surligner', () => {
+                    this.highlight()
+                    kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
+                })
+            }
+
             contextMenu.add('Imprimer', () => {
                 if (kmselect.active) {
                     for (const o of kmselect.get()) {
@@ -167,6 +182,10 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     if (!options.readonly) {
         this.domNode.addEventListener('mouseenter', event => {
             this.setCurrentInfo()
+            const kglobal = new KGlobal()
+            if (!kglobal.has('k-project-highlight-locked')) {
+                this.highlight()
+            }
             const other = JSON.parse(this.object.get('other'))
             if (other) {
                 (() => {
@@ -203,6 +222,10 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     }
     if (!options.readonly) {
         this.domNode.addEventListener('mouseleave', event => {
+            const kglobal = new KGlobal()
+            if (!kglobal.has('k-project-highlight-locked')) {
+                this.lowlight()
+            }
             new KTaskBar().resetCurrentInfo()
             if (this.setUpOtherLeaderLine) {
                 this.setUpOtherLeaderLine
@@ -744,7 +767,6 @@ KUIReservation.prototype.unpopDetails = function () {
 
 KUIReservation.prototype.doCommand = function (event) {
     const action = event.target.dataset.action
-    
     switch(action) {
         case 'begin-am':
             (() => {

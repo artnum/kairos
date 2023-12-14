@@ -1,5 +1,7 @@
 function KContextMenu(title) {
     this._init(title);
+    /* chain of promises to ensure that items are kept in order */
+    this._requestAnimationPipeline = Promise.resolve()
 }
 
 KContextMenu.prototype = {
@@ -22,7 +24,7 @@ KContextMenu.prototype = {
     },
 
     _deinit: function () {
-        new KClosable().closeByIdx( document.getElementById('KContextMenu')?.dataset.kclosableIdx)
+        new KClosable().closeByIdx(document.getElementById('KContextMenu')?.dataset.kclosableIdx)
     },
 
     show: function (x, y) {
@@ -54,12 +56,26 @@ KContextMenu.prototype = {
             return res
         })
         node.innerHTML = title;
-        window.requestAnimationFrame(() => {
-            this._contextMenu.appendChild(node);
-        });
+        this._requestAnimationPipeline.then(() => {
+            return new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                    this._contextMenu.appendChild(node);
+                    resolve()
+                })
+            })
+        })
     },
     
     separator: function () {
-        return '<div class="separator"></div>';
+        const div = document.createElement('DIV')
+        div.classList.add('separator', 'item')
+        this._requestAnimationPipeline.then(() => {
+            return new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                    this._contextMenu.appendChild(div)
+                    resolve()
+                })
+            })
+        })
     }
 };
