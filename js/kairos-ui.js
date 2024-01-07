@@ -157,7 +157,11 @@ KAIROS.errorMsg = function (err) {
         txt = err.message
     }
     if (KError[txt]) {
-        txt = KError[txt][KAIROS.getCurrentLanguage()] !== undefined ? KError[txt][KAIROS.getCurrentLanguage()] : KError[txt].fr
+        if (KAIROS.getCurrentLanguage) {
+            txt = KError[txt][KAIROS.getCurrentLanguage()] !== undefined ? KError[txt][KAIROS.getCurrentLanguage()] : KError[txt].fr
+        } else {
+            txt = KError[txt].fr
+        }
     } else {
         if (err instanceof Error) { txt = `${err.name} : ${err.message}` }
     }
