@@ -1521,6 +1521,7 @@ define([
       .then(() => {
         this.update()
         this.Updater.postMessage({op: 'ready'})
+        this.drawTimeline()
       })
     },
 
