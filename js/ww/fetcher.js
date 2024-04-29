@@ -27,6 +27,7 @@ self.onmessage = function (msgEvent) {
                     msg.options.headers.set('Content-Type', 'application/json')
                 }
             }
+            msg.options.keepalive = true
             genCacheId(msg.url, msg.options.body ?? '')
             .then(reqCacheId => {
                 const request = new Request(msg.url, msg.options)
