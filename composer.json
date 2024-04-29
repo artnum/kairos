@@ -1,4 +1,10 @@
 {
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../BizCuit-PDF/"
+        }
+    ],
     "require": {
         "ramsey/uuid": "^4.2",
         "setasign/tfpdf": "^1.33",

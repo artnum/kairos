@@ -14,6 +14,21 @@ CREATE TABLE IF NOT EXISTS "status" (
 		"status_symbol" CHAR(16) DEFAULT NULL
 ) CHARACTER SET "utf8mb4";
 
+CREATE TABLE `status` (
+  `status_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `status_name` char(60) DEFAULT '',
+  `status_description` varchar(200) DEFAULT '',
+  `status_color` char(8) DEFAULT '',
+  `status_bgcolor` char(8) DEFAULT '',
+  `status_default` tinyint(1) DEFAULT NULL,
+  `status_type` int(11) DEFAULT 0,
+  `status_symbol` char(64) DEFAULT NULL,
+  `status_group` varchar(60) DEFAULT '',
+  `status_order` int(10) unsigned DEFAULT 0,
+  `status_deleted` int(10) unsigned DEFAULT 0,
+   PRIMARY KEY (`status_id`)
+)CHARACTER SET "utf8mb4";
+
 CREATE TABLE IF NOT EXISTS "contacts" 		(
 	"contacts_id" INTEGER UNSIGNED PRIMARY KEY AUTO_INCREMENT,
 	"contacts_reservation" INTEGER,
@@ -54,9 +69,8 @@ CREATE TABLE IF NOT EXISTS "reservation" (
 	"reservation_deleted" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	"reservation_modification" INT(10) UNSIGNED DEFAULT NULL, -- unix ts
 	"reservation_version" INT(10) UNSIGNED DEFAULT 1,
-	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0
-	"reservation_time"    INT UNSIGNED NOT NULL DEFAULT 0, -- effective time (a 24h work spans over 3 days, this would be set de 24 * 60 * 60 (seconds))
-	                                                       -- while end - begin would be much more than 24h.
+	"reservation_affaire" INT(10) UNSIGNED DEFAULT 0,
+	"reservation_time" INT(10) UNSIGNED NOT NULL DEFAULT 0, -- effective time (a 24h work spans over 3 days, this would be set de 24 * 60 * 60 (seconds)) while end - begin would be much more than 24h.
 	"reservation_locked" TINYINT UNSIGNED NOT NULL DEFAULT 0,
 	"reservation_dbegin" CHAR(10) NOT NULL DEFAULT '',
 	"reservation_dend" CHAR(10) NOT NULL DEFAULT ''
