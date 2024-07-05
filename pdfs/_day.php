@@ -140,7 +140,8 @@ foreach ($byProjects as $k => $kobjects) {
         if ($affaire)  { 
             if (!$status) { $status = $affaire->get('status'); }
             $kobject->set('__status', intval($status));
-            if (intval($status) === 5) { $min = 999998; break; }
+            if (intval($status) === 5) { $min = 999997; break; }
+            if (intval($status) === 30) { $min = 999998; break; }
             if (intval($status) === 4) { $min = 999999; break; }
         }
         $person = $kentry->get($kobject->get('target'));
@@ -249,7 +250,7 @@ foreach ($order as $k => $v) {
     $kobjects = $byProjects[$k];
     $kobject = $kobjects[0];
 
-    if ($lastOrder !== $kobject->get('__status') && ($kobject->get('__status') === 5 || $kobject->get('__status') === 4)) {
+    if ($lastOrder !== $kobject->get('__status') && ($kobject->get('__status') === 5 || $kobject->get('__status') === 4 || $kobject->get('__status') === 30)) {
         
         $kpdf->drawTable();
         if ($PDF->GetY() > $PDF->getDimension('H') - 60) {
