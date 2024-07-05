@@ -396,6 +396,7 @@ function checkMachineState () {
 
 function runUpdater () {
   if (!Run) { return }
+  if (!Range) { return }
   const url = new URL(`${KAIROS.getBase()}/store/DeepReservation`)
 
   url.searchParams.set('search.begin', '<' + Range.end.toISOString().split('T')[0])

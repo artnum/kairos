@@ -1,18 +1,11 @@
-<div data-dojo-attach-point="timeline" class="${baseClass} noextender">
-<div class="headerContainer" data-dojo-attach-point="fixedHeader" id="AppHeader" data-stop-follow-mouse='1'>
-<div data-dojo-attach-point="nScrollShow" id="scrollshow"></div>
-<div data-dojo-attach-point="supHeader" class="header"><div class="tools"></div></div>
-<div data-dojo-attach-point="header" class="header"><div class="tools"></div></div>
-<div data-dojo-attach-point="line" class="line"></div>
-<div data-dojo-attach-point="subline" class="line subline"></div>
+<div class="${baseClass} noextender">
+<div class="headerContainer" id="AppHeader" data-stop-follow-mouse='1'>
+<div id="scrollshow"></div>
+<div id="TL_supHeader" class="header"><div class="tools"></div></div>
+<div id="TL_header" class="header"><div class="tools"></div></div>
+<div id="TL_line" class="line"></div>
+<div id="TL_subline" class="line subline"></div>
 </div>
 <div class="reservationContainer" data-dojo-attach-point="domEntries"></div>
-<div style="display: none;" class="nohandle leftpane" data-artnum-maximize="yes"> 
-  <div class="titleBar">
-    <div class="button" data-dojo-attach-point='nMinimizeMaximize' data-dojo-attach-event="click:minimizeMaximize"><i class="fas fa-window-minimize"></i></div>
-  </div>
-  <div data-dojo-type="dijit/layout/TabContainer" style="width:100%; height: calc(100% - 24px);" id="tContainer"></div>
-</div>
-<div data-dojo-attach-point="sight" id="Sight"> </div>
-<div data-dojo-attach-point="nVerticals" id="VerticalLineFrame"></div>
+<div id="VerticalLineFrame"></div>
 </div>

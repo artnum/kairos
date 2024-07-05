@@ -2,7 +2,6 @@
 /* global getPageRect, getElementRect, APPConf, DoWait, Holiday, Tooltip, Popper */
 define([
   'dojo/_base/declare',
-  'dojo/_base/lang',
   'dojo/Evented',
   'dojo/Deferred',
 
@@ -12,27 +11,12 @@ define([
 
   'dojo/text!./templates/timeline.html',
 
-  'dojo/aspect',
-  'dojo/date',
-  'dojo/date/stamp',
-  'dojo/dom-construct',
-  'dojo/on',
-  'dojo/dom-class',
-  'dojo/dom-style',
-  'dojo/dom-geometry',
-  'dijit/registry',
 
-  'location/timeline/popup',
-  'location/timeline/filters',
-  'location/count',
-  'location/countList',
-  'location/reservation',
+  
 
-  'artnum/Doc'
 
 ], function (
   djDeclare,
-  djLang,
   djEvented,
   DjDeferred,
   dtWidgetBase,
@@ -40,45 +24,34 @@ define([
   dtWidgetsInTemplateMixin,
 
   _template,
-  djAspect,
-  djDate,
-  djDateStamp,
-  djDomConstruct,
-  djOn,
-  djDomClass,
-  djDomStyle,
-  djDomGeo,
-  dtRegistry,
   
-  tlPopup, Filters,
-  Count,
-  CountList,
-  Reservation,
+  
 
-  Doc
+
+  
 ) {
   return djDeclare('location.timeline', [
-    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented,
-    tlPopup, Filters ], {
-    center: null,
-    offset: 260,
-    blockSize: 42,
-    baseClass: 'timeline',
-    templateString: _template,
-    zoomCss: null,
-    timeout: null,
-    lastDay: null,
-    firstDay: null,
-    verticals: null,
-    lastClientXY: [0, 0],
-    lastMod: 0,
-    eventStarted: null,
-    daysZoom: 0,
-    compact: false,
-    currentVerticalLine: 0,
+    dtWidgetBase, dtTemplatedMixin, dtWidgetsInTemplateMixin, djEvented ], {
 
     constructor: function (args) {
-      djLang.mixin(this, arguments)
+
+      this.center = null
+      this.offset = 260
+      this.blockSize = 42
+      this.baseClass = 'timeline'
+      this.templateString = _template
+      this.zoomCss = null
+      this.timeout = null
+      this.lastDay = null
+      this.firstDay = null
+      this.verticals = null
+      this.lastClientXY = [0, 0]
+      this.lastMod = 0
+      this.eventStarted = null
+      this.daysZoom = 0
+      this.compact = false
+      this.currentVerticalLine = 0
+
       this.verticals = []
       this.days = []
       this.weekNumber = []
@@ -239,38 +212,6 @@ define([
       }
 
       window.UnloadCall = {}
-
-      new GEvent().listen('reservation.open', function (event) {
-        if (event.detail.id) {
-          this.doSearchLocation(event.detail.id).then(() => {
-            let n = new Notification(`Réservation ${event.detail.id} ouverte`, {body: 'La réservation a été ouverte avec succès', tag: `reservationOpen${event.detail.id}`})
-          })
-        }
-      }.bind(this))
-      new GEvent().listen('reservation.attribute-click', function (event) {
-        if (!event.detail) {
-          return
-        }
-
-        if (event.detail.attribute === 'id') {
-          this.doSearchLocation(event.detail.value)
-        }
-      }.bind(this))
-      new GEvent().listen('count.attribute-click', function (event) {
-        if (!event.detail) {
-          return
-        }
-
-        if (event.detail.attribute === 'id') {
-          new Count({'data-id': event.detail.value}) // eslint-disable-line
-        }
-      })
-      new GEvent().listen('count.open', function (event) {
-        if (!event.detail) { return }
-        if (event.detail.id) {
-          new Count({'data-id': event.detail.id}) // eslint-disable-line
-        }
-      })
     },
 
     createWindow: function () {
@@ -361,12 +302,11 @@ define([
       var days = 1
       var classname = ''
 
-      djDomClass.remove(this.domNode, [ 'day', 'month', 'week', 'quarter', 'semseter' ])
+      this.domNode.classList.remove('day', 'month', 'week', 'quarter', 'semester')
       switch (zoomValue) {
         case 'day':
           days = 2
           classname = 'day'
-          style = ' #Sight { display: none; }'
           break
         case 'month':
           days = 31
@@ -400,7 +340,7 @@ define([
 
       this.daysZoom = days
       if (classname !== '') {
-        djDomClass.add(this.domNode, classname)
+        this.domNode.classList.add(classname)
       }
       this.set('blockSize', Math.floor((document.documentElement.clientWidth - this.get('offset') - getScrollBarWidth()) / days))
       this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
@@ -455,13 +395,6 @@ define([
 
     zoomOutN: function (n) {
       this.set('zoom', this.get('zoom') + 7)
-    },
-
-    isBefore: function (a, b) {
-      if (djDate.compare(a, b, 'date') <= 0) {
-        return true
-      }
-      return false
     },
 
     _trCantonName: function (c) {
@@ -524,7 +457,7 @@ define([
       }
 
       domDay.innerHTML = txtDate
-      return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay, _line: this.line, computedStyle: djDomStyle.getComputedStyle(domDay) }
+      return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay }
     },
 
     toolTip: function (node, element, triggerElement) {
@@ -613,43 +546,12 @@ define([
       }
     },
 
-    handleBCMessage: function (event) {
-      if (!event.data || !event.data.type) { return }
-
-      var msg = event.data
-      switch (msg.type) {
-        default: return
-        case 'close':
-          if (!msg.what) {
-            this.closeWindow()
-          }
-          switch (msg.what) {
-            default:
-            case 'window':
-              this.closeWindow()
-          }
-          break
-        case 'open':
-          if (msg.what && msg.id) {
-            switch (msg.what) {
-              default:
-              case 'reservation':
-                this.doSearchLocation(msg.id)
-                break
-            }
-          }
-          break
-      }
-
-      window.focus()
-    },
-
     postCreate: function () {
-      this.fixedHeader.style.zIndex = KAIROS.zMax()
+      this.domNode.querySelector('#AppHeader').style.zIndex = KAIROS.zMax()
       const ktaskbar = new KTaskBar()
       const cornerBox = new KCornerBox()
 
-      this.bc = new BroadcastChannel('KAIROS-Location-bc')
+      
       this.view = {}
       this.set('zoom', 'week')
 
@@ -661,9 +563,6 @@ define([
         const diff = Math.floor((origin.getTime() - target.getTime()) / 86400000)
         if (Math.abs(diff) > 365) { return KAIROS.error('Déplacement trop loin dans le temps') }
         this.move(diff)
-      })
-      window.addEventListener('k-search-reservation', event => {
-        this.doSearchLocation(event.detail.reservation, true)
       })
 
       this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
@@ -832,9 +731,7 @@ define([
       })
 
       this.view.rectangle = getPageRect()
-      this.bc.onmessage = function (event) {
-        this.handleBCMessage(event)
-      }.bind(this)
+
 
       document.addEventListener('click', (event) => {
         for (let [key, entry] of this.Entries) {
@@ -853,113 +750,6 @@ define([
         clearInterval(this.borderTimeInterval)
         this.borderTimeInterval = null
       }
-    },
-
-    countList: function () {
-      if (this.CountList) {
-        delete this.CountList
-      }
-      this.CountList = new CountList({integrated: true})
-    },
-
-    mask: function (state, callback) {
-      if (state) {
-        var mask = document.createElement('DIV')
-        this._mask = true
-        this._maskDom = mask
-        mask.setAttribute('style', 'background-color: black; opacity: 0.6; margin: 0; padding: 0; top: 0; left: 0; bottom: 0; right: 0; position: fixed; width: 100%; height: 100%; z-index: 99999998')
-        djOn(mask, 'click', (e) => { this.mask(false); callback(e) })
-        KAIROSAnim.push(() => {
-          document.getElementsByTagName('BODY')[0].appendChild(mask)
-        })
-      } else {
-        this._mask = false
-        this._maskDom.parentNode.removeChild(this._maskDom)
-      }
-    },
-
-    filters: {
-      todo: (date) => {
-        return new Promise((resolve, reject) => {
-          date.setHours(12, 0, 0)
-          let day = date.toISOString().split('T')[0]
-          const url = KAIROS.URL('%KBASE%/store/DeepReservation/.toprepare/')
-          url.searchParams.append('search.day', day)
-          fetch(url)
-          .then(response => {
-            if (!response.ok) { throw new Error('ERR:Server') }
-            return response.json()
-          })
-          .then((results) => {
-            if (results.success && results.length > 0) {
-              let ids = []
-              for (let i = 0; i < results.length; i++) {
-                ids.push(results.data[i].target)
-              }
-              resolve(ids)
-              window.App.searchMenu.filterNone.set('disabled', false)
-              window.App.gotoDay(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
-            }
-          })
-        })
-      }
-    },
-
-    filterNone: function () {
-      this.searchMenu.filterNone.set('disabled', true)
-      this.filterReset()
-    },
-
-    filterFamily: function (event) {
-      var node = dtRegistry.byNode(event.selectorTarget)
-      this.searchMenu.filterNone.set('disabled', false)
-      return node.value.content
-    },
-
-    filterDate: function (date = new Date(), what = 'trueBegin') {
-      this.filterReset()
-      const out = []
-     
-      this.searchMenu.filterNone.set('disabled', false)
-      for (const [_, entry] of this.Entries) {
-        for (const [_, reservation] of entry.entries) {
-          if (djDate.compare(reservation.get(what), date, 'date') === 0) {
-            out.push(entry.get('target')); break
-          }
-        }
-      }
-      return out
-    },
-
-    filterApply: function (entries) {
-      const p = []
-      for (const [_, entry] of this.Entries) {
-        p.push(new Promise((resolve, reject) => {
-          if (entries.indexOf(entry.get('target')) === -1) {
-            KAIROSAnim.push(() => { entry.domNode.dataset.active = '0' })
-            .then(() => resolve())
-          } else {
-            KAIROSAnim.push(() => { entry.domNode.dataset.active = '1' })
-            .then(() => resolve())
-          }
-        }))
-      }
-      Promise.all(p).then(() => {
-        this.update()
-      })
-    },
-
-    filterReset: function (prefilter = false) {
-      let p = []
-      for (const [_, entry] of this.Entries) {
-        p.push(new Promise((resolve, reject) => {
-          KAIROSAnim.push(() => { entry.domNode.dataset.active = '1' })
-          .then(() => resolve())
-        }))
-      }
-      Promise.all(p).then(() => {
-        this.update()
-      })
     },
 
     mouseUpDown: function (event) {
@@ -1011,32 +801,6 @@ define([
       this.followMouse.accumulator.y = 0
     }, 30),
 
-    showSight: function (event) {
-      let none = true
-      let nodeBox = djDomGeo.getContentBox(this.domNode)
-      for (let i = 0; i < this.days.length; i++) {
-        var pos = djDomGeo.position(this.days[i].domNode, this.days[i].computedStyle)
-        if (KAIROS.mouse.clientX >= pos.x && KAIROS.mouse.clientX <= (pos.x + pos.w)) {
-          window.requestAnimationFrame(() => {
-            this.sight.style.width = `${pos.w}px` 
-            this.sight.style.height = `${nodeBox.h}px`
-            this.sight.style.left = `${pos.x}px`
-          })
-          none = false
-          break
-        }
-      }
-
-      if (none) {
-        this.showSight.timeout = setTimeout(() => {
-          window.requestAnimationFrame(() => {
-            this.sight.removeAttribute('style')
-          })
-        }, 350)
-      } else {
-        if (this.showSight.timeout) { clearTimeout(this.showSight.timeout) }
-      }
-    },
 
     wheelZoom: function (event) {
       event.preventDefault()
@@ -1077,21 +841,6 @@ define([
       this.move(Math.round((this.center.getTime() - (new Date()).getTime()) / 86400000) + 6)
     },
 
-    chooseDay: function () {
-      var calendar = new DtCalendar({ value: this.center })
-      var dialog = new Dialog({title: 'Choisir une date'})
-
-      dialog.addChild(calendar)
-      dialog.startup()
-      dialog.show()
-
-      djOn(calendar, 'change', djLang.hitch(this, (e) => {
-        this.set('center', e)
-        this.update()
-        dialog.destroy()
-      }))
-    },
-
     move: function (x) {
       if (x === 0) { return }
       if (x < 0) {
@@ -1102,7 +851,8 @@ define([
     },
 
     moveXRight: function (x) {
-      this.center = djDate.add(this.center, 'day', Math.abs(x))
+      console.log(this.center)
+      this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
       this.Viewport.move(-x)
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
@@ -1120,7 +870,8 @@ define([
       this.moveXRight(move)
     },
     moveXLeft: function (x) {
-      this.center = djDate.add(this.center, 'day', -Math.abs(x))
+      console.log(this.center, x)
+      this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
       this.Viewport.move(x)
       this.firstDay = this.Viewport.get('date-origin')
       this.update()
@@ -1172,18 +923,18 @@ define([
           }
 
           if (this.get('compact')) {
-            djDomClass.add(window.App.domNode, 'compact')
+            this.domNode.classList.add('compact')
           } else {
-            djDomClass.remove(window.App.domNode, 'compact')
+            this.domNode.classList.remove('compact')
           }
           this.emit('zoom')
           break
         case 'extension':
           this.set('extension', !this.get('extension'))
           if (this.get('extension')) {
-            djDomClass.remove(window.App.domNode, 'noextender')
+            this.domNode.classList.add('noextender')
           } else {
-            djDomClass.add(window.App.domNode, 'noextender')
+            this.domNode.classList.remove('noextender')
           }
           break
         case 'autoprint':
@@ -1252,8 +1003,13 @@ define([
         entry[1].set('origin', this.firstDay)
       }
       this.Viewport.setOrigin(this.firstDay)
+
+      function sameDay (a, b) {
+        return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+      }
+
       for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
-        if (djDate.compare(day, new Date(), 'date') === 0) {
+        if (sameDay(day, new Date())) {
           this.todayOffset = i
         }
 
@@ -1328,10 +1084,10 @@ define([
 
         this.days.push(d)
         if (this.get('blockSize') > 20) {
-          djDomConstruct.place(d.domNode, docFrag, 'last')
+          docFrag.appendChild(d.domNode)
         }
 
-        day = djDate.add(day, 'day', 1)
+        day = new Date(day.getTime() + 86400000)
         this.lastDay = day
         dayCount++; dayMonthCount++
       }
@@ -1346,11 +1102,11 @@ define([
       this.Viewport.setMargins(120, 14, 50, this.get('offset'))
 
       window.requestAnimationFrame(() => {
-        this.subline.innerHTML = ''
-        this.subline.appendChild(subLineFrag)
-        this.line.appendChild(docFrag)
-        this.header.appendChild(hFrag)
-        this.supHeader.appendChild(shFrag)
+        this.domNode.querySelector('#TL_subline').innerHTML = ''
+        this.domNode.querySelector('#TL_subline').appendChild(subLineFrag)
+        this.domNode.querySelector('#TL_line').appendChild(docFrag)
+        this.domNode.querySelector('#TL_header').appendChild(hFrag)
+        this.domNode.querySelector('#TL_supHeader').appendChild(shFrag)
       })
     },
 
@@ -1662,74 +1418,6 @@ define([
       this.Viewport.runRunOnMove()
     },
 
-    _getEntriesAttr: function () {
-      var entries = []
-      dtRegistry.findWidgets(this.domEntries).forEach(function (widget) {
-        if (widget instanceof location.entry) {
-          entries.push(widget)
-        }
-      })
-
-      return entries
-    },
-
-    highlight: function (domNode) {
-      if (this.Highlighting) {
-        djDomStyle.set(this.Highlighting[0], 'box-shadow', '')
-        window.clearTimeout(this.Highlighting[1])
-      } else {
-        this.Highlighting = []
-      }
-
-      djDomStyle.set(domNode, 'box-shadow', '0px 0px 26px 10px rgba(255,255,0,1)')
-      this.Highlighting[0] = domNode
-      this.Highlighting[1] = window.setTimeout(function () {
-        djDomStyle.set(domNode, 'box-shadow', '')
-      }, 5000)
-    },
-
-    goToReservation: function (data, center) {
-      var def = new DjDeferred()
-      var that = this
-      var middle = window.innerHeight / 3
-      var widget = null
-
-      for (const [_, entry] of this.Entries) {
-        if (entry.target === data.target) {
-          widget = entry
-          break
-        }
-      }
-
-      var tContainer = dtRegistry.byId('tContainer')
-      if (djDomStyle.get(tContainer.domNode, 'display') !== 'none') {
-        var w = djDomStyle.get(tContainer.domNode, 'width')
-        center = djDate.add(center, 'day', Math.abs(w / this.get('blockSize')))
-      }
-
-      that.set('center', center)
-      that.update()
-
-      if (widget) {
-        var pos = djDomGeo.position(widget.domNode, true)
-        window.scroll(0, pos.y - middle)
-        var reservation = null
-
-        for (const k in widget.entries) {
-          if (widget.entries[k].id === data.id) {
-            reservation = widget.entries[k]
-            break
-          }
-        }
-
-        if (reservation) {
-          def.resolve(reservation)
-        }
-      }
-
-      return def.promise
-    },
-
     currentTopEntry: function () {
       var current
       var page = getPageRect()
@@ -1745,65 +1433,6 @@ define([
         }
       }
       return current
-    },
-
-    doSearchLocation: function (resourceId, dontmove = true) {
-      DoWait()
-      return new Promise((resolve) => {
-        fetch(`${KAIROS.getBase()}/store/DeepReservation/${resourceId}`)
-        .then(response => {
-          if (!response.ok) { throw new Error('Net Error') }
-          return response.json()
-        })
-        .then(result=> {
-          if (!result.success) { throw new Error('Server Error') }
-          if (result.length <= 0) { return }
-          
-            const reservation = Array.isArray(result.data) ? result.data[0] : result.data
-            if (reservation.deleted) {
-              dontmove = true
-            }
-            if (!dontmove) { this.set('center', reservation.deliveryBegin ? new Date(reservation.deliveryBegin) : new Date(reservation.begin)) }
-            this.update()
-            if (this.Entries.has(reservation.target)) {
-              const entry = this.Entries.get(reservation.target)
-              entry.createEntry(reservation, true)
-              .then(() => {
-                if (entry.openReservation(reservation.uuid || reservation.id)) {
-                  if (!dontmove) {
-                    let pos = djDomGeo.position(entry.domNode, true)
-                    window.scroll(0, pos.y - (window.innerHeight / 3))
-                  }
-                  resolve(true)
-                } else {
-                  resolve(false)
-                }
-              })
-            } else {
-              let entry = null
-              for (const [_, currentEntry] of this.Entries) {
-                if (currentEntry.KEntry === undefined) { continue }
-                currentEntry.KEntry.is(reservation.target)
-                .then(is => {
-                  if (!entry && is) {
-                    entry = currentEntry
-                    const r = new Reservation({uid: data.id, uuid: data.uuid, sup: currentEntry, _json: data})
-                    r.popMeUp()
-                    resolve(true)
-                    return
-                  }
-                })
-              }
-            }
-        })
-        .catch(reason => {
-          KAIROS.error(reason)
-          resolve(false)
-        })
-        .finally(_ => {
-          DoWait(false)
-        })
-      })
     },
 
     print: function (url) {
@@ -1917,75 +1546,6 @@ define([
         url.searchParams.append('file', path)
         return fetch(url)
       }
-    },
-    openUncounted: function () {
-      var uncounted = new Doc({width: window.innerWidth - 740, style: 'background-color: #FFFFCF;'})
-      var iframe = document.createElement('IFRAME')
-      iframe.setAttribute('src', 'uncounted.html')
-      iframe.setAttribute('style', 'border: none; width: 100%; height: 100%')
-      uncounted.content(iframe)
-    },
-
-    searchMachineLive: function (event) {
-      let val = event.target.value
-      for (const [_, entry] of this.Entries) {
-        if (val === '') {
-          entry.domNode.dataset.active = '1'; 
-          continue
-        }
-        const regexp = new RegExp(`^.*${val}.*`, 'i')
-        if (!regexp.test(entry.label) && !regexp.test(entry.target)) {
-          let found = '0'
-          if (regexp.test(entry.KEntry?.data?.brand)) {
-            found = '1'
-          }
-          if (found !== '1' && regexp.test(entry.KEntry?.data?.kmodel)) {
-            found = '1'
-          }
-          if (found !== '1' && entry.tags) {
-            for (let i = 0; i < entry.tags.length; i++) {
-              if (regexp.test(entry.tags[i])) {
-                found = '1'
-                break
-              }
-            }
-          }
-          if (found !== '1') {
-            if (regexp.test(entry.KEntry?.get('location'))) {
-              found = '1'
-            }
-          }
-
-          if (found !== '1') {
-            for (let i = 0; i < entry.details?.motorization?.length; i++) {
-              if (regexp.test(entry.details?.motorization[i])) {
-                found = '1'
-                break
-              }
-            }
-          }
-          if (found !== '1') {
-            for (let i = 0; i < entry.details?.special?.length; i++) {
-              if (regexp.test(entry.details?.special[i])) {
-                found = '1'
-                break
-              }
-            }
-          }
-          if (!entry.domNode) { return }
-          entry.domNode.dataset.active = found
-        } else {
-          entry.domNode.dataset.active = '1'; 
-        }
-      }
-      /* don't trigger whole resize right now, wait for end of typing.
-       * According to my research, typing is between 70 cpm and 200 cpm (so 20ms-60ms),
-       * wait for twice that time and some more
-       */
-      if (this.searchMachineLive.timeout) { clearTimeout(this.searchMachineLive.timeout)}
-      this.searchMachineLive.timeout = setTimeout(() => {
-        this.resize()
-      }, 150)
     }
   })
 })
