@@ -3,16 +3,13 @@
 
 <head profile="http://www.w3.org/2005/10/profile">
   <title>[KAIROS]</title>
-  <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css" />
-  <link rel="stylesheet" type="text/css"
-    href="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css" />
-  <link rel="stylesheet" type="text/css" href="https://artnum.ch/code/js/dojo/templates/themes/default/default.css" />
   <link rel="icon" type="image/png" href="../resources/images/favicon.png" />
   <link rel="icon" type="image/svg+xml" href="../resources/images/favicon.svg" />
   <script src="../conf/app.js"></script>
   <script src="../js/index.js"></script>
   <script src="../js/lib/login.js"></script>
-
+  <script src="../js/lib/throttle.js"></script>
+  <script src="../js/ui/k-timeline.js"></script>
 </head>
 
 <body class="claro">
@@ -92,19 +89,15 @@
 
       window.addEventListener('kairos-ready', event => {
         document.title = `[KAIROS] ${KAIROS.title}`
-        require([
-          "location/timeline",
-          "dojo/domReady!"
-        ], function (timeline) {
+ 
           const settings = new KSettings() // preload settings
           KAIROS.getClientId()
             .then(cid => {
-              window.App = new timeline()
+              window.App = new KTimeline()
               KAIROS.timeline = window.App
               document.getElementsByTagName('body')[0].appendChild(KAIROS.timeline.domNode)
               KAIROS.timeline.run()
             })
-        });
       })
     })
   </script>
