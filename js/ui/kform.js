@@ -442,6 +442,18 @@ KFormUI.prototype.render = function (fields) {
             input.addEventListener('keydown', this.keyDownEvents.bind(this))
             input.addEventListener('keyup', this.keyUpEvents.bind(this))
 
+            if (fields[key]?.actions) {
+                if (!(fields[key].actions instanceof Array)) {
+                    fields[key].actions = [fields[key].actions]
+                }
+
+                for (const action of fields[key].actions) {
+                    if (action.event) {
+                        input.addEventListener(action.event, action.action)
+                    }
+                }
+            }
+
             label.appendChild(input)
             if (input.getParentObject) {
                 input.getParentObject().place()

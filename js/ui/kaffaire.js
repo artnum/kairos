@@ -37,17 +37,32 @@ KAffaireFormUI.prototype.attachToParent = function(parent) {
 
 KAffaireFormUI.prototype.render = function () {
     return this.formUI.render({
-        reference: {label: 'Référence'},
+        reference: {label: 'Titre', type: 'text'},
         status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}},
         closed: {label: 'Terminé', type: 'on-off'},
         folder: {label: 'Dossier', type: 'on-off'},
-        meeting: {label: 'Rendez-vous'},
+        //meeting: {label: 'Rendez-vous'},
         contact: {label: 'Personne de contact'},
         phone: {label: 'Téléphone', type: 'phone'},
-        urlgps: {label: 'Localisation GPS', type: 'text'},
+        urlgps: {label: 'Localisation GPS', type: 'text', actions: 
+            [
+                {
+                    event: 'focus', 
+                    action: (event) => {
+                        if (event.currentTarget.dataset.done === 'true') { return }
+                        event.currentTarget.dataset.done = 'true'
+                        if (event.currentTarget.value === '') {
+                            let url = KAIROS.maps.direction.replace('$FROM', KAIROS.maps.origin)
+                            url = url.replace('$TO', '')
+                            window.open(url, '_blank')
+                        }
+                    }
+                }
+            ]
+        },
         description: {label: 'Description', type: 'multitext'},
-        time: {label: 'Durées', type: 'hour'},
-        force: {label: 'Nombre de personne', type: 'text'},
+        //time: {label: 'Durées', type: 'hour'},
+        //force: {label: 'Nombre de personne', type: 'text'},
         begin: {label: 'Début souhaité', type: 'date'},
         end: {label: 'Fin souhaité', type: 'date'}
     })

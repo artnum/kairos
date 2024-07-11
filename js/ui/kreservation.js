@@ -1006,16 +1006,16 @@ KUIReservation.prototype.renderForm = function () {
         const rform = new KFormUI(this.object)
         rform.render({
             id: {label: 'Numéro', readonly: true},
-            version: {label: 'Version', readonly: true},
+            //version: {label: 'Version', readonly: true},
             locked: {label: 'Verrouillée', type: 'on-off'},
             closed: {label: 'Terminé', type: 'on-off'},
             _kproject_name: {label: 'Projet', readonly: true},
-            begin: {label: 'Début', type: 'datehour', readonly: this.object.get('locked') === '1'},
-            end: {label: 'Fin', type: 'datehour', readonly: this.object.get('locked') === '1'},
-            time: {label: 'Durée', type: 'hour', readonly: this.object.get('locked') === '1'},
-            comment: {label: 'Remarque', type: 'multitext', readonly: this.object.get('locked') === '1'},
-            creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
-            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
+            //begin: {label: 'Début', type: 'datehour', readonly: this.object.get('locked') === '1'},
+            //end: {label: 'Fin', type: 'datehour', readonly: this.object.get('locked') === '1'},
+            //time: {label: 'Durée', type: 'hour', readonly: this.object.get('locked') === '1'},
+            comment: {label: 'Remarque journalière', type: 'multitext', readonly: this.object.get('locked') === '1'},
+            //creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
+            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: true},
             status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}, readonly: this.object.get('locked') === '1'},
         })
         .then(domNode => {
