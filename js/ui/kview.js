@@ -1,3 +1,48 @@
+function KViewObject (id) {
+    this.id = String(id)
+    this.object = null
+    this.hidden = false
+}
+
+KViewObject.prototype.setId = function (id) {
+    this.id = String(id)
+}
+
+KViewObject.prototype.getId = function () {
+    return String(this.id)
+}
+
+KViewObject.prototype.setHeight = function (height) {
+    if (!this.object) { return }
+    this.object.setHeight(height)
+}
+
+KViewObject.prototype.getHeight = function () {
+    if (!this.object) { return 0 }
+    return this.object.getHeight()
+}
+
+KViewObject.prototype.setObject = function (object) {
+    this.object = object
+}
+
+KViewObject.prototype.getObject = function () {
+    return this.object
+}
+
+KViewObject.prototype.show = function () {
+    this.hidden = false
+}
+
+KViewObject.prototype.hide = function () {
+    this.hidden = true
+}
+
+KViewObject.prototype.isHidden = function () {
+    return this.hidden
+}
+
+
 /* global view object */
 function KViewCell (day) {
     this.day = day
@@ -183,7 +228,7 @@ KView.prototype.compute = function () {
             }
             this.rowDescription = new Array(height)
             for (let i = 0; i < height; i++) {
-                this.rowDescription[i] = [i, null, true]
+                this.rowDescription[i] = new KViewObject(i)
             }
             this.grid = newGrid
             this.gridOffset = Math.round(width / 2)
@@ -193,13 +238,13 @@ KView.prototype.compute = function () {
 }
 
 KView.prototype.showRow = function (idx) {
-    this.rowDescription[idx][2] = true
-    this.rowDescription[idx][1].KUI.setHidden(false)
+    this.rowDescription[idx].show()
+    this.rowDescription[idx].getObject().KUI.setHidden(false)
 }
 
 KView.prototype.hideRow = function (idx) {
-    this.rowDescription[idx][2] = false
-    this.rowDescription[idx][1].KUI.setHidden(true)
+    this.rowDescription[idx].hide()
+    this.rowDescription[idx].getObject().KUI.setHidden(true)
 }
 
 /* Convert grid x to pixel x */
@@ -208,7 +253,12 @@ KView.prototype.getPixelX = function (gridX) {
 }
 
 KView.prototype.getPixelY = function (gridY) {
-    return this.data.get('entry-height') * gridY + this.data.get('margin-top')
+    let px = 0
+    for (let i = 0; i < gridY; i++) {
+        if (!this.rowDescription[i] || this.rowDescription[i].isHidden()) { continue }
+        px += this.rowDescription[i].getHeight()
+    }
+    return px + this.data.get('margin-top')
 }
 
 /**
@@ -234,14 +284,16 @@ KView.prototype.getRowIndex = function (y) {
     if (y < 0) { return -1 }
     let pos = 0
     for (let i = 0; i < this.rowDescription.length; i++) {
-        if (this.rowDescription[i][1] === null 
-            || this.rowDescription[i][0] < 0
-            || !this.rowDescription[i][2]) { continue }    
+        if (this.rowDescription[i] === null 
+            || this.rowDescription[i].isHidden()) { continue }    
         if (y === 0) { pos = i; break }
         y--
     }
 
-    if (pos >= this.rowDescription.length || !this.rowDescription[pos][2]) { return -1 }
+    if (pos >= this.rowDescription.length
+        || pos < 0
+        || this.rowDescription[pos] === null
+        || this.rowDescription[pos].isHidden()) { return -1 }
     return pos
 }
 
@@ -251,21 +303,19 @@ KView.prototype.getRowIndex = function (y) {
  * @returns {number} Relative position
  */
 KView.prototype.getRelativeRowY = function (rowid) {
+    console.log('getRelativeRowY', rowid)
     let r = 0
-    for (let i = 0; i < this.rowDescription.length; i++) {
-        if (this.rowDescription[i][1] === null 
-            || this.rowDescription[i][0] < 0
-            || !this.rowDescription[i][2]) { continue }
-        if (String(this.rowDescription[i][1].id) === String(rowid)) {
+    let i
+    for (i = 0; i < this.rowDescription.length; i++) {
+        if (this.rowDescription[i] === null 
+            || this.rowDescription[i].isHidden()) { continue }
+        if (String(this.rowDescription[i].getObject().id) === String(rowid)) {
+    
             return r
         }
         r++
     }
     return -1
-}
-
-KView.prototype.getRowIndexFromPX = function (px) {
-    return this.getRowIndex(this.getYFromPX(px))
 }
 
 /**
@@ -279,7 +329,7 @@ KView.prototype.getRowFromPX = function (px) {
     if (y < 0) { return null }
     const row = this.rowDescription[this.getRowIndex(y)]
     if (!row) { return null }
-    return row[1]
+    return row.getObject()
 }
 
 /**
@@ -289,16 +339,25 @@ KView.prototype.getRowFromPX = function (px) {
  */
 KView.prototype.getYFromPX = function (px) {
     if (!this.rowDescription) { return -1 }
-    const y = Math.abs(Math.floor((px - this.data.get('margin-top')) / this.data.get('entry-height')))
+    px -= this.data.get('margin-top')
+    if (px < 0) { return -1 }
+    let y = 0
+    for (y = 0; y < this.rowDescription.length; y++) {
+        if (!this.rowDescription[y] 
+            || this.rowDescription[y].isHidden()) { continue }
+        px -= this.rowDescription[y].getHeight()
+        if (px <= 0) { break }
+    }
     if (y < 0 || y >= this.rowDescription.length) { return -1 }
     return y
 }
 
 KView.prototype.getObjectRowById = function (id) {
-    for (let i = 0; i < this.rowDescription.length; i++) {
-        if (!this.rowDescription[i]) { continue; }
-        if (!this.rowDescription[i][1]) { continue; }
-        if (String(this.rowDescription[i][1].id) === String(id)) {
+    let i = 0
+    for (i = 0; i < this.rowDescription.length; i++) {
+        if (!this.rowDescription[i]
+            || this.rowDescription[i].isHidden()) { continue; }
+        if (String(this.rowDescription[i].getObject().id) === String(id)) {
             return i
         }
     }
@@ -312,19 +371,19 @@ KView.prototype.getObjectRow = function (object) {
 KView.prototype.getRowObject = function (row) {
     if (!this.rowDescription) { return null }
     if (!this.rowDescription[row]) { return null }
-    return this.rowDescription[row][1]
+    return this.rowDescription[row].getObject()
 }
 
 KView.prototype.bindObjectToRow = function (row, object) {
     row = parseInt(row)
     if (row < 0 || row >= this.rowDescription.length) { return }
-    this.rowDescription[row][1] = object
+    this.rowDescription[row].setObject(object)
 }
 
 KView.prototype.getEffectiveHeight = function () {
     let size = 0
     for (i = 0; i < this.rowDescription.length; i++) {
-        if (this.rowDescription[i][0] > 0) { size++ }
+        if (!this.rowDescription[i].isHidden()) { size++ }
     }
     return size
 }
@@ -388,6 +447,14 @@ KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
     return row
 }
 
+KView.prototype.getRowCells = function (y) {
+    const cells = []
+    for (let i = 0; i < this.get('day-count'); i++) {
+        cells.push(this.getCell(i, y))
+    }
+    return cells
+}
+
 /**
  * Get the top position of a given row.
  * @param {number|object} row Row object, ui object or id
@@ -400,9 +467,17 @@ KView.prototype.getRowTop = function (row) {
         row = row.dataObject.id
     }
     if (row < 0) { return -1 }
-    const topPos = this.getRelativeRowY(row)
-    if (topPos < 0) { return -1 }
-    return this.data.get('margin-top') + (this.data.get('entry-height') * topPos)
+    let height = 0
+    for (let i = 0; i < this.rowDescription.length; i++) {
+        if (!this.rowDescription[i]
+            || this.rowDescription[i].isHidden()) { continue; }
+        if (String(this.rowDescription[i].getObject().id) === String(row)) {
+            break
+        }
+        height += this.rowDescription[i].getHeight()
+    }
+
+    return this.data.get('margin-top') + height
 }
 
 KView.prototype.getViewRange = function () {
@@ -487,6 +562,11 @@ KView.prototype.move = function (days) {
     return this.render([range[0] - displacement, range[1] + displacement])
 }
 
+KView.prototype.resizeRow = function (rowid) {
+    const cells = this.getRowCells(rowid)
+    cells.forEach(cell => {
+    })
+}
 
 KView.prototype._directRender = function (range = null) {
     if (!this.grid) { return }
@@ -529,12 +609,13 @@ KView.prototype._directRender = function (range = null) {
         const uinode = p[1].getUINode()
         if (uinode) {
             p[0].getDomNode()
-            .then(domNode => {
-                uinode.render(domNode).then(node => {
-                    if (!node || !domNode) { return }
-                    domNode.appendChild(node)    
+                .then(domNode => {
+                    uinode.render(domNode)
+                    .then(node => {
+                        if (!node || !domNode) { return }
+                        domNode.appendChild(node)    
+                    })
                 })
-            })
             continue 
         }
         p[0].placeReservation(p[1])

@@ -20,18 +20,18 @@ KCornerBox.prototype.render = function () {
             kv.rowDescription.forEach((row, idx) => {
                 kv.showRow(idx)
             })
-            kv.rowDescription.map(row => row[1].KUI.applyState() )
+            kv.rowDescription.map(row => row.getObject().KUI.applyState() )
             return setTimeout(() => kv._directRender(), 10)
         }
         
         KAIROS.fetch2(KAIROS.URL(`${KAIROS.kaalURL}/GroupUser/_query`), {method: 'POST', body: {group: value}})
         .then(users => {
-            users = users.map(u => u.user)
+            users = users.map(u => String(u.user))
             kv.rowDescription.forEach((row, idx) => {
-                if (users.indexOf(row[1].id) === -1) { kv.hideRow(idx) }
+                if (users.indexOf(row.getId()) === -1) { kv.hideRow(idx) }
                 else { kv.showRow(idx) }
             })
-            return Promise.allSettled(kv.rowDescription.map(row => row[1].KUI.applyState()))
+            return Promise.allSettled(kv.rowDescription.map(row => row.getObject().KUI.applyState()))
         })
         .then(_ => {
             setTimeout(() => kv._directRender(), 10)

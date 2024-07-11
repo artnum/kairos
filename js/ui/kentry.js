@@ -3,12 +3,39 @@ function KUIEntry (dataObject, opts = {}) {
         'reference': {remote: 'id'},
         'name': {remote: 'name'}
     }, opts)
+    this.height = null
     this.parentNode = null
     this.hidden = false
     this.dataObject = dataObject
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
     this.kview = new KView()
+    this.html
+        .then(domNode => {
+            domNode.addEventListener('contextmenu', e => {
+                e.preventDefault()
+                const km = new KContextMenu('Ligne', true)
+                if (this.getHeight() > this.kview.get('entry-height')) {
+                    km.add('Réduire', _ => {  
+                        this.setHeight(this.kview.get('entry-height') - 2)
+                        setTimeout(() => window.dispatchEvent(new Event('resize')), 10)
+                    })
+                        
+                } else {
+                    km.add('Agrandir', _ => {
+                        const rowid = this.kview.getObjectRow(this.dataObject)
+                        const cells = this.kview.getRowCells(rowid)
+                        const max = cells.reduce((acc, cell) => {
+                            if (cell.size > acc) { return cell.size }
+                            return acc
+                        }, 0)
+                        this.setHeight((this.kview.get('entry-height') / 2) * max)
+                        setTimeout(() => window.dispatchEvent(new Event('resize')), 10)
+                    })
+                }
+                km.show(e.clientX, e.clientY)
+            })
+        })
     this.hidden = false
     this.order = 0
     this.content = new Map()
@@ -112,6 +139,22 @@ KUIEntry.prototype.render = function (parentNode = null) {
     })
 }
 
+KUIEntry.prototype.setHeight = function (height) {
+    this.getDomNode()
+    .then(domNode => {
+        this.height = height
+        domNode.style.minHeight = `${height}px`
+        domNode.style.height = `${height}px`
+    })
+}
+
+KUIEntry.prototype.getHeight = function () {
+    if (this.height === null) {
+        return 78
+    }
+    return this.height + 2
+}
+
 KUIEntry.prototype.removeReservation = function (reservation) {
     return new Promise((resolve, reject) => {
         const uireservation = this.content.get(reservation.id)
@@ -126,6 +169,7 @@ KUIEntry.prototype.placeReservation = function (reservation) {
     return new Promise((resolve, reject) => {
         if (this.hidden) { return resolve() }
         const uireservation = new KUIReservation(reservation)
+        uireservation.setContainer(this)
         this.content.set(reservation.id, uireservation)
         uireservation.setRow(this.dataObject.id)
         uireservation.render()
@@ -163,9 +207,6 @@ KUIEntry.prototype.getDomNode = function () {
             resolve(uientry.domNode)
         })
     })
-}
-
-KUIEntry.prototype.resize = function () {
 }
 
 KUIEntry.prototype.moveOrigin = function (newOrigin, oldOrigin) {}

@@ -163,19 +163,6 @@ function KTimeline(args) {
 
     document.body.appendChild(this.zoomCss)
 
-    var sStore = window.sessionStorage
-    let url = new URL('store/Status/', KAIROS.getBase())
-    url.searchParams.append('search.type', 0)
-    fetch(url).then(response => {
-        if (!response.ok) { return }
-        response.json().then(results => {
-            if (results.length <= 0) { return }
-            for (var i = 0; i < results.data.length; i++) {
-                sStore.setItem('/Status/' + results.data[i].id, JSON.stringify(results.data[i]))
-            }
-        })
-    })
-
     if (typeof window.Rent === 'undefined') {
         window.Rent = {}
     }
@@ -262,8 +249,6 @@ KTimeline.prototype = {
     },
 
     setBlockSize: function (value) {
-        console.log('setBlockSize', value)
-        console.trace()
         this.set('blockSize', value)
         document.documentElement.style.setProperty('--blocksize', `${value}px`)
     },
@@ -441,12 +426,6 @@ KTimeline.prototype = {
         }
     },
 
-    resizeEntries: throttle(function () {
-        for (const [_, entry] of this.Entries) {
-            entry.resize()
-        }
-    }, 25),
-
     resizeTimeline: function () {
         this.drawTimeline()
         this.drawVerticalLine()
@@ -454,7 +433,6 @@ KTimeline.prototype = {
 
     resize: function () {
         this.resizeTimeline()
-        this.resizeEntries()
         this.Viewport.resize()
     },
 
@@ -511,7 +489,6 @@ KTimeline.prototype = {
     },
 
     postCreate: function () {
-        console.log('postCreate')
         this.domNode.querySelector('#AppHeader').style.zIndex = KAIROS.zMax()
         const ktaskbar = new KTaskBar()
         const cornerBox = new KCornerBox()
@@ -571,7 +548,9 @@ KTimeline.prototype = {
             end.setTime(begin.getTime() + diff)
             object.set('begin', begin.toISOString())
             object.set('end', end.toISOString())
-            kview.getRowFromPX(YPosition).get('id')
+            const rowObject = kview.getRowFromPX(YPosition)
+            if (!rowObject) { return }
+            rowObject.get('id')
                 .then(id => {
                     object.set('target', id)
                     kstore.set(object)
@@ -815,7 +794,6 @@ KTimeline.prototype = {
     },
 
     moveXRight: function (x) {
-        console.log(this.center)
         this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
         this.Viewport.move(-x)
         this.firstDay = this.Viewport.get('date-origin')
@@ -834,7 +812,6 @@ KTimeline.prototype = {
         this.moveXRight(move)
     },
     moveXLeft: function (x) {
-        console.log(this.center, x)
         this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
         this.Viewport.move(x)
         this.firstDay = this.Viewport.get('date-origin')
@@ -853,68 +830,7 @@ KTimeline.prototype = {
         this.moveXLeft(move)
     },
 
-    placeEntry: function (entry) {
-        this.Entries.set(entry.target, entry)
-    },
-
-
-    toggle: function (attr) {
-        var targetNode = this.currentTopEntry()
-        var delta = getElementRect(targetNode.domNode)[1] - getPageRect()[1]
-        switch (attr) {
-            case 'compact':
-                if (this.get('compact')) {
-                    this.set('compact', !this.get('compact'))
-                } else {
-                    this.set('compact', true)
-                }
-
-                if (this.get('compact')) {
-                    this.domNode.classList.add('compact')
-                } else {
-                    this.domNode.classList.remove('compact')
-                }
-                this.emit('zoom')
-                break
-            case 'extension':
-                this.set('extension', !this.get('extension'))
-                if (this.get('extension')) {
-                    this.domNode.classList.add('noextender')
-                } else {
-                    this.domNode.classList.remove('noextender')
-                }
-                break
-            case 'autoprint':
-                if (window.localStorage.getItem(`${KAIROS.getBase()}/autoprint`)) {
-                    window.localStorage.removeItem(`${KAIROS.getBase()}/autoprint`)
-                } else {
-                    window.localStorage.setItem(`${KAIROS.getBase()}/autoprint`, '1')
-                }
-                break
-            case 'showDeleted':
-                this.set('sold', !this.get('sold'))
-                if (this.get('sold')) {
-                    this.cmdProcessor('show all')
-                } else {
-                    this.cmdProcessor('show default')
-                }
-                break
-            case 'sortWarehouse':
-                this.set('sortw', !this.get('sortw'))
-                if (this.get('sortw')) {
-                    this.cmdProcessor('sort warehouse')
-                } else {
-                    this.cmdProcessor('sort default')
-                }
-                break
-        }
-        this.update(true)
-        let pos = getElementRect(targetNode.domNode)
-        window.scroll(0, pos[1] - delta)
-    },
-
     drawTimeline: function () {
-        console.log('drawTimeline')
         const avWidth = this.domNode.offsetWidth
         let currentWeek = 0
         let dayCount = 0
@@ -942,7 +858,7 @@ KTimeline.prototype = {
         } else {
             this.Holidays.addYear(this.center.getFullYear())
         }
-        console.log(this.firstDay, this.center)
+
         if (!this.firstDay) {
             this.firstDay = new Date()
             this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
@@ -951,7 +867,6 @@ KTimeline.prototype = {
             entry[1].set('origin', this.firstDay)
         }
         this.Viewport.setOrigin(this.firstDay)
-        console.log(this.firstDay, this.lastDay)
         function sameDay(a, b) {
             return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
         }
@@ -1165,11 +1080,7 @@ KTimeline.prototype = {
                                     KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
                                         .then(kentry => {
                                             kentry.sortValue = parseInt(entry.order)
-                                            kentry.get('id')
-                                                .then(uid => {
-                                                    this.Entries.set(uid, kentry)
-                                                    resolve(kentry)
-                                                })
+                                            return resolve(kentry)
                                         })
                                         .catch(cause => {
                                             reject(new Error('Failed to load entry', { cause }))
@@ -1183,10 +1094,8 @@ KTimeline.prototype = {
                         .filter(e => e.status === 'fulfilled')
                         .map(e => e.value)
                         .sort((a, b) => a.sortValue - b.sortValue)
-                    console.log(loadedEntries)
                     loadedEntries.forEach(e => e.register(this.Updater))
                     this.Viewport.setEntryCount(loadedEntries.length)
-
                     let i = 0
                     return Promise.allSettled(loadedEntries.map(e => {
                         return new Promise((resolve, reject) => {
@@ -1228,124 +1137,6 @@ KTimeline.prototype = {
             })
     },
 
-    _sort_warehouse: function () {
-        let sortedEntries = this._sort_default()
-        let warehouse = []
-        let nowarehouse = []
-
-        sortedEntries.forEach(k => {
-            let set = false
-            const loc = this.Entries.get(k).get('currentLocation')
-            if (loc) {
-                if (loc.value) {
-                    if (loc.value !== '') {
-                        warehouse.push(k)
-                        set = true
-                    }
-                }
-            }
-            if (!set) { nowarehouse.push(k) }
-        })
-
-        warehouse.sort((a, b) => {
-            const locA = this.Entries.get(a).get('currentLocation')
-            const locB = this.Entries.get(b).get('currentLocation')
-
-            return locA.value.toLowerCase().localeCompare(locB.value.toLowerCase())
-        })
-
-        return [...warehouse, ...nowarehouse]
-    },
-
-    _sort_default: function () {
-        const sortedEntries = Array.from(this.Entries.keys())
-        sortedEntries.sort((ka, kb) => {
-            const a = this.Entries.get(ka)
-            const b = this.Entries.get(kb)
-
-            let aT = a.get('target')
-            let bT = b.get('target')
-            if (aT.indexOf('.') !== -1) {
-                aT = parseInt(aT.substring(0, aT.indexOf('.')))
-            } else {
-                aT = Number.isNaN(parseInt(aT)) ? Infinity : parseInt(aT)
-                if (aT !== Infinity) {
-                    aT = Math.floor(aT / 100)
-                }
-            }
-            if (bT.indexOf('.') !== -1) {
-                bT = parseInt(bT.substring(0, bT.indexOf('.')))
-            } else {
-                bT = Number.isNaN(parseInt(bT)) ? Infinity : parseInt(bT)
-                if (bT !== Infinity) {
-                    bT = Math.floor(bT / 100)
-                }
-            }
-
-            let ida = aT
-            let idb = bT
-            a.domNode.dataset.groupId = aT
-            b.domNode.dataset.groupId = bT
-            if (aT === Infinity && bT !== Infinity) { a.domNode.dataset.pushToEnd = true; return 1 }
-            if (aT !== Infinity && bT === Infinity) { b.domNode.dataset.pushToEnd = true; return -1 }
-            if (aT !== Infinity && bT !== Infinity && aT - bT !== 0) { return aT - bT }
-
-            const techData = ['float:workheight:r', 'float:floorheight:r', 'float:maxcapacity:r', 'float:sideoffset:r']
-            for (let i = 0; i < techData.length; i++) {
-                let [type, name, reverse] = techData[i].split(':', 3)
-                switch (type) {
-                    case 'int':
-                    case 'float':
-                        let aT = type === 'int' ? parseInt(a.get(name)) : parseFloat(a.get(name))
-                        let bT = type === 'int' ? parseInt(b.get(name)) : parseFloat(b.get(name))
-
-                        if (aT - bT !== 0) {
-                            if (reverse === undefined) {
-                                return aT - bT
-                            } else {
-                                return bT - aT
-                            }
-                        }
-                        break
-                }
-            }
-            if (aT === Infinity && bT === Infinity) {
-                return a.get('target').localeCompare(b.get('target'))
-            }
-
-            return idb - ida
-        })
-
-        return sortedEntries
-    },
-
-    sortEntries: function (orderedKeys, linear = false) {
-        let container = this.domNode.querySelector('#TL_domEntries')
-        if (linear) {
-            for (let k of orderedKeys) {
-                const dom = this.Entries.get(k).domNode
-                if (dom.parentNode) {
-                    dom.parentNode.removeChild(dom)
-                }
-                container.appendChild(dom, container.firstElementChild)
-            }
-        } else {
-            let last = null
-            for (let k of orderedKeys) {
-                const dom = this.Entries.get(k).domNode
-                if (dom.parentNode !== null) {
-                    container.removeChild(dom)
-                }
-                if (last === null) {
-                    container.insertBefore(dom, container.firstElementChild)
-                } else {
-                    container.insertBefore(dom, last.nextElementSibling)
-                }
-                last = dom
-            }
-        }
-    },
-
     refresh: function () {
         if (!this.timelineMoving) {
             const begin = new Date()
@@ -1368,34 +1159,8 @@ KTimeline.prototype = {
         this.Viewport.runRunOnMove()
     },
 
-    currentTopEntry: function () {
-        var current
-        var page = getPageRect()
-        for (const [_, entry] of this.Entries) {
-            var rect = entry.view.rectangle
-            if (!current && rect[1] >= page[1]) {
-                current = entry
-                continue
-            }
-
-            if (rect[1] >= page[1] && rect[1] < current.view.rectangle[1]) {
-                current = entry
-            }
-        }
-        return current
-    },
-
     print: function (url) {
         window.open(url)
-    },
-
-    getEntry: function (entry) {
-        for (const [_, entry] of this.Entries) {
-            if (entry.get('target') === entry) {
-                return entry
-            }
-        }
-        return null
     },
 
     setOpen: function (ident) {
@@ -1459,14 +1224,6 @@ KTimeline.prototype = {
             node.setAttribute('data-artnum-maximize', 'no')
         } else {
             node.setAttribute('data-artnum-maximize', 'yes')
-        }
-    },
-
-    autoprint: function (path) {
-        if (window.localStorage.getItem(`${KAIROS.getBase()}/autoprint`)) {
-            const url = new URL(`${KAIROS.getBase()}/exec/auto-print.php`)
-            url.searchParams.append('file', path)
-            return fetch(url)
         }
     }
 }

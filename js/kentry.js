@@ -36,6 +36,14 @@ KEntry.load = function (id) {
     return entry._loaded
 }
 
+KEntry.prototype.getHeight = function () {
+    return this.KUI.getHeight()
+}
+
+KEntry.prototype.setHeight = function (height) {
+    return this.KUI.setHeight(height)
+}
+
 KEntry.prototype.resize = function () {
     return this.KUI.resize()
 }
@@ -268,7 +276,8 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             }
             start++
         }
-        Promise.allSettled(p).then(x => {
+        Promise.allSettled(p)
+        .then(_ => {
             viewport.render()
         })
 }

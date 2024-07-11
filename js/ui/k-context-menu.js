@@ -1,8 +1,22 @@
-function KContextMenu(title) {
-    this._init(title);
+function KContextMenu(title, pickup = false) {
+    if (pickup && KContextMenu._instance && (KContextMenu._instance.title && KContextMenu._instance.title.indexOf(title) === -1)) {
+        KContextMenu._instance.title.push(title)
+        KContextMenu._instance._requestAnimationPipeline.then(() => {
+            return new Promise(resolve => {
+                window.requestAnimationFrame(() => {
+                    KContextMenu._instance.addTitle(title)
+                    resolve()
+                })
+            })
+        })
+        return KContextMenu._instance
+    }
+    this.title = [title]
+    this._init(title)
     /* chain of promises to ensure that items are kept in order */
     this._requestAnimationPipeline = Promise.resolve()
     this._mousePosition = [0, 0]
+    KContextMenu._instance = this
 }
 
 KContextMenu.prototype = {
@@ -11,10 +25,8 @@ KContextMenu.prototype = {
         this._contextMenu = document.createElement('DIV');
         this._contextMenu.id = 'KContextMenu';
         this._contextMenu.style.setProperty('z-index', KAIROS.zMax());
-        const titleNode = document.createElement('DIV');
-        titleNode.classList.add('title');
-        titleNode.innerHTML = title;
-        this._contextMenu.appendChild(titleNode);
+        this.addTitle(title)
+
         KAIROS.keepAtTop(this._contextMenu);
         window.requestAnimationFrame(() => {
             document.body.appendChild(this._contextMenu);
@@ -24,7 +36,15 @@ KContextMenu.prototype = {
         
     },
 
+    addTitle: function (title) {
+        const titleNode = document.createElement('DIV');
+        titleNode.classList.add('title');
+        titleNode.innerHTML = title;
+        this._contextMenu.appendChild(titleNode);
+    },
+
     _deinit: function () {
+        KContextMenu._instance = undefined
         new KClosable().closeByIdx(document.getElementById('KContextMenu')?.dataset.kclosableIdx)
     },
 

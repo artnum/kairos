@@ -17,6 +17,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.rowid = -1
     this.order = 0
     this.stackSize = 1
+    this.container = null
     this.height = this.Viewport.get('entry-height') - 3
     if (options.copy) { 
         this.original = options.copy
@@ -299,6 +300,10 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     object.addEventListener('delete', this.deleteMe.bind(this))
 
     object.bindUINode(this)
+}
+
+KUIReservation.prototype.setContainer = function (container) {
+    this.container = container
 }
 
 KUIReservation.prototype.delete = function () {
@@ -1171,8 +1176,8 @@ KUIReservation.prototype.renderForm = function () {
 
 KUIReservation.prototype.setStackMaxSize = function (size) {
     if (this.stackSize < size) {
-        this.stackSize = size 
-        this.height = ((this.Viewport.get('entry-height') - 4) / this.stackSize).toPrecision(2)
+        this.stackSize = size
+        this.height = ((this.container.getHeight() - 4) / this.stackSize).toPrecision(2)
     }
 }
 
@@ -1211,20 +1216,22 @@ KUIReservation.prototype.render = function () {
     this.rendered = new Promise((resolve, reject) => {
         const kview = new KView()
         let zindex = 10
-        // this constants give a good looking spacing, it takes into account borders and all
         let rowTop = kview.getRowTop(this.rowid)
         if (this.copy) { rowTop = 0 }
         if (rowTop < 0) { this.unrender(); return resolve() }
         let top = (rowTop - 3) + (this.order * this.height)
         let height = this.height
+        /* add 2 pixels to account for border */
         if (this.stackSize > 1) {
-            // what was the reason of that ???
-            //top += this.stackSize 
-            height = this.height - this.stackSize 
+            height -= 2
         }
         if (height < 1) {
             zindex = 5 // reduce zindex, so that overflow goes behind if it happens
             height = 2
+        }
+        /* size without border is 74 ... should make it dynamic */
+        if (height > 74) {
+            height = 74
         }
         /* Set top at any render */
         this.domNode.style.top = `${top}px`
