@@ -534,7 +534,9 @@ KTimeline.prototype = {
             const originalObject = kGStore.get(kident.substr(6))
             originalObject.getUINode().destroyClonedNode()
             let object = event.ctrlKey ? originalObject.clone() : originalObject
-            if (event.ctrlKey) { console.log(object) }
+            if (event.ctrlKey) {      
+                object.comment = ''
+            }
             if (object.getType() !== 'kreservation') { return }
             const kstore = new KStore(object.getType())
             const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
@@ -563,6 +565,9 @@ KTimeline.prototype = {
                     const y = parseFloat(r.clonedNode.style.top.substring(0, r.clonedNode.style.top.length - 2))
                     r.destroyClonedNode()
                     const object = event.ctrlKey ? r.object.clone() : r.object
+                    if (event.ctrlKey) {                        
+                        object.comment = ''
+                    }
                     const begin = new Date(object.get('begin'))
                     const end = new Date(object.get('end'))
                     const diff = Math.abs(end.getTime() - begin.getTime())
