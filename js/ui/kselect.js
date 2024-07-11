@@ -240,6 +240,7 @@ function KSelectUI(input, store, options = {}) {
             let posCount = 0
             store.query({[options.attribute]: `${value}*`})
             .then((data) => {
+                data.sort((a, b) => a.order - b.order)
                 if (this.latestRequest !== currentRequest) { return }
                 const frag = document.createDocumentFragment()
                 for (const entry of data) {
