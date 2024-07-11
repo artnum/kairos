@@ -362,4 +362,5 @@ KLateral.prototype.showTab = function (idx) {
     this.tabCurrent = idx
     this.evtTarget.dispatchEvent(new CustomEvent(`show-tab-${idx}`, {detail: {tab}}))
     tab.focus()
+    tabContent.querySelector('input')?.focus()
 }
