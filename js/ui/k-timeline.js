@@ -525,6 +525,8 @@ KTimeline.prototype = {
 
             let entryNode = event.target
             const YPosition = kview.getMouseYPosition()
+            const rowObject = kview.getRowFromPX(YPosition)
+            if (!rowObject) { return }
             while (entryNode && entryNode.classList && !entryNode.classList.contains('kentry')) { entryNode = entryNode.parentNode }
             if (!entryNode) { return; }
             const kident = event.dataTransfer.getData('text/plain')
@@ -550,8 +552,6 @@ KTimeline.prototype = {
             end.setTime(begin.getTime() + diff)
             object.set('begin', begin.toISOString())
             object.set('end', end.toISOString())
-            const rowObject = kview.getRowFromPX(YPosition)
-            if (!rowObject) { return }
             rowObject.get('id')
                 .then(id => {
                     object.set('target', id)
