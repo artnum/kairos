@@ -82,7 +82,6 @@ const FETCHER_CONCURRENCY_WAIT_DELAY = 5
 
 function consumeMsgStack () {
     while (msgStack.length > 0 && fetcherConcurrency < FETCHER_CONCURRENCY_REQUEST) {
-        console.log('fetcherConcurrency', fetcherConcurrency)
         const msg = msgStack.shift()
         onMessageFetch(msg)
     }
