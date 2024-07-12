@@ -4,7 +4,57 @@ const Kache = new Map()
 const Pending = new Map()
 let Nocache = false
 const authToken = location.search.substring(1) || ''
+let concurrency = 0
 
+
+function onMessageFetch (msg) {
+    if (!msg.options) {
+        msg.options = {}
+    }
+    if (msg.options.body) {
+        if (msg.options.body instanceof Object) {
+            msg.options.body = JSON.stringify(msg.options.body)
+            if (!msg.options.headers) {
+                msg.options.headers = new Headers()
+            }
+            msg.options.headers.set('Content-Type', 'application/json')
+        }
+    }
+    msg.options.keepalive = true
+    genCacheId(msg.url, msg.options.body ?? '')
+    .then(reqCacheId => {
+        const request = new Request(msg.url, msg.options)
+        return doFetch(reqCacheId, request)
+    })
+    .then(([content, contentType, requestId, status]) => {
+        self.postMessage({
+            op: 'fetch',
+            id: msg.id,
+            error: false, 
+            content: content,
+            status: status,
+            headers: {
+                'Content-Type': contentType,
+                'X-Request-Id': requestId
+            }
+        })
+    })
+    .catch(reason => {
+        let msg = reason
+        if (reason instanceof Error) {  msg = reason.message }
+        self.postMessage({
+            op: 'fetch',
+            id: msg.id,
+            error: true,
+            content: msg,
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
+    })
+}
+
+const msgStack = []
 self.onmessage = function (msgEvent) {
     const msg = msgEvent.data
     if (!msg) { return }
@@ -16,53 +66,22 @@ self.onmessage = function (msgEvent) {
             return markCacheDirty()
         case 'query':
         case 'fetch': {
-            if (!msg.options) {
-                msg.options = {}
-            }
-            if (msg.options.body) {
-                if (msg.options.body instanceof Object) {
-                    msg.options.body = JSON.stringify(msg.options.body)
-                    if (!msg.options.headers) {
-                        msg.options.headers = new Headers()
-                    }
-                    msg.options.headers.set('Content-Type', 'application/json')
-                }
-            }
-            msg.options.keepalive = true
-            genCacheId(msg.url, msg.options.body ?? '')
-            .then(reqCacheId => {
-                const request = new Request(msg.url, msg.options)
-                return doFetch(reqCacheId, request)
-            })
-            .then(([content, contentType, requestId, status]) => {
-                self.postMessage({
-                    op: 'fetch',
-                    id: msg.id,
-                    error: false, 
-                    content: content,
-                    status: status,
-                    headers: {
-                        'Content-Type': contentType,
-                        'X-Request-Id': requestId
-                    }
-                })
-            })
-            .catch(reason => {
-                let msg = reason
-                if (reason instanceof Error) {  msg = reason.message }
-                self.postMessage({
-                    op: 'fetch',
-                    id: msg.id,
-                    error: true,
-                    content: msg,
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    }
-                })
-            })
+            msgStack.push(msg)
         }
+        break
     }
 }
+
+function consumeMsgStack () {
+    while (concurrency < 100 && msgStack.length > 0) {
+        const msg = msgStack.shift()
+        onMessageFetch(msg)
+        concurrency++
+    }
+    concurrency = 0
+    setTimeout(consumeMsgStack, 100)
+}
+consumeMsgStack()
 
 function contentTypeParse (contentType) {
     if (!contentType) { return '' }
