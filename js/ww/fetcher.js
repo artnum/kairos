@@ -4,6 +4,7 @@ const Kache = new Map()
 const Pending = new Map()
 let Nocache = false
 const authToken = location.search.substring(1) || ''
+
 self.onmessage = function (msgEvent) {
     const msg = msgEvent.data
     if (!msg) { return }
@@ -31,32 +32,32 @@ self.onmessage = function (msgEvent) {
             genCacheId(msg.url, msg.options.body ?? '')
             .then(reqCacheId => {
                 const request = new Request(msg.url, msg.options)
-                doFetch(reqCacheId, request)
-                .then(([content, contentType, requestId, status]) => {
-                    self.postMessage({
-                        op: 'fetch',
-                        id: msg.id,
-                        error: false, 
-                        content: content,
-                        status: status,
-                        headers: {
-                            'Content-Type': contentType,
-                            'X-Request-Id': requestId
-                        }
-                    })
+                return doFetch(reqCacheId, request)
+            })
+            .then(([content, contentType, requestId, status]) => {
+                self.postMessage({
+                    op: 'fetch',
+                    id: msg.id,
+                    error: false, 
+                    content: content,
+                    status: status,
+                    headers: {
+                        'Content-Type': contentType,
+                        'X-Request-Id': requestId
+                    }
                 })
-                .catch(reason => {
-                    let msg = reason
-                    if (reason instanceof Error) {  msg = reason.message }
-                    self.postMessage({
-                        op: 'fetch',
-                        id: msg.id,
-                        error: true,
-                        content: msg,
-                        headers: {
-                            'Content-Type': 'text/plain'
-                        }
-                    })
+            })
+            .catch(reason => {
+                let msg = reason
+                if (reason instanceof Error) {  msg = reason.message }
+                self.postMessage({
+                    op: 'fetch',
+                    id: msg.id,
+                    error: true,
+                    content: msg,
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
                 })
             })
         }
@@ -99,19 +100,8 @@ function buf2hex (buffer) {
     return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
 }
 
-function genRequestId (cacheReqId, dateRequestBegin) {
-    return new Promise((resolve, reject) => {
-        const reqDetails = new TextEncoder().encode(`${cacheReqId}${dateRequestBegin.toISOString()}`)
-        const randBytes = new Uint8Array(10)
-        crypto.getRandomValues(randBytes)
-        const reqId = new Uint8Array(reqDetails.length + randBytes.length)
-        reqId.set(reqDetails, 0)
-        reqId.set(randBytes, reqDetails.length)
-        crypto.subtle.digest('SHA-1', reqId)
-        .then(hash => {
-            resolve(buf2hex(hash))
-        })
-    })
+function genRequestId (cacheReqId, dateRequestBegin) {    
+    return buf2hex(new TextEncoder().encode(`${cacheReqId}${dateRequestBegin.toISOString()}`))
 }
 
 function genCacheId (url, body) {
@@ -154,22 +144,18 @@ function doFetch (cacheReqId, request) {
             Pending.set(cacheReqId, [])
         }
 
-        genRequestId(cacheReqId, dateRequestBegin)
-        .then (requestId => {
-            request.headers.set('X-Request-Id', requestId)
-            request.headers.set('Authorization', `Bearer ${authToken}`)
-            return [fetch(request), requestId]
-        })
-        .then(([resPromise, requestId]) => {
-            return resPromise.then(response => {
-                const contentType = contentTypeParse(response.headers.get('Content-Type'))
-                switch(contentType) {
-                    default:
-                        return [response.text(), response, contentType, requestId]
-                    case 'application/json':
-                        return [response.json(), response, contentType, requestId]
-                }
-            })
+        const requestId = genRequestId(cacheReqId, dateRequestBegin)        
+        request.headers.set('X-Request-Id', requestId)
+        request.headers.set('Authorization', `Bearer ${authToken}`)
+        fetch(request)
+        .then(response => {
+            const contentType = contentTypeParse(response.headers.get('Content-Type'))
+            switch(contentType) {
+                default:
+                    return [response.text(), response, contentType, requestId]
+                case 'application/json':
+                    return [response.json(), response, contentType, requestId]
+            }
         })
         .then(([content, response, contentType, requestId]) => {
             content.then(content => {
@@ -234,4 +220,4 @@ function cacheCleaner() {
 }
 
 /* start cleaner, it calls itself */
-cacheCleaner()
+setTimeout(cacheCleaner, 10000)
