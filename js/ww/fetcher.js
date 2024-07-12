@@ -4,8 +4,9 @@ const Kache = new Map()
 const Pending = new Map()
 let Nocache = false
 const authToken = location.search.substring(1) || ''
-
+let fetcherConcurrency = 0
 function onMessageFetch (msg) {
+    fetcherConcurrency++
     if (!msg.options) {
         msg.options = {}
     }
@@ -36,6 +37,7 @@ function onMessageFetch (msg) {
                 'X-Request-Id': requestId
             }
         })
+        fetcherConcurrency--
     })
     .catch(reason => {
         let msg = reason
@@ -71,19 +73,11 @@ self.onmessage = function (msgEvent) {
 }
 
 function consumeMsgStack () {
-    const start = performance.now()
-    let concurrency = 0
-    while (msgStack.length > 0) {
+
+    while (msgStack.length > 0 && fetcherConcurrency < 50) {
+        console.log('fetcherConcurrency', fetcherConcurrency)
         const msg = msgStack.shift()
         onMessageFetch(msg)
-        concurrency++
-        const now = performance.now()
-        if (now - start > 10) {
-            if (concurrency / (now - start) > 1) {
-                console.log('fetcher: too many requests, slowing down')
-                break
-            }
-        }
     }
     setTimeout(consumeMsgStack, 100)
 }
