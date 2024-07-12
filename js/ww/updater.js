@@ -57,12 +57,12 @@ const EVTOperation = Object.freeze({
       })
     },
     evenement (msg) {
-      checkMachineState()
+      
     }
   },
   delete: {
     evenement (msg) {
-      checkMachineState()
+      
     }
   }
 })
@@ -92,7 +92,6 @@ self.onmessage = function (msg) {
     case 'ready':
       Run = true
       runUpdater()
-      checkMachineState()
       break
     case 'newTarget':
       if (msg.ports.length > 0 && msg.data.target) {
@@ -308,91 +307,8 @@ function cacheAndSend (data, force = false) {
 }
 
 const Status = new Map()
-function checkMachineState () {
-  return // not in use yet
-  if (!Run) { return }
-  const url = new URL(`${KAIROS.getBase()}/store/Evenement/.machinestate`)
-  fetch(url)
-  .then(response => {
-    if (!response.ok) { return {length: 0, data: null} }
-    return response.json()
-  })
-  .then(result => {
-    let prmses = []
-    for (i = 0; i < result.length; i++) {
-      prmses.push(new Promise((resolve, reject) => {
-        const entry = result.data[i]
-        let channel = entry.resolvedTarget
 
-        if (Symlinks.has(channel)) {
-          channel = Symlinks.get(channel)
-        }
 
-        if (entry.type === '') { resolve([]); return }
-        if (Status.has(entry.type)) {
-          entry.type = Status.get(entry.type)
-          resolve([channel, entry])
-        } else {
-          fetch(new URL(`${KAIROS.getBase()}/store/${entry.type}`))
-          .then(response => {
-            if (!response.ok) { return {length: 0, data: null} }
-            return response.json()
-          })
-          .then(status => {
-            if (status.length === 1) {
-              const data = Array.isArray(status.data) ? status.data[0] : status.data
-              let severity = parseInt(data.severity)
-              if (severity < 1000) {
-                data.color = 'black'
-              } else if (severity < 2000) {
-                data.color = 'blue'
-              } else if (severity < 3000) {
-                data.color = 'darkorange'
-              } else {
-                data.color = 'red'
-              }
-              Status.set(entry.type, data)
-              entry.type = data
-              resolve([channel, entry])
-            }
-          })
-          .catch(reason => {
-            console.log(reason)
-          })
-        }
-      }))
-    }
-    Promise.all(prmses)
-    .then((toSend) => {
-      let merged = {}
-      for (let i = 0; i < toSend.length; i++) {
-        if (toSend[i].length !== 2) { continue }
-        if (merged[toSend[i][0]] === undefined) {
-          merged[toSend[i][0]] = toSend[i][1]
-        } else {
-          if (merged[toSend[i][0]].severity === undefined) {
-            merged[toSend[i][0]] = toSend[i][1]
-          } else {
-            if (parseInt(merged[toSend[i][0]].severity) < parseInt(toSend[i][1].severity)) {
-              merged[toSend[i][0]] = toSend[i][1]
-            }
-          }
-        }
-      }
-      for (const k in merged) {
-        if (Channels.has(k)) {
-          Channels.get(k).postMessage({op: 'state', value: merged[k]})
-        } else {
-          LoadStatus.set(k, merged[k])
-        }
-      }
-    })
-  })
-  .catch(reason => {
-    console.log(reason)
-  })
-  
-}
 
 function runUpdater () {
   if (!Run) { return }
