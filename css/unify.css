@@ -1,6 +1,3 @@
-@import url('https//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/resources/dojo.css');
-@import url('https://ajax.googleapis.com/ajax/libs/dojo/1.13.0/dijit/themes/claro/claro.css');
-@import url('https://artnum.ch/code/js/dojo/templates/themes/default/default.css');
 @import '../widgets/themes/default.css';
 @import 'balloon.css/balloon.min.css';
 @import 'dtable.css';
