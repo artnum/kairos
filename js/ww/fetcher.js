@@ -72,14 +72,21 @@ self.onmessage = function (msgEvent) {
     }
 }
 
-function consumeMsgStack () {
+/* fetcher concurrency control to avoid ERR_INSUFFICIENT_RESOURCES from Chrome,
+   Firefox has not problem with stuffing a lot of fetches at once.
+   Values are empirical, they may need to be adjusted, but they give acceptable
+   performance penalty while avoiding the error.
+*/
+const FETCHER_CONCURRENCY_REQUEST = 100
+const FETCHER_CONCURRENCY_WAIT_DELAY = 10
 
-    while (msgStack.length > 0 && fetcherConcurrency < 50) {
+function consumeMsgStack () {
+    while (msgStack.length > 0 && fetcherConcurrency < FETCHER_CONCURRENCY_REQUEST) {
         console.log('fetcherConcurrency', fetcherConcurrency)
         const msg = msgStack.shift()
         onMessageFetch(msg)
     }
-    setTimeout(consumeMsgStack, 100)
+    setTimeout(consumeMsgStack, FETCHER_CONCURRENCY_WAIT_DELAY)
 }
 consumeMsgStack()
 
