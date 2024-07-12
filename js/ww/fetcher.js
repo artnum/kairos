@@ -4,8 +4,6 @@ const Kache = new Map()
 const Pending = new Map()
 let Nocache = false
 const authToken = location.search.substring(1) || ''
-let concurrency = 0
-
 
 function onMessageFetch (msg) {
     if (!msg.options) {
@@ -73,12 +71,20 @@ self.onmessage = function (msgEvent) {
 }
 
 function consumeMsgStack () {
-    while (concurrency < 100 && msgStack.length > 0) {
+    const start = performance.now()
+    let concurrency = 0
+    while (msgStack.length > 0) {
         const msg = msgStack.shift()
         onMessageFetch(msg)
         concurrency++
+        const now = performance.now()
+        if (now - start > 10) {
+            if (concurrency / (now - start) > 1) {
+                console.log('fetcher: too many requests, slowing down')
+                break
+            }
+        }
     }
-    concurrency = 0
     setTimeout(consumeMsgStack, 100)
 }
 consumeMsgStack()
