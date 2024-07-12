@@ -78,7 +78,7 @@ self.onmessage = function (msgEvent) {
    performance penalty while avoiding the error.
 */
 const FETCHER_CONCURRENCY_REQUEST = 100
-const FETCHER_CONCURRENCY_WAIT_DELAY = 10
+const FETCHER_CONCURRENCY_WAIT_DELAY = 5
 
 function consumeMsgStack () {
     while (msgStack.length > 0 && fetcherConcurrency < FETCHER_CONCURRENCY_REQUEST) {
