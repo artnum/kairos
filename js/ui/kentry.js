@@ -117,7 +117,7 @@ KUIEntry.prototype.showContent = function () {
 }
 
 KUIEntry.prototype.render = function (parentNode = null) {
-    if (parentNode !== null) { this.parentNode = parentNode}
+    if (parentNode !== null) { this.parentNode = parentNode }
     return new Promise ((resolve, reject) => {
         this.html
         .then(khtml => {

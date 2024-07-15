@@ -27,11 +27,15 @@ KCornerBox.prototype.render = function () {
         KAIROS.fetch2(KAIROS.URL(`${KAIROS.kaalURL}/GroupUser/_query`), {method: 'POST', body: {group: value}})
         .then(users => {
             users = users.map(u => String(u.user))
-            kv.rowDescription.forEach((row, idx) => {
-                if (users.indexOf(row.getId()) === -1) { kv.hideRow(idx) }
-                else { kv.showRow(idx) }
+            kv.rowDescription.forEach(row => {
+                if (users.indexOf(String(row.getObject().id)) === -1) {
+                    return kv.hideRow(String(row.getObject().id))
+                }
+                return kv.showRow(String(row.getObject().id))
             })
-            return Promise.allSettled(kv.rowDescription.map(row => row.getObject().KUI.applyState()))
+            return Promise.allSettled(kv.rowDescription.map(row => {
+                return row.getObject().KUI.applyState()
+            }))
         })
         .then(_ => {
             setTimeout(() => kv._directRender(), 10)

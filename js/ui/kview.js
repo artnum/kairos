@@ -238,13 +238,21 @@ KView.prototype.compute = function () {
 }
 
 KView.prototype.showRow = function (idx) {
-    this.rowDescription[idx].show()
-    this.rowDescription[idx].getObject().KUI.setHidden(false)
+    for (const object of this.rowDescription) {
+        if (!object) { continue }
+        if (String(object.getObject().id) !== String(idx)) { continue }
+        object.show()
+        object.getObject().KUI.setHidden(false)
+    }
 }
 
 KView.prototype.hideRow = function (idx) {
-    this.rowDescription[idx].hide()
-    this.rowDescription[idx].getObject().KUI.setHidden(true)
+    for (const object of this.rowDescription) {
+        if (!object) { continue }
+        if (String(object.getObject().id) !== String(idx)) { continue }
+        object.hide()
+        object.getObject().KUI.setHidden(true)
+    }
 }
 
 /* Convert grid x to pixel x */
@@ -303,7 +311,6 @@ KView.prototype.getRowIndex = function (y) {
  * @returns {number} Relative position
  */
 KView.prototype.getRelativeRowY = function (rowid) {
-    console.log('getRelativeRowY', rowid)
     let r = 0
     let i
     for (i = 0; i < this.rowDescription.length; i++) {
