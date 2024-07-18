@@ -861,7 +861,7 @@ KTimeline.prototype = {
         } else {
             this.Holidays.addYear(this.center.getFullYear())
         }
-        console.log(this.center)
+
         if (!this.firstDay) {
             this.firstDay = new Date()
             this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
