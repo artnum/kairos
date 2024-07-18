@@ -39,7 +39,7 @@ function KTimeline(args) {
     this.lastClientXY = []
     this.lastMod = ''
     this.xDiff = 0
-    this.daysZoom = 30
+    this.daysZoom = 14
     this.compact = false
     this.currentVerticalLine = 0
     this.displayOrder = []
@@ -56,7 +56,7 @@ function KTimeline(args) {
     this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
 
     if (KAIROS.centerTodayRatio) {
-        this.center.setTime(this.center.getTime() - this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000)
+        this.center.setTime(this.center.getTime() + (this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000))
     }
     this.Viewport = new KView()
 
@@ -138,26 +138,24 @@ function KTimeline(args) {
         if (!e || !e.data || !e.data.op) { return }
         switch (e.data.op) {
             case 'complements':
-                let node = document.getElementById(`sub-${e.data.date}`)
-                if (node) {
-                    let html = ''
-                    for (let c in e.data.value) {
-                        let val = e.data.value[c]
-                        if (val.count > 0) {
-                            let spanClass = 'info'
-                            if (val.type === '4' && e.data.options && e.data.options.machinist) {
-                                if (Math.round(e.data.options.machinist.length / 2) <= val.count) {
-                                    spanClass = 'error'
-                                }
+                const node = document.getElementById(`sub-${e.data.date}`)
+                if (!node) { return }
+                let html = ''
+                for (let c in e.data.value) {
+                    let val = e.data.value[c]
+                    if (val.count > 0) {
+                        let spanClass = 'info'
+                        if (val.type === '4' && e.data.options && e.data.options.machinist) {
+                            if (Math.round(e.data.options.machinist.length / 2) <= val.count) {
+                                spanClass = 'error'
                             }
-                            html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
                         }
+                        html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
                     }
-                    window.requestAnimationFrame(() => { node.innerHTML = html })
                 }
+                window.requestAnimationFrame(() => { node.innerHTML = html })
                 break
-            case 'log':
-                break
+            case 'log': break
         }
     }.bind(this)
 
@@ -863,7 +861,7 @@ KTimeline.prototype = {
         } else {
             this.Holidays.addYear(this.center.getFullYear())
         }
-
+        console.log(this.center)
         if (!this.firstDay) {
             this.firstDay = new Date()
             this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
@@ -1070,76 +1068,81 @@ KTimeline.prototype = {
                     }
                 })
             })
-                .then(response => {
-                    if (!response.ok) { return null }
-                    return response.json()
-                })
-                .then(result => {
-                    if (!result || !result.success) { reject(new Error('ERR:server')); return }
-                    const entries = Array.isArray(result.data) ? result.data : [result.data]
-                    return Promise.allSettled(
-                        entries
-                            .filter(e => Number(e.order) >= 0 && Number(e.disabled) === 0)
-                            .map(entry => {
-                                return new Promise((resolve, reject) => {
-                                    KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
-                                        .then(kentry => {
-                                            kentry.sortValue = parseInt(entry.order)
-                                            return resolve(kentry)
-                                        })
-                                        .catch(cause => {
-                                            reject(new Error('Failed to load entry', { cause }))
-                                        })
-                                })
+            .then(response => {
+                if (!response.ok) { throw new Error('ERR:server') }
+                return response.json()
+            })
+            .then(result => {
+                if (!result || !result.success) { throw new Error('ERR:server') }
+                return Array.isArray(result.data) ? result.data : [result.data]
+            })
+            .then(entries => {
+                return Promise.allSettled(
+                    entries
+                        .filter(e => Number(e.order) >= 0 && Number(e.disabled) === 0)
+                        .map(entry => {
+                            return new Promise((resolve, reject) => {
+                                KEntry.load(entry[KAIROS.stores.kentry.uid.remote])
+                                    .then(kentry => {
+                                        kentry.sortValue = parseInt(entry.order)
+                                        return resolve(kentry)
+                                    })
+                                    .catch(cause => {
+                                        throw new Error('Failed to load entry', { cause })
+                                    })
                             })
-                    )
-                })
-                .then(loadedEntries => {
-                    loadedEntries = loadedEntries
-                        .filter(e => e.status === 'fulfilled')
-                        .map(e => e.value)
-                        .sort((a, b) => a.sortValue - b.sortValue)
-                    loadedEntries.forEach(e => e.register(this.Updater))
-                    this.Viewport.setEntryCount(loadedEntries.length)
-                    let i = 0
-                    return Promise.allSettled(loadedEntries.map(e => {
-                        return new Promise((resolve, reject) => {
-                            const row = i++
-                            e.set('origin', this.firstDay)
-                                .then(_ => {
-                                    this.Viewport.bindObjectToRow(row, e)
-                                    e._ROW = row
-                                    e.set('row', row)
-                                    resolve(e)
-                                })
-                                .catch(cause => {
-                                    reject(new Error('Failed to load entry', { cause }))
-                                })
                         })
-                    }))
-                })
-                .then(kentries => {
-                    kentries = kentries
-                        .filter(e => e.status === 'fulfilled')
-                        .map(e => e.value)
-
-                    return kentries.map(e => e.render(this.domNode.querySelector('#TL_domEntries')))
-                })
-                .then(_ => {
-                    resolve()
-                })
+                )
+            })
+            .then(loadedEntries => {
+                loadedEntries = loadedEntries
+                    .filter(e => e.status === 'fulfilled')
+                    .map(e => e.value)
+                    .sort((a, b) => a.sortValue - b.sortValue)
+                loadedEntries.forEach(e => e.register(this.Updater))
+                this.Viewport.setEntryCount(loadedEntries.length)
+                let i = 0
+                return Promise.allSettled(loadedEntries.map(e => {
+                    return new Promise((resolve, reject) => {
+                        const row = i++
+                        e.set('origin', this.firstDay)
+                            .then(_ => {
+                                this.Viewport.bindObjectToRow(row, e)
+                                e._ROW = row
+                                e.set('row', row)
+                                resolve(e)
+                            })
+                            .catch(cause => {
+                                reject(new Error('Failed to load entry', { cause }))
+                            })
+                    })
+                }))
+            })
+            .then(kentries => {
+                kentries = kentries
+                    .filter(e => e.status === 'fulfilled')
+                    .map(e => e.value)
+                const domNode = this.domNode.querySelector('#TL_domEntries')
+                kentries.map(e => e.render(domNode))
+                return resolve()
+            })
+            .catch(reason => {
+                reject(reason)
+            })
         })
     },
 
     run: function () {
         this.currentPosition = 0
         this.update()
+      
         this.loadEntries({ state: 'SOLD' })
-            .then(() => {
-                this.update()
-                this.Updater.postMessage({ op: 'ready' })
-                this.drawTimeline()
-            })
+        .then(() => {
+            this.update()
+            this.Updater.postMessage({ op: 'ready' })
+            this.drawTimeline()
+        })
+      
     },
 
     refresh: function () {
