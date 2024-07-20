@@ -9,27 +9,28 @@ function KUIEntry (dataObject, opts = {}) {
     this.dataObject = dataObject
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
-    this.kview = new KView()
+    const kview = new KView()
     this.html
         .then(domNode => {
             domNode.addEventListener('contextmenu', e => {
                 e.preventDefault()
                 const km = new KContextMenu('Ligne', true)
-                if (this.getHeight() > this.kview.get('entry-height')) {
+                if (this.getHeight() > kview.get('entry-height')) {
                     km.add('Réduire', _ => {  
-                        this.setHeight(this.kview.get('entry-height') - 2)
+                        this.setHeight(kview.get('entry-height') - 2)
                         setTimeout(() => window.dispatchEvent(new Event('resize')), 10)
                     })
                         
                 } else {
                     km.add('Agrandir', _ => {
-                        const rowid = this.kview.getObjectRow(this.dataObject)
-                        const cells = this.kview.getRowCells(rowid)
+                        const rowid = kview.getObjectRow(this.dataObject)
+                        const cells = kview.getRowCells(rowid)
                         const max = cells.reduce((acc, cell) => {
                             if (cell.size > acc) { return cell.size }
                             return acc
                         }, 0)
-                        this.setHeight((this.kview.get('entry-height') / 2) * max)
+                        if (max === 1) { KAIROS.info(I18N.$('Aucune_cellule_plus_1_reservation')); return }
+                        this.setHeight((kview.get('entry-height') / 2) * max)
                         setTimeout(() => window.dispatchEvent(new Event('resize')), 10)
                     })
                 }

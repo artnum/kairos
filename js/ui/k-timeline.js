@@ -11,73 +11,51 @@ function KTimeline(args) {
         <div id="TL_domEntries" class="reservationContainer"></div>
         <div id="VerticalLineFrame"></div>`
     document.body.appendChild(this.domNode)
+
     this.center = null
     this.set('offset', 260)
     this.setBlockSize(42)
     this.zoomCss = null
-    this.timeout = null
-    this.lastDay = null
-    this.firstDay = null
-    this.verticals = null
-    this.lastClientXY = [0, 0]
-    this.lastMod = 0
-    this.eventStarted = null
-    this.daysZoom = 0
-    this.compact = false
-    this.currentVerticalLine = 0
 
     this.verticals = []
     this.days = []
     this.weekNumber = []
-    this.Entries = new Map()
     this.todayOffset = -1
     this.months = []
-    this.timeout = null
-    this.odd = true
     this.borderTimeInterval = null
 
-    this.lastClientXY = []
-    this.lastMod = ''
-    this.xDiff = 0
     this.daysZoom = 14
-    this.compact = false
-    this.currentVerticalLine = 0
-    this.displayOrder = []
-    this.runningRequest = []
-    this.extension = false
-    this.LocalReservations = {}
     this.timelineMoving = false
-    this.FirstLoad = true
     this.Holidays = null
     this.Tooltips = {}
     this.followMouse.stop = true
 
     this.center = new Date()
     this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
-
     if (KAIROS.centerTodayRatio) {
         this.center.setTime(this.center.getTime() + (this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000))
     }
-    this.Viewport = new KView()
 
-    this.Viewport.setEntryHeight(78)
-    this.Viewport.setEntryInnerHeight(74)
+    const kview = new KView()
+
+    kview.setEntryHeight(78)
+    kview.setEntryInnerHeight(74)
 
     const kglobal = new KGlobal()
     kglobal.watch('k-project-highlight', 'highlight-project', function (name, oldValue, newValue) {
         if (oldValue) {
-            window.requestAnimationFrame(() => {
-                document.querySelectorAll(`div[data-kproject="${oldValue}"]`)
-                    .forEach(node => {
+            document.querySelectorAll(`div[data-kproject="${oldValue}"]`)
+                .forEach(node => {
+                    window.requestAnimationFrame(() => {
                         node.style.removeProperty('--selected-color')
                         node.classList.remove('selected')
                     })
-            })
+                })
         }
         if (newValue) {
-            window.requestAnimationFrame(() => {
-                document.querySelectorAll(`div[data-kproject="${newValue}"]`)
-                    .forEach(node => {
+            document.querySelectorAll(`div[data-kproject="${newValue}"]`)
+                .forEach(node => {
+                    window.requestAnimationFrame(() => {
                         node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
                         node.classList.add('selected')
                     })
@@ -85,20 +63,19 @@ function KTimeline(args) {
         }
     })
 
-        ; (new KView()).addRunOnMove(function () {
-            const prj = (new KGlobal()).get('k-project-highlight')
-            if (prj) {
+    ; (new KView()).addRunOnMove(_ => {
+        const prj = (new KGlobal()).get('k-project-highlight')
+        if (!prj) { return }
+        document.querySelectorAll(`div[data-kproject="${prj}"]`)
+            .forEach(node => {
                 window.requestAnimationFrame(() => {
-                    document.querySelectorAll(`div[data-kproject="${prj}"]`)
-                        .forEach(node => {
-                            node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
-                            node.classList.add('selected')
-                        })
+                    node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
+                    node.classList.add('selected')
                 })
-            }
-        })
+            })
+    })
 
-    this.Viewport.addEventListener('EnterColumn', event => {
+    kview.addEventListener('EnterColumn', event => {
         const frame = document.getElementById('VerticalLineFrame')
         let i = 0;
         for (const node of frame.children) {
@@ -111,7 +88,7 @@ function KTimeline(args) {
             i++
         }
     })
-    this.Viewport.addEventListener('EnterRow', event => {
+    kview.addEventListener('EnterRow', event => {
         const kview = new KView()
         const inRow = kview.getRowObject(event.detail.currentRow)
 
@@ -126,7 +103,7 @@ function KTimeline(args) {
         }
     })
 
-    this.Viewport.addEventListener('requestDayMove', event => {
+    kview.addEventListener('requestDayMove', event => {
         if (event.detail.days) {
             this.move(event.detail.days)
         }
@@ -134,7 +111,7 @@ function KTimeline(args) {
 
     this.zoomCss = document.createElement('style')
     this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js?${localStorage.getItem('klogin-token')}`)
-    this.Updater.onmessage = function (e) {
+    this.Updater.onmessage = e => {
         if (!e || !e.data || !e.data.op) { return }
         switch (e.data.op) {
             case 'complements':
@@ -157,7 +134,7 @@ function KTimeline(args) {
                 break
             case 'log': break
         }
-    }.bind(this)
+    }
 
     document.body.appendChild(this.zoomCss)
 
@@ -173,66 +150,6 @@ function KTimeline(args) {
 }
 
 KTimeline.prototype = {
-    createWindow: function () {
-        this.Window = document.createElement('div')
-        this.Window.setAttribute('class', 'topWin')
-        this.Window.setAttribute('style', 'display: none')
-
-        this.Window.appendChild(document.createElement('div'))
-
-        this.Window.firstChild.appendChild(document.createElement('span'))
-
-        var li = document.createElement('li')
-        li.setAttribute('class', 'fas fa-external-link-alt ')
-        this.Window.firstChild.appendChild(li)
-        li.addEventListener('click', function (event) {
-            window.open(this.Window.currentUrl, '_blank')
-        }.bind(this))
-
-        li = document.createElement('li')
-        li.setAttribute('class', 'fas fa-window-close')
-        this.Window.firstChild.appendChild(li)
-        li.addEventListener('click', function (event) {
-            this.closeWindow()
-        }.bind(this))
-
-        var iframe = document.createElement('iframe')
-        iframe.addEventListener('load', function (event) {
-            var doc = event.target.contentDocument
-            this.Window.firstChild.firstChild.innerHTML = doc.title
-        }.bind(this))
-        this.Window.appendChild(iframe)
-
-        this.Window.firstChild.setAttribute('class', 'windowToolbar')
-
-        document.body.appendChild(this.Window)
-    },
-
-    openWindow: function (url, real = false) {
-        if (!real) {
-            if (!this.Window) {
-                this.createWindow()
-            }
-
-            url += (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now()
-            this.Window.lastChild.setAttribute('src', url)
-            this.Window.currentUrl = url
-
-            this.Window.setAttribute('style', '')
-        } else {
-            window.open(url + (url.indexOf('?') > -1 ? '&' : '?') + '_timestamp=' + Date.now(), url.split('.')[0])
-        }
-    },
-
-    closeWindow: function () {
-        if (!this.Window) {
-            return
-        }
-        this.Window.lastChild.setAttribute('src', '')
-        this.Window.currentUrl = ''
-        this.Window.setAttribute('style', 'display: none')
-    },
-
     info: function (txt, code) {
         KAIROS.info(txt, code)
     },
@@ -252,60 +169,52 @@ KTimeline.prototype = {
     },
 
     setZoom: function (zoomValue) {
-        var style = ''
-        var days = 1
-        var classname = ''
+        const kview = new KView()
 
         this.domNode.classList.remove('day', 'month', 'week', 'quarter', 'semester')
         switch (zoomValue) {
             case 'day':
-                days = 2
-                classname = 'day'
+                this.daysZoom = 2
+                this.domNode.classList.add('day')
                 break
             case 'month':
-                days = 31
-                classname = 'month'
+                this.daysZoom = 31
+                this.domNode.classList.add('month')
                 break
             case 'week':
-                days = 14
-                classname = 'week'
+                this.daysZoom = 14
+                this.domNode.classList.add('week')
                 break
             case 'quarter':
-                days = 91
-                classname = 'quarter'
+                this.daysZoom = 91
+                this.domNode.classList.add('quarter')
                 break
             case 'semester':
-                days = 181
-                classname = 'semester'
+                this.daysZoom = 181
+                this.domNode.classList.add('semester')
                 break
             default:
-                days = zoomValue
+                this.daysZoom = zoomValue
                 break
         }
 
-        if (days > 547) {
-            days = 547
-            KAIROS.warn('Zoom minimum atteint')
+        if (this.daysZoom > 547) {
+            this.daysZoom = 547
+            KAIROS.warn(I18N.$('Zoom_maximum_atteint'))
         }
-        if (days < 2) {
-            days = 2
-            KAIROS.warn('Zoom maximum atteint')
+        if (this.daysZoom < 2) {
+            this.daysZoom = 2
+            KAIROS.warn(I18N.$('Zoom_minimum_atteint'))
         }
 
-        this.daysZoom = days
-        this.set('zoom', days)
-        if (classname !== '') {
-            this.domNode.classList.add(classname)
-        }
-        this.setBlockSize(Math.floor((document.documentElement.clientWidth - this.get('offset') - getScrollBarWidth()) / days))
+        this.set('zoom', this.daysZoom)
+        this.setBlockSize(Math.floor((document.documentElement.clientWidth - this.get('offset') - getScrollBarWidth()) / this.daysZoom))
         this.zoomCss.innerHTML = ` :root { --offset-width: ${this.get('offset')}px; }
                                    .timeline .line span { width: ${this.get('blockSize') - 2}px !important; }
                                   .timeline .header .tools { width: ${this.get('offset')}px !important; }
-                                  .timeline .line { margin-left: ${this.get('offset')}px !important; }
-                                  ${style}`
+                                  .timeline .line { margin-left: ${this.get('offset')}px !important; }`
         this.resize()
-        this.Viewport.setOrigin(this.firstDay)
-        this.Viewport.setDayCount(days)
+        kview.setDayCount(this.daysZoom)
         this.update()
     },
 
@@ -346,35 +255,35 @@ KTimeline.prototype = {
 
     _trCantonName: function (c) {
         switch (c) {
-            case 'vs': return 'Valais'
-            case 'vd': return 'Vaud'
-            case 'ge': return 'Genève'
-            case 'ju': return 'Jura'
-            case 'ne': return 'Neuchâtel'
-            case 'fr': return 'Fribourg catholique'
-            case 'fr-prot': return 'Fribourg réformé'
-            case 'be': return 'Berne'
-            case 'fra': return 'France'
-            default: return 'Suisse'
+            case 'vs': return I18N.$('Valais')
+            case 'vd': return I18N.$('Vaud')
+            case 'ge': return I18N.$('Geneve')
+            case 'ju': return I18N.$('Jura')
+            case 'ne': return I18N.$('Neuchatel')
+            case 'fr': return I18N.$('Fribourg_cat')
+            case 'fr-prot': return I18N.$('Fribourg_pro')
+            case 'be': return I18N.$('Berne')
+            case 'fra': return I18N.$('France')
+            default: return I18N.$('Suisse')
         }
     },
 
     makeDay: function (newDay) {
-        var txtDate = ''
+        let txtDate = ''
         newDay.setHours(12, 0, 0)
-        var dayStamp = newDay.toISOString().split('T')[0]
+        const dayStamp = newDay.toISOString().split('T')[0]
 
         switch (newDay.getDay()) {
-            case 0: txtDate = '<span class="dayname">Dim</span>' + newDay.getDate(); break
-            case 1: txtDate = '<span class="dayname">Lun</span>' + newDay.getDate(); break
-            case 2: txtDate = '<span class="dayname">Mar</span>' + newDay.getDate(); break
-            case 3: txtDate = '<span class="dayname">Mer</span>' + newDay.getDate(); break
-            case 4: txtDate = '<span class="dayname">Jeu</span>' + newDay.getDate(); break
-            case 5: txtDate = '<span class="dayname">Ven</span>' + newDay.getDate(); break
-            case 6: txtDate = '<span class="dayname">Sam</span>' + newDay.getDate(); break
+            case 0: txtDate = `<span class="dayname">${I18N.$('Dim')}</span>${newDay.getDate()}`; break
+            case 1: txtDate = `<span class="dayname">${I18N.$('Lun')}</span>${newDay.getDate()}`;  break
+            case 2: txtDate = `<span class="dayname">${I18N.$('Mar')}</span>${newDay.getDate()}`; break
+            case 3: txtDate = `<span class="dayname">${I18N.$('Mer')}</span>${newDay.getDate()}`; break
+            case 4: txtDate = `<span class="dayname">${I18N.$('Jeu')}</span>${newDay.getDate()}`; break
+            case 5: txtDate = `<span class="dayname">${I18N.$('Ven')}</span>${newDay.getDate()}`; break
+            case 6: txtDate = `<span class="dayname">${I18N.$('Sam')}</span>${newDay.getDate()}`;break
         }
 
-        var domDay = document.createElement('SPAN')
+        const domDay = document.createElement('SPAN')
         domDay.setAttribute('data-artnum-day', dayStamp)
         domDay.classList.add('day')
 
@@ -407,49 +316,28 @@ KTimeline.prototype = {
         return { stamp: dayStamp, domNode: domDay, visible: true, _date: newDay }
     },
 
-    toolTip: function (node, element, triggerElement) {
-        this.toolTip_hide()
-        document.body.appendChild(node)
-        window.TooltipPopper = [Popper.createPopper(element, node, { placement: 'top-start' }), node, triggerElement]
-        triggerElement.addEventListener('mouseout', this.toolTip_hide, { capture: true })
-        triggerElement.addEventListener('mouseleave', this.toolTip_hide, { capture: true })
-    },
-    toolTip_hide: function () {
-        if (window.TooltipPopper) {
-            window.TooltipPopper[0].destroy()
-            if (window.TooltipPopper[1] && window.TooltipPopper[1].parentNode) {
-                window.TooltipPopper[1].parentNode.removeChild(window.TooltipPopper[1])
-            }
-            window.TooltipPopper = null
-        }
-    },
-
-    resizeTimeline: function () {
+    resize: function () {
         this.drawTimeline()
         this.drawVerticalLine()
-    },
-
-    resize: function () {
-        this.resizeTimeline()
-        this.Viewport.resize()
+        new KView().resize()
     },
 
     createMonthName: function (month, year, days, frag) {
-        var n = document.createElement('DIV')
+        const n = document.createElement('DIV')
         n.setAttribute('style', 'width: ' + Math.floor((days * this.get('blockSize'))) + 'px')
         switch (month + 1) {
-            case 1: n.innerHTML = `Janvier&nbsp;${year}`; break
-            case 2: n.innerHTML = `Février&nbsp;${year}`; break
-            case 3: n.innerHTML = `Mars&nbsp;${year}`; break
-            case 4: n.innerHTML = `Avril&nbsp;${year}`; break
-            case 5: n.innerHTML = `Mai&nbsp;${year}`; break
-            case 6: n.innerHTML = `Juin&nbsp;${year}`; break
-            case 7: n.innerHTML = `Juillet&nbsp;${year}`; break
-            case 8: n.innerHTML = `Août&nbsp;${year}`; break
-            case 9: n.innerHTML = `Septembre&nbsp;${year}`; break
-            case 10: n.innerHTML = `Octobre&nbsp;${year}`; break
-            case 11: n.innerHTML = `Novembre&nbsp;${year}`; break
-            case 12: n.innerHTML = `Décembre&nbsp;${year}`; break
+            case 1: n.innerHTML = `${I18N.$('Janvier')}&nbsp;${year}`; break
+            case 2: n.innerHTML = `${I18N.$('Fevrier')}&nbsp;${year}`; break
+            case 3: n.innerHTML = `${I18N.$('Mars')}&nbsp;${year}`; break
+            case 4: n.innerHTML = `${I18N.$('Avril')}&nbsp;${year}`; break
+            case 5: n.innerHTML = `${I18N.$('Mai')}&nbsp;${year}`; break
+            case 6: n.innerHTML = `${I18N.$('Juin')}&nbsp;${year}`; break
+            case 7: n.innerHTML = `${I18N.$('Juillet')}&nbsp;${year}`; break
+            case 8: n.innerHTML = `${I18N.$('Août')}&nbsp;${year}`; break
+            case 9: n.innerHTML = `${I18N.$('Septembre')}&nbsp;${year}`; break
+            case 10: n.innerHTML = `${I18N.$('Octobre')}&nbsp;${year}`; break
+            case 11: n.innerHTML = `${I18N.$('Novembre')}&nbsp;${year}`; break
+            case 12: n.innerHTML = `${I18N.$('Decembre')}&nbsp;${year}`; break
         }
         if (month % 2) {
             n.setAttribute('class', 'monthName even')
@@ -460,15 +348,15 @@ KTimeline.prototype = {
         this.months.push(n)
     },
     destroyMonthName: function () {
-        for (var x = this.months.pop(); x; x = this.months.pop()) {
+        for (let x = this.months.pop(); x; x = this.months.pop()) {
             x.parentNode.removeChild(x)
         }
     },
 
     createWeekNumber: function (number, days, frag) {
-        var n = document.createElement('DIV')
+        const n = document.createElement('DIV')
         n.setAttribute('style', 'width: ' + Math.floor(days * this.get('blockSize')) + 'px')
-        n.innerHTML = 'Semaine ' + number
+        n.innerHTML = `${I18N.$('Semaine')} ${number}`
         if (days * this.get('blockSize') < 80) {
             n.innerHTML = number
         }
@@ -481,27 +369,23 @@ KTimeline.prototype = {
         this.weekNumber.push(n)
     },
     destroyWeekNumber: function () {
-        for (var x = this.weekNumber.pop(); x; x = this.weekNumber.pop()) {
+        for (let x = this.weekNumber.pop(); x; x = this.weekNumber.pop()) {
             x.parentNode.removeChild(x)
         }
     },
 
     postCreate: function () {
         this.domNode.querySelector('#AppHeader').style.zIndex = KAIROS.zMax()
-        const ktaskbar = new KTaskBar()
-        const cornerBox = new KCornerBox()
+        new KTaskBar()
+        new KCornerBox()
 
-
-        this.view = {}
         this.setZoom('week')
-
         window.addEventListener('k-set-center', event => {
             const origin = this.center
             const target = event.detail.date
             target.setHours(12, 0, 0, 0)
             target.setTime(target.getTime() - ((Math.floor(this.domNode.offsetWidth / this.get('blockSize') / 2) - 2) * 86400000))
             const diff = Math.floor((origin.getTime() - target.getTime()) / 86400000)
-            if (Math.abs(diff) > 365) { return KAIROS.error('Déplacement trop loin dans le temps') }
             this.move(diff)
         })
 
@@ -509,10 +393,10 @@ KTimeline.prototype = {
         this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
         this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), { passive: true })
         this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
-        this.domNode.addEventListener('dragstart', event => {
+        this.domNode.addEventListener('dragstart', _ => {
             window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
         })
-        this.domNode.addEventListener('dragend', event => {
+        this.domNode.addEventListener('dragend', _ => {
             this.stopBorderAutoScroll()
             window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
         })
@@ -542,7 +426,7 @@ KTimeline.prototype = {
             const [begin, end] = [new Date(object.get('begin')), new Date(object.get('end'))]
             const diff = end.getTime() - begin.getTime()
             const newOrigin = new Date()
-            newOrigin.setTime(this.firstDay.getTime() + kview.computeXBox(event.clientX) * 86400000)
+            newOrigin.setTime(kview.get('date-origin').getTime() + kview.computeXBox(event.clientX) * 86400000)
             KVDays.initDayStartTime(newOrigin, KAIROS.days)
 
             const beginDiff = newOrigin.getTime() - begin.getTime()
@@ -678,20 +562,6 @@ KTimeline.prototype = {
                 this.wheelStopSignal = null
             }
         })
-
-        this.view.rectangle = getPageRect()
-
-
-        document.addEventListener('click', (event) => {
-            for (let [key, entry] of this.Entries) {
-                if (entry.EntryStateOpen !== undefined && entry.EntryStateOpen !== null) {
-                    entry.EntryStateOpen[0].destroy()
-                    entry.EntryStateOpen[1].parentNode.removeChild(entry.EntryStateOpen[1])
-                    entry.EntryStateOpen = null
-                    this.Entries.set(key, entry)
-                }
-            }
-        }, { capture: true })
     },
 
     stopBorderAutoScroll: function () {
@@ -702,6 +572,7 @@ KTimeline.prototype = {
     },
 
     mouseUpDown: function (event) {
+        console.log('mouseUpDown')
         for (let n = event.target; n; n = n.parentNode) {
             if (n?.dataset?.stopFollowMouse) { this.followMouse.stop = true; return; }
         }
@@ -729,7 +600,6 @@ KTimeline.prototype = {
         KAIROS.clearSelection()
         if (!this.followMouse.multiplicator) { this.followMouse.multiplicator = 1 }
         if (!this.followMouse.accumulator) { this.followMouse.accumulator = { x: 0, y: 0 } }
-        this.toolTip_hide()
         this.followMouse.accumulator.x += KAIROS.mouse.clientX - KAIROS.mouse.lastX
         this.followMouse.accumulator.y += (KAIROS.mouse.clientY - KAIROS.mouse.lastY) * 0.25
         if (Math.abs(this.followMouse.accumulator.x) > this.get('blockSize') * 0.75) {
@@ -741,7 +611,7 @@ KTimeline.prototype = {
             this.followMouse.accumulator.x = 0
         }
 
-        let top = (window.pageYOffset || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0)
+        let top = (window.scrollY || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0)
         if (this.followMouse.accumulator.y < 0) {
             window.scrollTo(0, top + Math.abs(this.followMouse.accumulator.y))
         } else {
@@ -761,17 +631,18 @@ KTimeline.prototype = {
     },
 
     eWheel: function (event) {
-        this.toolTip_hide()
-        if (this._mask) { return }
+        /* TODO Put this in configuration */
+        const move = 1
+        const shiftFactor = 7
+
         if (event.shiftKey) {
             if (event.deltaY < 0) {
-                this.moveXRight(7)
+                this.moveXRight(move * shiftFactor)
             } else {
-                this.moveXLeft(7)
+                this.moveXLeft(move * shiftFactor)
             }
             return
         }
-        const move = 1
         if (event.deltaX < 0) {
             this.moveXLeft(move)
         } else if (event.deltaX > 0) {
@@ -780,7 +651,11 @@ KTimeline.prototype = {
     },
 
     getDateRange: function () {
-        return { begin: this.firstDay, end: this.lastDay }
+        const kview = new KView()
+        return {
+            begin: new Date(kview.get('date-origin').getTime() - (Math.floor(kview.get('width') / 2) - 1) * 86400000),
+            end: new Date(kview.get('date-origin').getTime() + (Math.floor(kview.get('width') / 2) - 1) * 86400000)
+        }
     },
 
     today: function () {
@@ -789,51 +664,29 @@ KTimeline.prototype = {
 
     move: function (x) {
         if (x === 0) { return }
-        if (x < 0) {
-            this.moveXRight(Math.abs(x))
-        } else {
-            this.moveXLeft(x)
-        }
+        return x < 0 ? this.moveXRight(Math.abs(x)) : this.moveXLeft(x)
     },
 
     moveXRight: function (x) {
+        const kview = new KView()
         this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
-        this.Viewport.move(-x)
-        this.firstDay = this.Viewport.get('date-origin')
+        kview.move(-x)
         this.update()
         this.drawTimeline()
         this.drawVerticalLine()
     },
-    moveOneRight: function () {
-        this.moveXRight(1)
-    },
-    moveRight: function () {
-        var move = 1
-        if (this.days.length > 7) {
-            move = Math.floor(this.days.length / 7)
-        }
-        this.moveXRight(move)
-    },
+
     moveXLeft: function (x) {
+        const kview = new KView()
         this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
-        this.Viewport.move(x)
-        this.firstDay = this.Viewport.get('date-origin')
+        kview.move(x)
         this.update()
         this.drawTimeline()
         this.drawVerticalLine()
-    },
-    moveOneLeft: function () {
-        this.moveXLeft(1)
-    },
-    moveLeft: function () {
-        var move = 1
-        if (this.days.length > 7) {
-            move = Math.floor(this.days.length / 7)
-        }
-        this.moveXLeft(move)
     },
 
     drawTimeline: function () {
+        const kview = new KView()
         const avWidth = this.domNode.offsetWidth
         let currentWeek = 0
         let dayCount = 0
@@ -862,19 +715,16 @@ KTimeline.prototype = {
             this.Holidays.addYear(this.center.getFullYear())
         }
 
-        if (!this.firstDay) {
-            this.firstDay = new Date()
-            this.firstDay.setTime(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000))
+        if (!kview.get('date-origin')) {
+            kview.set('date-origin', new Date(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000)))
         }
-        for (const entry of this.Entries) {
-            entry[1].set('origin', this.firstDay)
-        }
-        this.Viewport.setOrigin(this.firstDay)
+
         function sameDay(a, b) {
             return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
         }
 
-        for (var day = this.firstDay, i = 0; i < this.get('zoom'); i++) {
+        let day
+        for (day = kview.get('date-origin'), i = 0; i < this.get('zoom'); i++) {
             if (sameDay(day, new Date())) {
                 this.todayOffset = i
             }
@@ -903,7 +753,7 @@ KTimeline.prototype = {
                 }
             }
 
-            if (this.Viewport.get('day-width') > 15) {
+            if (kview.get('day-width') > 15) {
                 day.setHours(12, 0, 0)
                 let subLineCell = document.createElement('SPAN')
                 subLineCell.dataset.date = day.toISOString().split('T')[0]
@@ -954,7 +804,6 @@ KTimeline.prototype = {
             }
 
             day = new Date(day.getTime() + 86400000)
-            this.lastDay = day
             dayCount++; dayMonthCount++
         }
         if (dayCount > 0) {
@@ -964,8 +813,8 @@ KTimeline.prototype = {
             this.createMonthName(currentMonth, currentYear, dayMonthCount, shFrag)
         }
 
-        this.Viewport.setViewportWidth(this.get('zoom') * this.get('blockSize'))
-        this.Viewport.setMargins(120, 14, 50, this.get('offset'))
+        kview.setViewportWidth(this.get('zoom') * this.get('blockSize'))
+        kview.setMargins(120, 14, 50, this.get('offset'))
 
         window.requestAnimationFrame(() => {
             this.domNode.querySelector('#TL_subline').innerHTML = ''
@@ -977,6 +826,7 @@ KTimeline.prototype = {
     },
 
     drawVerticalLine: function () {
+        const kview = new KView()
         const draw = () => {
             return new Promise(resolve => {
                 const frame = document.getElementById('VerticalLineFrame')
@@ -1002,7 +852,7 @@ KTimeline.prototype = {
                 const today = new Date()
                 for (let i = 0; i < dayLength; i++) {
                     const day = new Date()
-                    day.setTime(this.firstDay.getTime() + (i * 86400000))
+                    day.setTime(kview.get('date-origin').getTime() + (i * 86400000))
                     const node = frame.children[i] || document.createElement('DIV')
                     if (!frame.children[i]) {
                         chain.then(() => {
@@ -1058,6 +908,7 @@ KTimeline.prototype = {
 
     loadEntries: function () {
         return new Promise((resolve, reject) => {
+            const kview = new KView()
             const url = KAIROS.URL(`${KAIROS.stores.kentry.store}/_query`)
             kfetch(url, {
                 method: 'POST',
@@ -1069,11 +920,11 @@ KTimeline.prototype = {
                 })
             })
             .then(response => {
-                if (!response.ok) { throw new Error('ERR:server') }
+                if (!response.ok) { throw new Error(I18N.$('ERR:server')) }
                 return response.json()
             })
             .then(result => {
-                if (!result || !result.success) { throw new Error('ERR:server') }
+                if (!result || !result.success) { throw new Error(I18N.$('ERR:server')) }
                 return Array.isArray(result.data) ? result.data : [result.data]
             })
             .then(entries => {
@@ -1088,7 +939,7 @@ KTimeline.prototype = {
                                         return resolve(kentry)
                                     })
                                     .catch(cause => {
-                                        throw new Error('Failed to load entry', { cause })
+                                        throw new Error(I18N.$('ERR:server'), { cause })
                                     })
                             })
                         })
@@ -1100,20 +951,20 @@ KTimeline.prototype = {
                     .map(e => e.value)
                     .sort((a, b) => a.sortValue - b.sortValue)
                 loadedEntries.forEach(e => e.register(this.Updater))
-                this.Viewport.setEntryCount(loadedEntries.length)
+                kview.setEntryCount(loadedEntries.length)
                 let i = 0
                 return Promise.allSettled(loadedEntries.map(e => {
                     return new Promise((resolve, reject) => {
                         const row = i++
-                        e.set('origin', this.firstDay)
+                        e.set('origin', kview.get('date-origin'))
                             .then(_ => {
-                                this.Viewport.bindObjectToRow(row, e)
+                                kview.bindObjectToRow(row, e)
                                 e._ROW = row
                                 e.set('row', row)
                                 resolve(e)
                             })
                             .catch(cause => {
-                                reject(new Error('Failed to load entry', { cause }))
+                                reject(new Error(I18N.$('ERR:server'), { cause }))
                             })
                     })
                 }))
@@ -1142,7 +993,6 @@ KTimeline.prototype = {
             this.Updater.postMessage({ op: 'ready' })
             this.drawTimeline()
         })
-      
     },
 
     refresh: function () {
@@ -1162,76 +1012,12 @@ KTimeline.prototype = {
         }
     },
 
-    update: function (force = false) {
+    update: function () {
         this.refresh()
-        this.Viewport.runRunOnMove()
+        new KView().runRunOnMove()
     },
 
     print: function (url) {
         window.open(url)
-    },
-
-    setOpen: function (ident) {
-        if (!this.Open) { this.Open = [] }
-        if (this.Open.indexOf(ident) === -1) { this.Open.push(ident) }
-    },
-
-    unsetOpen: function (ident) {
-        if (this.Open) {
-            var idx = this.Open.indexOf(ident)
-            if (idx !== -1) {
-                this.Open.splice(idx, 1)
-            }
-        }
-    },
-
-    isOpen: function (ident) {
-        if (this.Open) {
-            if (this.Open.indexOf(ident) === -1) { return false }
-            return true
-        }
-        return false
-    },
-
-    setModify: function (ident) {
-        if (!this.Mod) { this.Mod = [] }
-        if (this.Mod.indexOf(ident) === -1) { this.Mod.push(ident) }
-    },
-
-    unsetModify: function (ident) {
-        if (this.Mod) {
-            var idx = this.Mod.indexOf(ident)
-            if (idx !== -1) {
-                this.Mod.splice(idx, 1)
-            }
-        }
-    },
-
-    isModify: function (ident) {
-        if (this.Mod) {
-            if (this.Mod.indexOf(ident) === -1) { return false }
-            return true
-        }
-        return false
-    },
-
-    minimizeMaximize: function (event) {
-        var node = this.nMinimizeMaximize
-        var inode = node
-        var max = false
-        if (arguments[1]) {
-            max = true
-        }
-        if (inode.nodeName !== 'I') {
-            for (inode = inode.firstChild; inode.nodeName !== 'I'; inode = inode.nextSibling);
-        }
-        while (node && !node.getAttribute('data-artnum-maximize')) {
-            node = node.parentNode
-        }
-        if (!max && node.getAttribute('data-artnum-maximize') === 'yes') {
-            node.setAttribute('data-artnum-maximize', 'no')
-        } else {
-            node.setAttribute('data-artnum-maximize', 'yes')
-        }
     }
 }

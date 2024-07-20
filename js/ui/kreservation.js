@@ -7,7 +7,6 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.EvtTarget = new EventTarget()
     this.object = object
     this.props = new Map()
-    this.Viewport = new KView()
     this.parent = null
     this.copy = false
     this.original = null
@@ -18,7 +17,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.order = 0
     this.stackSize = 1
     this.container = null
-    this.height = this.Viewport.get('entry-height') - 3
+    this.height = new KView().get('entry-height') - 3
     if (options.copy) { 
         this.original = options.copy
         this.original.copyCount++
@@ -161,31 +160,31 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         let contextMenu
         if (kmselect.active) {
             if (kmselect.size() > 1) {
-                contextMenu = new KContextMenu(`Action (${kmselect.size()} éléments)`)
+                contextMenu = new KContextMenu(I18N.$('Action_x_elements', kmselect.size()))
             } else {
-                contextMenu = new KContextMenu(`Action (${kmselect.size()} élément)`)
+                contextMenu = new KContextMenu(I18N.$('Action_1_element'))
             }
         } else {
-            contextMenu = new KContextMenu('Action')
+            contextMenu = new KContextMenu(I18N.$('Action'))
         }
 
         const kglobal = new KGlobal()
         if (kglobal.has('k-project-highlight-locked') 
                 && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
-            contextMenu.add('Annuler surlignage', () => {
+            contextMenu.add(I18N.$('Annuler_surlignage'), () => {
                 this.lowlight()
                 kglobal.delete('k-project-highlight-locked')
             })
         } else {
-            contextMenu.add('Surligner', () => {
+            contextMenu.add(I18N.$('Surligner'), () => {
                 this.highlight()
                 kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
             })
         }
-        contextMenu.add('Détails', (_, x, y) => {
+        contextMenu.add(I18N.$('Detail'), (_, x, y) => {
             this.showDetails(x, y)
         })
-        contextMenu.add('Imprimer', () => {
+        contextMenu.add(I18N.$('Imprimer'), () => {
             if (kmselect.active) {
                 for (const o of kmselect.get()) {
                     o.print()
@@ -195,7 +194,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             this.print()
         })
         contextMenu.separator()
-        contextMenu.add('Supprimer', () => {
+        contextMenu.add(I18N.$('Supprimer'), () => {
             if (kmselect.active) {
                 for (const o of kmselect.get()) {
                     o.delete()
@@ -205,6 +204,11 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
             }
             this.delete()
         })
+        /*if (!kmselect.active) {
+            contextMenu.addTitle(I18N.$('Relation'))
+            contextMenu.add(I18N.$('Ajouter_relation'), () => {
+            })
+        }*/
 
         contextMenu.show(event.clientX, event.clientY)
     })
@@ -354,19 +358,23 @@ KUIReservation.prototype.open = function () {
         }
         waitOther.then(replan => {
             const action = [                       
-                {name: 'delete', label: 'Supprimer', type: 'danger'}
+                {name: 'delete', label: I18N.$('Supprimer'), type: 'danger'}
             ]
             if ((other && other.link && other.link.direction === 'left') || !other) {
-                action.unshift({name: 'duplicate-at-end', label: replan ? 'Replanifier la fin' : 'Créer la fin'})
+                action.unshift({name: 'duplicate-at-end', label: replan ? I18N.$('Replanifier_la_fin') : I18N.$('Creer_la_fin')})
             }
+            action.unshift({name: 'save', label: I18N.$('Enregistrer')})
             const klateral = new KLateral()
             const ktab = klateral.add(domNode, { 
-                title: `Réservation ${this.object.get('uid')}:${this.object.get('version')}`,
+                title: I18N.$('Reservation_x', `${this.object.get('uid')}:${this.object.get('version')}`),
                 id: this.object.get('uid'),
                 action: action
             })
             if (ktab) {
                 ktab.addEventListener('k-action', event => {
+                    /*if (event.detail.action === 'save') {
+                        return this.dispatchEvent(new CustomEvent('close'))
+                    }*/
                     this.dispatchEvent(new CustomEvent(event.detail.action, {detail: {tab: event.detail.tab, target: event.detail.target}}))
                 })
                 ktab.addEventListener('focus', () => {
@@ -796,7 +804,7 @@ KUIReservation.prototype.showDetails = function () {
 
     fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
     .then(response => {
-        if (!response.ok) { throw new Error('ERR:Server') }
+        if (!response.ok) { throw new Error(I18N.$('ERR:Server')) }
         return response.json()
     })
     .then(result => {
@@ -805,7 +813,7 @@ KUIReservation.prototype.showDetails = function () {
             const kperson = new KStore('kperson')
             kperson.get(result.data[0].userid)
             .then(person => {
-                resolve(`${(new KDate(result.data[0].time * 1000)).fullDate()} par ${person.getFirstTextValue('', 'name')}`)
+                resolve(I18N.$('X_par_Y', new KDate(result.data[0].time * 1000)).fullDate(), person.getFirstTextValue('', 'name'))
             })
         })
     })
@@ -820,17 +828,17 @@ KUIReservation.prototype.showDetails = function () {
         div.classList.add('k-reservation-details') 
         div.innerHTML = `
         <div class="k-header">
-            <div class="k-title">Détails réservation ${this.object.get('id')}</div>
+            <div class="k-title">${I18N.$('Detail_reservation')} ${this.object.get('id')}</div>
             <div class="k-close" data.action="close"><i data-action='close' class="fas fa-times"></i></div>
         </div>
         <div class="k-content">
-            <div class="k-field uid"><span class="k-label">Référence projet</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'reference'))}</span></div>
-            <div class="k-field uid"><span class="k-label">Nom projet</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'name'))}</span></div>
+            <div class="k-field uid"><span class="k-label">${I18N.$('Reference_projet')}</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'reference'))}</span></div>
+            <div class="k-field uid"><span class="k-label">${I18N.$('Nom_projet')}</span><span class="k-value">${KSano.txt(project.getFirstTextValue('', 'name'))}</span></div>
 
-            <div class="k-field reference"><span class="k-label">Référence travail</span><span class="k-value">${KSano.txt(affaire.getFirstTextValue('', 'reference'))}</span></div>
-            <div class="k-field description"><span class="k-label">Description travail</span><span class="k-value">${KSano.multiText(affaire.getFirstTextValue('', 'description'))}</span></div>
-            <div class="k-field remark"><span class="k-label">Remarque</span><span class="k-value">${KSano.multiText(this.object.getFirstTextValue('', 'comment'))}</span></div>
-            <div class="k-field lastmod"><span class="k-label">Dernière modification</span><span class="k-value">${lastmod}</span></div>
+            <div class="k-field reference"><span class="k-label">${I18N.$('Reference_travail')}</span><span class="k-value">${KSano.txt(affaire.getFirstTextValue('', 'reference'))}</span></div>
+            <div class="k-field description"><span class="k-label">${I18N.$('Description_travail')}</span><span class="k-value">${KSano.multiText(affaire.getFirstTextValue('', 'description'))}</span></div>
+            <div class="k-field remark"><span class="k-label">${I18N.$('Remarque_journaliere')}</span><span class="k-value">${KSano.multiText(this.object.getFirstTextValue('', 'comment'))}</span></div>
+            <div class="k-field lastmod"><span class="k-label">${I18N.$('Dernier_modification')}</span><span class="k-value">${lastmod}</span></div>
         </div>`
         div.addEventListener('click', event => {
             if (event.target.dataset.action === 'close') { this.hideDetails() }
@@ -997,26 +1005,26 @@ KUIReservation.prototype.renderForm = function () {
         form.classList.add('kreservationForm')
         const affaire = this.object.getRelation('kaffaire')
         form.innerHTML = `
-        <fieldset class="k-form-ui" name="reservation"><legend>Réservation</legend>
+        <fieldset class="k-form-ui" name="reservation"><legend>${I18N.$('Reservation')}</legend>
         </fieldset>
-        <fieldset class="k-form-ui" name="affaire"><legend>Travail</legend>
+        <fieldset class="k-form-ui" name="affaire"><legend>${I18N.$('Travail')}</legend>
         </fieldset>
         `
 
         const rform = new KFormUI(this.object)
         rform.render({
-            id: {label: 'Numéro', readonly: true},
+            id: {label: I18N.$('Numero'), readonly: true},
             //version: {label: 'Version', readonly: true},
-            locked: {label: 'Verrouillée', type: 'on-off'},
-            closed: {label: 'Terminé', type: 'on-off'},
-            _kproject_name: {label: 'Projet', readonly: true},
+            locked: {label: I18N.$('Verrouillee'), type: 'on-off'},
+            closed: {label:  I18N.$('Terminee'), type: 'on-off'},
+            _kproject_name: {label:  I18N.$('Projet'), readonly: true},
             //begin: {label: 'Début', type: 'datehour', readonly: this.object.get('locked') === '1'},
             //end: {label: 'Fin', type: 'datehour', readonly: this.object.get('locked') === '1'},
             //time: {label: 'Durée', type: 'hour', readonly: this.object.get('locked') === '1'},
-            comment: {label: 'Remarque journalière', type: 'multitext', readonly: this.object.get('locked') === '1'},
+            comment: {label:  I18N.$('Remarque_journaliere'), type: 'multitext', readonly: this.object.get('locked') === '1'},
             //creator: {label: 'Responsable', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: this.object.get('locked') === '1'},
-            technician: {label: 'Chef projet', type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: true},
-            status: {label: 'Type', type: 'kstore', storeType: 'kstatus', query: {type: 1}, readonly: this.object.get('locked') === '1'},
+            technician: {label:  I18N.$('Chef_projet'), type: 'kstore', storeType: 'kentry', query: {disabled: 0}, readonly: true},
+            status: {label:  I18N.$('Type'), type: 'kstore', storeType: 'kstatus', query: {type: 1}, readonly: this.object.get('locked') === '1'},
         })
         .then(domNode => {
             for (const fieldset of form.getElementsByTagName('FIELDSET')) {
@@ -1066,7 +1074,7 @@ KUIReservation.prototype.renderForm = function () {
         })
         if (!this.eventInstalled.includes('delete')) {
             this.addEventListener('delete', event => {
-                KConfirm(`Supprimer la réservation ${reservation.get('uid')} ?`, event.detail.target)
+                KConfirm( I18N.$('Supprimer_la_reservation', reservation.get('uid')), event.detail.target)
                 .then(confirmed => {
                     if (!confirmed) { return }
                     const kstore = new KStore('kreservation')
@@ -1275,8 +1283,8 @@ KUIReservation.prototype.render = function () {
                 beginDate.setHours(7, 0, 0, 0)
                 const endDate = new KDate(this.object.get('end'))
                 endDate.setHours(17, 30, 0, 0)
-                let leftbox = this.Viewport.getRelativeColFromDate(beginDate)
-                let rightbox = this.Viewport.getRelativeColFromDate(endDate)
+                let leftbox = kview.getRelativeColFromDate(beginDate)
+                let rightbox = kview.getRelativeColFromDate(endDate)
                 if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
                 if (leftbox < 0) {
                     if (rightbox < 0) {
@@ -1288,11 +1296,11 @@ KUIReservation.prototype.render = function () {
                 }
                 if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
 
-                left = leftbox * this.Viewport.get('day-width') + this.Viewport.get('margin-left')
-                offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * this.Viewport.get('second-width')
-                if (rightbox === Infinity) { width = this.Viewport.get('viewport-width') - (left + offset) }
+                left = leftbox * kview.get('day-width') + kview.get('margin-left')
+                offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * kview.get('second-width')
+                if (rightbox === Infinity) { width = kview.get('viewport-width') - (left + offset) }
                 else {
-                    width = Math.abs(leftbox-rightbox) * this.Viewport.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * this.Viewport.get('second-width') - offset
+                    width = Math.abs(leftbox-rightbox) * kview.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * kview.get('second-width') - offset
                 }
             }
  
@@ -1317,7 +1325,7 @@ KUIReservation.prototype.render = function () {
                 })
             }
 
-            if (this.Viewport.get('day-width') <= 15) {
+            if (kview.get('day-width') <= 15) {
                 this.smallView = true
                 window.requestAnimationFrame(() => {
                     this.domNode.style.width = `${width.toPrecision(2)}px`

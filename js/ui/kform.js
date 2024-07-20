@@ -115,6 +115,9 @@ KFormUI.prototype.change = function (event) {
                 })
             }
         })
+        .catch(reason => {
+            console.log(reason)
+        })
     })
     
 }

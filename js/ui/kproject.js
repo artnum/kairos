@@ -143,31 +143,31 @@ KProject.prototype.kaffaireNode = function (affaire) {
                     legend.style.setProperty('color', kolor.foreground())
                 }
                 const plan = document.createElement('button')
-                plan.innerHTML = 'Planifier'
+                plan.innerHTML = I18N.$('Planifier')
                 plan.dataset.action = 'plan-affaire'
                 plan.dataset.affaire = affaire.uid
                 fs.appendChild(plan)
      
                 const print = document.createElement('button')
-                print.innerHTML = 'Imprimer'
+                print.innerHTML = I18N.$('Imprimer')
                 print.addEventListener('click', () => { this.printAffaire(affaire) })
                 fs.appendChild(print)
 
                 const del = document.createElement('button')
-                del.innerHTML = 'Supprimer'
+                del.innerHTML = I18N.$('Supprimer')
                 del.classList.add('hidden-in-close', 'danger')
                 del.addEventListener('click', () => { 
-                    KConfirm('Voulez-vous vraiment supprimer le travail', del)
+                    KConfirm(I18N.$('Voulez_vous_vraiment_supprimer_le_travail'), del)
                     .then(confirm => {
                         if (confirm) { this.deleteAffaire(affaire) }
                     })
                 })
                 fs.appendChild(del)
                 const close = document.createElement('button')
-                close.innerHTML = 'Clore'
+                close.innerHTML = I18N.$('Clore')
                 close.classList.add('hidden-in-close', 'danger')
                 close.addEventListener('click', () => {
-                    KConfirm('Voulez-vous vraiment clore le travail', close)
+                    KConfirm(I18N.$('Voulez_vous_vraiment_clore_le_travail'), close)
                     .then(confirm => {
                         if (confirm) { this.closeAffaire(affaire) } 
                     })
@@ -175,7 +175,7 @@ KProject.prototype.kaffaireNode = function (affaire) {
                 fs.appendChild(close)
             } else {
                 const add = document.createElement('button')
-                add.innerHTML = 'Ajouter'
+                add.innerHTML = I18N.$('Ajouter')
                 add.classList.add('hidden-in-close')
                 add.addEventListener('click', () => { this.submitNewAffaire(kformui) })
                 fs.appendChild(add)
@@ -281,7 +281,7 @@ KProject.prototype.handleFormClick = function (event) {
             }
             const ktask = new KTaskBar()
             ktask.setCurrentTask(
-                'Planifier',
+                I18N.$('Planifier'),
                 `${this.project.get('reference')} ${this.project.get('name')} - ${currentAffaire.get('reference')}`,
                 currentAffaire
             )

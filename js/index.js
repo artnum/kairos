@@ -39,6 +39,12 @@ function KLoadResources (resources) {
     })
 }
 
+window.addEventListener('load', event => {
+    node = document.createElement('SCRIPT')
+    node.setAttribute('src','../resources/i18n.js')
+    document.head.appendChild(node)
+})
+
 window.addEventListener('klogin-done', event => {
     const resources = [
         ['../conf/error.js', 'script'],
@@ -183,6 +189,7 @@ window.addEventListener('kairos-preload', event => {
         ['../js/lib/date.js', 'script'],
         ['../js/lib/color.js', 'script'],
         ['../js/lib/throttle.js', 'script'],
+        ['../js/lib/zmax.js', 'script'],
         ['../js/utils/time.js', 'script'],
         ['../js/utils/browser.js', 'script'],
 
