@@ -362,12 +362,13 @@ KObject.prototype.copy = function () {
 }
 
 KObject.prototype.markObject = function (name) {
-    if (name === 'destroyed') { this.deleted = true }
+    if (name === 'destroyed') { 
+        setTimeout(() => { this.destroyObject() }, 10)
+    }
     if (this.mark.indexOf(name) === -1) { this.mark.push(name) }
 }
 
 KObject.prototype.unmarkObject = function (name) {
-    if (name === 'destroyed') { this.deleted = false }
     const idx = this.mark.indexOf(name)
     if (idx === -1) { return }
     this.mark.splice(idx, 1)

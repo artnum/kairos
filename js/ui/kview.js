@@ -87,7 +87,9 @@ KViewCell.prototype.indexOf = function (id) {
 }
 
 KViewCell.prototype.clear = function () {
-    this.content.forEach(element => element.object.mark('destroyed'))
+    this.content.forEach(element => {       
+        element.object.mark('destroyed')
+    })
     this.content = []
     this.size = 0
 }
@@ -665,7 +667,7 @@ KView.prototype._clearOutsideRange = function (range) {
             if(object.isDestroyed()) {
                 cell.delete(key)
                 continue
-            }     
+            }
             toUnrender.set(object.get('id'), object)
         }
     }
