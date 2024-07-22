@@ -1,3 +1,5 @@
+/* TODO remove all references and delete this file */
+
 function KReservation (opts) {
   this.opts = opts
   this.data = {

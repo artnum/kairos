@@ -66,7 +66,10 @@ KViewCell.prototype.get = function (id) {
 
 KViewCell.prototype.delete = function (id) {
     const idx = this.indexOf(id)
-    if (idx !== -1) { this.content.splice(idx, 1) }
+    if (idx !== -1) { 
+        const object = this.content.splice(idx, 1) 
+        object[0].mark('destroyed')
+    }
     this.size = this.content.length
 }
 
@@ -84,10 +87,12 @@ KViewCell.prototype.indexOf = function (id) {
 }
 
 KViewCell.prototype.clear = function () {
-    this.content.forEach(element => element.object.mark('hide'))
+    this.content.forEach(element => element.object.mark('destroyed'))
     this.content = []
     this.size = 0
 }
+
+KViewCell.prototype.destroy = KViewCell.prototype.clear
 
 KViewCell.prototype.entries = function () {
     let i = 0
@@ -526,12 +531,6 @@ KView.prototype.move = function (days) {
     }
     this.set('date-origin', dateOrigin)
     this._clearCellOnMove(days, new Date(dateOrigin.getTime()))
-    
-
-    /* negative value add a row in front to create place for the new day in the futur 
-     * positive value add a row at the back to create place for the new day in the past
-     */
-
    
     const range = this.getViewRange()
     const displacement = Math.abs(this.get('entry-count') * days * 2)
@@ -648,10 +647,6 @@ KView.prototype._removeAll = function () {
     for (let i = 0; i < this.grid.length; i++) {
         const cell = this.grid[i]
         if (!cell) { continue; }
-        for (const [_, object] of cell.entries()) {
-            const ui = object.getUINode()
-            if (ui) { ui.unrender() }
-        }
         cell.clear()
     }
 }
@@ -667,10 +662,11 @@ KView.prototype._clearOutsideRange = function (range) {
         for (const [key, object] of cell.entries()) {
             if (object.cell0 && object.cell0 !== i) { continue }
             if (object.cellN && object.cellN !== i) { continue }
-            toUnrender.set(object.get('id'), object)
             if(object.isDestroyed()) {
                 cell.delete(key)
-            }        
+                continue
+            }     
+            toUnrender.set(object.get('id'), object)
         }
     }
     for (let i = range[1] + 1; i < this.grid.length; i++) {

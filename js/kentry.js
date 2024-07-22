@@ -107,30 +107,6 @@ KEntry.prototype.delete = function(name) {
     })
 }
 
-KEntry.prototype.remove = function (entry) {
-    let id = entry
-    if (typeof entry === 'object') {
-        id = entry.id
-    }
-    KAIROS.unregister(`reservation/${id}`)
-    if (this.entries.get(id) === undefined) { return }
-    this.entries.delete(id)
-    this.evtTarget.dispatchEvent(new CustomEvent('remove-entry', {detail: {entry: entry, isMe}}))
-}
-
-KEntry.prototype.add = function (entry, isMe = false) {
-    this.entries.set(entry.id, entry)
-    KAIROS.register(`reservation/${entry.id}`, entry)
-    this.evtTarget.dispatchEvent(new CustomEvent('create-entry', {detail: {entry: entry, isMe}}))
-}
-
-KEntry.prototype.update = function (entry, isMe = false) {
-    this.entries.set(entry.id, entry)
-    KAIROS.register(`reservation/${entry.id}`, entry)
-    this.evtTarget.dispatchEvent(new CustomEvent('update-entry', {detail: {entry: entry, isMe}}))
-
-}
-
 KEntry.prototype.addEventListener = function (type, callback, options = {}) {
     this.evtTarget.addEventListener(type, callback, options)
 }
@@ -165,19 +141,6 @@ KEntry.prototype.is = function (id) {
             }
             resolve(false)
         })
-    })
-}
-
-KEntry.prototype.fixReservation = function (reservationJson) {
-    return new Promise((resolve, reject) => {
-        this.is(reservationJson.target).then(is => {
-            if (is) {
-                reservationJson.target = this.data.uid
-                resolve(reservationJson)
-                return
-            }
-            resolve(null)
-        }, _ => resolve(null))
     })
 }
 
@@ -237,18 +200,27 @@ KEntry.prototype.getEvents = function () {
 }
 
 KEntry.prototype.processReservationList = function (list, start = 0) {
-        const viewport = new KView()
+        const kview = new KView()
         const p = []
         while (start < list.length) {
             const entry = list[start]
             const uuid = entry.uuid
-            const y = viewport.getObjectRow(this)
+
+            if (this.entries.has(uuid)) {
+                const currentEntry = this.entries.get(uuid)
+                if (currentEntry.get('version') === entry.version) {
+                    start++
+                    continue 
+                }
+            }
+
+            const y = kview.getObjectRow(this)
             if (this.entries.has(uuid)) {
                 const reservation = this.entries.get(uuid)
                 reservation.update(entry)
                 /* re-add to viewport after update */
                 {
-                    const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                    const rows = kview.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                     for (const row of rows) {
                         if (!row) { continue }
                         row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
@@ -258,7 +230,7 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             } else {
                 const reservation = new KObject('kreservation', entry)
                 this.entries.set(entry.uuid, reservation)
-                const rows = viewport.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+                const rows = kview.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
                 for (const row of rows) {
                     if (!row) { continue }
                     row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
@@ -278,19 +250,19 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
         }
         Promise.allSettled(p)
         .then(_ => {
-            viewport.render()
+            kview.render()
         })
 }
 
 KEntry.prototype.handleMessage = function (msg) {
+    const kview = new KView()
     const msgData = msg.data
     switch (msgData.op) {
         case 'remove':
             (() => {
-                const viewport = new KView()
                 if (this.entries.has(msgData.reservation.uuid)) {
                     const reservation = this.entries.get(msgData.reservation.uuid)
-                    viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
+                    kview.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
                     this.entries.delete(msgData.reservation.uuid)
                 }
             })()
@@ -299,10 +271,9 @@ KEntry.prototype.handleMessage = function (msg) {
         case 'add':
             (() => {
                 /* remove object first */
-                const viewport = new KView()
                 if (this.entries.has(msgData.reservation.uuid)) {
                     const reservation = this.entries.get(msgData.reservation.uuid)
-                    viewport.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
+                    kview.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
                 }
                 this.processReservationList([msgData.reservation])
             })()
@@ -310,72 +281,6 @@ KEntry.prototype.handleMessage = function (msg) {
         case 'entries':
             this.processReservationList(msgData.value)
             break
-      /*case 'remove':
-        if (msgData.reservation) {
-            this.remove(msgData.reservation)
-        }
-        break
-      case 'add':
-        if (msgData.reservation) {
-            this.add(msgData.reservation, msg.data.isMe)
-        }
-        break
-      case 'update-reservation':
-          KAIROS.getClientId()
-          .then(cid => {
-            const entry = msg.data.reservation
-            const Reservation = new KReservation()
-            Reservation.extUpdate(entry)
-            .then(r => {
-                this.KUI.placeReservation(r)
-            })
-            let id = entry.uuid
-            if (entry.uuid === undefined || entry.uuid === null) {
-                id = entry.id
-            }
-            if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
-                if (this.entries.get(id) !== undefined) {
-                    this.update(entry, msg.data.clientid === cid)
-                } else { 
-                    this.add(entry, msg.data.clientid === cid)
-                }
-            } else {
-                this.delete(entry, msg.data.clientid === cid)
-            }
-          })
-        break
-      case 'entries':
-        const process = (deadline, origin = 0) => {
-            let i = origin;
-            while(deadline.timeRemaining() > 5 && i < msgData.value.length) {
-                let entry = msgData.value[i]
-                entry.modification = parseInt(entry.modification)
-                let id = entry.uuid
-                if (entry.uuid === undefined || entry.uuid === null) {
-                    id = entry.id
-                }
-                if (entry.target === this.data.uid || (this.data.oldid && this.data.oldid === entry.target)) {
-                    if (this.entries.get(id) !== undefined) {
-                        this.update(entry, msg.data.isMe)
-                    } else { 
-                        this.add(entry, msg.data.isMe)
-                    }
-                } else {
-                    this.remove(id)
-                }
-                i++
-            }
-
-            if (i < msgData.value.length) {
-                window.requestIdleCallback((deadline) => {
-                    process(deadline, i)
-                })
-            }
-        }
-        window.requestIdleCallback((deadline) => {
-            process(deadline, 0)
-        })
-        break*/
       case 'state':
         window.requestIdleCallback(() => {
             if (!msgData.value) { return }

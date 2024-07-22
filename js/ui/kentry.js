@@ -7,6 +7,7 @@ function KUIEntry (dataObject, opts = {}) {
     this.parentNode = null
     this.hidden = false
     this.dataObject = dataObject
+    this.content = dataObject.entries
     this.data = new KField(this.opts, dataObject)
     this.html = KHTML.init(this.opts.template)
     const kview = new KView()
@@ -39,7 +40,6 @@ function KUIEntry (dataObject, opts = {}) {
         })
     this.hidden = false
     this.order = 0
-    this.content = new Map()
     this.getDomNode()
     .then(domNode => {
         dataObject.get('id')
@@ -168,15 +168,17 @@ KUIEntry.prototype.removeReservation = function (reservation) {
 KUIEntry.prototype.placeReservation = function (reservation) {
     return new Promise((resolve) => {
         if (this.hidden) { return resolve() }
-        if (this.content.has(reservation.get('id'))) {
-            if (this.content.get(reservation.id).object.get('version') 
-                === reservation.get('version')) {
-                    return resolve()
+
+        const currentReservation = this.content.get(reservation.get('uuid'))
+        if (currentReservation && currentReservation.getUINode()) {
+            if (currentReservation.get('version') === reservation.get('version')) {
+                return resolve()
             }
         }
+
         const uireservation = new KUIReservation(reservation)
+        reservation.bindUINode(uireservation)
         uireservation.setContainer(this)
-        this.content.set(reservation.get('id'), uireservation)
         uireservation.setRow(this.dataObject.id)
         uireservation.render()
         .then(_ => {
@@ -189,8 +191,8 @@ KUIEntry.prototype.placeReservation = function (reservation) {
 }
 
 KUIEntry.prototype.unrefReservation = function (reservation) {
-    const uireservation = this.content.get(reservation.get('id'))
-    this.content.delete(reservation.get('id'))
+    const uireservation = this.content.get(reservation.get('uuid'))
+    this.content.delete(reservation.get('uuid'))
     return uireservation
 }
 

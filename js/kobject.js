@@ -25,9 +25,8 @@ KObjectGStore.prototype.receiveKobjectUpdate = function (event) {
                 const kstore = new KStore(KAIROS.remoteType[details.type])
                 kstore.get(details.id)
                 .then(kobject => {
-                    console.log(kobject)
                     const duplicates = this.getDuplicate(kobject.getType(), kobject.get('uid'))
-                    duplicates.forEach(o => { console.log(o, kobject.getBody()); o.update(kobject.getBody() )})
+                    duplicates.forEach(o => { o.update(kobject.getBody() ) })
                 })
             } 
             break
@@ -363,10 +362,12 @@ KObject.prototype.copy = function () {
 }
 
 KObject.prototype.markObject = function (name) {
+    if (name === 'destroyed') { this.deleted = true }
     if (this.mark.indexOf(name) === -1) { this.mark.push(name) }
 }
 
 KObject.prototype.unmarkObject = function (name) {
+    if (name === 'destroyed') { this.deleted = false }
     const idx = this.mark.indexOf(name)
     if (idx === -1) { return }
     this.mark.splice(idx, 1)

@@ -1207,7 +1207,9 @@ KUIReservation.prototype.unselect = function () {
 }
 
 KUIReservation.prototype.unrender = function () {
+    if (!this.domProduced) { return }
     this.domProduced = false
+    this.container.unrefReservation(this.object)
     this.getDomNode()
     .then(domNode => {
         if (!domNode) { return }
