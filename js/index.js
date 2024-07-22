@@ -118,7 +118,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/css.js', 'script'],
         ['../js/color.js', 'script'],
         ['../js/gevent.js', 'script'],
-        ['../js/crc32.js','script'],
         ['../js/Histoire.js', 'script'],
         ['../js/kfield.js', 'script'],
         ['../js/ui/ktemplate.js', 'script'],
