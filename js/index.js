@@ -39,11 +39,15 @@ function KLoadResources (resources) {
     })
 }
 
+/* TODO This should be rewritten in a different way, but it works for now */
 window.addEventListener('load', event => {
+    event.stopImmediatePropagation()
+    event.stopPropagation()
     node = document.createElement('SCRIPT')
     node.setAttribute('src','../resources/i18n.js')
     document.head.appendChild(node)
-})
+    window.dispatchEvent(new Event('load'))
+}, { once: true, capture: true })
 
 window.addEventListener('klogin-done', event => {
     const resources = [
@@ -129,7 +133,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/MButton.js', 'script'],
         ['../js/evenement.js', 'script'],
         ['../js/popup.js', 'script'],
-        ['../js/clientSearch.js', 'script'],
         ['../js/kreservation.js', 'script'],
         ['../js/kcache.js', 'script'],
         ['../js/PJs/pSBC.js', 'script'],
