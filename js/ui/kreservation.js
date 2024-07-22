@@ -813,7 +813,7 @@ KUIReservation.prototype.showDetails = function () {
             const kperson = new KStore('kperson')
             kperson.get(result.data[0].userid)
             .then(person => {
-                resolve(I18N.$('X_par_Y', new KDate(result.data[0].time * 1000)).fullDate(), person.getFirstTextValue('', 'name'))
+                resolve(I18N.$('X_par_Y', new KDate(result.data[0].time * 1000).fullDate()), person.getFirstTextValue('', 'name'))
             })
         })
     })

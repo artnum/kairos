@@ -415,9 +415,12 @@ KTimeline.prototype = {
             if (!kident) { return }
             if (!kident.startsWith('kid://')) { return }
             kGStore = new KObjectGStore()
-            const originalObject = kGStore.get(kident.substr(6))
+            const originalObject = kGStore.get(kident.substring(6))
             originalObject.getUINode().destroyClonedNode()
             let object = event.ctrlKey ? originalObject.clone() : originalObject
+            if (!event.ctrlKey) {
+                originalObject.getUINode().container.unrefReservation(originalObject)
+            }
             if (event.ctrlKey) {      
                 object.comment = ''
             }
@@ -481,6 +484,7 @@ KTimeline.prototype = {
                 kmselect.clear()
             }
         })
+        /* ----- end of drop event ----- */
 
         this.domNode.addEventListener('dragover', event => {
             event.preventDefault()
@@ -669,8 +673,8 @@ KTimeline.prototype = {
 
     moveXRight: function (x) {
         const kview = new KView()
-        this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
         kview.move(-x)
+        this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
         this.update()
         this.drawTimeline()
         this.drawVerticalLine()
@@ -678,8 +682,8 @@ KTimeline.prototype = {
 
     moveXLeft: function (x) {
         const kview = new KView()
-        this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
         kview.move(x)
+        this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
         this.update()
         this.drawTimeline()
         this.drawVerticalLine()
@@ -1013,8 +1017,11 @@ KTimeline.prototype = {
     },
 
     update: function () {
-        this.refresh()
-        new KView().runRunOnMove()
+        return new Promise(resolve => {
+            this.refresh()
+            new KView().runRunOnMove()
+            return resolve()
+        })
     },
 
     print: function (url) {

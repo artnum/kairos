@@ -44,14 +44,16 @@ function iSelectReservation(event) {
     return
   }
 
-  if (cell.size === 1 && event instanceof KeyboardEvent) {
+  if (cell.size < 1) {
+    return
+  } else if (cell.size === 1 && event instanceof KeyboardEvent) {
     const [_, open] = cell.entries().next().value
     open.getUINode().getDomNode()
       .then(domNode => {
         domNode.style.border = '2px solid blue'
       })
   } else if (event instanceof KeyboardEvent) {
-    for (const entry of cell) {
+    for (const entry of cell) { 
       entry[1].getUINode().getDomNode()
         .then(domNode => {
           domNode.style.border = '2px solid blue'
@@ -77,10 +79,9 @@ function iGrowAddReservationEnd(event) {
   end.setHours(endStart[0], endStart[1], 0, 0)
 
   if (!entry || !travail || !end || isNaN(end.getTime())) {
-    if (!entry) { throw new Error(I18N.$('Pas_de_ressource_selectionnee')) }
-    else if (!travail) { throw new Error(I18N.$('Pas_de_travail_selectionne')) }
-    else { throw new Error(I18N.$('Date_invalide')) }
-    return
+    if (!entry) { throw new KInfo(I18N.$('Pas_de_ressource_selectionnee')) }
+    else if (!travail) { throw new KInfo(I18N.$('Pas_de_travail_selectionne')) }
+    else { throw new KInfo(I18N.$('Date_invalide')) }
   }
 
   const reservationStore = new KStore('kreservation')
@@ -179,9 +180,9 @@ function iGrowAddReservation(event) {
   const travail = new KTaskBar().getCurrentTaskData()
 
   if (!entry || !travail) {
-    if (!entry) { throw new Error(I18N.$('Pas_de_ressource_selectionnee')) }
-    else if (!travail) { throw new Error(I18N.$('Pas_de_travail_selectionne')) }
-    else { throw new Error(I18N.$('Date_invalide')) }
+    if (!entry) { throw new KInfo(I18N.$('Pas_de_ressource_selectionnee')) }
+    else if (!travail) { throw new KInfo(I18N.$('Pas_de_travail_selectionne')) }
+    else { throw new KInfo(I18N.$('Date_invalide')) }
   }
 
 
@@ -229,9 +230,9 @@ function iAddReservation(event) {
 
 
   if (!entry || !travail || !begin || isNaN(begin.getTime())) {
-    if (!entry) { throw new Error(I18N.$('Pas_de_ressource_selectionnee')) }
-    else if (!travail) { throw new Error(I18N.$('Pas_de_travail_selectionne')) }
-    else { throw new Error(I18N.$('Date_invalide')) }
+    if (!entry) { throw new KInfo(I18N.$('Pas_de_ressource_selectionnee')) }
+    else if (!travail) { throw new KInfo(I18N.$('Pas_de_travail_selectionne')) }
+    else { throw new KInfo(I18N.$('Date_invalide')) }
   }
 
   const reservationStore = new KStore('kreservation')

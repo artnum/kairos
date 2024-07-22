@@ -114,19 +114,12 @@ function KView () {
     this.mouseHandlerRun = false
     window.addEventListener('keydown', this.handleKeyMove.bind(this), {capture: true})
     window.addEventListener('mousemove', this.startMouseHandler.bind(this), {capture: true, passive: true})
-    /* rowDescription is used to move around row and hide them. As, in the 
-     * grid, row are not contiguous, they stay in place and the actual index
-     * of the row is set in rowDescription. If the index is lower than 0, row
-     * is hidden.
-     * rowDescription indexes starts at 1 as to hide by reversing their value
-     * (6 -> -6, we keep their index while hidding). As 0 === -0 is true, it
-     * is not possible to use 0 index.
-     */
     this.rowDescription = null
     this.grid = null
     this.gridOffset = 0
     this.runOnMove = new Map()
     this.runOnMoveId = 0
+    this.set('width', 120)
     KView._instance = this
 }
 
@@ -169,15 +162,9 @@ KView.prototype.delRunOnMove = function (id) {
 }
 
 KView.prototype.runRunOnMove = function () {
-    /* run after animation frame */
-    new Promise((resolve) => {
-        window.requestAnimationFrame(() => { resolve() })
-    })
-    .then(() => {
-        for (const [_, cb] of this.runOnMove) {
-            if (typeof cb === 'function') { window.requestIdleCallback(() => { cb() }) }
-        }
-    })
+    for (const [_, cb] of this.runOnMove) {
+        if (typeof cb === 'function') { window.requestIdleCallback(() => { cb() }) }
+    }
 }
 
 KView.prototype.addEventListener = function (event, listener, options) {
@@ -216,25 +203,35 @@ KView.prototype.compute = function () {
 
     if (this.data.has('entry-count') && this.data.has('day-count')) {
         if (this.grid === null) {
-            const date = this.get('date-origin')
-            let day0 = Math.floor(date.getTime() / daysec / 1000)
-            const height = this.data.get('entry-count')
-            const width = 360
-            const newGrid = new Array(width * height)
-            
-            /* copy old grid into new grid */
-            for (i = 0; i < newGrid.length; i++) {
-                newGrid[i] = new KViewCell(day0 + Math.floor(i / (this.data.get('entry-count') + 1)))
-            }
-            this.rowDescription = new Array(height)
-            for (let i = 0; i < height; i++) {
-                this.rowDescription[i] = new KViewObject(i)
-            }
-            this.grid = newGrid
-            this.gridOffset = Math.round(width / 2)
+           this._buildGrid()
+           this._buildRow()
         }
     }
+}
 
+KView.prototype._buildRow = function () {
+    const height = this.data.get('entry-count')
+    this.rowDescription = new Array(height)
+    for (let i = 0; i < height; i++) {
+        this.rowDescription[i] = new KViewObject(i)
+    }
+}
+
+KView.prototype._buildGrid = function () {
+    const daysec = 86400
+
+    const date = this.get('date-origin')
+    const day0 = Math.floor(date.getTime() / daysec / 1000)
+    const height = this.data.get('entry-count')
+    const width = this.get('width') // must be bigger than the request size
+    const newGrid = new Array(width * height)
+    
+    for (i = 0; i < newGrid.length; i++) {
+        newGrid[i] = new KViewCell(day0 + Math.floor(i / (this.data.get('entry-count') + 1)))
+    }
+
+    this.grid = newGrid
+    this.gridOffset = Math.round(width / 2)
 }
 
 KView.prototype.showRow = function (idx) {
@@ -360,8 +357,7 @@ KView.prototype.getYFromPX = function (px) {
 }
 
 KView.prototype.getObjectRowById = function (id) {
-    let i = 0
-    for (i = 0; i < this.rowDescription.length; i++) {
+    for (let i = 0; i < this.rowDescription.length; i++) {
         if (!this.rowDescription[i]
             || this.rowDescription[i].isHidden()) { continue; }
         if (String(this.rowDescription[i].getObject().id) === String(id)) {
@@ -477,7 +473,8 @@ KView.prototype.getRowTop = function (row) {
     let height = 0
     for (let i = 0; i < this.rowDescription.length; i++) {
         if (!this.rowDescription[i]
-            || this.rowDescription[i].isHidden()) { continue; }
+            || this.rowDescription[i].isHidden()
+            || !this.rowDescription[i].getObject()) { continue; }
         if (String(this.rowDescription[i].getObject().id) === String(row)) {
             break
         }
@@ -520,48 +517,22 @@ KView.prototype.moveRight = function () {
 
 KView.prototype.move = function (days) {
     if (!this.grid) { return }
+    if (days === 0) { return }
     const dateOrigin = this.get('date-origin')
-    dateOrigin.setTime(dateOrigin.getTime() - (days * 86400000))
+    if (days < 0) {
+        dateOrigin.setTime(dateOrigin.getTime() + (Math.abs(days) * 86400000))
+    } else {
+        dateOrigin.setTime(dateOrigin.getTime() - (Math.abs(days) * 86400000))
+    }
     this.set('date-origin', dateOrigin)
+    this._clearCellOnMove(days, new Date(dateOrigin.getTime()))
+    
 
     /* negative value add a row in front to create place for the new day in the futur 
      * positive value add a row at the back to create place for the new day in the past
      */
 
-    const gridDays = Math.abs(days)
-    if (days > 0) {
-        if (-gridDays + this.gridOffset < 0) {
-            const cellAdd = Math.abs(gridDays - this.gridOffset) * this.get('entry-count')
-            for (i = 0; i < cellAdd; i++) {
-                this.grid.unshift(new KViewCell())
-            }
-            this.gridOffset = 0
-        } else {
-            this.gridOffset -= gridDays
-        }
-        /* 365 is one year */
-        while (this.grid.length > 365 * this.get('entry-count')) {
-            for (i = 0; i < this.get('entry-count'); i++) {
-                this.grid.pop()
-            }
-        }
-    } else if (gridDays > 0) {
-        const moveCell = gridDays * this.get('entry-count')
-        if (this.gridOffset * this.get('entry-count') + this.get('day-count') * this.get('entry-count') + moveCell > this.grid.length) {
-            const cellAdd = this.gridOffset * this.get('entry-count') + this.get('day-count') * this.get('entry-count') + moveCell - this.grid.length
-            for (i = 0; i < cellAdd; i++) {
-                this.grid.push(new KViewCell())
-            }
-        }
-        this.gridOffset += gridDays
-        /* 365 is one year */
-        while (this.grid.length > 365 * this.get('entry-count')) {
-            for (i = 0; i < this.get('entry-count'); i++) {
-                this.grid.shift()
-            }
-        }
-    }
-
+   
     const range = this.getViewRange()
     const displacement = Math.abs(this.get('entry-count') * days * 2)
     range[1] = range[1] * this.get('entry-count')
@@ -569,10 +540,41 @@ KView.prototype.move = function (days) {
     return this.render([range[0] - displacement, range[1] + displacement])
 }
 
-KView.prototype.resizeRow = function (rowid) {
-    const cells = this.getRowCells(rowid)
-    cells.forEach(cell => {
-    })
+KView.prototype._clearCellOnMove = function (deltaX, date) {
+    const daysec = 86400
+    const currentDay = Math.floor(date.getTime() / daysec / 1000)
+
+    for (let i = 0; i < Math.abs(deltaX); i++) {
+        if (deltaX < 0) {
+            const day0 = this.grid[this.grid.length - 1].day
+            if (day0 - currentDay < Math.abs(deltaX)) {
+                this._removeAll()
+                this._buildGrid()
+                return
+            }
+
+            this.clearLeftCol()
+            const entryCount = this.get('entry-count')
+            for (let j = 0; j < entryCount; j++) {
+                this.grid.shift()
+                this.grid.push(new KViewCell(day0 + i))
+            }
+        } else {
+            const day0 = this.grid[0].day
+            if (day0 - currentDay < Math.abs(deltaX)) {
+                this._removeAll()
+                this._buildGrid()
+                return
+            }
+
+            this.clearRightCol()
+            const entryCount = this.get('entry-count')
+            for (let j = 0; j < entryCount; j++) {
+                this.grid.pop()
+                this.grid.unshift(new KViewCell(day0 - i))
+            }
+        }
+    }
 }
 
 KView.prototype._directRender = function (range = null) {
@@ -642,6 +644,18 @@ KView.prototype._directRender = function (range = null) {
     window.setTimeout(() => this._clearOutsideRange(range), 3)
 }
 
+KView.prototype._removeAll = function () {
+    for (let i = 0; i < this.grid.length; i++) {
+        const cell = this.grid[i]
+        if (!cell) { continue; }
+        for (const [_, object] of cell.entries()) {
+            const ui = object.getUINode()
+            if (ui) { ui.unrender() }
+        }
+        cell.clear()
+    }
+}
+
 KView.prototype.render = kdebounce(function (range) { this._directRender(range) }, 10)
 
 KView.prototype._clearOutsideRange = function (range) {
@@ -697,6 +711,7 @@ KView.prototype.set = function (name, value) {
 }
 
 KView.prototype.get = function (name) {
+    if (!this.data.has(name)) { return undefined }
     switch(name) {
         case 'date-end':
             return (() => { 
@@ -713,11 +728,6 @@ KView.prototype.get = function (name) {
         default: 
             return this.data.get(name)
     }
-}
-
-KView.prototype.setOrigin = function (date) {
-    date.setHours(12, 0, 0, 0)
-    this.data.set('date-origin', date)
 }
 
 KView.prototype.setDayCount = function (days) {

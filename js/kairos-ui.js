@@ -234,12 +234,40 @@ KAIROS.error = function (msg, code = 0) {
     console.groupEnd()
 }
 
+function handleKError (e) {
+    if (e.error instanceof _KError) {
+        console.log(e)
+        switch (e.error.severity) {
+            case _KError.ERROR:
+                KAIROS.info(e.error.userMessage)
+                break
+            case _KError.WARNING:
+                KAIROS.warn(e.error.userMessage)
+                break
+            case _KError.INFO:
+                KAIROS.info(e.error.userMessage)
+                break
+            case _KError.DEBUG:
+                KAIROS.debug(e.error.userMessage)
+                break
+        }
+        return true
+    }
+    return false
+}
+
 window.addEventListener('error', (e)  => {
+    e.preventDefault()
+    if (handleKError(e)) { return true }
     KAIROS.debug(e.error)
+    return true
 })
 
 window.addEventListener('unhandledrejection', e => {
+    e.preventDefault()
+    if (handleKError(e)) { return true }
     KAIROS.debug(e.reason, -1)
+    return true
 })
 
 KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {

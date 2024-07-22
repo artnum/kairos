@@ -43,9 +43,15 @@ function KLoadResources (resources) {
 window.addEventListener('load', event => {
     event.stopImmediatePropagation()
     event.stopPropagation()
-    node = document.createElement('SCRIPT')
-    node.setAttribute('src','../resources/i18n.js')
-    document.head.appendChild(node)
+
+    for (const path of [
+        '../js/lib/errors.js',
+        '../resources/i18n.js'
+    ]) {
+        node = document.createElement('SCRIPT')
+        node.setAttribute('src', path)
+        document.head.appendChild(node)
+    }
     window.dispatchEvent(new Event('load'))
 }, { once: true, capture: true })
 

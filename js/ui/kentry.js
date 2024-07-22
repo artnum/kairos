@@ -29,7 +29,7 @@ function KUIEntry (dataObject, opts = {}) {
                             if (cell.size > acc) { return cell.size }
                             return acc
                         }, 0)
-                        if (max === 1) { KAIROS.info(I18N.$('Aucune_cellule_plus_1_reservation')); return }
+                        if (max === 1) { throw new KInfo(I18N.$('Aucune_cellule_plus_1_reservation')); return }
                         this.setHeight((kview.get('entry-height') / 2) * max)
                         setTimeout(() => window.dispatchEvent(new Event('resize')), 10)
                     })
@@ -157,26 +157,41 @@ KUIEntry.prototype.getHeight = function () {
 }
 
 KUIEntry.prototype.removeReservation = function (reservation) {
-    return new Promise((resolve, reject) => {
-        const uireservation = this.content.get(reservation.id)
-        this.content.delete(reservation.id)
+    return new Promise((resolve) => {
+        const uireservation = this.unrefReservation(reservation)
         uireservation.unrender()
         .then(_ => resolve())
-        .catch(cause => reject(cause))
+        .catch(cause => { throw new Error(cause) })
     })
 }
 
 KUIEntry.prototype.placeReservation = function (reservation) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (this.hidden) { return resolve() }
+        if (this.content.has(reservation.get('id'))) {
+            if (this.content.get(reservation.id).object.get('version') 
+                === reservation.get('version')) {
+                    return resolve()
+            }
+        }
         const uireservation = new KUIReservation(reservation)
         uireservation.setContainer(this)
-        this.content.set(reservation.id, uireservation)
+        this.content.set(reservation.get('id'), uireservation)
         uireservation.setRow(this.dataObject.id)
         uireservation.render()
-        .then(_ => resolve())
-        .catch(cause => reject(cause))
+        .then(_ => {
+            return resolve()
+        })
+        .catch(cause => {
+            throw new KError(cause)
+        })
     })
+}
+
+KUIEntry.prototype.unrefReservation = function (reservation) {
+    const uireservation = this.content.get(reservation.get('id'))
+    this.content.delete(reservation.get('id'))
+    return uireservation
 }
 
 KUIEntry.prototype.handleEvent = function (event) {
