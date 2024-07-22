@@ -55,7 +55,6 @@ window.addEventListener('klogin-done', event => {
         ['../node_modules/tooltip.js/dist/umd/tooltip.min.js', 'script'],
         ['../node_modules/transliteration/dist/browser/bundle.umd.min.js', 'script'],
         ['../node_modules/imurmurhash/imurmurhash.min.js', 'script'],
-        ['../node_modules/object-hash/dist/object_hash.js', 'script'],
         ['../node_modules/@popperjs/core/dist/umd/popper.min.js', 'script'],
         ['../node_modules/leader-line/leader-line.min.js', 'script'],
         ['', 'end']
