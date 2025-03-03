@@ -1,4 +1,6 @@
-function KTimeline(args) {
+function KTimeline(options = {}) {
+    if (KTimeline._instance) { return KTimeline._instance }
+
     this.domNode = document.createElement('div')
     this.domNode.classList.add('timeline', 'noextender')
     this.domNode.innerHTML = `<div class="headerContainer" id="AppHeader" data-stop-follow-mouse='1'>
@@ -10,7 +12,10 @@ function KTimeline(args) {
         </div>
         <div id="TL_domEntries" class="reservationContainer"></div>
         <div id="VerticalLineFrame"></div>`
-    document.body.appendChild(this.domNode)
+    
+    const parentNode = options.parentNode || document.body
+    this.parentNode = parentNode
+    parentNode.appendChild(this.domNode)
 
     this.center = null
     this.set('offset', 260)
@@ -25,18 +30,18 @@ function KTimeline(args) {
     this.borderTimeInterval = null
 
     this.daysZoom = 14
-    this.timelineMoving = false
     this.Holidays = null
     this.Tooltips = {}
     this.followMouse.stop = true
 
-    this.center = new Date()
-    this.center.setHours(0); this.center.setMinutes(0); this.center.setSeconds(0)
+    const kview = new KView()
+    const center = new Date()
+    center.setHours(0, 0, 0)
+    kview.set('date-center', center)
     if (KAIROS.centerTodayRatio) {
-        this.center.setTime(this.center.getTime() + (this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000))
+        kview.get('date-center').setTime(kview.get('date-center').getTime() + (this.daysZoom * KAIROS.centerTodayRatio / 2 * 86400000))
     }
 
-    const kview = new KView()
 
     kview.setEntryHeight(78)
     kview.setEntryInnerHeight(74)
@@ -66,13 +71,14 @@ function KTimeline(args) {
     ; (new KView()).addRunOnMove(_ => {
         const prj = (new KGlobal()).get('k-project-highlight')
         if (!prj) { return }
-        document.querySelectorAll(`div[data-kproject="${prj}"]`)
-            .forEach(node => {
-                window.requestAnimationFrame(() => {
-                    node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
-                    node.classList.add('selected')
-                })
+        const list = document.querySelectorAll(`div[data-kproject="${prj}"]`)
+        for (let i = 0; i < list.length; i++) {
+            const node = list[i]
+            window.requestAnimationFrame(() => {
+                node.style.setProperty('--selected-color', `hsla(0, 100%, 50%, 1)`)
+                node.classList.add('selected')
             })
+        }
     })
 
     kview.addEventListener('EnterColumn', event => {
@@ -80,10 +86,10 @@ function KTimeline(args) {
         let i = 0;
         for (const node of frame.children) {
             if (event.detail.currentColumn === i) {
-                node.classList.add('khover')
+                window.requestAnimationFrame(() => node.classList.add('khover'))
             }
             if (event.detail.currentColumn !== i) {
-                node.classList.remove('khover')
+                window.requestAnimationFrame(() => node.classList.remove('khover'))
             }
             i++
         }
@@ -110,43 +116,13 @@ function KTimeline(args) {
     })
 
     this.zoomCss = document.createElement('style')
-    this.Updater = new Worker(`${KAIROS.getBase()}/js/ww/updater.js?${localStorage.getItem('klogin-token')}`)
-    this.Updater.onmessage = e => {
-        if (!e || !e.data || !e.data.op) { return }
-        switch (e.data.op) {
-            case 'complements':
-                const node = document.getElementById(`sub-${e.data.date}`)
-                if (!node) { return }
-                let html = ''
-                for (let c in e.data.value) {
-                    let val = e.data.value[c]
-                    if (val.count > 0) {
-                        let spanClass = 'info'
-                        if (val.type === '4' && e.data.options && e.data.options.machinist) {
-                            if (Math.round(e.data.options.machinist.length / 2) <= val.count) {
-                                spanClass = 'error'
-                            }
-                        }
-                        html += `<span class="spanReset ${spanClass}">${val.count} <i class="fas fa-square-full" style="color: #${c}"></i></span>`
-                    }
-                }
-                window.requestAnimationFrame(() => { node.innerHTML = html })
-                break
-            case 'log': break
-        }
-    }
+    this.Updater = new Worker(`$ww/updater.js`)
+    
+    parentNode.appendChild(this.zoomCss)
 
-    document.body.appendChild(this.zoomCss)
-
-    if (typeof window.Rent === 'undefined') {
-        window.Rent = {}
-    }
-    if (typeof window.Rent.Days === 'undefined') {
-        window.Rent.Days = {}
-    }
-
-    window.UnloadCall = {}
     this.postCreate()
+
+    KTimeline._instance = this
 }
 
 KTimeline.prototype = {
@@ -254,18 +230,7 @@ KTimeline.prototype = {
     },
 
     _trCantonName: function (c) {
-        switch (c) {
-            case 'vs': return I18N.$('Valais')
-            case 'vd': return I18N.$('Vaud')
-            case 'ge': return I18N.$('Geneve')
-            case 'ju': return I18N.$('Jura')
-            case 'ne': return I18N.$('Neuchatel')
-            case 'fr': return I18N.$('Fribourg_cat')
-            case 'fr-prot': return I18N.$('Fribourg_pro')
-            case 'be': return I18N.$('Berne')
-            case 'fra': return I18N.$('France')
-            default: return I18N.$('Suisse')
-        }
+        return I18N.$(`_${c}`)
     },
 
     makeDay: function (newDay) {
@@ -374,31 +339,29 @@ KTimeline.prototype = {
         }
     },
 
+    setCenter: function (target) {
+        const origin = (new KView()).get('date-center')
+        const diff = (origin.getTime() / 86400000) - (target.getTime() / 86400000)
+        this.move(diff)
+    },
+
     postCreate: function () {
         this.domNode.querySelector('#AppHeader').style.zIndex = KAIROS.zMax()
         new KTaskBar()
         new KCornerBox()
 
         this.setZoom('week')
-        window.addEventListener('k-set-center', event => {
-            const origin = this.center
-            const target = event.detail.date
-            target.setHours(12, 0, 0, 0)
-            target.setTime(target.getTime() - ((Math.floor(this.domNode.offsetWidth / this.get('blockSize') / 2) - 2) * 86400000))
-            const diff = Math.floor((origin.getTime() - target.getTime()) / 86400000)
-            this.move(diff)
-        })
 
         this.domNode.addEventListener('mouseup', this.mouseUpDown.bind(this))
         this.domNode.addEventListener('mousedown', this.mouseUpDown.bind(this))
         this.domNode.addEventListener('touchstart', this.mouseUpDown.bind(this), { passive: true })
         this.domNode.addEventListener('touchend', this.mouseUpDown.bind(this))
         this.domNode.addEventListener('dragstart', _ => {
-            window.requestAnimationFrame(() => { document.body.classList.add('kdragging') })
+            window.requestAnimationFrame(() => { this.parentNode.classList.add('kdragging') })
         })
         this.domNode.addEventListener('dragend', _ => {
             this.stopBorderAutoScroll()
-            window.requestAnimationFrame(() => { document.body.classList.remove('kdragging') })
+            window.requestAnimationFrame(() => { this.parentNode.classList.remove('kdragging') })
         })
         this.domNode.addEventListener('drop', event => {
             event.preventDefault()
@@ -418,9 +381,6 @@ KTimeline.prototype = {
             const originalObject = kGStore.get(kident.substring(6))
             originalObject.getUINode().destroyClonedNode()
             let object = event.ctrlKey ? originalObject.clone() : originalObject
-            if (!event.ctrlKey) {
-                originalObject.getUINode().container.unrefReservation(originalObject)
-            }
             if (event.ctrlKey) {      
                 object.comment = ''
             }
@@ -534,7 +494,7 @@ KTimeline.prototype = {
                     return iZoomCurrentBox(event)
             }
         })
-        document.body.addEventListener('mouseleave', () => this.followMouse.stop = true)
+        this.parentNode.addEventListener('mouseleave', () => this.followMouse.stop = true)
         window.addEventListener('blur', () => {
             this.followMouse.stop = true
             this.stopBorderAutoScroll()
@@ -544,7 +504,14 @@ KTimeline.prototype = {
         }, { passive: true })
         this.domNode.addEventListener('wheel', this.eWheel.bind(this), { passive: true })
         this.wheelStopSignal = null
+        window.addEventListener('keyup', event => {
+            if (event.key === 'Alt') { event.preventDefault() }
+        })
         window.addEventListener('keydown', event => {
+            if (event.key === 'Alt') { 
+                event.preventDefault() 
+                return
+            }
             if (event.key === 'Control') {
                 if (this.wheelStopSignal) { this.wheelStopSignal.abort() }
                 this.wheelStopSignal = new AbortController()
@@ -576,16 +543,15 @@ KTimeline.prototype = {
     },
 
     mouseUpDown: function (event) {
-        console.log('mouseUpDown')
         for (let n = event.target; n; n = n.parentNode) {
             if (n?.dataset?.stopFollowMouse) { this.followMouse.stop = true; return; }
         }
 
         if (event.type === 'mouseup' || event.type === 'touchstart') {
-            window.requestAnimationFrame(() => document.body.classList.remove('kmove'))
+            window.requestAnimationFrame(() => this.parentNode.classList.remove('kmove'))
             this.followMouse.stop = true
         } else {
-            window.requestAnimationFrame(() => document.body.classList.add('kmove'))
+            window.requestAnimationFrame(() => this.parentNode.classList.add('kmove'))
             if (KAIROS.mouse.clientX >= 200) {
                 this.followMouse.multiplicator = 1
                 if (event.target.classList.contains('weekNumber')) {
@@ -657,41 +623,48 @@ KTimeline.prototype = {
     getDateRange: function () {
         const kview = new KView()
         return {
-            begin: new Date(kview.get('date-origin').getTime() - (Math.floor(kview.get('width') / 2) - 1) * 86400000),
-            end: new Date(kview.get('date-origin').getTime() + (Math.floor(kview.get('width') / 2) - 1) * 86400000)
+            begin: new Date(kview.get('date-center').getTime() - (Math.floor(kview.get('width') / 2) - 1) * 86400000),
+            end: new Date(kview.get('date-center').getTime() + (Math.floor(kview.get('width') / 2) - 1) * 86400000)
         }
-    },
-
-    today: function () {
-        this.move(Math.round((this.center.getTime() - (new Date()).getTime()) / 86400000) + 6)
     },
 
     move: function (x) {
         if (x === 0) { return }
-        return x < 0 ? this.moveXRight(Math.abs(x)) : this.moveXLeft(x)
+        if (this.moveTimeout) { return }
+        this.moveTimeout = setTimeout(() => {
+            const r = x < 0 ? this.moveXRight(Math.abs(x)) : this.moveXLeft(x)
+            this.moveTimeout = null
+            return r
+        }, 100)
     },
 
     moveXRight: function (x) {
+        console.log('moveXRight', x)
         const kview = new KView()
         kview.move(-x)
-        this.center.setTime(this.center.getTime() + Math.abs(x) * 86400000)
+        kview.get('date-center').setTime(kview.get('date-center').getTime() + Math.abs(x) * 86400000)
         this.update()
-        this.drawTimeline()
-        this.drawVerticalLine()
+        .then(_ => {
+            this.drawTimeline()
+            this.drawVerticalLine()
+        })
     },
 
     moveXLeft: function (x) {
+        console.log('moveXLeft', x)
         const kview = new KView()
         kview.move(x)
-        this.center.setTime(this.center.getTime() - Math.abs(x) * 86400000)
+        kview.get('date-center').setTime(kview.get('date-center').getTime() - Math.abs(x) * 86400000)
         this.update()
-        this.drawTimeline()
-        this.drawVerticalLine()
+        .then(_ => {
+            this.drawTimeline()
+            this.drawVerticalLine()
+        })
     },
 
     drawTimeline: function () {
         const kview = new KView()
-        const avWidth = this.domNode.offsetWidth
+        const avWidth = this.parentNode.getBoundingClientRect().width
         let currentWeek = 0
         let dayCount = 0
         let currentMonth = -1
@@ -703,24 +676,19 @@ KTimeline.prototype = {
         this.destroyWeekNumber()
         this.destroyMonthName()
         for (var x = this.days.pop(); x != null; x = this.days.pop()) {
-            if (x.domNode.parentNode) {
-                x.domNode.parentNode.removeChild(x.domNode)
-            }
+            if (!x.domNode.parentNode) { continue }
+            x.domNode.parentNode.removeChild(x.domNode)
         }
 
         var docFrag = document.createDocumentFragment()
         var hFrag = document.createDocumentFragment()
         var shFrag = document.createDocumentFragment()
         let subLineFrag = document.createDocumentFragment()
-
-        if (!this.Holidays) {
-            this.Holidays = new Holiday(this.center.getFullYear())
-        } else {
-            this.Holidays.addYear(this.center.getFullYear())
-        }
-
+        
+        this.Holidays = new Holiday(kview.get('date-center').getFullYear())
+        
         if (!kview.get('date-origin')) {
-            kview.set('date-origin', new Date(this.center.getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000)))
+            kview.set('date-origin', new Date(kview.get('date-center').getTime() - ((Math.floor(avWidth / this.get('blockSize') / 2) - 1) * 86400000)))
         }
 
         function sameDay(a, b) {
@@ -793,14 +761,11 @@ KTimeline.prototype = {
                 })
             }
 
-            var d = this.makeDay(day)
+            const d = this.makeDay(day)
             d.domNode.style.display = 'inline-block'
             d.domNode.style.maxWidth = `${this.get('blockSize')}px`
             d.domNode.style.width = `${this.get('blockSize')}px`
             d.domNode.style.overflow = 'hidden'
-            if (typeof window.Rent.Days[d.stamp] === 'undefined') {
-                window.Rent.Days[d.stamp] = {}
-            }
 
             this.days.push(d)
             if (this.get('blockSize') > 20) {
@@ -810,6 +775,7 @@ KTimeline.prototype = {
             day = new Date(day.getTime() + 86400000)
             dayCount++; dayMonthCount++
         }
+
         if (dayCount > 0) {
             this.createWeekNumber(currentWeek, dayCount, hFrag)
         }
@@ -819,7 +785,6 @@ KTimeline.prototype = {
 
         kview.setViewportWidth(this.get('zoom') * this.get('blockSize'))
         kview.setMargins(120, 14, 50, this.get('offset'))
-
         window.requestAnimationFrame(() => {
             this.domNode.querySelector('#TL_subline').innerHTML = ''
             this.domNode.querySelector('#TL_subline').appendChild(subLineFrag)
@@ -830,84 +795,80 @@ KTimeline.prototype = {
     },
 
     drawVerticalLine: function () {
-        const kview = new KView()
-        const draw = () => {
-            return new Promise(resolve => {
-                const frame = document.getElementById('VerticalLineFrame')
-                if (!frame) { resolve(); return }
-                const dayLength = this.days.length
-                const frameLength = frame.children.length
-                const blocksize = this.get('blockSize')
-                const offset = this.get('offset')
+        return new Promise(resolve => {
+            const kview = new KView()
+            const frame = document.getElementById('VerticalLineFrame')
+            if (!frame) { resolve(); return }
+            const dayLength = this.days.length
+            const frameLength = frame.children.length
+            const blocksize = this.get('blockSize')
+            const offset = this.get('offset')
 
-                const chain = Promise.resolve()
+            const chain = Promise.resolve()
 
-                for (let i = dayLength; i < frameLength; i++) {
-                    const node = frame.children[i]
-                    chain.then(() => {
-                        return new Promise(resolve => {
-                            window.requestAnimationFrame(() => {
-                                if (node.parentNode) { frame.removeChild(node); }
-                                resolve()
-                            })
-                        })
-                    })
-                }
-                const today = new Date()
-                for (let i = 0; i < dayLength; i++) {
-                    const day = new Date()
-                    day.setTime(kview.get('date-origin').getTime() + (i * 86400000))
-                    const node = frame.children[i] || document.createElement('DIV')
-                    if (!frame.children[i]) {
-                        chain.then(() => {
-                            return new Promise((resolve) => {
-                                window.requestAnimationFrame(() => {
-                                    frame.appendChild(node)
-                                    resolve()
-                                })
-                            })
-                        })
-                    }
-
-                    const classes = ['vertical']
-                    const left = offset + (blocksize * i)
-                    if (i % 2) {
-                        classes.push('even')
-                    } else {
-                        classes.push('odd')
-                    }
-
-                    /* priority on showing holiday : a non working staturday can be 
-                       used to work, if it's an holiday, need to pay more
-                    */
-                    if (this.Holidays.isHolidayInAnyOf(day, KAIROS.holidays)) {
-                        classes.push('nowork')
-                        classes.push('holiday')
-                    } else if (KAIROS.days[day.getDay()].chunks === null) {
-                        classes.push('nowork')
-                    }
-
-                    if (day.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
-                        classes.push('today')
-                    }
-
-                    chain.then(() => {
-                        return new Promise(resolve => {
-                            window.requestAnimationFrame(() => {
-                                node.style.setProperty('left', `${left}px`)
-                                node.setAttribute('class', classes.join(' '))
-                                resolve()
-                            })
-                        })
-                    })
-                }
+            for (let i = dayLength; i < frameLength; i++) {
+                const node = frame.children[i]
                 chain.then(() => {
-                    resolve()
+                    return new Promise(resolve => {
+                        window.requestAnimationFrame(() => {
+                            if (node.parentNode) { frame.removeChild(node); }
+                            resolve()
+                        })
+                    })
                 })
+            }
+            const today = new Date()
+            for (let i = 0; i < dayLength; i++) {
+                const day = new Date()
+                day.setTime(kview.get('date-origin').getTime() + (i * 86400000))
+                const node = frame.children[i] || document.createElement('DIV')
+                if (!frame.children[i]) {
+                    chain.then(() => {
+                        return new Promise((resolve) => {
+                            window.requestAnimationFrame(() => {
+                                frame.appendChild(node)
+                                resolve()
+                            })
+                        })
+                    })
+                }
+
+                const classes = ['vertical']
+                const left = offset + (blocksize * i)
+                if (i % 2) {
+                    classes.push('even')
+                } else {
+                    classes.push('odd')
+                }
+
+                /* priority on showing holiday : a non working staturday can be 
+                    used to work, if it's an holiday, need to pay more
+                */
+                if (this.Holidays.isHolidayInAnyOf(day, KAIROS.holidays)) {
+                    classes.push('nowork')
+                    classes.push('holiday')
+                } else if (KAIROS.days[day.getDay()].chunks === null) {
+                    classes.push('nowork')
+                }
+
+                if (day.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+                    classes.push('today')
+                }
+
+                chain.then(() => {
+                    return new Promise(resolve => {
+                        window.requestAnimationFrame(() => {
+                            node.style.setProperty('left', `${left}px`)
+                            node.setAttribute('class', classes.join(' '))
+                            resolve()
+                        })
+                    })
+                })
+            }
+            chain.then(() => {
+                resolve()
             })
-        }
-        if (!this.vDrawPromise) { this.vDrawPromise = Promise.resolve() }
-        this.vDrawPromise.then(() => draw())
+        })
     },
 
     loadEntries: function () {
@@ -988,32 +949,29 @@ KTimeline.prototype = {
     },
 
     run: function () {
-        this.currentPosition = 0
-        this.update()
-      
         this.loadEntries({ state: 'SOLD' })
         .then(() => {
             this.update()
-            this.Updater.postMessage({ op: 'ready' })
             this.drawTimeline()
+            return KAIROS.getClientId()
+        })
+        .then(clientid => {
+            this.Updater.postMessage({ op: 'ready', token: localStorage.getItem('klogin-token'), clientid: clientid})
         })
     },
 
     refresh: function () {
-        if (!this.timelineMoving) {
-            const begin = new Date()
-            const end = new Date()
+        const begin = new Date()
+        const end = new Date()
+        const daterange = this.getDateRange()
+        if (daterange.begin === null || daterange.end === null) { return }
 
-            const daterange = this.getDateRange()
-            if (daterange.begin === null || daterange.end === null) { return }
+        begin.setTime(daterange.begin.getTime())
+        end.setTime(daterange.end.getTime())
+        begin.setTime(begin.getTime() - 604800000)
+        end.setTime(end.getTime() + 604800000)
 
-            begin.setTime(daterange.begin.getTime())
-            end.setTime(daterange.end.getTime())
-            begin.setTime(begin.getTime() - 604800000)
-            end.setTime(end.getTime() + 604800000)
-
-            this.Updater.postMessage({ op: 'move', begin: begin, end: end })
-        }
+        this.Updater.postMessage({ op: 'move', begin: begin, end: end })
     },
 
     update: function () {
@@ -1022,9 +980,5 @@ KTimeline.prototype = {
             new KView().runRunOnMove()
             return resolve()
         })
-    },
-
-    print: function (url) {
-        window.open(url)
     }
 }

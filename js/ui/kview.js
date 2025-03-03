@@ -66,10 +66,7 @@ KViewCell.prototype.get = function (id) {
 
 KViewCell.prototype.delete = function (id) {
     const idx = this.indexOf(id)
-    if (idx !== -1) { 
-        const object = this.content.splice(idx, 1) 
-        object[0].mark('destroyed')
-    }
+    if (idx !== -1) { this.content.splice(idx, 1) }
     this.size = this.content.length
 }
 
@@ -88,7 +85,7 @@ KViewCell.prototype.indexOf = function (id) {
 
 KViewCell.prototype.clear = function () {
     this.content.forEach(element => {       
-        element.object.mark('destroyed')
+        element.object.getUINode().unrender()
     })
     this.content = []
     this.size = 0
@@ -126,7 +123,8 @@ function KView () {
     this.gridOffset = 0
     this.runOnMove = new Map()
     this.runOnMoveId = 0
-    this.set('width', 120)
+    this.set('width', 30)
+    this.set('leeway', 3)
     KView._instance = this
 }
 
@@ -169,8 +167,15 @@ KView.prototype.delRunOnMove = function (id) {
 }
 
 KView.prototype.runRunOnMove = function () {
-    for (const [_, cb] of this.runOnMove) {
-        if (typeof cb === 'function') { window.requestIdleCallback(() => { cb() }) }
+    for (let i = 0; i < this.runOnMove.size; i++) {
+        const cb = this.runOnMove.get(i)
+        if (typeof cb === 'function') { 
+            try {
+                cb() 
+            } catch (e) {
+                new KDebug(e)
+            }
+        }
     }
 }
 
@@ -226,11 +231,10 @@ KView.prototype._buildRow = function () {
 
 KView.prototype._buildGrid = function () {
     const daysec = 86400
-
-    const date = this.get('date-origin')
-    const day0 = Math.floor(date.getTime() / daysec / 1000)
-    const height = this.data.get('entry-count')
+    
     const width = this.get('width') // must be bigger than the request size
+    const height = this.data.get('entry-count')
+    const day0 = Math.floor(this.data.get('date-center').getTime() / daysec / 1000) - Math.round((width / 2))
     const newGrid = new Array(width * height)
     
     for (i = 0; i < newGrid.length; i++) {
@@ -446,10 +450,9 @@ KView.prototype.getRowFromDates = function (dateStart, dateEnd, y) {
     dateEnd = new Date(dateEnd.getTime())
     dateEnd.setHours(12, 0, 0, 0)
     const row = []
-    let xs, xe
 
-    xs = Math.round((dateStart.getTime() - origin.getTime()) / 86400000)
-    xe = xs + Math.round((dateEnd.getTime() - dateStart.getTime()) / 86400000)
+    const xs = Math.round((dateStart.getTime() - origin.getTime()) / 86400000)
+    const xe = xs + Math.round((dateEnd.getTime() - dateStart.getTime()) / 86400000)
 
     for (let i = xs; i <= xe; i++) {
         row.push(this.getCell(i, y))
@@ -495,34 +498,8 @@ KView.prototype.getViewRange = function () {
     return [this.gridOffset, this.gridOffset + this.get('day-count')]
 }
 
-KView.prototype.clearLeftCol = function () {
-    for (let i = 0; i < this.get('entry-count'); i++) { 
-        this.grid[i].clear() 
-    }
-}
-
-KView.prototype.moveLeft = function () {
-    for (let i = 0; i < this.grid.length - this.get('entry-count'); i++) {
-        this.grid[i] = this.grid[i + this.get('entry-count')]
-    }
-}
-
-KView.prototype.clearRightCol = function () {
-    for (let i = this.grid.length - this.get('entry-count'); i < this.grid.length; i++) { 
-        this.grid[i].clear() 
-    }
-}
-
-KView.prototype.moveRight = function () {
-    for (let i = this.grid.length - this.get('entry-count') - 1; i >= this.get('entry-count'); i--) {
-        this.grid[i + this.get('entry-count')] = this.grid[i]
-    }
-    for (let i = 0; i < this.get('entry-count'); i++) {
-        this.grid[i].day--
-    }
-}
-
 KView.prototype.move = function (days) {
+    console.log('kview.move')
     if (!this.grid) { return }
     if (days === 0) { return }
     const dateOrigin = this.get('date-origin')
@@ -544,8 +521,7 @@ KView.prototype.move = function (days) {
 KView.prototype._clearCellOnMove = function (deltaX, date) {
     const daysec = 86400
     const currentDay = Math.floor(date.getTime() / daysec / 1000)
-
-    for (let i = 0; i < Math.abs(deltaX); i++) {
+    for (let i = 1; i <= Math.abs(deltaX); i++) {
         if (deltaX < 0) {
             const day0 = this.grid[this.grid.length - 1].day
             if (day0 - currentDay < Math.abs(deltaX)) {
@@ -562,7 +538,8 @@ KView.prototype._clearCellOnMove = function (deltaX, date) {
             }
         } else {
             const day0 = this.grid[0].day
-            if (day0 - currentDay < Math.abs(deltaX)) {
+
+            if (currentDay - day0 < Math.abs(deltaX)) {
                 this._removeAll()
                 this._buildGrid()
                 return
@@ -578,23 +555,35 @@ KView.prototype._clearCellOnMove = function (deltaX, date) {
     }
 }
 
+KView.prototype.clearRightCol = function () {
+    for (let i = this.grid.length - this.get('entry-count'); i < this.grid.length; i++) { 
+        this.grid[i].clear() 
+    }
+}
+
+KView.prototype.clearLeftCol = function () {
+    for (let i = 0; i < this.get('entry-count'); i++) { 
+        this.grid[i].clear() 
+    }
+}
+
 KView.prototype._directRender = function (range = null) {
+    console.log('kview.direct render')
     if (!this.grid) { return }
     if (!range) {
         range = this.getViewRange()
         range[1] = range[1] * this.get('entry-count')
         range[0] = range[0] * this.get('entry-count')
     }
-    const toUnrender = new Map()
-    const toPlace = new Map()
+    const toUnrender = []
+    const toRender = []
     for (let i = range[0]; i <= range[1]; i++) {
         const cell = this.grid[i]
         if (!cell) { continue }
         let order = 0
-        for (const [key, object] of cell.entries()) {        
+        for (const [key, object] of cell.entries()) {  
             if(object.isDestroyed()) {
-                toUnrender.set(object.get('id'), object)
-                cell.delete(key)
+                toUnrender.push(object)
                 continue
             }
             const p = this.getRowObject(Math.round((i - (range[0]))  % this.get('entry-count')))
@@ -609,40 +598,38 @@ KView.prototype._directRender = function (range = null) {
             if (object.cell0 > i) { object.cell0 = i }
             if (!object.cellN) { object.cellN = i }
             if (object.cellN < i) { object.cellN = i }
-            toPlace.set(object.get('id'), [p.KUI, object])
-            toUnrender.set(object.get('id'), null)
+            toRender.push([p.KUI, object])
             order++
         }
     }
 
-    for (const [_, p] of toPlace) {
-        const uinode = p[1].getUINode()
-        if (uinode) {
-            p[0].getDomNode()
-                .then(domNode => {
-                    uinode.render(domNode)
-                    .then(node => {
-                        if (!node || !domNode) { return }
-                        domNode.appendChild(node)    
-                    })
-                })
-            continue 
+    while(toRender.length > 0) {
+        const [parent, object] = toRender.shift()
+        if (!parent || !object) { return }
+        const uinode = object.getUINode()
+        if (!uinode) { return }
+        uinode.render()
+    }
+
+    for (let i = range[0] - (this.get('leeway') * this.get('entry-count')); i < range[0] - 1; i++) {
+        const cell = this.grid[i]
+        if (!cell) { continue }
+        for (const [key, object] of cell.entries()) {
+            if (object.cell0 && object.cell0 !== i) { continue }
+            if (object.cellN && object.cellN !== i) { continue }
+            object.getUINode()?.unrender()
         }
-        p[0].placeReservation(p[1])
-        .then(uireservation => {
-            if (!uireservation) { return }
-            uireservation.render()
-        })
     }
-
-
-    for (const [_, o] of toUnrender) {
-        if (!o) { continue }
-        const ui = o.getUINode()
-        if (ui) { ui.unrender() }
+    for (let i = range[1] + (this.get('leeway') * this.get('entry-count')); i > range[1] + 1; i--) {
+        const cell = this.grid[i]
+        if (!cell) { continue }
+        for (const [key, object] of cell.entries()) {
+            if (object.cell0 && object.cell0 !== i) { continue }
+            if (object.cellN && object.cellN !== i) { continue }
+            object.getUINode()?.unrender()        
+        }
     }
-
-    window.setTimeout(() => this._clearOutsideRange(range), 3)
+    this._clearOutsideRange(range)
 }
 
 KView.prototype._removeAll = function () {
@@ -653,35 +640,51 @@ KView.prototype._removeAll = function () {
     }
 }
 
-KView.prototype.render = kdebounce(function (range) { this._directRender(range) }, 10)
+KView.debounceStats = {Time: 1, CAn: 1, N: 1, Max: 1, Timeout: null}
+
+KView.prototype.render = function (range) {
+    console.log('kview.render')
+    if (KView.debounceStats.Timeout) { return }
+    KView.debounceStats.Timeout = setTimeout(() => {
+        const start = performance.now()
+        this._directRender(range)  
+        const duration = performance.now() - start
+        if (duration > KView.debounceStats.Max) { KView.debounceStats.Max = duration }
+        /* rolling average */
+        KView.debounceStats.CAn = (duration + KView.debounceStats.CAn * KView.debounceStats.N) / (++KView.debounceStats.N)
+        /* Jump high as soon as we have a big difference, it gives a better experience
+         * after some tests */
+        if (Math.abs(KView.debounceStats.CAn - KView.debounceStats.Max) > 10) {
+            KView.debounceStats.CAn = KView.debounceStats.Max * 2
+            KView.debounceStats.Max /= 2
+        }
+        KView.debounceStats.Time = Math.round(KView.debounceStats.CAn) + 1
+        KView.debounceStats.Timeout = null
+    }, KView.debounceStats.Time)
+}
 
 KView.prototype._clearOutsideRange = function (range) {
     const toUnrender = new Map()
-    for (let i = range[0] - 1; i >= 0; i--) {
+    for (let i = range[0] - (this.get('leeway') * this.get('entry-count')); i >= 0; i--) {
         const cell = this.grid[i]
         if (!cell) { continue; }
         /* unrender outside range */
         for (const [key, object] of cell.entries()) {
             if (object.cell0 && object.cell0 !== i) { continue }
             if (object.cellN && object.cellN !== i) { continue }
-            if(object.isDestroyed()) {
-                cell.delete(key)
-                continue
-            }
-            toUnrender.set(object.get('id'), object)
+            cell.delete(key)
+            object.getUINode()?.unrender()
         }
     }
-    for (let i = range[1] + 1; i < this.grid.length; i++) {
+    for (let i = range[1] + (this.get('leeway') * this.get('entry-count')) + 1; i < this.grid.length; i++) {
         const cell = this.grid[i]
         if (!cell) { continue; }
         /* unrender outside range */
         for (const [key, object] of cell.entries()) {
             if (object.cell0 && object.cell0 !== i) { continue }
             if (object.cellN && object.cellN !== i) { continue }
-            toUnrender.set(object.get('id'), object)
-            if(object.isDestroyed()) {
-                cell.delete(key)
-            }        
+            cell.delete(key)
+            object.getUINode()?.unrender()
         }
     }
     
@@ -705,6 +708,15 @@ KView.prototype.setMargins = function (top, right, bottom, left) {
 }
 
 KView.prototype.set = function (name, value) {
+    switch(name) {
+        case 'date-origin':
+        case 'date-center':
+            if (!(value instanceof Date)) {
+                value = new Date(value)
+            }
+            if (isNaN(value.getTime())) { throw new KError(I18N.$('ERR:Reload')) }
+            break
+    }
     return this.data.set(name, value)
 }
 
@@ -961,12 +973,10 @@ KView.prototype.getObjectsOnGrid = function (x, y) {
 }
 
 KView.prototype.removeObject = function (id) {
-    let firstFound = false
     for (const cell of this.grid) {
-        if (!cell.has(id) && firstFound) { break }
         if (cell.has(id)) {
-            firstFound = true
-            cell.delete(id)
+            cell.get(id).getUINode().unrender()
+            return cell.delete(id)
         }
     }
 }
@@ -977,6 +987,15 @@ KView.prototype.removeObjectOnGrid = function (id, x, y) {
     for(const cell of cells) {
         cell.delete(id)
     }
+}
+
+KView.prototype.getObject = function (id) {
+    for (const cell of this.grid) {
+        if (cell.has(id)) {
+            return cell.get(id)
+        }
+    }
+    return null
 }
 
 KView.prototype.moveObjectOnGrid = function (id, srcX, srcY, destX, destY) {

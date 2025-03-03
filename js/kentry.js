@@ -1,3 +1,26 @@
+function KEntryObject() {
+    this.data = new Map()
+}
+
+KEntryObject.prototype.set = function (name, value) {
+    return this.data.set(name, value)
+}
+KEntryObject.prototype.get = function (name) {
+    return this.data.get(name)
+}
+KEntryObject.prototype.has = function (name) {
+    return this.data.has(name)
+}
+KEntryObject.prototype.delete = function (name) {
+    return this.data.delete(name)
+}
+KEntryObject.prototype.size = function () {
+    return this.data.size
+}
+KEntryObject.prototype.entries = function () {
+    return this.data.entries()
+}
+
 function KEntry (id) {
     this.data = new Map()
     this.id = id
@@ -5,7 +28,7 @@ function KEntry (id) {
     this.channel = new MessageChannel()
     this.channel.port1.onmessage = this.handleMessage.bind(this)
     this.evtTarget = new EventTarget()
-    this.entries = new Map()
+    this.entries = new KEntryObject()
     this.wwInstance = null
     this._loaded = null
     this.KUI = new KUIEntry(this, KAIROS.stores.kentry.ui)
@@ -206,11 +229,20 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
             const entry = list[start]
             const uuid = entry.uuid
 
-            if (this.entries.has(uuid)) {
-                const currentEntry = this.entries.get(uuid)
-                if (currentEntry.get('version') === entry.version) {
-                    start++
-                    continue 
+            const currentEntry = this.entries.get(uuid)
+            if (currentEntry) {
+                const beginDate = new KDate(entry.begin)
+                beginDate.setHours(7, 0, 0, 0)
+                const endDate = new KDate(entry.end)
+                endDate.setHours(17, 30, 0, 0)
+                let leftbox = kview.getRelativeColFromDate(beginDate)
+                let rightbox = kview.getRelativeColFromDate(endDate)
+                if (leftbox === Infinity) { start++; continue }
+                if (leftbox < 0) {
+                    if (rightbox < 0) {
+                        start++
+                        continue
+                    }
                 }
             }
 
@@ -231,6 +263,7 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
                 const reservation = new KObject('kreservation', entry)
                 this.entries.set(entry.uuid, reservation)
                 const rows = kview.getRowFromDates(new Date(reservation.get('begin')), new Date(reservation.get('end')), y)
+
                 for (const row of rows) {
                     if (!row) { continue }
                     row.set(`${reservation.getType()}:${reservation.get('uid')}`, reservation)
@@ -254,28 +287,44 @@ KEntry.prototype.processReservationList = function (list, start = 0) {
         })
 }
 
+/**
+ * 
+ * Entry point for reservation, coming from the worker.
+ */
 KEntry.prototype.handleMessage = function (msg) {
     const kview = new KView()
     const msgData = msg.data
     switch (msgData.op) {
         case 'remove':
             (() => {
-                if (this.entries.has(msgData.reservation.uuid)) {
-                    const reservation = this.entries.get(msgData.reservation.uuid)
-                    kview.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
-                    this.entries.delete(msgData.reservation.uuid)
+                const reservation = msgData.reservation
+                const previous = kview.getObject(`kreservation:${reservation.id}`)
+                kview.removeObject(`kreservation:${reservation.id}`)
+                const uinode = previous.getUINode()
+                if (uinode) {
+                    uinode.container.unrefReservation(previous)
+                    uinode.unrender()
                 }
+                previous.destroy()
             })()
             break
         case 'update-reservation':
         case 'add':
             (() => {
                 /* remove object first */
-                if (this.entries.has(msgData.reservation.uuid)) {
-                    const reservation = this.entries.get(msgData.reservation.uuid)
-                    kview.removeObject(`${reservation.getType()}:${reservation.get('uid')}`)
+                const reservation = msgData.reservation
+                const previous = kview.getObject(`kreservation:${reservation.id}`)
+                console.log(previous.get('target'), reservation.target, previous.get('target') !== reservation.target)
+                if (previous && previous.get('target') !== reservation.target) {
+                    kview.removeObject(`kreservation:${reservation.id}`)
+                    const uinode = previous.getUINode()
+                    if (uinode) {
+                       // uinode.container.unrefReservation(previous)
+                      //  uinode.unrender()
+                    }
+                    //previous.destroy()
                 }
-                this.processReservationList([msgData.reservation])
+                this.processReservationList([reservation])
             })()
             break
         case 'entries':

@@ -1,4 +1,3 @@
-
 KAIROS.debounce = function (callback, timeout = 250) {
     let timer
     return (...args) => {
@@ -276,6 +275,7 @@ KAIROS.catch = function (reason, message = '', level = K_ERROR, code = 0) {
 }
 
 KAIROS.log = function (level, txt, code) {
+    if (I18N){ txt = I18N.$(txt) }
     let timeout = 10000
     let div 
     if (!KAIROS.log._history) {
@@ -359,6 +359,13 @@ KAIROS.log = function (level, txt, code) {
         logLine.style.setProperty('z-index', zmax)
         logLine.appendChild(div)
     })
+}
+
+if (!KAIROS._logBroadcastChannel) {
+    KAIROS._logBroadcastChannel = new BroadcastChannel('kairos-log')
+    KAIROS._logBroadcastChannel.onmessage = (event) => {
+        KAIROS.log(event.data.level, event.data.message, event.data.code)
+    }
 }
 
 KAIROS.stackClosable = function (closeFunction) {

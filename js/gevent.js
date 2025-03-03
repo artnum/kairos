@@ -1,7 +1,7 @@
 function GEvent () {
   if (GEvent._instance) { return GEvent._instance }
   this.GEventTarget = new EventTarget()
-  this.GEventBC = new BroadcastChannel(`${KAIROS.getBase()}/GlobalEvent`)
+  this.GEventBC = new BroadcastChannel(`KAIROS/GlobalEvent`)
   this.GEventBC.onmessage = this.handleMessage.bind(this)
   this.srcId = KAIROS.getClientId()
   GEvent._instance = this

@@ -112,10 +112,8 @@ window.addEventListener('klogin-done', event => {
 window.addEventListener('kairos-preload', event => {
     const resources = [
         ['../css/timeline.css', 'css'],
-        ['../css/dtable.css', 'css'],
         ['../css/klives.css', 'css'],
         ['../css/fontawesome-all.min.css', 'css'],
-        ['../css/balloon.css/balloon.min.css', 'css'],
         ['../css/klateral.css', 'css'],
         ['../css/kform.css', 'css'],
         
@@ -124,7 +122,6 @@ window.addEventListener('kairos-preload', event => {
         [`${KAIROS.URL(KAIROS.kaalURL)}/admin/js/string.js`, 'script'],
         [`${KAIROS.URL(KAIROS.kaalURL)}/admin/js/fetch.js`, 'script'],
 
-        ['../js/animation.js', 'script'],
         ['../js/css.js', 'script'],
         ['../js/color.js', 'script'],
         ['../js/gevent.js', 'script'],
@@ -143,8 +140,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/kcache.js', 'script'],
         ['../js/PJs/pSBC.js', 'script'],
         ['../js/select.js', 'script'],
-        ['../js/view.js', 'script'],
-        ['../js/ldap.js', 'script'],
         ['../js/string.js','script'],
         ['../js/address.js', 'script'],
         ['../js/kformdata.js', 'script'],
@@ -203,7 +198,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/interaction/ontimeline.js', 'script'],
         ['../js/interaction/kmultiselect.js', 'script'],
 
-        ['../node_modules/artnum/DTable.js', 'script'],
         ['../node_modules/artnum/Date.js', 'script'],
         ['../node_modules/artnum/String.js', 'script'],
     ]

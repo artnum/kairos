@@ -206,7 +206,7 @@ KCommandOverlay.prototype.gotoDay = function (val) {
             val = KDate.EUParse(val)
         }
         if (isNaN(val.getTime())) { return reject() }
-        window.dispatchEvent(new CustomEvent('k-set-center', { detail: { date: val } }))
+        (new KTimeline()).setCenter(val)
         return resolve()
     })
 }

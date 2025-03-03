@@ -158,7 +158,7 @@ KUIEntry.prototype.getHeight = function () {
 
 KUIEntry.prototype.removeReservation = function (reservation) {
     return new Promise((resolve) => {
-        const uireservation = this.unrefReservation(reservation)
+        const uireservation = this.content.get(reservation.get('uuid'))
         uireservation.unrender()
         .then(_ => resolve())
         .catch(cause => { throw new Error(cause) })
@@ -180,10 +180,11 @@ KUIEntry.prototype.placeReservation = function (reservation) {
         reservation.bindUINode(uireservation)
         uireservation.setContainer(this)
         uireservation.setRow(this.dataObject.id)
-        uireservation.render()
+        return resolve()
+        /*uireservation.render()
         .then(_ => {
             return resolve()
-        })
+        })*/
         .catch(cause => {
             throw new KError(cause)
         })

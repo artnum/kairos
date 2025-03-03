@@ -10,9 +10,17 @@
     cursor: pointer;
 }
 
-.kreservation.k-selected {
-    box-shadow: 2px 5px 5px 0px rgba(255, 0, 0, 0.75);
-    border: 1px solid rgb(255, 0, 0);
+
+.is-highlight-active .kreservation.selected {
+    filter: none !important;
+    opacity: 1 !important;
+    box-shadow: 2px 5px 5px 0px rgba(0,0,0,0.75) !important;
+    border: 1px solid black !important;
+}
+
+.is-highlight-active .kreservation {
+    filter: grayscale() !important;
+    opacity: 0.2 !important;
 }
 
 .kreservation.k-closed {

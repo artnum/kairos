@@ -4,6 +4,7 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     }
     const uiNode = object.getUINode()
     if (uiNode && !options.copy) { return uiNode }
+    this.version = 0
     this.EvtTarget = new EventTarget()
     this.object = object
     this.props = new Map()
@@ -172,11 +173,13 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
         if (kglobal.has('k-project-highlight-locked') 
                 && kglobal.get('k-project-highlight-locked') === this.object.getRelation('kaffaire').getRelation('kproject').get('uid')) {
             contextMenu.add(I18N.$('Annuler_surlignage'), () => {
+                (new KTimeline()).domNode.classList.remove('is-highlight-active')
                 this.lowlight()
                 kglobal.delete('k-project-highlight-locked')
             })
         } else {
             contextMenu.add(I18N.$('Surligner'), () => {
+                (new KTimeline()).domNode.classList.add('is-highlight-active')
                 this.highlight()
                 kglobal.set('k-project-highlight-locked', this.object.getRelation('kaffaire').getRelation('kproject').get('uid'))
             })
@@ -296,7 +299,6 @@ function KUIReservation (object, options = {readonly: false, copy: false}) {
     this.domNode.addEventListener('mousedown', (event) => {
         event.stopPropagation()
     }, {passive: true})
-    object.addEventListener('update', () => { this.render() })
     const affaire = this.object.getRelation('kaffaire')
     if (affaire) {
         affaire.addEventListener('update', () => { this.render() })
@@ -481,140 +483,144 @@ KUIReservation.prototype.showRelation = function (from = []) {
     if ((new KSettings()).get('dont-display-relation')) { return }
     if (this.smallView) { return }
     if (from.indexOf(this.object.get('id')) !== -1) { return }
-    from.push(this.object.get('id'))
-    this.relationPromise
-    .then(relations => {
-        const ostore = new KObjectGStore()
-        for (const relation of relations) {
-            if (this.relations.has(`${relation.source},${relation.closure}`)) {
-                const displayedRelation = this.relations.get(`${relation.source},${relation.closure}`)
-                if(displayedRelation.leaderline) {
-                    if (!displayedRelation.source.domNode.parentNode || !displayedRelation.closure.domNode.parentNode) {
-                        displayedRelation.source.hideRelation([this.object.get('id')])
-                        displayedRelation.closure.hideRelation([this.object.get('id')])
-                        displayedRelation.leaderline.remove()
-                        this.relations.delete(`${relation.source},${relation.closure}`)
+        if (this.unrenderCalled) { return }
+        this.relationShown = true
+        from.push(this.object.get('id'))
+        this.relationPromise
+        .then(relations => {
+            const ostore = new KObjectGStore()
+            for (const relation of relations) {
+                if (this.relations.has(`${relation.source},${relation.closure}`)) {
+                    const displayedRelation = this.relations.get(`${relation.source},${relation.closure}`)
+                    if(displayedRelation.leaderline) {
+                        if (!displayedRelation.source.domNode.parentNode || !displayedRelation.closure.domNode.parentNode) {
+                            displayedRelation.source.hideRelation([this.object.get('id')])
+                            displayedRelation.closure.hideRelation([this.object.get('id')])
+                            displayedRelation.leaderline.remove()
+                            this.relations.delete(`${relation.source},${relation.closure}`)
+                        } else {
+                            displayedRelation.leaderline.position()
+                        }
                     } else {
-                        displayedRelation.leaderline.position()
+                        if (!displayedRelation.source.domNode.parentNode ||
+                            !displayedRelation.closure.domNode.parentNode) 
+                        {
+                            continue
+                        }
+                        const end1 = displayedRelation.source.object.get('end')
+                        const end2 = displayedRelation.closure.object.get('end')
+                        if (!displayedRelation.source.domNode || displayedRelation.closure.domNode) { continue }
+                        const leaderline = this.newLeaderLine({
+                            start: displayedRelation.source.domNode,
+                            end: displayedRelation.closure.domNode, 
+                            middleLabel: displayedRelation.entry.name,
+                            color: end1.getTime() - end2.getTime() < 0 ? 'red' : 'green'
+                        })
+                        if (!leaderline) { continue }
+                        displayedRelation.leaderline = leaderline
+                        this.relations.set(`${relation.source},${relation.closure}`, displayedRelation)
                     }
-                } else {
-                    if (!displayedRelation.source.domNode.parentNode ||
-                        !displayedRelation.closure.domNode.parentNode) 
-                    {
-                        continue
-                    }
-                    const end1 = displayedRelation.source.object.get('end')
-                    const end2 = displayedRelation.closure.object.get('end')
-                    if (!displayedRelation.source.domNode || displayedRelation.closure.domNode) { continue }
-                    const leaderline = this.newLeaderLine({
-                        start: displayedRelation.source.domNode,
-                        end: displayedRelation.closure.domNode, 
-                        middleLabel: displayedRelation.entry.name,
-                        color: end1.getTime() - end2.getTime() < 0 ? 'red' : 'green'
-                    })
-                    if (!leaderline) { continue }
-                    displayedRelation.leaderline = leaderline
-                    this.relations.set(`${relation.source},${relation.closure}`, displayedRelation)
+                    continue
                 }
-                continue
-            }
 
-            if (relation.source === this.object.get('id')) {
-                const object = ostore.search('kreservation', 'id', relation.closure)
-                if (!object) { continue }
-                const ui = object.getUINode()
-                if (!ui) { continue }
-                if (!ui.domNode) { continue }
-                if (ui.domNode.parentNode) {
-                    let color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
-                    if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
-                        color = 'blue';
+                if (relation.source === this.object.get('id')) {
+                    const object = ostore.search('kreservation', 'id', relation.closure)
+                    if (!object) { continue }
+                    const ui = object.getUINode()
+                    if (!ui) { continue }
+                    if (!ui.domNode) { continue }
+                    if (ui.domNode.parentNode) {
+                        let color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
+                        if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
+                            color = 'blue';
+                        }
+                        const leaderline = this.newLeaderLine({
+                            start: this.domNode,
+                            end: ui.domNode,
+                            middleLabel: relation.name,
+                            color: color
+                        })
+    
+                        if (!leaderline) { continue }
+                        this.relations.set(`${relation.source},${relation.closure}`, {
+                            leaderline: leaderline,
+                            source: this,
+                            closure: ui,
+                            entry: relation
+                        })
+                        ui.showRelation(from)
+                        this.shownRelations.push(ui)
+                    } else {
+                        let color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
+                        if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
+                            color = 'blue';
+                        }
+                        let relative = 'right'
+                        if (color === 'red') { relative = 'left' }
+                        if (color === 'blue') {
+                            relative = 'top'
+                        }
+                        const node = document.getElementById(object.get('target'))
+                        if (!node) { continue }
+                        const leaderline = this.newLeaderLine({
+                            start: this.domNode,
+                            end: node,
+                            middleLabel: relation.name,
+                            color: color,
+                            _relative: relative
+                        })
+                        if (!leaderline) { continue }
+                        this.relations.set(`${relation.source},${relation.closure}`, {
+                            leaderline: leaderline,
+                            source: this,
+                            closure: {domNode: node},
+                            entry: relation,
+                        })
                     }
-                    const leaderline = this.newLeaderLine({
-                        start: this.domNode,
-                        end: ui.domNode,
-                        middleLabel: relation.name,
-                        color: color
-                    })
-   
-                    if (!leaderline) { continue }
-                    this.relations.set(`${relation.source},${relation.closure}`, {
-                        leaderline: leaderline,
-                        source: this,
-                        closure: ui,
-                        entry: relation
-                    })
-                    ui.showRelation(from)
-                    this.shownRelations.push(ui)
                 } else {
-                    let color = ((new Date(this.object.get('end'))).getTime() - (new Date(object.get('begin'))).getTime() > 0) ? 'red' : 'green'
-                    if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
-                        color = 'blue';
+                    const object = ostore.search('kreservation', 'id', relation.source)
+                    if (!object) { continue }
+                    const ui = object.getUINode()
+                    if (!ui) { continue }
+                    if (ui.domNode.parentNode) {
+                        ui.showRelation(from)
+                        this.shownRelations.push(ui)
+                    } else {
+                        let color = ((new Date(this.object.get('begin'))).getTime() - (new Date(object.get('end'))).getTime() < 0) ? 'red' : 'green'
+                        if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
+                            color = 'blue';
+                        }
+                        let relative = 'right'
+                        if (color === 'red') { relative = 'left' }
+                        if (color === 'blue') {
+                            relative = 'top'
+                        }
+                        const node = document.getElementById(object.get('target'))
+                        if (!node) { continue }
+                        const leaderline = this.newLeaderLine({
+                            start: node,
+                            end: this.domNode,
+                            middleLabel: relation.name,
+                            color: color,
+                            _relative: relative,
+                            _reverse: true
+                        })
+                        if (!leaderline) { continue }
+                        this.relations.set(`${relation.source},${relation.closure}`, {
+                            leaderline: leaderline,
+                            source: this,
+                            closure: {domNode: node},
+                            entry: relation,
+                        })
                     }
-                    let relative = 'right'
-                    if (color === 'red') { relative = 'left' }
-                    if (color === 'blue') {
-                        relative = 'top'
-                    }
-                    const node = document.getElementById(object.get('target'))
-                    if (!node) { continue }
-                    const leaderline = this.newLeaderLine({
-                        start: this.domNode,
-                        end: node,
-                        middleLabel: relation.name,
-                        color: color,
-                        _relative: relative
-                    })
-                    if (!leaderline) { continue }
-                    this.relations.set(`${relation.source},${relation.closure}`, {
-                        leaderline: leaderline,
-                        source: this,
-                        closure: {domNode: node},
-                        entry: relation,
-                    })
-                }
-            } else {
-                const object = ostore.search('kreservation', 'id', relation.source)
-                if (!object) { continue }
-                const ui = object.getUINode()
-                if (!ui) { continue }
-                if (ui.domNode.parentNode) {
-                    ui.showRelation(from)
-                    this.shownRelations.push(ui)
-                } else {
-                    let color = ((new Date(this.object.get('begin'))).getTime() - (new Date(object.get('end'))).getTime() < 0) ? 'red' : 'green'
-                    if ((new KDate(this.object.get('begin'))).dateStamp() === (new KDate(object.get('begin'))).dateStamp()) {
-                        color = 'blue';
-                    }
-                    let relative = 'right'
-                    if (color === 'red') { relative = 'left' }
-                    if (color === 'blue') {
-                        relative = 'top'
-                    }
-                    const node = document.getElementById(object.get('target'))
-                    if (!node) { continue }
-                    const leaderline = this.newLeaderLine({
-                        start: node,
-                        end: this.domNode,
-                        middleLabel: relation.name,
-                        color: color,
-                        _relative: relative,
-                        _reverse: true
-                    })
-                    if (!leaderline) { continue }
-                    this.relations.set(`${relation.source},${relation.closure}`, {
-                        leaderline: leaderline,
-                        source: this,
-                        closure: {domNode: node},
-                        entry: relation,
-                    })
                 }
             }
-        }
-    })
+        })
 }
 
 KUIReservation.prototype.hideRelation = function (from = []) {
+    if (!this.relationShown) { return }
+    this.reslationShown = false
     if (from.indexOf(this.object.get('id')) !== -1) { return }
     from.push(this.object.get('id'))
     for (const others of this.shownRelations) {
@@ -771,31 +777,13 @@ KUIReservation.prototype.setCurrentInfo = function () {
     const project = affaire.getRelation('kproject')
     if (!project) { return }
     
-    fetch(`${KAIROS.getBase()}/store/Reservation/getLastModification?id=${this.object.get('id')}`)
-    .then(response => {
-        if (!response.ok) { throw new Error('ERR:Server') }
-        return response.json()
-    })
-    .then(result => {
-        return new Promise((resolve) => {
-            if (result.length < 1) { return resolve('') }
-            const kperson = new KStore('kperson')
-            kperson.get(result.data[0].userid)
-            .then(person => {
-                resolve(`${(new KDate(result.data[0].time * 1000)).fullDate()} par ${person.getFirstTextValue('', 'name')}`)
-            })
-        })
-    })
-    .then(lastmod => {
-        new KTaskBar().setCurrentInfo(
-            `<div>${project.getFirstTextValue('', 'reference')} ${project.getFirstTextValue('', 'name')}</div>
-            <div>${affaire.getFirstTextValue('', 'reference')} ${affaire.getFirstTextValue('', 'description')}</div>
-            ${this.object.get('comment') ? `<div>${this.object.get('comment') ?? ' '}</div>` : ''}
-            <div class="lastmod">${lastmod}</div>
-            `
-        )
-      
-    })
+
+    new KTaskBar().setCurrentInfo(
+        `<div>${project.getFirstTextValue('', 'reference')} ${project.getFirstTextValue('', 'name')}</div>
+        <div>${affaire.getFirstTextValue('', 'reference')} ${affaire.getFirstTextValue('', 'description')}</div>
+        ${this.object.get('comment') ? `<div>${this.object.get('comment') ?? ' '}</div>` : ''}
+        `
+    )
 }
 
 KUIReservation.prototype.showDetails = function () {
@@ -1162,21 +1150,6 @@ KUIReservation.prototype.renderForm = function () {
             })
             this.eventInstalled.push('duplicate-at-end')
         }
-        /*const buttons = MButton.parse(form)
-        for (const button of buttons) {
-            switch(button.name) {
-                case 'delete': button.addEventListener('click', () => { 
-                    const kstore = new KStore('kreservation')
-                    kstore.delete(reservation.get('uid')) 
-                    .then(result => {
-                        if (!result) { KAIROS.error('ERR:Server'); return; }
-                        reservation.getUINode().unrender()
-                        reservation.destroy()
-                        this.dispatchEvent(new CustomEvent('close', {detail: this}))
-                    })
-                }); break
-            }
-        }*/
         this.renderedForm = form
         resolve(form)
     })
@@ -1192,38 +1165,53 @@ KUIReservation.prototype.setStackMaxSize = function (size) {
 KUIReservation.prototype.select = function () {
     if (!this.selected) {
         this.selected = true
-        this.domNode.classList.add('k-selected')
+        window.requestAnimationFrame(() => this.domNode.classList.add('k-selected'))
     } else {
         this.selected = false
-        this.domNode.classList.remove('k-selected')
+        window.requestAnimationFrame(() => this.domNode.classList.remove('k-selected'))
     }
 }
 
 KUIReservation.prototype.unselect = function () {
     if (this.selected) {
         this.selected = false
-        this.domNode.classList.remove('k-selected')
+        window.requestAnimationFrame(() => this.domNode.classList.remove('k-selected'))
     }
 }
 
 KUIReservation.prototype.unrender = function () {
-    if (!this.domProduced) { return }
-    this.domProduced = false
-    this.container.unrefReservation(this.object)
-    this.getDomNode()
-    .then(domNode => {
-        if (!domNode) { return }
-        window.requestAnimationFrame(() => {
-            if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
-        })
+    return new Promise(resolve => {
+        this.unrenderCalled = true
+            this.container.unrefReservation(this.object)
+            if (!this.domProduced) { return resolve() }
+            this.domProduced = false
+            this.getDomNode()
+            .then(domNode => {
+                if (!domNode) { return resolve() }
+                window.requestAnimationFrame(() => {
+                    if (domNode.parentNode) { domNode.parentNode.removeChild(domNode) }
+                    return resolve()
+                })
+            })
     })
-    if (this.detailsPopped) { this.unpopDetails() }
 }
 
+KUIReservation.prototype.handleParentUpdate = function (event) {
+    /* Keep it simple, just re-render the whole node */
+    this.domProduced = false
+    return this.render()
+}
+
+/* TODO Refactor, moving and producing node is not the same */
 KUIReservation.prototype.render = function () {
-    if (this.hidden) { return Promise.resolve() }
-    if (!this.copy && this.rowid < 0) { return Promise.resolve() }
     this.rendered = new Promise((resolve, reject) => {
+        if (this.hidden) { return resolve() }
+        if (!this.copy && this.rowid < 0) { return resolve() }
+        if (this.object.isDestroyed()) {
+            this.unrender()
+            return resolve()
+        }
+
         const kview = new KView()
         let zindex = 10
         let rowTop = kview.getRowTop(this.rowid)
@@ -1243,144 +1231,164 @@ KUIReservation.prototype.render = function () {
         if (height > 74) {
             height = 74
         }
-        /* Set top at any render */
-        this.domNode.style.top = `${top}px`
-        this.domNode.dataset.rendered = (new Date()).getTime()
-        if (this.object.isDestroyed()) {
-            this.unrender()
-            return resolve()
+
+        let width = 40
+        let left = 0
+        let offset = 0
+        if (this.width) { width = this.width }
+        if (!this.copy) {
+            const beginDate = new KDate(this.object.get('begin'))
+            beginDate.setHours(7, 0, 0, 0)
+            const endDate = new KDate(this.object.get('end'))
+            endDate.setHours(17, 30, 0, 0)
+            let leftbox = kview.getRelativeColFromDate(beginDate)
+            let rightbox = kview.getRelativeColFromDate(endDate)
+            if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
+            if (leftbox < 0) {
+                if (rightbox < 0) {
+                    this.removeDomNode();
+                    resolve(null);
+                    return
+                }
+                leftbox = 0
+            }
+            if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
+
+            left = leftbox * kview.get('day-width') + kview.get('margin-left')
+            offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * kview.get('second-width')
+            if (rightbox === Infinity) { width = kview.get('viewport-width') - (left + offset) }
+            else {
+                width = Math.abs(leftbox-rightbox) * kview.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * kview.get('second-width') - offset
+            }
         }
-  
-        const kstore = new KStore('kstatus')
-        kstore.get(this.object.get('status'))
-        .then(status => {
-            const color = status ? status.color || 'lightgray' : 'lightgray'
-            const affaire = this.object.getRelation('kaffaire')
-            if (!affaire) { return resolve(null) }
-            const project = affaire.getRelation('kproject')
-            if (!project) { return resolve(null) }
 
-            let direction = ''
-            if (this.object.get('other')) {
-                const other = JSON.parse(this.object.get('other'))
-                if (other.link && other.link.direction) {
-                    direction = other.link.direction !== 'right' ? '<i class="fas fa-long-arrow-alt-right"></i>' : '<i class="fas fa-long-arrow-alt-left"></i>'
+        this.props.set('left', left + offset )
+        this.props.set('width', width)
+
+        this.container.getDomNode()
+        .then(parentNode => {
+              window.requestAnimationFrame(() => {
+                this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
+                this.domNode.style.left = `${this.props.get('left')}px`
+                this.domNode.style.height = `${height}px`
+                this.domNode.style.zIndex = zindex
+                this.domNode.style.top = `${top}px`
+                if (!this.domNode.parentNode) {
+                    parentNode.appendChild(this.domNode)
                 }
-            }
-        
-            const ended = (affaire.get('closed') !== 0) || (this.object.get('closed') !== null && this.object.get('closed') !== 0)
-            const folder = affaire.get('folder') !== 0
-            const locked = parseInt(this.object.get('locked'))
-
-            const options = (locked || folder || direction !== '')
-
-            let gap = null
-            let virtualEnd = null
-            let width = 40
-            let left = 0
-            let offset = 0
-            if (this.width) { width = this.width }
-            if (!this.copy) {
-                const beginDate = new KDate(this.object.get('begin'))
-                beginDate.setHours(7, 0, 0, 0)
-                const endDate = new KDate(this.object.get('end'))
-                endDate.setHours(17, 30, 0, 0)
-                let leftbox = kview.getRelativeColFromDate(beginDate)
-                let rightbox = kview.getRelativeColFromDate(endDate)
-                if (leftbox === Infinity) { this.removeDomNode(); resolve(null); return }
-                if (leftbox < 0) {
-                    if (rightbox < 0) {
-                        this.removeDomNode();
-                        resolve(null);
-                        return
-                    }
-                    leftbox = 0
-                }
-                if (!isFinite(rightbox)) { rightbox = kview.get('day-count') }
-
-                left = leftbox * kview.get('day-width') + kview.get('margin-left')
-                offset = KVDays.getVirtualSeconds(beginDate.getHours(), beginDate.getMinutes(), KAIROS, beginDate) * kview.get('second-width')
-                if (rightbox === Infinity) { width = kview.get('viewport-width') - (left + offset) }
-                else {
-                    width = Math.abs(leftbox-rightbox) * kview.get('day-width') + KVDays.getVirtualSeconds(endDate.getHours(), endDate.getMinutes(), KAIROS, endDate) * kview.get('second-width') - offset
-                }
-            }
- 
-            this.props.set('left', left + offset )
-            this.props.set('width', width)
-            this.object.bindUINode(this)
-
-            this.kaffaire = this.object.getRelation('kaffaire')
-            if (this.kaffaire) {
-                    this.kproject = this.kaffaire.getRelation('kproject')
-                    if (this.kproject) {
-                        window.requestAnimationFrame(() => { this.domNode.dataset.kproject = this.kproject.get('uid') })
-                    }
-            }
-
-            const kglobal = new KGlobal()
-            const prj = kglobal.get('k-project-highlight')
-            if (prj && this.kproject.get('uid') !== prj) {
-                window.requestAnimationFrame(() => {
-                    this.domNode.style.removeProperty('--selected-color')
-                    this.domNode.classList.remove('selected')
-                })
-            }
-
-            if (kview.get('day-width') <= 15) {
-                this.smallView = true
-                window.requestAnimationFrame(() => {
-                    this.domNode.style.width = `${width.toPrecision(2)}px`
-                    this.domNode.style.left = `${this.props.get('left')}px`
-                    this.domNode.style.height = `${height}px`
-               
-                    this.domNode.innerHTML = `<div class="full-height color-bar"> </div>`
-                    this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
-                    this.stackSize = 0
-                    this.order = 0
-                    resolve(this.domNode)
-                })
-            } else {
-                this.smallView = false
-                window.requestAnimationFrame(() => {
-                    if (ended) { this.domNode.classList.add('k-closed') }
-                    else { this.domNode.classList.remove('k-closed') }
-                    if (folder) { this.domNode.classList.add('k-folder') }
-                    else { this.domNode.classList.remove('k-folder') }
-                    if (locked) { this.domNode.classList.add('k-locked') }
-                    else { this.domNode.classList.remove('k-locked') }
-                    if (gap) { this.domNode.classList.add('k-left-open') }
-                    else { this.domNode.classList.remove('k-left-open') }
-                    if (virtualEnd) { this.domNode.classList.add('k-right-open') }
-                    else { this.domNode.classList.remove('k-right-open') }
-
-                    this.domNode.style.width = `${this.props.get('width').toPrecision(2)}px`
-                    this.domNode.style.left = `${this.props.get('left')}px`
-                    this.domNode.style.height = `${height}px`
-                    this.domNode.style.zIndex = zindex
-
-                    this.domProduced = true
-                    this.domNode.innerHTML = `<div class="content">
-                            <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
-                            <span class="field uid">${project.getFirstTextValue('', 'reference')}</span>
-                            <span class="field reference">${project.getFirstTextValue('', 'name')}</span><br>
-                            <span class="field description">${affaire.getFirstTextValue('', 'reference')}</span><br>
-                            <span class="field description">${affaire.getFirstTextValue('', 'description')}</span>
-                            <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
-                        </div>
-                        <div class="color-bar"><div class="k-progress k-progress-${String(Math.ceil(parseInt(affaire.getFirstTextValue('0', 'progress')) / 5) * 5)}"></div></div>`
-                        this.domNode.style.setProperty('--kreservation-project-color', `${color}`)
-                
-                    if (this.detailsPopped) { this.detailsPopped[0].update() }
-                    if (this.shownRelations.length > 0) { this.showRelation() }
-                    this.stackSize = 0
-                    this.order = 0
-                    resolve(this.domNode)
-                })
+            })
+            if (!this.domProduced && this.currentOpacity !== 0.5) {
+                this.currentOpacity = 0.5
+                window.requestAnimationFrame(() => this.domNode.style.opacity = 0.5)
             }
         })
+        
+        if (this.version === this.object.get('version') && this.domProduced) { 
+            return resolve(this.domNode) 
+        }
+        this.version = this.object.get('version')
+        resolve(this.domNode)
+        /* Generate content on IDLE */
+            if (this.unrenderCalled) { this.unrenderCalled = false; return }
+            const kstore = new KStore('kstatus')
+            kstore.get(this.object.get('status'))
+            .then(status => {
+                const color = status ? status.color || 'lightgray' : 'lightgray'
+                if (color !== this.currentColor) {
+                    this.currentColor = color
+                    window.requestAnimationFrame(() => {
+                        this.domNode.style.setProperty('--kreservation-project-color', color)
+                    })
+                }
+                if (!this.kaffaire) {
+                    this.kaffaire = this.object.getRelation('kaffaire')
+                    if (!this.kaffaire) { return resolve(null) }
+                    this.kaffaire.addEventListener('update', event => { this.handleParentUpdate(event) })
+                }
+                if (!this.kproject) {
+                    this.kproject = this.kaffaire.getRelation('kproject')
+                    if (!this.kproject) { return resolve(null) }
+                    this.kproject.addEventListener('update', event => { this.handleParentUpdate(event) })
+                }
+                let direction = ''
+                if (this.object.get('other')) {
+                    const other = JSON.parse(this.object.get('other'))
+                    if (other.link && other.link.direction) {
+                        direction = other.link.direction !== 'right' ? '<i class="fas fa-long-arrow-alt-right"></i>' : '<i class="fas fa-long-arrow-alt-left"></i>'
+                    }
+                }
+
+                if (this.unrenderCalled) { this.unrenderCalled = false; return }
+
+                const ended = (this.kaffaire.get('closed') !== 0) || (this.object.get('closed') !== null && this.object.get('closed') !== 0)
+                const folder = this.kaffaire.get('folder') !== 0
+                const locked = parseInt(this.object.get('locked'))
+
+                const options = (locked || folder || direction !== '')
+
+                this.domNode.dataset.kproject = this.kproject.get('uid')
+             
+                const kglobal = new KGlobal()
+                const prj = kglobal.get('k-project-highlight')
+                if (prj && this.kproject.get('uid') !== prj) {
+                    window.requestAnimationFrame(() => {
+                        this.domNode.style.removeProperty('--selected-color')
+                        this.domNode.classList.remove('selected')
+                    })
+                }
+
+                if (kview.get('day-width') <= 15) {
+                    this.smallView = true
+                    const contentSmall = `<div class="full-height color-bar"> </div>`
+                    if (this.currentContent !== contentSmall) {
+                        this.currentContent = contentSmall
+
+                        window.requestAnimationFrame(() => {
+                            this.domNode.innerHTML = contentSmall
+                        })
+                    }
+                    this.stackSize = 0
+                    this.order = 0
+                } else {
+                    this.smallView = false
+                    window.requestAnimationFrame(() => {
+                        if (ended) { this.domNode.classList.add('k-closed') }
+                        else { this.domNode.classList.remove('k-closed') }
+                        if (folder) { this.domNode.classList.add('k-folder') }
+                        else { this.domNode.classList.remove('k-folder') }
+                        if (locked) { this.domNode.classList.add('k-locked') }
+                        else { this.domNode.classList.remove('k-locked') }
+                    })
+                    const contentFull = `<div class="content">
+                                <span class="field options ${options ? 'shown' : 'hidden'}">${direction}<i class="fas fa-folder"></i><i class="fa fa-lock"></i></span>
+                                <span class="field uid">${this.kproject.getFirstTextValue('', 'reference')}</span>
+                                <span class="field reference">${this.kproject.getFirstTextValue('', 'name')}</span><br>
+                                <span class="field description">${this.kaffaire.getFirstTextValue('', 'reference')}</span><br>
+                                <span class="field description">${this.kaffaire.getFirstTextValue('', 'description')}</span>
+                                <span class="field remark">${this.object.getFirstTextValue('', 'comment')}</span>
+                            </div>
+                            <div class="color-bar"></div>`
+                    if (this.currentContent !== contentFull) {
+                        this.currentContent = contentFull
+                        window.requestAnimationFrame(() => {
+                            this.domNode.innerHTML = contentFull
+                        })
+                    }
+                    this.domProduced = true
+                    if (this.currentOpacity !== 1) {
+                        this.currentOpacity = 1
+                        window.requestAnimationFrame(() => this.domNode.style.opacity = 1)
+                    }
+                    if (!this.unrenderCalled) {
+                        if (this.detailsPopped) { this.detailsPopped[0].update() }
+                        if (this.shownRelations.length > 0) { this.showRelation() }
+                    }
+                    this.stackSize = 0
+                    this.order = 0
+                }
+                this.unrenderCalled = false
+            })
     })
-    this.rendered
     return this.rendered
 }   
 

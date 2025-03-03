@@ -179,7 +179,7 @@ KAIROS.uuidV4 = function () {
 }
 
 KAIROS.setClientId = function (cid) {
-  KAIROS.getClientId.__clienti = cid
+  KAIROS.getClientId.__clientid = cid
 }
 
 KAIROS.getClientId = function () {

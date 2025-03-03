@@ -1,36 +1,30 @@
 /* eslint-env worker */
-importScripts('../../conf/app.js')
-importScripts(`../kairos.js?${location.search.substring(1)}`)
 importScripts('../gevent.js')
-importScripts('../stores/user.js')
-importScripts('lib/updater-count.js')
+importScripts('lib/idx-db-reservation-cache.js')
+importScripts('lib/channel.js')
+importScripts('lib/fetch.js')
+importScripts('lib/error.js')
 
-let LastMod = 0
+const KLogChannel = new ErrorChannel()
+const CacheDB = new IdxDbReservationCache()
 const LoadStatus = new Map()
 const Entries = new Map()
 const Channels = new Map()
 const Symlinks = new Map()
+
+const Ports = []
+const KFetch = new Fetch()
 let Range = null
 let PostPoned = {}
 let Run = false
 
 const EVTOperation = Object.freeze({
   write: {
-    count(msg) {
-      countUpdateMessage(msg)
-        .then(([reservationId, clientId]) => {
-          if (!reservationId || !clientId) { return }
-          updateEntry(reservationId, clientId)
-        })
-        .catch(reason => {
-          console.log(reason)
-        })
-    },
     reservation(msg) {
       updateEntry(msg.id, msg.cid)
     },
     arrival(msg) {
-      fetch(new URL(`${KAIROS.getBase()}/store/Arrival/${msg.id}`))
+      fetch(new URL(`$kairos/Arrival/${msg.id}`, location))
         .then(response => {
           if (!response.ok) { return null }
           return response.json()
@@ -44,7 +38,7 @@ const EVTOperation = Object.freeze({
         })
     },
     contact(msg) {
-      fetch(new URL(`${KAIROS.getBase()}/store/ReservationContact/${msg.id}`))
+      fetch(new URL(`$kairos/ReservationContact/${msg.id}`, location))
         .then(response => {
           if (!response.ok) { return null }
           return response.json()
@@ -61,14 +55,27 @@ const EVTOperation = Object.freeze({
     }
   },
   delete: {
-    evenement(msg) {
-
-    }
+    reservation(msg) {
+      CacheDB.findById(msg.id)
+        .then(entry => {
+          return CacheDB.delete(entry)
+        })
+        .then(entry => {
+          const channel = Ports.find(p => p.isMe(entry.target))
+          if (channel) { 
+            channel.message({ op: 'remove', reservation: entry, clientid: msg.cid }) 
+          }
+        })
+        .catch(error => {
+          KLogChannel.log('error', error)
+        })
+    },
+    evenement(msg) { }
   }
 })
 
 function connectEventSource() {
-  const evtsource = new EventSource(KAIROS.URL(KAIROS.eventSource))
+  const evtsource = new EventSource(new URL('$kevent', location))
   evtsource.onmessage = event => {
     const msg = JSON.parse(event.data)
     self.postMessage({ op: 'log', data: msg })
@@ -81,6 +88,7 @@ function connectEventSource() {
     }
   }
   evtsource.onerror = event => {
+    KLogChannel.log('error', 'ERR:ConnectToServer')
     evtsource.close()
     setTimeout(connectEventSource.bind(self), 1000)
   }
@@ -90,38 +98,55 @@ connectEventSource()
 self.onmessage = function (msg) {
   switch (msg.data.op) {
     case 'ready':
+      KFetch.setAuthToken(msg.data.token)
+      if (msg.data.clientid) {
+        KFetch.setClientId(msg.data.clientid)
+      }
       Run = true
-      runUpdater()
+      CacheDB.open()
+        .then(_ => {
+          runUpdater()
+        })
       break
     case 'newTarget':
-      if (msg.ports.length > 0 && msg.data.target) {
+      return (() => {
         const targetId = String(msg.data.target)
-        Channels.set(targetId, msg.ports[0])
-        Channels.get(targetId).onmessage = (m) => {
-          targetMessages(m)
-        }
+        if (msg.ports.length <= 0 || !msg.data.target) { return }
+
+        const channel = (() => {
+          const c = Ports.find(p => p.isMe(msg.data.target))
+          if (c) {
+            c.setPort(msg.ports[0])
+            return c
+          }
+          const cc = new Channel(targetId, msg.ports[0])
+          Ports.push(cc)
+          return cc
+        })()
+
+        channel.onMessage(targetMessages)
+        Ports.push(channel)
         if (PostPoned[targetId]) {
-          Channels.get(targetId).postMessage({ op: 'entries', value: PostPoned[targetId] })
+          channel.message({ op: 'entries', value: PostPoned[targetId] })
           delete PostPoned[targetId]
         }
         if (LoadStatus.has(targetId)) {
-          msg.ports[0].postMessage({ op: 'state', value: LoadStatus.get(targetId) })
+          channel.message({ op: 'state', value: LoadStatus.get(targetId) })
           LoadStatus.delete(targetId)
         }
-      }
-      break
+      })()
     case 'symlinkTarget':
-      const targetId = String(msg.data.source)
       if (msg.data.source === undefined || msg.data.destination === undefined) { return }
-      Symlinks.set(targetId, msg.data.destination)
-      if (PostPoned[targetId]) {
-        Channels.get(Symlinks.get(targetId)).postMessage({ op: 'entries', value: PostPoned[targetId] })
-        delete PostPoned[targetId]
-      }
-      if (LoadStatus.has(targetId)) {
-        Channels.get(Symlinks.get(targetId)).postMessage({ op: 'state', value: LoadStatus.get(targetId) })
-        LoadStatus.delete(targetId)
-      }
+
+      const targetId = String(msg.data.source)
+      const channel = (() => {
+        const c = Ports.find(p => p.isMe(msg.data.target))
+        if (c) { return c }
+        const cc = new Channel(targetId, null)
+        Ports.push(cc)
+        return cc
+      })()
+      channel.addSame(msg.data.destination)
       break
     case 'move':
       if (Range === null) {
@@ -131,26 +156,6 @@ self.onmessage = function (msg) {
         Range.end = msg.data.end
       }
       runUpdater()
-      break
-    case 'moveEntry':
-      if (msg.data.reservation === undefined) {
-        return
-      }
-      let entry = JSON.parse(msg.data.reservation)
-      if (!Entries.has(entry.id)) { return }
-      const oldEntry = Entries.get(entry.id)
-      let oldChannel = Channels.get(entry.previous)
-      if (oldChannel === undefined) {
-        oldChannel = Symlinks.get(entry.previous)
-      }
-      let newChannel = Channels.get(String(entry.target))
-      if (newChannel === undefined) {
-        newChannel = Symlinks.get(String(entry.target))
-      }
-      oldChannel.postMessage({ op: 'remove', reservation: entry, clientid: null })
-      oldEntry[1] = newChannel
-      Entries.set(entry.id, oldEntry)
-      newChannel.postMessage({ op: 'add', reservation: entry, clientid: null })
       break
   }
 }
@@ -176,7 +181,7 @@ function targetMessages(msg, force = false) {
       break
     case 'reload':
       if (msg.data.reservation) {
-        fetch(new URL(`${KAIROS.getBase()}/store/Reservation/${msg.data.reservation}`))
+        fetch(new URL(`$kairos/Reservation/${msg.data.reservation}`, location))
           .then((response) => {
             if (!response.ok) { return null; }
             return response.json()
@@ -191,142 +196,151 @@ function targetMessages(msg, force = false) {
   }
 }
 
-function getIntervention(entry) {
-  return new Promise((resolve, reject) => {
-    resolve([])
-    return
-  })
-}
-
 function updateEntry(entryId, clientid) {
-  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
+  KLogChannel.log('info', `updateEntry ${entryId}`)
+  KFetch.get(new URL(`$kairos/Reservation/${entryId}`, location))
     .then(response => {
-      if (!response.ok) { throw new Error('Net error') }
-      return response.json()
-    })
-    .then(result => {
-      if (!result.success) { throw new Error('Server error') }
-      if (result.length <= 0) { return }
-      return Array.isArray(result.data) ? result.data[0] : result.data
-    })
-    .then(reservation => {
-      const channel = Channels.get(String(reservation.target)) || Channels.get(Symlinks.get(String(reservation.target)))
-      const oldEntry = Entries.get(reservation.id)
-      if (oldEntry) {
-        const oldChannel = Channels.get(oldEntry[3]) || Channels.get(Symlinks.get(oldEntry[3]))
-        if (oldEntry[3] !== String(reservation.target) && oldChannel) {
-          oldChannel.postMessage({ op: 'remove', reservation, clientid })
-        }
-      }
-      if (!channel) { return }
-      Entries.set(reservation.id, [reservation.version, channel, new Date().getTime(), String(reservation.target)])
-      channel.postMessage({ op: 'update-reservation', reservation, clientid })
-    })
-    .catch(reason => {
-      console.log(reason)
-    })
-}
-
-function deleteEntry(entryId, clientid) {
-  fetch(`${KAIROS.getBase()}/store/Reservation/${entryId}`)
-    .then(response => {
-      if (!response.ok) { return null }
-      return response.json()
-    })
-    .then(result => {
-      if (!result) { return }
-      if (!result.success) { return }
-      const reservation = Array.isArray(result.data) ? result.data[0] : result.data
-      const channel = Channels.get(String(reservation.target)) || Channels.get(Symlinks.get(String(reservation.target)))
-      if (channel) { channel.postMessage({ op: 'remove', reservation: Array.isArray(result.data) ? result.data[0] : result.data, clientid }) }
-    })
-}
-
-function cacheAndSend(data, force = false) {
-  new Promise((resolve, reject) => {
-    const entries = new Map()
-    let promises = []
-    data.forEach((entry) => {
-      promises.push(new Promise((resolve, reject) => {
-        getIntervention(entry).then((interventions) => {
-          entry.interventions = interventions
-          if (parseInt(entry.modification) > LastMod) {
-            LastMod = parseInt(entry.modification)
-          }
-          let channel = String(entry.target)
-          if (Symlinks.has(channel)) {
-            channel = Symlinks.get(channel)
-          }
-          if (entries[channel] === undefined) {
-            entries[channel] = []
-          }
-          if (Entries.has(entry.id)) {
-            const storedEntry = Entries.get(entry.id)
-
-            if (storedEntry[1] !== channel) {
-              if (entries[storedEntry[1]] === undefined) {
-                entries[storedEntry[1]] = []
-              }
-              let remChannel = storedEntry[1]
-              if (Symlinks.has(remChannel)) {
-                remChannel = Symlinks.get(remChannel)
-              }
-              Channels.get(remChannel)?.postMessage({ op: 'remove', reservation: entry, clientid: null })
-              entries[storedEntry[1]].push(entry)
-              Entries.delete(entry.id)
+      if (!response.content) { return }
+      reservation = Array.isArray(response.content.data) ? response.content.data[0] : response.content.data
+      CacheDB.get(reservation.uuid)
+        .then(previousEntry => {
+          if (previousEntry && previousEntry.target !== reservation.target) {
+            const oldChannel = Ports.find(p => p.isMe(previousEntry.target))
+            if (oldChannel) {
+              oldChannel.message({ op: 'remove', reservation: previousEntry, clientid })
             }
-            Entries.set(entry.id, [entry.version, channel, new Date().getTime(), String(entry.target)])
-            entries[channel].push(entry)
-
-          } else {
-            Entries.set(entry.id, [entry.version, channel, new Date().getTime(), String(entry.target)])
-            entries[channel].push(entry)
           }
-          resolve()
+
+          CacheDB.add(reservation) // put in local cache
+          const channel = Ports.find(p => p.isMe(reservation.target))
+          if (!channel) { return }
+          channel.message({ 'op': 'entries', 'value': [reservation] })
         })
-      }))
+        .catch(reason => {
+          KLogChannel.log('error', reason)
+        })
     })
-    Promise.all(promises)
-      .then(() => {
-        resolve(entries)
-      })
-  }).then((entries) => {
-    let processed = []
-    for (let k in entries) {
-      if (Channels.has(k) && entries[k].length > 0) {
-        Channels.get(k).postMessage({ op: 'entries', value: entries[k] })
-        processed.push(k)
-      } else if (entries[k].length > 0) {
-        if (!PostPoned[k]) {
-          PostPoned[k] = []
-        }
-        PostPoned[k] = [...PostPoned[k], ...entries[k]]
-      }
+}
+
+function cacheAndSend(data, nocache = false) {
+  new Promise((resolve, reject) => {
+    data.sort((a, b) => {
+      return a.target.localeCompare(b.target)
+    })
+    const current = {
+      channel: null,
+      target: null,
+      entries: []
     }
+    Promise.allSettled(data.map((entry) => {
+      return new Promise((resolve, reject) => {
+
+        /* not used anymore but maybe some code rely on "interventions" to be
+         * present in the entry */
+        entry.interventions = []
+
+        /* with no cache, we don't need to check if the entry is different from
+         * the cache as it can't be different (except if the cache changes from
+         * another source but it's gonna be fixed by the next server query)
+         */
+        ; (() => {
+          if (nocache) { return Promise.resolve(undefined) }
+          return CacheDB.get(entry.uuid)
+        })()
+          .then(previousEntry => {
+
+            /* previous entry had a different target */
+            if (previousEntry && previousEntry.target !== entry.target) {
+              /* remove can't be sent in array */
+              const oldChannel = Ports.find(p => p.isMe(previousEntry.target))
+              if (oldChannel) {
+                oldChannel.message({ op: 'remove', reservation: previousEntry, clientid: null })
+              }
+            }
+
+            ; (() => {
+              if (nocache) { return Promise.resolve() }
+              return CacheDB.add(entry)
+            })()
+              .then(_ => {
+                const channel = Ports.find(p => p.isMe(entry.target))
+                if (!channel) { return }
+                /* no current target, start a new set */
+                if (current.target === null) {
+                  current.channel = channel
+                  current.target = entry.target
+                  current.entries.push(entry)
+                  return resolve()
+                }
+
+                /* same target, add to current set */
+                if (current.target === entry.target) {
+                  current.entries.push(entry)
+                  return resolve()
+                }
+
+                /* different target, send current set and start a new set */
+                current.channel.message({ 'op': 'entries', 'value': current.entries })
+
+                current.channel = channel
+                current.target = entry.target
+                current.entries = [entry]
+
+                resolve()
+              })
+          })
+      })
+    }))
+      .then(() => {
+        /* send the last set */
+        if (current.target) {
+          current.channel.message({ 'op': 'entries', 'value': current.entries })
+        }
+        resolve()
+      })
+      .catch(reason => {
+        reject(reason)
+      })
   })
 }
 
 const Status = new Map()
-
+/* Limit the server query to MaxServerQueryTimeMS ms.
+ * In between that time, it uses only local cache.
+ */
+const MaxServerQueryTimeMS = 100
 function runUpdater() {
   if (!Run) { return }
   if (!Range) { return }
-  const url = new URL(`${KAIROS.getBase()}/store/Reservation/_query`)
-
+  const url = new URL(`$kairos/Reservation/_query`, location)
   const query = {
     begin: ['<', Range.end.toISOString().split('T')[0]],
     end: ['>', Range.begin.toISOString().split('T')[0]],
     deleted: '-'
   }
-  fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(query)})
-    .then((response) => {
-      if (!response.ok) { return { length: 0, data: null } }
-      return response.json()
-    })
-    .then((json) => {
-      if (json.length > 0) {
-        cacheAndSend(json.data)
+
+  CacheDB.find({ begin: Range.begin, end: Range.end })
+    .then(results => {
+      if (results.length > 0) {
+        /* send cached data, no need to cache back */
+        return cacheAndSend(results, true)
       }
+      return Promise.resolve()
     })
-    .catch(reason => console.log(reason))
+    .catch(reason => {
+      KLogChannel.log('error', reason)
+    })
+
+  if (runUpdater.timer > performance.now() - MaxServerQueryTimeMS) { return }
+  runUpdater.timer = performance.now()
+  KFetch.post(url, { body: query })
+    .then(response => {
+      const json = response.content
+      if (!json) { return }
+      if (json.length <= 0) { return }
+      cacheAndSend(json.data)
+    })
+    .catch(reason => {
+      KLogChannel.log('error', reason)
+    })
 }

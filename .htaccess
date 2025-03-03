@@ -1,3 +1,16 @@
+RewriteEngine On
+
+RewriteBase /
+
+RewriteCond $0#%{REQUEST_URI} ([^#]*)#(.*)\1$
+RewriteRule ^.*$ - [E=CWD:%2] 
+
+RewriteRule ^(?:.*)/?\$kairos/?(.*)$ %{ENV:CWD}store/$1 [L]
+RewriteRule ^(?:.*)/?\$kevent/?(.*)$ %{ENV:CWD}events-srv.php/$1 [L]
+# use redirect to have importScripts working
+RewriteRule ^(?:.*)/?\$ww/?(.*)$ %{ENV:CWD}js/ww/$1 [L,R]
+
+
 <FilesMatch "\.(js|css|html)$">
     Header set Cache-Control "no-cache, max-age=0"
 </FilesMatch>

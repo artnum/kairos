@@ -58,11 +58,16 @@ KLateralTab.prototype.getButtons = function() {
     return this.buttons
 }
 
-function KLateral () {
+function KLateral (options = {}) {
     if (KLateral.instance) {
         return KLateral.instance
     }
     KLateral.instance = this
+
+    this.options = Object.assign({
+        withCloseButton: true
+    }, options)
+
     this.isOpen = false
     this.tabs = new Map()
     this.actions = new Map()
@@ -76,7 +81,7 @@ function KLateral () {
     this.domNode.innerHTML = `
         <div class="khead"><div class="scroll left">&lt;</div><div class="ktab"></div><div class="scroll right">&gt;</div></div>
         <div class="kcontent"><div class="cwrapper"></div></div>
-        <div class="kaction"><button class="mbutton" data-action="__close">Fermer</button></div>
+        <div class="kaction">${this.options.withCloseButton ? `<button class="mbutton" data-action="__close">Fermer</button>` : ``}</div>
         `
     MButton.parse(this.domNode)
     this.tab = this.domNode.firstElementChild.firstElementChild.nextElementSibling
@@ -198,23 +203,34 @@ KLateral.prototype.add = function (content, opt = {}) {
     tabContent.style.position = 'absolute'
     tabContent.style.inset = '8px'
 
+    const tabTitleContainer = document.createElement('DIV')
+    tabTitleContainer.classList.add('tab')
     const tabTitle = document.createElement('DIV')
+    tabTitleContainer.appendChild(tabTitle)
     if (opt.title) {
         if (opt.title instanceof HTMLElement) {
             tabTitle.appendChild(opt.title)
         } else {
-            tabTitle.innerHTML = opt.title
+            tabTitle.innerHTML = `<div>${opt.title}</div>`
         }
     }
+    tabTitle.classList.add('tab-title')
+    const tabClose = document.createElement('DIV')
+    tabClose.classList.add('close')
+    tabClose.innerHTML = '&times;'
+    tabClose.addEventListener('click', (event) => {
+        this.remove(tabTitleContainer.dataset.index)
+    })
+    tabTitle.appendChild(tabClose)
 
     const index = this.tabIdx++
     if (opt.id) {
         this.idMap.set(opt.id, index)
     }
-    tabTitle.dataset.index = index
+    tabTitleContainer.dataset.index = index
     tabContent.dataset.index = index
 
-    this.tab.appendChild(tabTitle)
+    this.tab.appendChild(tabTitleContainer)
     this.content.appendChild(tabContent)
 
     const tab = new KLateralTab(index, this)
@@ -285,11 +301,12 @@ KLateral.prototype.getTab = function (idx) {
 
 KLateral.prototype.remove = function (idx) {
     const tab = this.tabs.get(String(idx))
-    if (tab) { tab.blur() }
+    if (!tab) { return }
+    tab.blur()
     tab.getButtons().forEach(button => {
         const node = button.getDomNode()
         if (node) {
-            window.requestAnimationFrame(() => { node.parentNode.removeChild(node) })
+            window.requestAnimationFrame(() => { if(!node.parentNode) { return } node.parentNode.removeChild(node) })
         }
     })
     if (!this.evtTarget.dispatchEvent(new CustomEvent(`destroy-tab-${idx}`, {detail: {tab}}))) {
@@ -319,7 +336,7 @@ KLateral.prototype.hideTab = function (idx) {
     tab.getButtons().forEach(button => {
         const node = button.getDomNode()
         if (node) {
-            window.requestAnimationFrame(() => { node.parentNode.removeChild(node) })
+            window.requestAnimationFrame(() => { if (!node.parentNode) { return } node.parentNode.removeChild(node) })
         }
     })
     this.evtTarget.dispatchEvent(new CustomEvent(`hide-tab-${idx}`, {detail: {tab}}))
@@ -344,6 +361,7 @@ KLateral.prototype.showTab = function (idx) {
         this.hideTab(this.tabCurrent)
     }
     const tab = this.tabs.get(String(idx))
+    if (!tab) { return }
     const parent = this.domNode.querySelector('div.kaction')
     tab.getButtons().forEach(button => {
         const node = button.getDomNode()

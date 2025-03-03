@@ -403,18 +403,22 @@ KObject.prototype.doDispatchEvent = function (event) {
 }
 
 KObject.prototype.doUpdate = function (data) {
+    let updated = false
     for (const key in data) {
         if (!this.hasItem(key)) {
+            updated = true
             this.evtTarget.dispatchEvent(new CustomEvent('add-item', {detail: {kobject: this, name: key, value: data}}))
             this.setItem(key, data[key])
             continue
         }
         if (this.getItem(key) !== data) {
+            updated = true
             this.evtTarget.dispatchEvent(new CustomEvent('update-item', {detail: {kobject: this, name: key, value: data}}))
             this.setItem(key, data[key])
             continue
         }
     }
+    if (!updated) { return }
     this.evtTarget.dispatchEvent(new CustomEvent('update', {detail: {kobject: this}}))
     if (!this.isCopy) {
         const kgstore = new KObjectGStore()
