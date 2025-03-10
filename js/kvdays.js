@@ -177,61 +177,8 @@ const KVDays = Object.freeze({
     getContinuousEnd (begin, duration, conf) {
         const ranges = this.getRanges(begin, duration, conf)
         return [ranges[0][1], ranges[0][2]]
-    
-        let effectiveDuration = 0
-        const realEnd = new Date()
-        const nextDay = new Date()
-        const startHour = this.HM2dec(begin.getHours(), begin.getMinutes())
-        nextDay.setTime(begin.getTime())
-        while (duration > 0) {
-            const dayConf = conf[nextDay.getDay()]
-            let dayTime = dayConf.chunks
-            if (dayTime === null) { nextDay.setTime(nextDay.getTime() + this.D); continue }
-            if(this.holidays.isHolidayInAnyOf(nextDay, KAIROS.holidays)) { nextDay.setTime(nextDay.getTime() + this.D); continue }     
-            {
-                const  [endH, endM] = this.dec2HM(dayTime[0][0])
-                realEnd.setTime(nextDay.getTime())
-                realEnd.setHours(endH, endM, 0, 0)
-            }
-
-            /* chunks === null -> no time slot available for this day, forward 24h */
-            let endAt
-            let lastChunk
-            for (const chunk of dayTime) {
-                lastChunk = chunk
-                if (chunk[1] < startHour) { continue; }
-                if (startHour < chunk[0]) { continue; }
-                let timeAv = chunk[1] - startHour
-                if (duration <= timeAv) {
-                    timeAv = duration                            
-                }
-                if(duration - timeAv <= dayConf.round) {
-                    timeAv = duration
-                }
-                endAt = startHour + timeAv
-                duration -= timeAv
-                effectiveDuration += timeAv
-                if (duration <= 0) { break }
-            }
-            if (!endAt) {
-                let timeAv = lastChunk[1] - startHour
-                if (duration <= timeAv) {
-                    timeAv = duration                            
-                }
-                if(duration - timeAv <= dayConf.round) {
-                    timeAv = duration
-                }
-                endAt = startHour + timeAv
-                duration -= timeAv
-                effectiveDuration += timeAv
-            }
-            const [endH, endM] = this.dec2HM(endAt)
-            realEnd.setHours(endH, endM, 0, 0)
-            nextDay.setTime(realEnd.getTime() + this.D)
-        }
-        // effectiveDuration is in second
-        return [realEnd, effectiveDuration * this.Hs]
     },
+
     getRanges (begin, duration, conf) {
       /*  const range =  [[ begin, ...this.getContinuousEnd(begin, duration, conf) ]]
         return range*/

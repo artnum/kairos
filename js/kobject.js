@@ -757,7 +757,7 @@ KObject.prototype.doToXML = function (stack = []) {
     mainObject.setAttribute('type', this.getType())
     mainObject.setAttribute('id', this.getItem('uid'))
     for (const key of keys) {
-        const node =v2node(xmlDoc, key, this.data.get(key))
+        const node = v2node(xmlDoc, key, this.data.get(key))
         mainObject.appendChild(node)
     }
 
