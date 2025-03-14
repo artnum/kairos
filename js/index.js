@@ -136,7 +136,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/MButton.js', 'script'],
         ['../js/evenement.js', 'script'],
         ['../js/popup.js', 'script'],
-        ['../js/kreservation.js', 'script'],
         ['../js/kcache.js', 'script'],
         ['../js/PJs/pSBC.js', 'script'],
         ['../js/select.js', 'script'],
@@ -149,7 +148,6 @@ window.addEventListener('kairos-preload', event => {
         ['../js/sanitize.js', 'script'],
         ['../js/kevent.js', 'script'],
         ['../js/kentry.js', 'script'],
-        ['../js/kaffaire.js', 'script'],
         ['../js/kstore.js', 'script'],
         ['../js/kobject.js', 'script'],
 
