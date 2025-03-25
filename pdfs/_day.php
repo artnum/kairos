@@ -360,15 +360,17 @@ foreach ($order as $k => $v) {
     $kpdf->to_block_begin();
     $groups = [];
     uasort($allocations, function ($a, $b) {
-        if ($a->get('source') === $b->get('source')) { return 0; }
-        if ($a->get('source') < $b->get('source')) { return -1; }
-        if ($a->get('source') > $b->get('source')) { return 1; }
+        global $kstatus;
+        $awhat = $kstatus->get($a->get('source'));
+        $bwhat = $kstatus->get($b->get('source'));
+        if ($awhat->get('group') === $bwhat->get('group')) return 0;
+        if ($awhat->get('group') > $bwhat->get('group')) return -1;
+        if ($awhat->get('group') < $bwhat->get('group')) return 1;
     });
     foreach ($allocations as $alloc) {
         if ($alloc->get('target') == $affaire->get('uid')) {
             
             $what = $kstatus->get($alloc->get('source'));
-
             if ($what) {
                 if ($what->get('group') === 'Caisse') { continue; }
                 else { $kpdf->tab(4); }
