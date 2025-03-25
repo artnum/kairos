@@ -233,7 +233,7 @@ $dateFormater = new IntlDateFormatter(
 );
 $strDate = $dateFormater->format((new DateTime($day)));
 $PDF->br();
-$PDF->printTaggedLn(['%c', 'Planning journalier du', '%cb', $strDate]);
+$PDF->printTaggedLn(['%c', 'Planning journalier du', '%cb', ' ' . $strDate]);
 $PDF->setFontSize(3);
 $PDF->br();
 
