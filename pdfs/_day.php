@@ -304,13 +304,25 @@ foreach ($order as $k => $v) {
     if ($i % 2 === 0) {
         $PDF->background_block('#EEEEEE');
     }
-    $kpdf->printTaggedLn(['%cb', $project->get('reference')], ['max-width' => 40, 'break' => false]);
+    $kpdf->printTaggedLn(['%cb', $project->get('reference') . '.' . $affaire->get('id')], ['max-width' => 40, 'break' => false]);
     $REFX = $kpdf->GetX();
     $kpdf->br();
+    $status = null;
+    foreach ($kobjects as $kobject) {
+        if (!$status) { $status = $kstatus->get($kobject->get('status')); break;}
+    }
+    if (!$status) {
+        $status = $kstatus->get($affaire->get('status'));
+    }
+    if ($status) {
+        $kpdf->setColor($status->get('color')); 
+        $kpdf->printTaggedLn(['%cb', $status->get('name')], ['max-width' => 20]);
+        $kpdf->setColor('black');
+    } 
+
     $kpdf->printTaggedLn(['%c', trim($project->get('name'))], ['max-width' => 40, 'multiline' => true ]);
     if ($affaire->get('group')) { $kpdf->printTaggedLn(['%c', $affaire->get('group')], ['max-width' => 40, 'multiline' => true ]); }
     $kpdf->to_block_begin();
-    $status = null;
 
     uasort($kobjects, function ($a, $b) {
         global $kentry;
@@ -345,17 +357,6 @@ foreach ($order as $k => $v) {
 
         $kpdf->SetY($YPos);
     }
-    if (!$status) {
-        $status = $kstatus->get($affaire->get('status'));
-    }
-    if ($status) {
-        $kpdf->to_block_begin();
-        
-        $kpdf->SetX($REFX + 2);
-        $kpdf->setColor($status->get('color')); 
-        $kpdf->printTaggedLn(['%c', $status->get('name')], ['max-width' => 20]);
-        $kpdf->setColor('black');
-    } 
 
     $kpdf->to_block_begin();
     $groups = [];
