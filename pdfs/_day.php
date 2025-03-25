@@ -316,7 +316,7 @@ foreach ($order as $k => $v) {
     }
     if ($status) {
         $kpdf->setColor($status->get('color')); 
-        $kpdf->printTaggedLn(['%cb', $status->get('name')], ['max-width' => 20]);
+        $kpdf->printTaggedLn(['%cb', $status->get('name')], ['max-width' => 40]);
         $kpdf->setColor('black');
     } 
 
