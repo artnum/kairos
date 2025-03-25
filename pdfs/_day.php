@@ -17,8 +17,6 @@ if (!$KAuth->check_auth($KAuth->get_auth_token(), $BaseURL . '/' . $_SERVER['REQ
 
 $H = 0;
 
-
-
 $kreservation = new KStore($KAppConf, 'kreservation', ['deleted' => '--'], $KConf->get('security.authproxy'));
 $kentry = new KStore($KAppConf, 'kentry', [], $KConf->get('security.authproxy'));
 $kaffaire = new KStore($KAppConf, 'kaffaire', [], $KConf->get('security.authproxy'));
@@ -341,8 +339,8 @@ foreach ($order as $k => $v) {
             $kpdf->SetY($backY);
             $kpdf->tab(2);
             $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 49, 'break' => true, 'multiline' => true]); 
-            $kpdf->br();
         }
+        $kpdf->br();
         $YPos = $kpdf->GetY();
 
         $kpdf->SetY($YPos);
