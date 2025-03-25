@@ -23,6 +23,7 @@ $kaffaire = new KStore($KAppConf, 'kaffaire', [], $KConf->get('security.authprox
 $kproject = new KStore($KAppConf, 'kproject', [], $KConf->get('security.authproxy'));
 $kstatus = new KStore($KAppConf, 'kstatus', [], $KConf->get('security.authproxy'));
 $kalloc = new KStore($KAppConf, 'krallocation', [], $KConf->get('security.authproxy'));
+$kperson = new KStore($KAppConf, 'kperson', [], $KConf->get('security.authproxy'));
 
 $day = $_GET['id'];
 $dayBegin = new DateTime($_GET['id'], new DateTimeZone('UTC'));
@@ -322,6 +323,14 @@ foreach ($order as $k => $v) {
 
     $kpdf->printTaggedLn(['%c', trim($project->get('name'))], ['max-width' => 40, 'multiline' => true ]);
     if ($affaire->get('group')) { $kpdf->printTaggedLn(['%c', $affaire->get('group')], ['max-width' => 40, 'multiline' => true ]); }
+
+    $manager = $kperson->get($project->get('manager'));
+    if ($manager) {
+        $kpdf->br();
+        $kpdf->printTaggedLn(['%c', 'Chef projet' ],  ['max-width' => 40, 'underline' => true]);
+        $kpdf->printTaggedLn(['%cb', $manager->get('name') ],  ['max-width' => 40]);
+    }
+
     $kpdf->to_block_begin();
 
     uasort($kobjects, function ($a, $b) {
