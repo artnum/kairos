@@ -152,7 +152,6 @@ foreach ($byProjects as $k => $kobjects) {
 }
 asort($order);
 
-
 class DayPDF extends LocationPDF {
     protected int $tableStart = -1;
     function AddPage ($orientation = '', $format = '', $keepmargins = false, $tocpage = false) {
@@ -235,7 +234,7 @@ $dateFormater = new IntlDateFormatter(
 );
 $strDate = $dateFormater->format((new DateTime($day)));
 $PDF->br();
-$PDF->printTaggedLn(['%c', 'Planning journalier du ', '%cb', $strDate]);
+$PDF->printTaggedLn(['%c', 'Planning journalier du', '%cb', $strDate]);
 $PDF->setFontSize(3);
 $PDF->br();
 
@@ -331,15 +330,22 @@ foreach ($order as $k => $v) {
         if (!$status) { $status = $kstatus->get($kobject->get('status')); }
         if (in_array($kobject->get('target'), $targets)) { continue; }
         $targets[] = $kobject->get('target');
-        $kpdf->tab(1);
+
         $entry = $kentry->get($kobject->get('target'));
         if (intval($entry->get('disabled')) === 1) { continue; }
 
+        $kpdf->tab(1);
+        $backY = $kpdf->GetY();
         $kpdf->printTaggedLn(['%c', $entry->get('name')], ['max-width' => 30, 'multiline' => true, 'break' => false]);
+        if ($kobject->get('comment')) {
+            $kpdf->SetY($backY);
+            $kpdf->tab(2);
+            $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 49, 'break' => true, 'multiline' => true]); 
+            $kpdf->br();
+        }
         $YPos = $kpdf->GetY();
 
         $kpdf->SetY($YPos);
-        $kpdf->br();
     }
     if (!$status) {
         $status = $kstatus->get($affaire->get('status'));
@@ -407,19 +413,7 @@ foreach ($order as $k => $v) {
         $kpdf->printTaggedLn(['%c', '(' . ($header === '← ' ? '→ ' : '← ') . $detail . ')'], ['multiline' => true, 'max-width' => 40]);
         $kpdf->setFontSize(3);
     }
-    foreach ($kobjects as $kobject) {
-        if ($kobject->get('comment')) {
 
-            $kpdf->to_block_begin();
-            if ($YCommentPos !== null) {
-                $kpdf->SetY($YCommentPos);
-            }
-            $kpdf->tab(2);
-            $kpdf->printTaggedLn(['%c', $kobject->get('comment')], ['max-width' => 49, 'break' => true, 'multiline' => true]); 
-            $kpdf->br();
-            $YCommentPos = $kpdf->GetY();
-        }
-    }
     $PDF->to_block_end();
     $PDF->drawLine($PDF->getMargin('L'), $PDF->GetY() - 0.25, $PDF->getDimension('W') - $PDF->getMargin('L') - $PDF->getMargin('R'), 0, 'line', ['color' => '#c4007a']);
 
