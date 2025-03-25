@@ -359,21 +359,20 @@ foreach ($order as $k => $v) {
 
     $kpdf->to_block_begin();
     $groups = [];
+    uasort($allocations, function ($a, $b) {
+        if ($a->get('source') === $b->get('source')) { return 0; }
+        if ($a->get('source') < $b->get('source')) { return -1; }
+        if ($a->get('source') > $b->get('source')) { return 1; }
+    });
     foreach ($allocations as $alloc) {
         if ($alloc->get('target') == $affaire->get('uid')) {
             
             $what = $kstatus->get($alloc->get('source'));
-            if (!isset($groups[$what->get('group')])) {
-                $groups[$what->get('group')] = 0;
-                $kpdf->to_block_begin();
-            } else {
-                $kpdf->SetY($groups[$what->get('group')]);
-            }
+
             if ($what) {
                 if ($what->get('group') === 'Caisse') { continue; }
                 else { $kpdf->tab(4); }
                 $kpdf->printTaggedLn(['%c', $what->get('name')], ['max-width' => 23, 'multiline' => true]);
-                $groups[$what->get('group')] = $kpdf->GetY();
             }
         }
     }
