@@ -3,24 +3,21 @@ function KClosable () {
     this.index = 0
     this.stack = []
     this.mouseDown = false
-    this.cancelMouseEvent = false
     window.addEventListener('mousedown', (event) => {
-        if (event.button !== 0) { return }
-        this.mouseDown = performance.now()
-    })
-    window.addEventListener('keyup', (event) => {
-        if (event.key !== 'Escape') { return }
-        if (this.mouseDown) { 
-            this.cancelMouseEvent = true
-            return
+        if (event.button === 0) {
+            this.mouseDown = performance.now()
         }
-        this.closeNext()
-        return
+    })
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            this.closeNext()
+        }
     }, {capture: true})
     window.addEventListener('click', (event) => {
-        if (this.cancelMouseEvent) { this.cancelMouseEvent = false; return }
-        this.closeNextMouse(event.clientX + window.scrollX, event.clientY + window.scrollY)
-        this.mouseDown = false
+        if (this.mouseDown) {
+            this.closeNextMouse(event.clientX + window.scrollX, event.clientY + window.scrollY)
+            this.mouseDown = false
+        }
     }, {capture: true})
     KClosable.__instance = this
 }
